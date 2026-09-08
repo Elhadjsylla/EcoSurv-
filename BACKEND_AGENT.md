@@ -307,9 +307,10 @@ qu'une fois par ligne.
 - **`eleves` ne se supprime pas** par un directeur : la cascade emporterait
   échéances, paiements et absences. Une sortie d'élève se traite avec
   `actif = false`.
-- **Le caissier lit `eleves` et `echeances`** de son école, bien que
-  `SECURITY_RULES.md` §2 dise « uniquement les paiements » : sans cela il ne
-  peut pas rattacher un encaissement au bon dossier. Il n'a aucun droit
+- **Le caissier lit `eleves` et `echeances`** de son école, en lecture seule :
+  sans cela il ne peut pas rattacher un encaissement au bon dossier. Ce
+  périmètre est explicitement prévu par le tableau des rôles de
+  `SECURITY_RULES.md` §2, qui a été mis à jour en ce sens. Il n'a aucun droit
   d'écriture sur ces tables, ni aucun accès aux absences.
 - **Le caissier et l'enseignant ne se recoupent jamais** : l'enseignant n'a
   accès à aucune donnée financière, le caissier à aucune donnée
@@ -386,7 +387,7 @@ profils, liens et affectations correspondants.
 | `superadmin.demo@ecosurv.test` | `super_admin` | Toutes les écoles |
 | `directeur.demo@ecosurv.test` | `directeur` | Toute l'école de démo |
 | `enseignant.demo@ecosurv.test` | `enseignant` | 6ème A et CM2 seulement |
-| `caissier.demo@ecosurv.test` | `caissier` | Paiements de l'école |
+| `caissier.demo@ecosurv.test` | `caissier` | Paiements de l'école, + élèves et échéances en lecture |
 | `parent1.demo@ecosurv.test` | `parent` | 2 enfants (fratrie) |
 | `parent2.demo@ecosurv.test` | `parent` | 1 enfant |
 
@@ -401,10 +402,14 @@ Toutes ces données sont fictives (`SECURITY_RULES.md` §5). Repères visuels :
 
 ## 9. Ce qui reste à faire
 
-Points ouverts à la fin de ce lot, à traiter avant une mise en production :
+Points ouverts à la fin de ce lot, à traiter **avant une mise en production
+réelle**. Ils ont été revus et acceptés comme non bloquants pour la
+livraison du socle de données : la base est exploitable en développement et
+en démonstration en l'état.
 
 1. **Planifier `rafraichir_statuts_echeances()`** (§5). Sans cela, les
-   retards ne basculent pas d'eux-mêmes.
+   retards ne basculent pas d'eux-mêmes. À faire avant la première école
+   cliente réelle, sous peine de sous-estimer le recouvrement.
 2. **Créer la table et la logique d'abonnement côté super admin** : les
    colonnes d'abonnement de `ecoles` ne sont écrivables qu'en `service_role`,
    la console du §5.9 devra donc passer par des Edge Functions.
