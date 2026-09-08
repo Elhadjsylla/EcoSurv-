@@ -20,13 +20,24 @@ const queryClient = new QueryClient({
 
 export function AppContent() {
   const [activeTab, setActiveTab] = useState<NavTab>('dashboard');
+  const [elevesStatutFilter, setElevesStatutFilter] = useState<string>('all');
+
+  const handleNavigateToElevesWithFilter = (statut: string) => {
+    setElevesStatutFilter(statut);
+    setActiveTab('eleves');
+  };
 
   const renderContent = () => {
     switch (activeTab) {
       case 'dashboard':
-        return <DirectorDashboard />;
+        return <DirectorDashboard onNavigateToEleves={handleNavigateToElevesWithFilter} />;
       case 'eleves':
-        return <ElevesPage />;
+        return (
+          <ElevesPage
+            initialStatutFilter={elevesStatutFilter}
+            onFilterChange={(statut) => setElevesStatutFilter(statut)}
+          />
+        );
       case 'echeances':
         return <EcheancesPage />;
       case 'relances':
@@ -36,7 +47,7 @@ export function AppContent() {
       case 'config':
         return <ConfigPage />;
       default:
-        return <DirectorDashboard />;
+        return <DirectorDashboard onNavigateToEleves={handleNavigateToElevesWithFilter} />;
     }
   };
 

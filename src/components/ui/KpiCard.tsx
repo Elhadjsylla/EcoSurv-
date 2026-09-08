@@ -1,5 +1,6 @@
 import React, { ReactNode } from 'react';
 import { cn, formatMRU } from '../../lib/utils';
+import { ArrowUpRight } from 'lucide-react';
 
 interface KpiCardProps {
   title: string;
@@ -9,6 +10,8 @@ interface KpiCardProps {
   variant?: 'default' | 'primary' | 'success' | 'danger' | 'warning';
   progress?: number;
   className?: string;
+  onClick?: () => void;
+  active?: boolean;
 }
 
 export const KpiCard: React.FC<KpiCardProps> = ({
@@ -19,6 +22,8 @@ export const KpiCard: React.FC<KpiCardProps> = ({
   variant = 'default',
   progress,
   className,
+  onClick,
+  active = false,
 }) => {
   const iconContainerStyles = {
     default: 'bg-slate-100 text-slate-700',
@@ -30,19 +35,27 @@ export const KpiCard: React.FC<KpiCardProps> = ({
 
   return (
     <div
+      onClick={onClick}
       className={cn(
-        'rounded-xl border border-slate-200 bg-white p-5 shadow-2xs transition-all hover:shadow-xs',
+        'rounded-xl border p-5 shadow-2xs transition-all relative overflow-hidden',
+        active
+          ? 'border-blue-600 bg-blue-50/40 ring-2 ring-blue-600/20'
+          : 'border-slate-200 bg-white hover:border-blue-300 hover:shadow-sm',
+        onClick && 'cursor-pointer group active:scale-[0.99]',
         className
       )}
     >
       <div className="flex items-center justify-between gap-3">
-        <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+        <span className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1">
           {title}
+          {onClick && (
+            <ArrowUpRight className="h-3 w-3 text-slate-400 group-hover:text-blue-600 transition-colors" />
+          )}
         </span>
         {icon && (
           <div
             className={cn(
-              'flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200/60 shrink-0',
+              'flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200/60 shrink-0 transition-transform group-hover:scale-105',
               iconContainerStyles[variant]
             )}
           >
@@ -82,7 +95,14 @@ export const KpiCard: React.FC<KpiCardProps> = ({
       )}
 
       {subtitle && (
-        <p className="mt-2 text-xs font-medium text-slate-500">{subtitle}</p>
+        <p className="mt-2 text-xs font-medium text-slate-500 flex items-center justify-between">
+          <span>{subtitle}</span>
+          {onClick && (
+            <span className="text-[10px] font-bold text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity">
+              Filtrer →
+            </span>
+          )}
+        </p>
       )}
     </div>
   );
