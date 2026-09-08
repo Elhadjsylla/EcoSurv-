@@ -5,6 +5,7 @@ export type StatutEcheance = 'a_jour' | 'en_retard' | 'partiel' | 'paye';
 export type StatutPaiement = 'en_attente' | 'confirme' | 'echoue' | 'rembourse' | 'annule';
 export type MethodePaiement = 'especes' | 'bankily' | 'masrvi' | 'sedad' | 'virement' | 'cheque';
 export type LienParente = 'pere' | 'mere' | 'tuteur' | 'autre';
+export type FrequenceEcheance = 'mensuel' | 'trimestriel' | 'annuel';
 
 export interface EcoleMock {
   id: string;
@@ -53,6 +54,50 @@ export interface EleveWithStats {
   prochaine_echeance_montant?: number;
   nb_absences: number;
   timeline_paiements: PaymentTimelineItem[];
+}
+
+export interface EcheancierConfig {
+  id: string;
+  libelle: string;
+  classe: string;
+  montant_total: number;
+  frequence: FrequenceEcheance;
+  nombre_tranches: number;
+  montant_par_tranche: number;
+  date_limite_prochaine: string;
+  nb_eleves_concernes: number;
+}
+
+export interface HistoriqueRelance {
+  id: string;
+  eleve_id: string;
+  eleve_nom: string;
+  classe: string;
+  canal: 'SMS' | 'WhatsApp';
+  telephone: string;
+  date: string;
+  statut: 'Delivré' | 'En cours' | 'Échoué';
+  message_snippet: string;
+}
+
+export interface StaffMember {
+  id: string;
+  nom: string;
+  prenom: string;
+  email: string;
+  telephone: string;
+  role: RoleUtilisateur;
+  classe_assignee?: string;
+  actif: boolean;
+  date_ajout: string;
+}
+
+export interface MonthlyFinancialReport {
+  mois: string;
+  attendu: number;
+  encaisse: number;
+  impayes: number;
+  taux: number;
 }
 
 export const CURRENT_ECOLE: EcoleMock = {
@@ -388,6 +433,155 @@ export const MOCK_ELEVES: EleveWithStats[] = [
       },
     ],
   },
+];
+
+export const MOCK_ECHEANCIERS: EcheancierConfig[] = [
+  {
+    id: 'ech-001',
+    libelle: 'Tarif Lycée (Terminales C & D)',
+    classe: 'Terminales C',
+    montant_total: 45000,
+    frequence: 'mensuel',
+    nombre_tranches: 3,
+    montant_par_tranche: 15000,
+    date_limite_prochaine: '2026-03-05',
+    nb_eleves_concernes: 45,
+  },
+  {
+    id: 'ech-002',
+    libelle: 'Tarif Collège (3ème & 6ème)',
+    classe: '6ème A',
+    montant_total: 35000,
+    frequence: 'mensuel',
+    nombre_tranches: 3,
+    montant_par_tranche: 11666,
+    date_limite_prochaine: '2026-03-01',
+    nb_eleves_concernes: 38,
+  },
+  {
+    id: 'ech-003',
+    libelle: 'Tarif Primaire (CM2)',
+    classe: 'CM2 A',
+    montant_total: 30000,
+    frequence: 'trimestriel',
+    nombre_tranches: 3,
+    montant_par_tranche: 10000,
+    date_limite_prochaine: '2026-03-10',
+    nb_eleves_concernes: 28,
+  },
+  {
+    id: 'ech-004',
+    libelle: 'Tarif Annuel Optionnel (Spécialité)',
+    classe: 'Terminales C',
+    montant_total: 60000,
+    frequence: 'annuel',
+    nombre_tranches: 1,
+    montant_par_tranche: 60000,
+    date_limite_prochaine: '2026-04-01',
+    nb_eleves_concernes: 12,
+  },
+];
+
+export const MOCK_HISTORIQUE_RELANCES: HistoriqueRelance[] = [
+  {
+    id: 'rel-101',
+    eleve_id: 'el-002',
+    eleve_nom: 'BA Aïssata',
+    classe: 'Terminales C',
+    canal: 'WhatsApp',
+    telephone: '+222 33 44 55 66',
+    date: '2026-02-28 14:30',
+    statut: 'Delivré',
+    message_snippet: 'Rappel EcoSurv: Échéance de 15 000 MRU en retard pour BA Aïssata. Merci de régler via Bankily.',
+  },
+  {
+    id: 'rel-102',
+    eleve_id: 'el-005',
+    eleve_nom: 'OULD MOHAMED Sidi Ely',
+    classe: 'Terminales C',
+    canal: 'SMS',
+    telephone: '+222 46 88 11 22',
+    date: '2026-02-28 14:31',
+    statut: 'Delivré',
+    message_snippet: 'Rappel EcoSurv: Échéance de 45 000 MRU en retard pour OULD MOHAMED Sidi. Contactez la caisse.',
+  },
+  {
+    id: 'rel-103',
+    eleve_id: 'el-003',
+    eleve_nom: 'SOW Cheikh Tidiane',
+    classe: '6ème A',
+    canal: 'WhatsApp',
+    telephone: '+222 44 55 66 77',
+    date: '2026-02-15 09:15',
+    statut: 'Delivré',
+    message_snippet: 'Rappel EcoSurv: Solde partiel restant de 15 000 MRU pour Cheikh Tidiane SOW.',
+  },
+  {
+    id: 'rel-104',
+    eleve_id: 'el-007',
+    eleve_nom: 'CAMARA Boubacar',
+    classe: '6ème A',
+    canal: 'SMS',
+    telephone: '+222 22 55 88 00',
+    date: '2026-02-10 11:20',
+    statut: 'Delivré',
+    message_snippet: 'Rappel EcoSurv: Solde de 25 000 MRU en attente pour Boubacar CAMARA.',
+  },
+];
+
+export const MOCK_STAFF: StaffMember[] = [
+  {
+    id: 'st-001',
+    nom: 'SYLLA',
+    prenom: 'Elhadj',
+    email: 'directeur.demo@ecosurv.test',
+    telephone: '+222 36 10 20 30',
+    role: 'directeur',
+    actif: true,
+    date_ajout: '2025-09-01',
+  },
+  {
+    id: 'st-002',
+    nom: 'FALL',
+    prenom: 'Amadou',
+    email: 'caissier.demo@ecosurv.test',
+    telephone: '+222 22 99 88 11',
+    role: 'caissier',
+    actif: true,
+    date_ajout: '2025-09-01',
+  },
+  {
+    id: 'st-003',
+    nom: 'KANE',
+    prenom: 'Mamadou',
+    email: 'enseignant.demo@ecosurv.test',
+    telephone: '+222 45 66 77 88',
+    role: 'enseignant',
+    classe_assignee: 'Terminales C',
+    actif: true,
+    date_ajout: '2025-09-15',
+  },
+  {
+    id: 'st-004',
+    nom: 'MINT SIDI',
+    prenom: 'Fatimata',
+    email: 'fatimata.sidi@ecosurv.test',
+    telephone: '+222 33 11 22 44',
+    role: 'enseignant',
+    classe_assignee: '6ème A',
+    actif: true,
+    date_ajout: '2025-10-01',
+  },
+];
+
+export const MOCK_MONTHLY_REPORTS: MonthlyFinancialReport[] = [
+  { mois: 'Septembre 2025', attendu: 90000, encaisse: 85000, impayes: 5000, taux: 94 },
+  { mois: 'Octobre 2025', attendu: 85000, encaisse: 80000, impayes: 5000, taux: 94 },
+  { mois: 'Novembre 2025', attendu: 85000, encaisse: 78000, impayes: 7000, taux: 91 },
+  { mois: 'Décembre 2025', attendu: 85000, encaisse: 72000, impayes: 13000, taux: 84 },
+  { mois: 'Janvier 2026', attendu: 85000, encaisse: 69000, impayes: 16000, taux: 81 },
+  { mois: 'Février 2026', attendu: 85000, encaisse: 64000, impayes: 21000, taux: 75 },
+  { mois: 'Mars 2026 (En cours)', attendu: 85000, encaisse: 42000, impayes: 43000, taux: 49 },
 ];
 
 export function getDashboardKpis(eleves: EleveWithStats[]) {
