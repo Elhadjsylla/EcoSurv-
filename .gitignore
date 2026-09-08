@@ -1,0 +1,33 @@
+# --- Secrets et environnement (GIT_RULES.md §5, SECURITY_RULES.md §3) ---
+# Ne jamais committer de clé Supabase service_role.
+.env
+.env.*
+!.env.example
+
+# --- Dépendances et build ---
+node_modules/
+dist/
+build/
+.vite/
+coverage/
+*.tsbuildinfo
+
+# --- Supabase CLI (état local, jamais versionné) ---
+supabase/.temp/
+supabase/.branches/
+
+# --- Données réelles d'élèves ou de parents (GIT_RULES.md §5) ---
+# Aucun export brut ne doit entrer dans l'historique, même en test.
+*.csv
+*.xlsx
+exports/
+stitch-exports/
+
+# --- Système et éditeurs ---
+.DS_Store
+Thumbs.db
+desktop.ini
+*.log
+.idea/
+.vscode/*
+!.vscode/extensions.json
