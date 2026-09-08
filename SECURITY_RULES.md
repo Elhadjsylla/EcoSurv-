@@ -62,10 +62,17 @@ l'utilisateur authentifié.
 | `directeur` | Uniquement les données de son école |
 | `enseignant` | Uniquement les classes qui lui sont assignées, dans son école |
 | `parent` | Uniquement les données de son/ses enfant(s), dans son école |
-| `caissier` | Uniquement les paiements de son école |
+| `caissier` | Les paiements de son école, **et en lecture seule les élèves et les échéances de son école** — sans quoi il ne peut pas rattacher un encaissement au bon dossier. Aucun droit d'écriture sur ces deux tables, et aucun accès aux absences ni aux données pédagogiques |
 
 Chaque policy RLS doit refléter cette table, pas une version simplifiée ou
 élargie "pour aller plus vite en développement".
+
+Le périmètre du caissier est le seul qui dépasse son intitulé métier, et
+c'est délibéré : encaisser suppose d'identifier l'élève et l'échéance
+concernés. Cette lecture reste bornée à son école, et il ne peut ni modifier
+un dossier élève ni créer une échéance. Toute extension future d'un rôle
+au-delà de ce tableau doit être documentée ici avant d'être écrite en
+policy, jamais l'inverse.
 
 ---
 
