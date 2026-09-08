@@ -1,0 +1,436 @@
+import React, { useState, useMemo } from 'react';
+import {
+  MOCK_ELEVES,
+  getDashboardKpis,
+  EleveWithStats,
+} from '../../lib/mockData';
+import { KpiCard } from '../ui/KpiCard';
+import { StatusBadge } from '../ui/StatusBadge';
+import { StudentInitials } from '../ui/StudentInitials';
+import { Button } from '../ui/Button';
+import { Card } from '../ui/Card';
+import { formatMRU } from '../../lib/utils';
+import {
+  Search,
+  Filter,
+  Phone,
+  Send,
+  Download,
+  AlertCircle,
+  CheckCircle2,
+  Clock,
+  TrendingUp,
+  X,
+} from 'lucide-react';
+
+export const DirectorDashboard: React.FC = () => {
+  const [elevesList] = useState<EleveWithStats[]>(MOCK_ELEVES);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedClasse, setSelectedClasse] = useState<string>('all');
+  const [selectedStatut, setSelectedStatut] = useState<string>('all');
+  const [selectedEleveModal, setSelectedEleveModal] = useState<EleveWithStats | null>(null);
+  const [relanceSentToast, setRelanceSentToast] = useState<string | null>(null);
+
+  // Calcul dynamique des KPIs
+  const kpis = useMemo(() => getDashboardKpis(elevesList), [elevesList]);
+
+  // Classes uniques
+  const classesList = useMemo(() => {
+    const set = new Set(elevesList.map((e) => e.classe));
+    return Array.from(set);
+  }, [elevesList]);
+
+  // Filtrage des élèves
+  const filteredEleves = useMemo(() => {
+    return elevesList.filter((e) => {
+      const matchQuery =
+        e.nom.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        e.prenom.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        e.matricule.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        e.nom_tuteur.toLowerCase().includes(searchQuery.toLowerCase());
+
+      const matchClasse = selectedClasse === 'all' || e.classe === selectedClasse;
+      const matchStatut = selectedStatut === 'all' || e.statut === selectedStatut;
+
+      return matchQuery && matchClasse && matchStatut;
+    });
+  }, [elevesList, searchQuery, selectedClasse, selectedStatut]);
+
+  // Envoi fictif de relance SMS/WhatsApp
+  const triggerRelance = (eleve: EleveWithStats) => {
+    setRelanceSentToast(
+      `Rappel envoyé avec succès au tuteur de ${eleve.prenom} ${eleve.nom} (${eleve.telephone_tuteur})`
+    );
+    setTimeout(() => setRelanceSentToast(null), 4000);
+  };
+
+  return (
+    <div className="p-6 max-w-[1600px] mx-auto space-y-8">
+      {/* Toast de confirmation de relance */}
+      {relanceSentToast && (
+        <div className="fixed top-20 right-6 z-50 flex items-center gap-3 bg-slate-900 text-white px-4 py-3 rounded-lg shadow-xl border border-slate-700 animate-in fade-in slide-in-from-top-4">
+          <CheckCircle2 className="h-5 w-5 text-emerald-400 shrink-0" />
+          <span className="text-xs font-semibold">{relanceSentToast}</span>
+          <button
+            onClick={() => setRelanceSentToast(null)}
+            className="text-slate-400 hover:text-white ml-2"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
+
+      {/* Page Title & Actions */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">
+            Tableau de Bord de Direction
+          </h1>
+          <p className="text-sm text-slate-500 font-medium mt-1">
+            Suivi en temps réel du recouvrement et de la situation financière des élèves.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <Button variant="outline" size="sm" className="gap-2">
+            <Download className="h-4 w-4" />
+            Exporter Rapport PDF
+          </Button>
+          <Button variant="primary" size="sm" className="gap-2">
+            <Send className="h-4 w-4" />
+            Relancer tous les impayés ({kpis.nombreEnRetard})
+          </Button>
+        </div>
+      </div>
+
+      {/* Cartes KPI */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        <KpiCard
+          title="Total Scolarités Attendues"
+          amount={kpis.totalAttendu}
+          subtitle={`Pour les ${kpis.nombreEleves} élèves inscrits`}
+          icon={<TrendingUp className="h-5 w-5" />}
+          variant="primary"
+        />
+
+        <KpiCard
+          title="Total Encaissé"
+          amount={kpis.totalEncaisse}
+          subtitle={`${kpis.nombrePaye} élèves réglés intégralement`}
+          icon={<CheckCircle2 className="h-5 w-5" />}
+          variant="success"
+          progress={kpis.tauxRecouvrement}
+        />
+
+        <KpiCard
+          title="Reste à Recouvrer (Impayés)"
+          amount={kpis.totalImpayes}
+          subtitle={`${kpis.nombreEnRetard} élèves actuellement en retard`}
+          icon={<AlertCircle className="h-5 w-5" />}
+          variant="danger"
+        />
+
+        <KpiCard
+          title="Taux de Recouvrement"
+          progress={kpis.tauxRecouvrement}
+          subtitle={`Objectif trimestre: 85%`}
+          icon={<Clock className="h-5 w-5" />}
+          variant="warning"
+        />
+      </div>
+
+      {/* Roster Controls: Search, Filters, Stats Summary */}
+      <Card className="p-4 space-y-4">
+        <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
+          {/* Search bar */}
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Rechercher par élève, matricule ou tuteur..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full h-10 pl-9 pr-4 rounded-lg border border-slate-300 bg-white text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all"
+            />
+          </div>
+
+          {/* Filters */}
+          <div className="flex flex-wrap items-center gap-3">
+            {/* Filter by class */}
+            <div className="flex items-center gap-2">
+              <Filter className="h-4 w-4 text-slate-400" />
+              <select
+                value={selectedClasse}
+                onChange={(e) => setSelectedClasse(e.target.value)}
+                className="h-10 px-3 text-xs font-semibold rounded-lg border border-slate-300 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-600"
+              >
+                <option value="all">Toutes les classes ({classesList.length})</option>
+                {classesList.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Filter by status */}
+            <select
+              value={selectedStatut}
+              onChange={(e) => setSelectedStatut(e.target.value)}
+              className="h-10 px-3 text-xs font-semibold rounded-lg border border-slate-300 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-600"
+            >
+              <option value="all">Tous les statuts</option>
+              <option value="paye">Réglé (Payé)</option>
+              <option value="en_retard">En retard</option>
+              <option value="partiel">Partiel</option>
+              <option value="a_jour">À jour (Non échu)</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Status count chips */}
+        <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100 text-xs font-medium">
+          <span className="text-slate-500 mr-2">Résultats :</span>
+          <span className="px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 font-semibold">
+            Total : {filteredEleves.length} élèves
+          </span>
+          <span className="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">
+            Payés : {filteredEleves.filter((e) => e.statut === 'paye').length}
+          </span>
+          <span className="px-2.5 py-1 rounded-full bg-red-50 text-red-800 border border-red-200">
+            En retard : {filteredEleves.filter((e) => e.statut === 'en_retard').length}
+          </span>
+          <span className="px-2.5 py-1 rounded-full bg-amber-50 text-amber-800 border border-amber-200">
+            Partiels : {filteredEleves.filter((e) => e.statut === 'partiel').length}
+          </span>
+        </div>
+      </Card>
+
+      {/* Data Table */}
+      <div className="rounded-xl border border-slate-200 bg-white shadow-2xs overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm border-collapse">
+            <thead>
+              <tr className="border-b border-slate-200 bg-slate-50/80 text-xs font-bold uppercase tracking-wider text-slate-500">
+                <th className="py-3.5 px-4">Élève & Matricule</th>
+                <th className="py-3.5 px-4">Classe</th>
+                <th className="py-3.5 px-4">Tuteur / Contact</th>
+                <th className="py-3.5 px-4 text-right">Montant Attendu</th>
+                <th className="py-3.5 px-4 text-right">Montant Encaissé</th>
+                <th className="py-3.5 px-4 text-right">Reste à Payer</th>
+                <th className="py-3.5 px-4 text-center">Statut</th>
+                <th className="py-3.5 px-4 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {filteredEleves.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="py-10 text-center text-slate-500 font-medium">
+                    Aucun élève trouvé correspondant à vos critères de recherche.
+                  </td>
+                </tr>
+              ) : (
+                filteredEleves.map((eleve) => (
+                  <tr
+                    key={eleve.id}
+                    className="hover:bg-slate-50/80 transition-colors group cursor-pointer"
+                    onClick={() => setSelectedEleveModal(eleve)}
+                  >
+                    {/* Élève */}
+                    <td className="py-3.5 px-4">
+                      <div className="flex items-center gap-3">
+                        <StudentInitials nom={eleve.nom} prenom={eleve.prenom} />
+                        <div>
+                          <div className="font-bold text-slate-900 leading-tight">
+                            {eleve.prenom} {eleve.nom}
+                          </div>
+                          <div className="text-xs text-slate-500 font-mono">
+                            {eleve.matricule}
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+
+                    {/* Classe */}
+                    <td className="py-3.5 px-4">
+                      <span className="inline-flex items-center rounded bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-700">
+                        {eleve.classe}
+                      </span>
+                    </td>
+
+                    {/* Tuteur */}
+                    <td className="py-3.5 px-4">
+                      <div className="text-xs">
+                        <div className="font-semibold text-slate-800">{eleve.nom_tuteur}</div>
+                        <div className="text-slate-500 flex items-center gap-1">
+                          <Phone className="h-3 w-3 text-slate-400" />
+                          <span>{eleve.telephone_tuteur}</span>
+                        </div>
+                      </div>
+                    </td>
+
+                    {/* Montant Attendu */}
+                    <td className="py-3.5 px-4 text-right font-mono font-semibold text-slate-700">
+                      {formatMRU(eleve.total_due)}
+                    </td>
+
+                    {/* Montant Encaissé */}
+                    <td className="py-3.5 px-4 text-right font-mono font-semibold text-emerald-700">
+                      {formatMRU(eleve.total_paid)}
+                    </td>
+
+                    {/* Reste à payer */}
+                    <td className="py-3.5 px-4 text-right font-mono font-extrabold text-slate-900">
+                      {eleve.remaining > 0 ? (
+                        <span className="text-red-700">{formatMRU(eleve.remaining)}</span>
+                      ) : (
+                        <span className="text-slate-400">0 MRU</span>
+                      )}
+                    </td>
+
+                    {/* Statut Badge */}
+                    <td className="py-3.5 px-4 text-center">
+                      <StatusBadge statut={eleve.statut} />
+                    </td>
+
+                    {/* Action */}
+                    <td
+                      className="py-3.5 px-4 text-right"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div className="flex items-center justify-end gap-2">
+                        {eleve.remaining > 0 ? (
+                          <Button
+                            size="sm"
+                            variant="danger"
+                            className="h-8 px-2.5 text-xs gap-1"
+                            onClick={() => triggerRelance(eleve)}
+                          >
+                            <Send className="h-3 w-3" />
+                            Relancer
+                          </Button>
+                        ) : (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-8 px-2.5 text-xs text-slate-500"
+                            onClick={() => setSelectedEleveModal(eleve)}
+                          >
+                            Détails
+                          </Button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Modale de Détail Élève & Échéances */}
+      {selectedEleveModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 animate-in fade-in">
+          <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl border border-slate-200 space-y-6">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+              <div className="flex items-center gap-3">
+                <StudentInitials
+                  nom={selectedEleveModal.nom}
+                  prenom={selectedEleveModal.prenom}
+                  size="lg"
+                />
+                <div>
+                  <h3 className="text-lg font-bold text-slate-900">
+                    {selectedEleveModal.prenom} {selectedEleveModal.nom}
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    Matricule: {selectedEleveModal.matricule} • Classe: {selectedEleveModal.classe}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setSelectedEleveModal(null)}
+                className="text-slate-400 hover:text-slate-600 rounded-lg p-1 hover:bg-slate-100"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Fiche Financière */}
+            <div className="grid grid-cols-3 gap-3 text-center">
+              <div className="p-3 rounded-lg bg-slate-50 border border-slate-100">
+                <span className="text-[11px] text-slate-500 font-semibold block uppercase">
+                  Attendu
+                </span>
+                <span className="text-sm font-bold font-mono text-slate-900">
+                  {formatMRU(selectedEleveModal.total_due)}
+                </span>
+              </div>
+              <div className="p-3 rounded-lg bg-emerald-50 border border-emerald-100">
+                <span className="text-[11px] text-emerald-700 font-semibold block uppercase">
+                  Payé
+                </span>
+                <span className="text-sm font-bold font-mono text-emerald-800">
+                  {formatMRU(selectedEleveModal.total_paid)}
+                </span>
+              </div>
+              <div className="p-3 rounded-lg bg-red-50 border border-red-100">
+                <span className="text-[11px] text-red-700 font-semibold block uppercase">
+                  Solde Dû
+                </span>
+                <span className="text-sm font-bold font-mono text-red-800">
+                  {formatMRU(selectedEleveModal.remaining)}
+                </span>
+              </div>
+            </div>
+
+            {/* Coordonnées Tuteur */}
+            <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-4 space-y-2 text-xs">
+              <div className="font-bold text-slate-900">Informations du Tuteur :</div>
+              <div className="flex justify-between text-slate-600">
+                <span>Nom complet :</span>
+                <span className="font-semibold text-slate-900">{selectedEleveModal.nom_tuteur}</span>
+              </div>
+              <div className="flex justify-between text-slate-600">
+                <span>Téléphone :</span>
+                <span className="font-semibold text-blue-700">{selectedEleveModal.telephone_tuteur}</span>
+              </div>
+              {selectedEleveModal.email_tuteur && (
+                <div className="flex justify-between text-slate-600">
+                  <span>Email :</span>
+                  <span className="font-semibold text-slate-900">{selectedEleveModal.email_tuteur}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Footer Modal Actions */}
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setSelectedEleveModal(null)}
+              >
+                Fermer
+              </Button>
+              {selectedEleveModal.remaining > 0 && (
+                <Button
+                  variant="danger"
+                  size="sm"
+                  className="gap-1.5"
+                  onClick={() => {
+                    triggerRelance(selectedEleveModal);
+                    setSelectedEleveModal(null);
+                  }}
+                >
+                  <Send className="h-3.5 w-3.5" />
+                  Envoyer Rappel SMS
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
