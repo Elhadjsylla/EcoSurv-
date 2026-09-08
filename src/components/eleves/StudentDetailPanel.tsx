@@ -50,7 +50,10 @@ export const StudentDetailPanel: React.FC<StudentDetailPanelProps> = ({
   };
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-2xs space-y-6 animate-in fade-in">
+    <div
+      key={eleve.id}
+      className="rounded-xl border border-slate-200 bg-white p-5 shadow-2xs space-y-6 animate-stagger-rise transition-all duration-300"
+    >
       {/* Header Info */}
       <div className="flex items-start justify-between border-b border-slate-100 pb-4">
         <div className="flex items-center gap-3">
@@ -78,7 +81,7 @@ export const StudentDetailPanel: React.FC<StudentDetailPanelProps> = ({
           {onClose && (
             <button
               onClick={onClose}
-              className="text-slate-400 hover:text-slate-600 rounded-lg p-1 hover:bg-slate-100"
+              className="text-slate-400 hover:text-slate-600 rounded-lg p-1 hover:bg-slate-100 transition-colors"
             >
               <X className="h-4 w-4" />
             </button>
@@ -120,7 +123,7 @@ export const StudentDetailPanel: React.FC<StudentDetailPanelProps> = ({
 
       {/* Bento Solde & Prochaine Échéance */}
       <div className="grid grid-cols-2 gap-3">
-        <div className="rounded-xl bg-slate-50 border border-slate-200/80 p-3 flex flex-col justify-between">
+        <div className="rounded-xl bg-slate-50 border border-slate-200/80 p-3 flex flex-col justify-between hover:border-slate-300 transition-colors">
           <span className="text-[11px] font-bold uppercase text-slate-500 tracking-wider">
             Solde Actuel Dû
           </span>
@@ -133,16 +136,19 @@ export const StudentDetailPanel: React.FC<StudentDetailPanelProps> = ({
               {formatMRU(eleve.remaining)}
             </span>
           </div>
-          <span className="text-[11px] font-medium text-slate-500 mt-1 flex items-center gap-1">
+          <span className="text-[11px] font-medium text-slate-500 mt-1 flex items-center gap-1.5">
             {eleve.remaining > 0 ? (
-              <span className="text-red-600 font-semibold">● Impayé à régler</span>
+              <span className="text-red-600 font-semibold flex items-center gap-1">
+                <span className="inline-block h-2 w-2 rounded-full bg-red-600 animate-pulse-soft" />
+                Impayé à régler
+              </span>
             ) : (
               <span className="text-emerald-600 font-semibold">✓ Totalement acquitté</span>
             )}
           </span>
         </div>
 
-        <div className="rounded-xl bg-slate-50 border border-slate-200/80 p-3 flex flex-col justify-between">
+        <div className="rounded-xl bg-slate-50 border border-slate-200/80 p-3 flex flex-col justify-between hover:border-slate-300 transition-colors">
           <span className="text-[11px] font-bold uppercase text-slate-500 tracking-wider">
             Prochaine Échéance
           </span>
@@ -214,7 +220,7 @@ export const StudentDetailPanel: React.FC<StudentDetailPanelProps> = ({
         <Button
           variant="primary"
           size="sm"
-          className="w-full justify-center gap-2"
+          className="w-full justify-center gap-2 hover:scale-[1.01] active:scale-[0.99] transition-transform duration-150"
           onClick={() => onPaymentTrigger && onPaymentTrigger(eleve)}
         >
           <PlusCircle className="h-4 w-4" />
@@ -225,7 +231,7 @@ export const StudentDetailPanel: React.FC<StudentDetailPanelProps> = ({
           <Button
             variant="danger"
             size="sm"
-            className="w-full justify-center gap-2"
+            className="w-full justify-center gap-2 hover:scale-[1.01] active:scale-[0.99] transition-transform duration-150"
             onClick={() => onRelanceTrigger && onRelanceTrigger(eleve)}
           >
             <Send className="h-4 w-4" />

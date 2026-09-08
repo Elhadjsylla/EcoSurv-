@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
+import confetti from 'canvas-confetti';
 import {
   MOCK_ELEVES,
   getDashboardKpis,
@@ -9,6 +10,7 @@ import { StatusBadge } from '../ui/StatusBadge';
 import { StudentInitials } from '../ui/StudentInitials';
 import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
+import { ToastNotification } from '../ui/ToastNotification';
 import { formatMRU } from '../../lib/utils';
 import {
   Search,
@@ -38,7 +40,12 @@ export const DirectorDashboard: React.FC<DirectorDashboardProps> = ({
   const [selectedStatut, setSelectedStatut] = useState<string>('all');
   const [selectedEleveModal, setSelectedEleveModal] = useState<EleveWithStats | null>(null);
   const [paymentModalEleve, setPaymentModalEleve] = useState<EleveWithStats | null>(null);
-  const [relanceSentToast, setRelanceSentToast] = useState<string | null>(null);
+  const [activeToast, setActiveToast] = useState<{ message: string; type: 'success' | 'info' | 'warning' } | null>(null);
+
+  // Micro-interactions state
+  const [justPaidEleveId, setJustPaidEleveId] = useState<string | null>(null);
+  const [relancingId, setRelancingId] = useState<string | null>(null);
+  const [isSearchPulseActive, setIsSearchPulseActive] = useState(false);
 
   // Bulk selection state
   const [selectedEleveIds, setSelectedEleveIds] = useState<string[]>([]);
@@ -58,6 +65,8 @@ export const DirectorDashboard: React.FC<DirectorDashboardProps> = ({
       ) {
         e.preventDefault();
         searchInputRef.current?.focus();
+        setIsSearchPulseActive(true);
+        setTimeout(() => setIsSearchPulseActive(false), 1200);
       }
 
       // Touche "Escape" pour fermer les modales/panneaux
@@ -120,22 +129,43 @@ export const DirectorDashboard: React.FC<DirectorDashboardProps> = ({
   };
 
   // Toast Helper
-  const showToast = (msg: string) => {
-    setRelanceSentToast(msg);
-    setTimeout(() => setRelanceSentToast(null), 4000);
+  const showToast = (message: string, type: 'success' | 'info' | 'warning' = 'success') => {
+    setActiveToast({ message, type });
   };
 
-  // Action rapide : Relance individuelle
+  // Célébration discrète par confetti
+  const triggerConfettiCelebration = () => {
+    try {
+      confetti({
+        particleCount: 38,
+        spread: 55,
+        origin: { y: 0.72 },
+        colors: ['#10b981', '#3b82f6', '#f59e0b', '#059669'],
+        disableForReducedMotion: true,
+        ticks: 130,
+        scalar: 0.85,
+      });
+    } catch {
+      // Ignorer si bloqué par l'environnement
+    }
+  };
+
+  // Action rapide : Relance individuelle avec effet de vol d'avion en papier
   const triggerRelance = (eleve: EleveWithStats, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
+    setRelancingId(eleve.id);
     showToast(
-      `Rappel SMS/WhatsApp envoyé au tuteur de ${eleve.prenom} ${eleve.nom} (${eleve.telephone_tuteur})`
+      `Rappel SMS/WhatsApp envoyé au tuteur de ${eleve.prenom} ${eleve.nom} (${eleve.telephone_tuteur})`,
+      'info'
     );
+    setTimeout(() => setRelancingId(null), 850);
   };
 
-  // Action rapide : Marquer payé express (1 clic)
+  // Action rapide : Marquer payé express (1 clic) avec célébration immédiate
   const triggerMarquerPayeExpress = (eleve: EleveWithStats, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
+    setJustPaidEleveId(eleve.id);
+    triggerConfettiCelebration();
 
     setElevesList((prev) =>
       prev.map((item) => {
@@ -167,8 +197,10 @@ export const DirectorDashboard: React.FC<DirectorDashboardProps> = ({
     showToast(
       `✓ Solde de ${eleve.prenom} ${eleve.nom} marqué comme réglé intégralement (${formatMRU(
         eleve.remaining
-      )})`
+      )})`,
+      'success'
     );
+    setTimeout(() => setJustPaidEleveId(null), 1400);
   };
 
   // Action groupée : Relancer la sélection
@@ -176,7 +208,8 @@ export const DirectorDashboard: React.FC<DirectorDashboardProps> = ({
     const count = selectedEleveIds.length;
     if (count === 0) return;
     showToast(
-      `⚡ Campagne de relance envoyée avec succès à ${count} tuteur(s) d'élèves présélectionnés.`
+      `⚡ Campagne de relance envoyée avec succès à ${count} tuteur(s) d'élèves présélectionnés.`,
+      'info'
     );
     setSelectedEleveIds([]);
   };
@@ -184,23 +217,18 @@ export const DirectorDashboard: React.FC<DirectorDashboardProps> = ({
   // Action groupée : Exporter la sélection
   const handleBulkExport = () => {
     const count = selectedEleveIds.length;
-    showToast(` Export du rapport comptable pour ${count} élève(s) sélectionné(s).`);
+    showToast(`Export du rapport comptable pour ${count} élève(s) sélectionné(s).`, 'info');
   };
 
   return (
     <div className="p-6 max-w-[1600px] mx-auto space-y-8 relative">
-      {/* Toast de confirmation réactif */}
-      {relanceSentToast && (
-        <div className="fixed top-20 right-6 z-50 flex items-center gap-3 bg-slate-900 text-white px-4 py-3 rounded-lg shadow-xl border border-slate-700 animate-in fade-in slide-in-from-top-4">
-          <CheckCircle2 className="h-5 w-5 text-emerald-400 shrink-0" />
-          <span className="text-xs font-semibold">{relanceSentToast}</span>
-          <button
-            onClick={() => setRelanceSentToast(null)}
-            className="text-slate-400 hover:text-white ml-2"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
+      {/* Toast de confirmation réactif animé */}
+      {activeToast && (
+        <ToastNotification
+          message={activeToast.message}
+          type={activeToast.type}
+          onClose={() => setActiveToast(null)}
+        />
       )}
 
       {/* Floating Bulk Action Bar */}
@@ -271,9 +299,10 @@ export const DirectorDashboard: React.FC<DirectorDashboardProps> = ({
         </div>
       </div>
 
-      {/* Cartes KPI Interactives (Raccourcis de filtrage) */}
+      {/* Cartes KPI Interactives (Raccourcis de filtrage) avec apparition échelonnée */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
         <KpiCard
+          staggerIndex={0}
           title="Total Scolarités Attendues"
           amount={kpis.totalAttendu}
           subtitle={`Pour les ${kpis.nombreEleves} élèves inscrits`}
@@ -287,6 +316,7 @@ export const DirectorDashboard: React.FC<DirectorDashboardProps> = ({
         />
 
         <KpiCard
+          staggerIndex={1}
           title="Total Encaissé"
           amount={kpis.totalEncaisse}
           subtitle={`${kpis.nombrePaye} élèves réglés intégralement`}
@@ -301,6 +331,7 @@ export const DirectorDashboard: React.FC<DirectorDashboardProps> = ({
         />
 
         <KpiCard
+          staggerIndex={2}
           title="Reste à Recouvrer (Impayés)"
           amount={kpis.totalImpayes}
           subtitle={`${kpis.nombreEnRetard} élèves actuellement en retard`}
@@ -314,6 +345,7 @@ export const DirectorDashboard: React.FC<DirectorDashboardProps> = ({
         />
 
         <KpiCard
+          staggerIndex={3}
           title="Taux de Recouvrement"
           progress={kpis.tauxRecouvrement}
           subtitle={`Objectif trimestre: 85%`}
@@ -339,7 +371,9 @@ export const DirectorDashboard: React.FC<DirectorDashboardProps> = ({
               placeholder="Rechercher... (Appuyez sur '/' pour accèder)"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full h-10 pl-9 pr-12 rounded-lg border border-slate-300 bg-white text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all"
+              className={`w-full h-10 pl-9 pr-12 rounded-lg border border-slate-300 bg-white text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all duration-200 ${
+                isSearchPulseActive ? 'animate-search-focus ring-2 ring-blue-500' : ''
+              }`}
             />
             <kbd className="absolute right-3 top-2.5 px-1.5 py-0.5 text-[10px] font-mono font-semibold text-slate-400 bg-slate-100 border border-slate-200 rounded">
               /
@@ -460,11 +494,18 @@ export const DirectorDashboard: React.FC<DirectorDashboardProps> = ({
               ) : (
                 filteredEleves.map((eleve) => {
                   const isChecked = selectedEleveIds.includes(eleve.id);
+                  const isJustPaid = justPaidEleveId === eleve.id;
+                  const isRelancing = relancingId === eleve.id;
+
                   return (
                     <tr
                       key={eleve.id}
-                      className={`hover:bg-slate-50/80 transition-colors group cursor-pointer ${
-                        isChecked ? 'bg-blue-50/60' : ''
+                      className={`transition-all duration-300 group cursor-pointer ${
+                        isJustPaid
+                          ? 'bg-emerald-50/90 ring-1 ring-emerald-400'
+                          : isChecked
+                          ? 'bg-blue-50/60'
+                          : 'hover:bg-slate-50/80'
                       }`}
                       onClick={() => setSelectedEleveModal(eleve)}
                     >
@@ -546,7 +587,7 @@ export const DirectorDashboard: React.FC<DirectorDashboardProps> = ({
                               <Button
                                 size="sm"
                                 variant="outline"
-                                className="h-7 px-2 text-[11px] gap-1 text-emerald-700 border-emerald-200 hover:bg-emerald-50"
+                                className="h-7 px-2 text-[11px] gap-1 text-emerald-700 border-emerald-200 hover:bg-emerald-50 hover:scale-105 active:scale-95 transition-all duration-150"
                                 title="Marquer réglé immédiatement"
                                 onClick={(e) => triggerMarquerPayeExpress(eleve, e)}
                               >
@@ -557,16 +598,20 @@ export const DirectorDashboard: React.FC<DirectorDashboardProps> = ({
                               <Button
                                 size="sm"
                                 variant="danger"
-                                className="h-7 px-2 text-[11px] gap-1"
+                                className="h-7 px-2 text-[11px] gap-1 hover:scale-105 active:scale-95 transition-all duration-150 relative overflow-hidden"
                                 title="Envoyer rappel SMS"
                                 onClick={(e) => triggerRelance(eleve, e)}
                               >
-                                <Send className="h-3 w-3" />
-                                Relancer
+                                <Send
+                                  className={`h-3 w-3 transition-transform ${
+                                    isRelancing ? 'animate-paper-plane' : ''
+                                  }`}
+                                />
+                                {isRelancing ? 'Envoi...' : 'Relancer'}
                               </Button>
                             </>
                           ) : (
-                            <span className="text-[11px] font-semibold text-emerald-700 flex items-center gap-1 pr-2">
+                            <span className="text-[11px] font-semibold text-emerald-700 flex items-center gap-1 pr-2 animate-scale-in">
                               <Check className="h-3.5 w-3.5 text-emerald-600" /> Soldé
                             </span>
                           )}
@@ -584,7 +629,7 @@ export const DirectorDashboard: React.FC<DirectorDashboardProps> = ({
       {/* Modale de Détail Élève & Échéances */}
       {selectedEleveModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 animate-in fade-in">
-          <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl border border-slate-200 space-y-6">
+          <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl border border-slate-200 space-y-6 animate-scale-in">
             <div className="flex items-center justify-between border-b border-slate-100 pb-4">
               <div className="flex items-center gap-3">
                 <StudentInitials

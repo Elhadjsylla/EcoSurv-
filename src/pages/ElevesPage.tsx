@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
+import confetti from 'canvas-confetti';
 import {
   MOCK_ELEVES,
   EleveWithStats,
@@ -8,6 +9,7 @@ import { StudentInitials } from '../components/ui/StudentInitials';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
+import { ToastNotification } from '../components/ui/ToastNotification';
 import { formatMRU } from '../lib/utils';
 import { StudentEnrollmentModal } from '../components/eleves/StudentEnrollmentModal';
 import { StudentDetailPanel } from '../components/eleves/StudentDetailPanel';
@@ -21,7 +23,6 @@ import {
   AlertTriangle,
   CreditCard,
   ArrowUpDown,
-  CheckCircle,
   X,
   PlusCircle,
   Zap,
@@ -52,7 +53,12 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
   // Modales & Toasts
   const [isEnrollModalOpen, setIsEnrollModalOpen] = useState(false);
   const [paymentModalEleve, setPaymentModalEleve] = useState<EleveWithStats | null>(null);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [activeToast, setActiveToast] = useState<{ message: string; type: 'success' | 'info' | 'warning' } | null>(null);
+
+  // Micro-interactions & animations state
+  const [justPaidEleveId, setJustPaidEleveId] = useState<string | null>(null);
+  const [relancingId, setRelancingId] = useState<string | null>(null);
+  const [isSearchPulseActive, setIsSearchPulseActive] = useState(false);
 
   // Ref pour le raccourci clavier "/"
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -76,6 +82,8 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
       ) {
         e.preventDefault();
         searchInputRef.current?.focus();
+        setIsSearchPulseActive(true);
+        setTimeout(() => setIsSearchPulseActive(false), 1200);
       }
 
       // Touche "Escape" pour fermer les modales ou désélectionner
@@ -159,21 +167,50 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
   };
 
   // Toast Helper
-  const showToast = (msg: string) => {
-    setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 4000);
+  const showToast = (message: string, type: 'success' | 'info' | 'warning' = 'success') => {
+    setActiveToast({ message, type });
+  };
+
+  // Célébration discrète par confetti
+  const triggerConfettiCelebration = () => {
+    try {
+      confetti({
+        particleCount: 38,
+        spread: 55,
+        origin: { y: 0.72 },
+        colors: ['#10b981', '#3b82f6', '#f59e0b', '#059669'],
+        disableForReducedMotion: true,
+        ticks: 130,
+        scalar: 0.85,
+      });
+    } catch {
+      // Ignorer si bloqué
+    }
   };
 
   // Inscription d'un nouvel élève
   const handleEnrollStudent = (newEleve: EleveWithStats) => {
     setElevesList((prev) => [newEleve, ...prev]);
     setSelectedEleveId(newEleve.id);
-    showToast(`Élève ${newEleve.prenom} ${newEleve.nom} inscrit avec succès !`);
+    showToast(`Élève ${newEleve.prenom} ${newEleve.nom} inscrit avec succès !`, 'success');
   };
 
-  // Action rapide : Marquer payé express (1 clic)
+  // Action rapide : Relance individuelle avec effet visuel
+  const triggerRelance = (eleve: EleveWithStats, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setRelancingId(eleve.id);
+    showToast(
+      `Rappel SMS/WhatsApp envoyé au tuteur de ${eleve.prenom} ${eleve.nom} (${eleve.telephone_tuteur})`,
+      'info'
+    );
+    setTimeout(() => setRelancingId(null), 850);
+  };
+
+  // Action rapide : Marquer payé express (1 clic) avec micro-célébration
   const triggerMarquerPayeExpress = (eleve: EleveWithStats, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
+    setJustPaidEleveId(eleve.id);
+    triggerConfettiCelebration();
 
     setElevesList((prev) =>
       prev.map((item) => {
@@ -205,8 +242,10 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
     showToast(
       `✓ Solde de ${eleve.prenom} ${eleve.nom} marqué comme réglé intégralement (${formatMRU(
         eleve.remaining
-      )})`
+      )})`,
+      'success'
     );
+    setTimeout(() => setJustPaidEleveId(null), 1400);
   };
 
   // Actions groupées (Bulk actions)
@@ -214,14 +253,15 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
     const count = selectedEleveIds.length;
     if (count === 0) return;
     showToast(
-      `⚡ Campagne de relance envoyée avec succès à ${count} tuteur(s) d'élèves présélectionnés.`
+      `⚡ Campagne de relance envoyée avec succès à ${count} tuteur(s) d'élèves présélectionnés.`,
+      'info'
     );
     setSelectedEleveIds([]);
   };
 
   const handleBulkExport = () => {
     const count = selectedEleveIds.length;
-    showToast(` Export du rapport comptable pour ${count} élève(s) sélectionné(s).`);
+    showToast(`Export du rapport comptable pour ${count} élève(s) sélectionné(s).`, 'info');
   };
 
   // Encaissement fictif modal
@@ -271,18 +311,13 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
 
   return (
     <div className="p-6 max-w-[1600px] mx-auto space-y-6 relative">
-      {/* Toast Notification */}
-      {toastMessage && (
-        <div className="fixed top-20 right-6 z-50 flex items-center gap-3 bg-slate-900 text-white px-4 py-3 rounded-lg shadow-xl border border-slate-700 animate-in fade-in slide-in-from-top-4">
-          <CheckCircle className="h-5 w-5 text-emerald-400 shrink-0" />
-          <span className="text-xs font-semibold">{toastMessage}</span>
-          <button
-            onClick={() => setToastMessage(null)}
-            className="text-slate-400 hover:text-white ml-2"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
+      {/* Toast de confirmation réactif animé */}
+      {activeToast && (
+        <ToastNotification
+          message={activeToast.message}
+          type={activeToast.type}
+          onClose={() => setActiveToast(null)}
+        />
       )}
 
       {/* Floating Bulk Action Bar */}
@@ -358,12 +393,13 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
         </div>
       </div>
 
-      {/* Metric Quick Tiles (Interactive Status Shortcuts) */}
+      {/* Metric Quick Tiles (Interactive Status Shortcuts) avec animation échelonnée */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card
           onClick={() => handleStatutChange('all')}
-          className={`p-4 flex items-center justify-between cursor-pointer transition-all hover:border-blue-400 ${
-            selectedStatut === 'all' ? 'border-blue-600 bg-blue-50/30 ring-2 ring-blue-500/20' : ''
+          style={{ animationDelay: '0ms' }}
+          className={`p-4 flex items-center justify-between cursor-pointer transition-all duration-200 animate-stagger-rise hover:-translate-y-0.5 hover:shadow-md hover:border-blue-400 ${
+            selectedStatut === 'all' ? 'border-blue-600 bg-blue-50/30 ring-2 ring-blue-500/20 shadow-sm' : ''
           }`}
         >
           <div>
@@ -384,8 +420,9 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
 
         <Card
           onClick={() => handleStatutChange('paye')}
-          className={`p-4 flex items-center justify-between cursor-pointer transition-all hover:border-emerald-400 ${
-            selectedStatut === 'paye' ? 'border-emerald-600 bg-emerald-50/30 ring-2 ring-emerald-500/20' : ''
+          style={{ animationDelay: '75ms' }}
+          className={`p-4 flex items-center justify-between cursor-pointer transition-all duration-200 animate-stagger-rise hover:-translate-y-0.5 hover:shadow-md hover:border-emerald-400 ${
+            selectedStatut === 'paye' ? 'border-emerald-600 bg-emerald-50/30 ring-2 ring-emerald-500/20 shadow-sm' : ''
           }`}
         >
           <div>
@@ -406,8 +443,9 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
 
         <Card
           onClick={() => handleStatutChange('en_retard')}
-          className={`p-4 flex items-center justify-between cursor-pointer transition-all hover:border-red-400 ${
-            selectedStatut === 'en_retard' ? 'border-red-600 bg-red-50/30 ring-2 ring-red-500/20' : ''
+          style={{ animationDelay: '150ms' }}
+          className={`p-4 flex items-center justify-between cursor-pointer transition-all duration-200 animate-stagger-rise hover:-translate-y-0.5 hover:shadow-md hover:border-red-400 ${
+            selectedStatut === 'en_retard' ? 'border-red-600 bg-red-50/30 ring-2 ring-red-500/20 shadow-sm' : ''
           }`}
         >
           <div>
@@ -428,8 +466,9 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
 
         <Card
           onClick={() => handleStatutChange('partiel')}
-          className={`p-4 flex items-center justify-between cursor-pointer transition-all hover:border-amber-400 ${
-            selectedStatut === 'partiel' ? 'border-amber-600 bg-amber-50/30 ring-2 ring-amber-500/20' : ''
+          style={{ animationDelay: '225ms' }}
+          className={`p-4 flex items-center justify-between cursor-pointer transition-all duration-200 animate-stagger-rise hover:-translate-y-0.5 hover:shadow-md hover:border-amber-400 ${
+            selectedStatut === 'partiel' ? 'border-amber-600 bg-amber-50/30 ring-2 ring-amber-500/20 shadow-sm' : ''
           }`}
         >
           <div>
@@ -461,7 +500,9 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
               placeholder="Rechercher... (Appuyez sur '/' pour accèder)"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full h-10 pl-9 pr-12 rounded-lg border border-slate-300 bg-white text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600"
+              className={`w-full h-10 pl-9 pr-12 rounded-lg border border-slate-300 bg-white text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all duration-200 ${
+                isSearchPulseActive ? 'animate-search-focus ring-2 ring-blue-500' : ''
+              }`}
             />
             <kbd className="absolute right-3 top-2.5 px-1.5 py-0.5 text-[10px] font-mono font-semibold text-slate-400 bg-slate-100 border border-slate-200 rounded">
               /
@@ -570,12 +611,17 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
                   filteredEleves.map((eleve) => {
                     const isSelected = eleve.id === selectedEleve?.id;
                     const isChecked = selectedEleveIds.includes(eleve.id);
+                    const isJustPaid = justPaidEleveId === eleve.id;
+                    const isRelancing = relancingId === eleve.id;
+
                     return (
                       <tr
                         key={eleve.id}
                         onClick={() => setSelectedEleveId(eleve.id)}
-                        className={`cursor-pointer transition-colors ${
-                          isSelected
+                        className={`cursor-pointer transition-all duration-300 ${
+                          isJustPaid
+                            ? 'bg-emerald-50/90 ring-1 ring-emerald-400'
+                            : isSelected
                             ? 'bg-blue-50/90 border-l-4 border-blue-600'
                             : isChecked
                             ? 'bg-blue-50/40'
@@ -652,7 +698,7 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
                                 <Button
                                   size="sm"
                                   variant="outline"
-                                  className="h-7 px-2 text-[11px] gap-1 text-emerald-700 border-emerald-200 hover:bg-emerald-50"
+                                  className="h-7 px-2 text-[11px] gap-1 text-emerald-700 border-emerald-200 hover:bg-emerald-50 hover:scale-105 active:scale-95 transition-all duration-150"
                                   title="Marquer réglé immédiatement"
                                   onClick={(e) => triggerMarquerPayeExpress(eleve, e)}
                                 >
@@ -663,20 +709,20 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
                                 <Button
                                   size="sm"
                                   variant="danger"
-                                  className="h-7 px-2 text-[11px] gap-1"
+                                  className="h-7 px-2 text-[11px] gap-1 hover:scale-105 active:scale-95 transition-all duration-150 relative overflow-hidden"
                                   title="Envoyer rappel SMS"
-                                  onClick={() =>
-                                    showToast(
-                                      `Rappel SMS/WhatsApp envoyé au tuteur de ${eleve.prenom} ${eleve.nom}`
-                                    )
-                                  }
+                                  onClick={(e) => triggerRelance(eleve, e)}
                                 >
-                                  <Send className="h-3 w-3" />
-                                  Relancer
+                                  <Send
+                                    className={`h-3 w-3 transition-transform ${
+                                      isRelancing ? 'animate-paper-plane' : ''
+                                    }`}
+                                  />
+                                  {isRelancing ? 'Envoi...' : 'Relancer'}
                                 </Button>
                               </>
                             ) : (
-                              <span className="text-[11px] font-semibold text-emerald-700 flex items-center gap-1 pr-2">
+                              <span className="text-[11px] font-semibold text-emerald-700 flex items-center gap-1 pr-2 animate-scale-in">
                                 <Check className="h-3.5 w-3.5 text-emerald-600" /> Soldé
                               </span>
                             )}
