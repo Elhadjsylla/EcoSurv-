@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
+import { Select } from '../components/ui/Select';
 import {
   MOCK_ECHEANCIERS,
   EcheancierConfig,
@@ -284,16 +285,18 @@ export const EcheancesPage: React.FC = () => {
                 <label className="block font-semibold text-slate-700 mb-1">
                   Classe Cible <span className="text-red-500">*</span>
                 </label>
-                <select
+                <Select
                   value={newClasse}
-                  onChange={(e) => setNewClasse(e.target.value)}
-                  className="w-full h-9 px-3 rounded-lg border border-slate-300 text-xs font-semibold bg-white focus:ring-2 focus:ring-blue-600 focus:outline-none"
-                >
-                  <option value="Terminales C">Terminales C</option>
-                  <option value="6ème A">6ème A</option>
-                  <option value="CM2 A">CM2 A</option>
-                  <option value="3ème B">3ème B</option>
-                </select>
+                  onChange={setNewClasse}
+                  options={[
+                    { value: 'Terminales C', label: 'Terminales C' },
+                    { value: '6ème A', label: '6ème A' },
+                    { value: 'CM2 A', label: 'CM2 A' },
+                    { value: '3ème B', label: '3ème B' },
+                  ]}
+                  size="sm"
+                  triggerClassName="w-full h-9 rounded-lg font-semibold"
+                />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -314,15 +317,17 @@ export const EcheancesPage: React.FC = () => {
                   <label className="block font-semibold text-slate-700 mb-1">
                     Fréquence <span className="text-red-500">*</span>
                   </label>
-                  <select
+                  <Select<FrequenceEcheance>
                     value={newFrequence}
-                    onChange={(e) => setNewFrequence(e.target.value as FrequenceEcheance)}
-                    className="w-full h-9 px-3 rounded-lg border border-slate-300 text-xs bg-white focus:ring-2 focus:ring-blue-600 focus:outline-none"
-                  >
-                    <option value="mensuel">Mensuel</option>
-                    <option value="trimestriel">Trimestriel</option>
-                    <option value="annuel">Annuel</option>
-                  </select>
+                    onChange={setNewFrequence}
+                    options={[
+                      { value: 'mensuel', label: 'Mensuel' },
+                      { value: 'trimestriel', label: 'Trimestriel' },
+                      { value: 'annuel', label: 'Annuel' },
+                    ]}
+                    size="sm"
+                    triggerClassName="w-full h-9 rounded-lg"
+                  />
                 </div>
               </div>
 

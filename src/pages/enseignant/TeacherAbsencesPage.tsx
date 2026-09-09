@@ -11,6 +11,7 @@ import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { StudentInitials } from '../../components/ui/StudentInitials';
 import { ToastNotification } from '../../components/ui/ToastNotification';
+import { Select } from '../../components/ui/Select';
 import {
   CalendarCheck,
   CheckCircle2,
@@ -192,23 +193,20 @@ export const TeacherAbsencesPage: React.FC = () => {
         <div className="flex flex-wrap items-center justify-between gap-5">
           <div className="flex flex-wrap items-center gap-4">
             {/* Classe */}
-            <div className="flex items-center gap-2 bg-slate-50 px-3.5 py-2 rounded-xl border border-slate-200">
-              <span className="text-xs font-bold text-slate-500">Classe :</span>
-              <select
-                value={selectedClasse}
-                onChange={(e) => setSelectedClasse(e.target.value)}
-                className="bg-transparent text-xs font-bold text-slate-900 outline-none cursor-pointer"
-              >
-                {CURRENT_ENSEIGNANT.classes_assignees.map((cls) => (
-                  <option key={cls} value={cls}>
-                    {cls}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <Select
+              value={selectedClasse}
+              onChange={setSelectedClasse}
+              prefix="Classe :"
+              options={CURRENT_ENSEIGNANT.classes_assignees.map((cls) => ({
+                value: cls,
+                label: cls,
+              }))}
+              size="sm"
+              triggerClassName="h-10 rounded-xl text-xs font-bold"
+            />
 
             {/* Date */}
-            <div className="flex items-center gap-2 bg-slate-50 px-3.5 py-2 rounded-xl border border-slate-200">
+            <div className="flex items-center gap-2 bg-white px-3.5 py-2 rounded-xl border border-slate-200 h-10 shadow-2xs">
               <Calendar className="h-3.5 w-3.5 text-slate-500" />
               <input
                 type="date"
@@ -219,17 +217,17 @@ export const TeacherAbsencesPage: React.FC = () => {
             </div>
 
             {/* Créneau Horaire */}
-            <div className="flex items-center gap-2 bg-slate-50 px-3.5 py-2 rounded-xl border border-slate-200">
-              <Clock className="h-3.5 w-3.5 text-slate-500" />
-              <select
-                value={selectedCreneau}
-                onChange={(e) => setSelectedCreneau(e.target.value as 'matin' | 'apres_midi')}
-                className="bg-transparent text-xs font-bold text-slate-900 outline-none cursor-pointer"
-              >
-                <option value="matin">Matin (08h - 12h)</option>
-                <option value="apres_midi">Après-midi (14h - 18h)</option>
-              </select>
-            </div>
+            <Select<'matin' | 'apres_midi'>
+              value={selectedCreneau}
+              onChange={setSelectedCreneau}
+              icon={<Clock className="h-3.5 w-3.5" />}
+              options={[
+                { value: 'matin', label: 'Matin (08h - 12h)' },
+                { value: 'apres_midi', label: 'Après-midi (14h - 18h)' },
+              ]}
+              size="sm"
+              triggerClassName="h-10 rounded-xl text-xs font-bold"
+            />
           </div>
 
           {/* Counters Pills */}

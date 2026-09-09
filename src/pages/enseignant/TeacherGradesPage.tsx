@@ -11,6 +11,7 @@ import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { StudentInitials } from '../../components/ui/StudentInitials';
 import { ToastNotification } from '../../components/ui/ToastNotification';
+import { Select } from '../../components/ui/Select';
 import {
   PlusCircle,
   Save,
@@ -232,50 +233,44 @@ export const TeacherGradesPage: React.FC = () => {
         <div className="flex flex-wrap items-center justify-between gap-5">
           <div className="flex flex-wrap items-center gap-4">
             {/* Classe */}
-            <div className="flex items-center gap-2 bg-slate-50 px-3.5 py-2 rounded-xl border border-slate-200">
-              <span className="text-xs font-bold text-slate-500">Classe :</span>
-              <select
-                value={selectedClasse}
-                onChange={(e) => setSelectedClasse(e.target.value)}
-                className="bg-transparent text-xs font-bold text-slate-900 outline-none cursor-pointer"
-              >
-                {CURRENT_ENSEIGNANT.classes_assignees.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <Select
+              value={selectedClasse}
+              onChange={setSelectedClasse}
+              prefix="Classe :"
+              options={CURRENT_ENSEIGNANT.classes_assignees.map((c) => ({
+                value: c,
+                label: c,
+              }))}
+              size="sm"
+              triggerClassName="h-10 rounded-xl text-xs font-bold"
+            />
 
             {/* Matière */}
-            <div className="flex items-center gap-2 bg-slate-50 px-3.5 py-2 rounded-xl border border-slate-200">
-              <span className="text-xs font-bold text-slate-500">Matière :</span>
-              <select
-                value={selectedMatiere}
-                onChange={(e) => setSelectedMatiere(e.target.value)}
-                className="bg-transparent text-xs font-bold text-slate-900 outline-none cursor-pointer"
-              >
-                {CURRENT_ENSEIGNANT.matieres.map((m) => (
-                  <option key={m} value={m}>
-                    {m}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <Select
+              value={selectedMatiere}
+              onChange={setSelectedMatiere}
+              prefix="Matière :"
+              options={CURRENT_ENSEIGNANT.matieres.map((m) => ({
+                value: m,
+                label: m,
+              }))}
+              size="sm"
+              triggerClassName="h-10 rounded-xl text-xs font-bold"
+            />
 
             {/* Trimestre */}
-            <div className="flex items-center gap-2 bg-slate-50 px-3.5 py-2 rounded-xl border border-slate-200">
-              <span className="text-xs font-bold text-slate-500">Période :</span>
-              <select
-                value={selectedTrimestre}
-                onChange={(e) => setSelectedTrimestre(e.target.value)}
-                className="bg-transparent text-xs font-bold text-slate-900 outline-none cursor-pointer"
-              >
-                <option value="Trimestre 1">Trimestre 1</option>
-                <option value="Trimestre 2">Trimestre 2</option>
-                <option value="Trimestre 3">Trimestre 3</option>
-              </select>
-            </div>
+            <Select
+              value={selectedTrimestre}
+              onChange={setSelectedTrimestre}
+              prefix="Période :"
+              options={[
+                { value: 'Trimestre 1', label: 'Trimestre 1' },
+                { value: 'Trimestre 2', label: 'Trimestre 2' },
+                { value: 'Trimestre 3', label: 'Trimestre 3' },
+              ]}
+              size="sm"
+              triggerClassName="h-10 rounded-xl text-xs font-bold"
+            />
           </div>
 
           {/* Évaluation Selector Tabs */}

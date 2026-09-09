@@ -13,6 +13,7 @@ import { ToastNotification } from '../components/ui/ToastNotification';
 import { formatMRU } from '../lib/utils';
 import { StudentEnrollmentModal } from '../components/eleves/StudentEnrollmentModal';
 import { StudentDetailPanel } from '../components/eleves/StudentDetailPanel';
+import { Select } from '../components/ui/Select';
 import {
   Search,
   Filter,
@@ -53,6 +54,7 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
   // Modales & Toasts
   const [isEnrollModalOpen, setIsEnrollModalOpen] = useState(false);
   const [paymentModalEleve, setPaymentModalEleve] = useState<EleveWithStats | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState('bankily');
   const [activeToast, setActiveToast] = useState<{ message: string; type: 'success' | 'info' | 'warning' } | null>(null);
 
   // Micro-interactions & animations state
@@ -510,48 +512,41 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
-            <div className="flex items-center gap-2 bg-slate-50 px-3.5 py-2.5 rounded-xl border border-slate-200">
-              <Filter className="h-4 w-4 text-slate-400" />
-              <select
-                value={selectedClasse}
-                onChange={(e) => setSelectedClasse(e.target.value)}
-                className="bg-transparent text-xs font-semibold text-slate-700 outline-none cursor-pointer"
-              >
-                <option value="all">Toutes les classes ({classesList.length})</option>
-                {classesList.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <Select
+              value={selectedClasse}
+              onChange={setSelectedClasse}
+              icon={<Filter className="h-4 w-4" />}
+              options={[
+                { value: 'all', label: `Toutes les classes (${classesList.length})` },
+                ...classesList.map((c) => ({ value: c, label: c })),
+              ]}
+              triggerClassName="h-11 rounded-xl text-xs font-semibold"
+            />
 
-            <div className="flex items-center gap-2 bg-slate-50 px-3.5 py-2.5 rounded-xl border border-slate-200">
-              <select
-                value={selectedStatut}
-                onChange={(e) => handleStatutChange(e.target.value)}
-                className="bg-transparent text-xs font-semibold text-slate-700 outline-none cursor-pointer font-bold"
-              >
-                <option value="all">Tous statuts financiers</option>
-                <option value="paye">Réglé (Payé)</option>
-                <option value="en_retard">En retard</option>
-                <option value="partiel">Partiel</option>
-                <option value="a_jour">À jour</option>
-              </select>
-            </div>
+            <Select
+              value={selectedStatut}
+              onChange={handleStatutChange}
+              options={[
+                { value: 'all', label: 'Tous statuts financiers' },
+                { value: 'paye', label: 'Réglé (Payé)' },
+                { value: 'en_retard', label: 'En retard' },
+                { value: 'partiel', label: 'Partiel' },
+                { value: 'a_jour', label: 'À jour' },
+              ]}
+              triggerClassName="h-11 rounded-xl text-xs font-bold"
+            />
 
-            <div className="flex items-center gap-2 bg-slate-50 px-3.5 py-2.5 rounded-xl border border-slate-200">
-              <ArrowUpDown className="h-3.5 w-3.5 text-slate-400" />
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as any)}
-                className="bg-transparent text-xs font-semibold text-slate-700 outline-none cursor-pointer"
-              >
-                <option value="nom">Trier par Nom (A-Z)</option>
-                <option value="matricule">Trier par Matricule</option>
-                <option value="solde">Trier par Solde Dû</option>
-              </select>
-            </div>
+            <Select
+              value={sortBy}
+              onChange={(val) => setSortBy(val as any)}
+              icon={<ArrowUpDown className="h-3.5 w-3.5" />}
+              options={[
+                { value: 'nom', label: 'Trier par Nom (A-Z)' },
+                { value: 'matricule', label: 'Trier par Matricule' },
+                { value: 'solde', label: 'Trier par Solde Dû' },
+              ]}
+              triggerClassName="h-11 rounded-xl text-xs font-semibold"
+            />
           </div>
         </div>
       </Card>
@@ -799,19 +794,21 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 mb-1.5">
                   Mode de règlement
                 </label>
-                <select
-                  id="payMethodInput"
-                  className="w-full h-10 px-3 rounded-lg border border-slate-300 text-xs font-semibold bg-white focus:ring-2 focus:ring-blue-600 focus:outline-none"
-                >
-                  <option value="bankily">Bankily (Mobile Money)</option>
-                  <option value="especes">Espèces (Guichet)</option>
-                  <option value="masrvi">Masrvi</option>
-                  <option value="sedad">Sedad</option>
-                  <option value="virement">Virement bancaire</option>
-                </select>
+                <Select
+                  value={paymentMethod}
+                  onChange={setPaymentMethod}
+                  options={[
+                    { value: 'bankily', label: 'Bankily (Mobile Money)' },
+                    { value: 'especes', label: 'Espèces (Guichet)' },
+                    { value: 'masrvi', label: 'Masrvi' },
+                    { value: 'sedad', label: 'Sedad' },
+                    { value: 'virement', label: 'Virement bancaire' },
+                  ]}
+                  triggerClassName="w-full h-10 rounded-lg text-xs"
+                />
               </div>
             </div>
 
@@ -830,10 +827,7 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
                   const inputAmt = (
                     document.getElementById('payAmountInput') as HTMLInputElement
                   )?.value;
-                  const inputMeth = (
-                    document.getElementById('payMethodInput') as HTMLSelectElement
-                  )?.value;
-                  handleConfirmPayment(Number(inputAmt) || 15000, inputMeth || 'bankily');
+                  handleConfirmPayment(Number(inputAmt) || 15000, paymentMethod || 'bankily');
                 }}
               >
                 Confirmer l'Encaissement

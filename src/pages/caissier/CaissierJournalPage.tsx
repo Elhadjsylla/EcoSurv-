@@ -8,6 +8,7 @@ import {
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { ToastNotification } from '../../components/ui/ToastNotification';
+import { Select } from '../../components/ui/Select';
 import { formatMRU } from '../../lib/utils';
 import {
   Search,
@@ -241,21 +242,20 @@ export const CaissierJournalPage: React.FC = () => {
             />
           </div>
 
-          <div className="flex items-center gap-2.5">
-            <Filter className="h-4 w-4 text-slate-400 shrink-0" />
-            <span className="text-xs font-semibold text-slate-600">Mode :</span>
-            <select
-              value={selectedMethod}
-              onChange={(e) => setSelectedMethod(e.target.value)}
-              className="h-11 px-3.5 border border-slate-200 rounded-xl text-xs font-medium bg-white text-slate-700 focus:outline-none focus:ring-1 focus:ring-amber-500"
-            >
-              <option value="all">Tous les modes</option>
-              <option value="especes">Espèces uniquement</option>
-              <option value="bankily">Bankily</option>
-              <option value="masrvi">Masrvi</option>
-              <option value="sedad">Sedad</option>
-            </select>
-          </div>
+          <Select
+            value={selectedMethod}
+            onChange={setSelectedMethod}
+            prefix="Mode :"
+            icon={<Filter className="h-4 w-4" />}
+            options={[
+              { value: 'all', label: 'Tous les modes' },
+              { value: 'especes', label: 'Espèces uniquement' },
+              { value: 'bankily', label: 'Bankily' },
+              { value: 'masrvi', label: 'Masrvi' },
+              { value: 'sedad', label: 'Sedad' },
+            ]}
+            triggerClassName="h-11 rounded-xl text-xs font-medium"
+          />
         </div>
 
         {/* Tableau des transactions */}

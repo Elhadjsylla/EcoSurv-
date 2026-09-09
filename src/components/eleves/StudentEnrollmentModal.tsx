@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { z } from 'zod';
 import { Button } from '../ui/Button';
+import { Select } from '../ui/Select';
 import { EleveWithStats, LienParente } from '../../lib/mockData';
 import { X, UserPlus, ShieldAlert, CheckCircle } from 'lucide-react';
 
@@ -241,16 +242,16 @@ export const StudentEnrollmentModal: React.FC<StudentEnrollmentModalProps> = ({
                   <label className="block text-xs font-semibold text-slate-700 mb-1">
                     Sexe <span className="text-red-500">*</span>
                   </label>
-                  <select
-                    value={formData.sexe || 'M'}
-                    onChange={(e) =>
-                      setFormData({ ...formData, sexe: e.target.value as 'M' | 'F' })
-                    }
-                    className="w-full h-9 px-3 rounded-lg border border-slate-300 text-xs focus:ring-2 focus:ring-blue-600 focus:outline-none bg-white"
-                  >
-                    <option value="M">Masculin (M)</option>
-                    <option value="F">Féminin (F)</option>
-                  </select>
+                  <Select<'M' | 'F'>
+                    value={(formData.sexe as 'M' | 'F') || 'M'}
+                    onChange={(val) => setFormData({ ...formData, sexe: val })}
+                    options={[
+                      { value: 'M', label: 'Masculin (M)' },
+                      { value: 'F', label: 'Féminin (F)' },
+                    ]}
+                    size="sm"
+                    triggerClassName="w-full h-9 rounded-lg"
+                  />
                 </div>
               </div>
 
@@ -258,17 +259,14 @@ export const StudentEnrollmentModal: React.FC<StudentEnrollmentModalProps> = ({
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
                   Classe d'affectation <span className="text-red-500">*</span>
                 </label>
-                <select
-                  value={formData.classe || ''}
-                  onChange={(e) => setFormData({ ...formData, classe: e.target.value })}
-                  className="w-full h-9 px-3 rounded-lg border border-slate-300 text-xs focus:ring-2 focus:ring-blue-600 focus:outline-none bg-white font-semibold"
-                >
-                  {classesList.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </select>
+                <Select<string>
+                  value={formData.classe || (classesList[0] || '')}
+                  onChange={(val) => setFormData({ ...formData, classe: val })}
+                  options={classesList.map((c) => ({ value: c, label: c }))}
+                  placeholder="Sélectionner une classe..."
+                  size="sm"
+                  triggerClassName="w-full h-9 rounded-lg font-semibold"
+                />
               </div>
             </div>
 
@@ -287,7 +285,7 @@ export const StudentEnrollmentModal: React.FC<StudentEnrollmentModalProps> = ({
                     type="text"
                     value={formData.nom_tuteur || ''}
                     onChange={(e) =>
-                      setFormData({ ...formData, nom_tuteur: e.target.value })
+                    setFormData({ ...formData, nom_tuteur: e.target.value })
                     }
                     placeholder="Ex: Amadou Diallo"
                     className="w-full h-9 px-3 rounded-lg border border-slate-300 text-xs focus:ring-2 focus:ring-blue-600 focus:outline-none"
@@ -303,21 +301,18 @@ export const StudentEnrollmentModal: React.FC<StudentEnrollmentModalProps> = ({
                   <label className="block text-xs font-semibold text-slate-700 mb-1">
                     Lien de parenté <span className="text-red-500">*</span>
                   </label>
-                  <select
-                    value={formData.lien_parente || 'pere'}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        lien_parente: e.target.value as LienParente,
-                      })
-                    }
-                    className="w-full h-9 px-3 rounded-lg border border-slate-300 text-xs focus:ring-2 focus:ring-blue-600 focus:outline-none bg-white"
-                  >
-                    <option value="pere">Père</option>
-                    <option value="mere">Mère</option>
-                    <option value="tuteur">Tuteur Légal</option>
-                    <option value="autre">Autre</option>
-                  </select>
+                  <Select<LienParente>
+                    value={(formData.lien_parente as LienParente) || 'pere'}
+                    onChange={(val) => setFormData({ ...formData, lien_parente: val })}
+                    options={[
+                      { value: 'pere', label: 'Père' },
+                      { value: 'mere', label: 'Mère' },
+                      { value: 'tuteur', label: 'Tuteur Légal' },
+                      { value: 'autre', label: 'Autre' },
+                    ]}
+                    size="sm"
+                    triggerClassName="w-full h-9 rounded-lg"
+                  />
                 </div>
               </div>
 

@@ -11,6 +11,7 @@ import { StudentInitials } from '../ui/StudentInitials';
 import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
 import { ToastNotification } from '../ui/ToastNotification';
+import { Select } from '../ui/Select';
 import { formatMRU } from '../../lib/utils';
 import {
   Search,
@@ -383,34 +384,30 @@ export const DirectorDashboard: React.FC<DirectorDashboardProps> = ({
           {/* Filters */}
           <div className="flex flex-wrap items-center gap-3">
             {/* Filter by class */}
-            <div className="flex items-center gap-2">
-              <Filter className="h-4 w-4 text-slate-400" />
-              <select
-                value={selectedClasse}
-                onChange={(e) => setSelectedClasse(e.target.value)}
-                className="h-11 px-3.5 text-xs font-semibold rounded-xl border border-slate-300 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-600"
-              >
-                <option value="all">Toutes les classes ({classesList.length})</option>
-                {classesList.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <Select
+              value={selectedClasse}
+              onChange={setSelectedClasse}
+              icon={<Filter className="h-4 w-4" />}
+              options={[
+                { value: 'all', label: `Toutes les classes (${classesList.length})` },
+                ...classesList.map((c) => ({ value: c, label: c })),
+              ]}
+              triggerClassName="h-11 rounded-xl text-xs font-semibold"
+            />
 
             {/* Filter by status */}
-            <select
+            <Select
               value={selectedStatut}
-              onChange={(e) => setSelectedStatut(e.target.value)}
-              className="h-11 px-3.5 text-xs font-semibold rounded-xl border border-slate-300 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-600 font-bold"
-            >
-              <option value="all">Tous les statuts</option>
-              <option value="paye">Réglé (Payé)</option>
-              <option value="en_retard">En retard</option>
-              <option value="partiel">Partiel</option>
-              <option value="a_jour">À jour (Non échu)</option>
-            </select>
+              onChange={setSelectedStatut}
+              options={[
+                { value: 'all', label: 'Tous les statuts' },
+                { value: 'paye', label: 'Réglé (Payé)' },
+                { value: 'en_retard', label: 'En retard' },
+                { value: 'partiel', label: 'Partiel' },
+                { value: 'a_jour', label: 'À jour (Non échu)' },
+              ]}
+              triggerClassName="h-11 rounded-xl text-xs font-bold"
+            />
           </div>
         </div>
 

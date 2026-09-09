@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
+import { Select } from '../components/ui/Select';
 import {
   CURRENT_ECOLE,
   MOCK_STAFF,
@@ -147,14 +148,15 @@ export const ConfigPage: React.FC = () => {
               <label className="block font-semibold text-slate-700 mb-1.5">
                 Année Scolaire Active <span className="text-red-500">*</span>
               </label>
-              <select
+              <Select
                 value={ecole.annee_scolaire}
-                onChange={(e) => setEcole({ ...ecole, annee_scolaire: e.target.value })}
-                className="w-full h-11 px-3.5 rounded-xl border border-slate-300 text-sm font-bold bg-white focus:ring-2 focus:ring-blue-600 focus:outline-none"
-              >
-                <option value="2025-2026">2025–2026 (Active)</option>
-                <option value="2024-2025">2024–2025 (Archivée)</option>
-              </select>
+                onChange={(val) => setEcole({ ...ecole, annee_scolaire: val })}
+                options={[
+                  { value: '2025-2026', label: '2025–2026 (Active)' },
+                  { value: '2024-2025', label: '2024–2025 (Archivée)' },
+                ]}
+                triggerClassName="w-full h-11 rounded-xl font-bold"
+              />
             </div>
           </div>
 
@@ -374,15 +376,17 @@ export const ConfigPage: React.FC = () => {
                   <label className="block font-semibold text-slate-700 mb-1">
                     Rôle Attribué <span className="text-red-500">*</span>
                   </label>
-                  <select
+                  <Select<RoleUtilisateur>
                     value={newRole}
-                    onChange={(e) => setNewRole(e.target.value as RoleUtilisateur)}
-                    className="w-full h-9 px-3 rounded-lg border border-slate-300 text-xs bg-white font-semibold focus:ring-2 focus:ring-blue-600 focus:outline-none"
-                  >
-                    <option value="enseignant">Enseignant</option>
-                    <option value="caissier">Caissier</option>
-                    <option value="directeur">Directeur</option>
-                  </select>
+                    onChange={setNewRole}
+                    options={[
+                      { value: 'enseignant', label: 'Enseignant' },
+                      { value: 'caissier', label: 'Caissier' },
+                      { value: 'directeur', label: 'Directeur' },
+                    ]}
+                    size="sm"
+                    triggerClassName="w-full h-9 rounded-lg font-semibold"
+                  />
                 </div>
               </div>
 
@@ -391,16 +395,18 @@ export const ConfigPage: React.FC = () => {
                   <label className="block font-semibold text-slate-700 mb-1">
                     Classe Assignée
                   </label>
-                  <select
+                  <Select
                     value={newClasse}
-                    onChange={(e) => setNewClasse(e.target.value)}
-                    className="w-full h-9 px-3 rounded-lg border border-slate-300 text-xs bg-white font-semibold focus:ring-2 focus:ring-blue-600 focus:outline-none"
-                  >
-                    <option value="Terminales C">Terminales C</option>
-                    <option value="6ème A">6ème A</option>
-                    <option value="CM2 A">CM2 A</option>
-                    <option value="3ème B">3ème B</option>
-                  </select>
+                    onChange={setNewClasse}
+                    options={[
+                      { value: 'Terminales C', label: 'Terminales C' },
+                      { value: '6ème A', label: '6ème A' },
+                      { value: 'CM2 A', label: 'CM2 A' },
+                      { value: '3ème B', label: '3ème B' },
+                    ]}
+                    size="sm"
+                    triggerClassName="w-full h-9 rounded-lg font-semibold"
+                  />
                 </div>
               )}
 

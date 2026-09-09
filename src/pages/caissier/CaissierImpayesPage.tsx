@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { MOCK_ELEVES, EleveWithStats } from '../../lib/mockData';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
+import { Select } from '../../components/ui/Select';
 import { StudentInitials } from '../../components/ui/StudentInitials';
 import { formatMRU } from '../../lib/utils';
 import {
@@ -142,33 +143,27 @@ export const CaissierImpayesPage: React.FC<CaissierImpayesPageProps> = ({
           </div>
 
           <div className="flex flex-wrap items-center gap-2.5">
-            <div className="flex items-center gap-2">
-              <Filter className="h-4 w-4 text-slate-400 shrink-0" />
-              <select
-                value={selectedClasse}
-                onChange={(e) => setSelectedClasse(e.target.value)}
-                className="h-11 px-3.5 border border-slate-200 rounded-xl text-xs font-medium bg-white text-slate-700 focus:outline-none focus:ring-1 focus:ring-amber-500"
-              >
-                <option value="all">Toutes les classes</option>
-                {classesList.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <Select
+              value={selectedClasse}
+              onChange={setSelectedClasse}
+              icon={<Filter className="h-4 w-4" />}
+              options={[
+                { value: 'all', label: 'Toutes les classes' },
+                ...classesList.map((c) => ({ value: c, label: c })),
+              ]}
+              triggerClassName="h-11 rounded-xl text-xs font-medium"
+            />
 
-            <select
+            <Select<'all' | 'en_retard' | 'partiel'>
               value={statusFilter}
-              onChange={(e) =>
-                setStatusFilter(e.target.value as 'all' | 'en_retard' | 'partiel')
-              }
-              className="h-11 px-3.5 border border-slate-200 rounded-xl text-xs font-medium bg-white text-slate-700 focus:outline-none focus:ring-1 focus:ring-amber-500"
-            >
-              <option value="all">Tous les statuts</option>
-              <option value="en_retard">En retard uniquement</option>
-              <option value="partiel">Paiement partiel</option>
-            </select>
+              onChange={setStatusFilter}
+              options={[
+                { value: 'all', label: 'Tous les statuts' },
+                { value: 'en_retard', label: 'En retard uniquement' },
+                { value: 'partiel', label: 'Paiement partiel' },
+              ]}
+              triggerClassName="h-11 rounded-xl text-xs font-medium"
+            />
           </div>
         </div>
 

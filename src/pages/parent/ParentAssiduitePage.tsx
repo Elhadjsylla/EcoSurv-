@@ -6,6 +6,7 @@ import {
 } from '../../lib/mockData';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
+import { Select } from '../../components/ui/Select';
 import { ToastNotification } from '../../components/ui/ToastNotification';
 import {
   CalendarCheck,
@@ -312,17 +313,19 @@ export const ParentAssiduitePage: React.FC<ParentAssiduitePageProps> = ({
                 <label className="text-xs font-bold text-slate-700 uppercase tracking-wider block mb-1">
                   Motif principal
                 </label>
-                <select
+                <Select
                   value={motif}
-                  onChange={(e) => setMotif(e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white"
-                >
-                  <option value="Rendez-vous médical">Rendez-vous médical</option>
-                  <option value="Maladie de l'enfant">Maladie de l'enfant</option>
-                  <option value="Raison familiale impérieuse">Raison familiale impérieuse</option>
-                  <option value="Voyage / Déplacement">Voyage / Déplacement</option>
-                  <option value="Autre motif">Autre motif</option>
-                </select>
+                  onChange={setMotif}
+                  options={[
+                    { value: 'Rendez-vous médical', label: 'Rendez-vous médical' },
+                    { value: "Maladie de l'enfant", label: "Maladie de l'enfant" },
+                    { value: 'Raison familiale impérieuse', label: 'Raison familiale impérieuse' },
+                    { value: 'Voyage / Déplacement', label: 'Voyage / Déplacement' },
+                    { value: 'Autre motif', label: 'Autre motif' },
+                  ]}
+                  size="sm"
+                  triggerClassName="w-full h-10 rounded-lg text-xs font-medium"
+                />
               </div>
 
               <div>
