@@ -138,7 +138,7 @@ export const TeacherAbsencesPage: React.FC = () => {
   const countRetards = teacherStudents.filter((e) => getStatus(e.id) === 'retard').length;
 
   return (
-    <div className="p-6 max-w-[1600px] mx-auto space-y-6 animate-stagger-rise relative">
+    <div className="p-6 sm:p-8 lg:p-10 max-w-[1600px] mx-auto space-y-8 sm:space-y-10 animate-stagger-rise relative">
       {/* Toast Notification */}
       {activeToast && (
         <ToastNotification
@@ -149,22 +149,22 @@ export const TeacherAbsencesPage: React.FC = () => {
       )}
 
       {/* Top Banner & Fast Controls */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-white p-6 sm:p-8 rounded-2xl border border-slate-200 shadow-2xs">
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
               Saisie Rapide des Absences & Retards
             </h1>
-            <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-bold text-emerald-800 border border-emerald-200">
+            <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-800 border border-emerald-200">
               Émargement Express
             </span>
           </div>
-          <p className="text-xs text-slate-500 font-medium mt-1">
+          <p className="text-sm text-slate-500 font-medium mt-1.5">
             Faites l'appel de vos cours en un coup d'œil. Les données sont automatiquement rattachées au dossier élève.
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-3 shrink-0">
           <Button
             variant="outline"
             size="sm"
@@ -188,73 +188,62 @@ export const TeacherAbsencesPage: React.FC = () => {
       </div>
 
       {/* Session Controls: Class, Date & Session Slot */}
-      <Card className="p-4 space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="flex flex-wrap items-center gap-3">
+      <Card className="p-6 rounded-2xl space-y-5">
+        <div className="flex flex-wrap items-center justify-between gap-5">
+          <div className="flex flex-wrap items-center gap-4">
             {/* Classe */}
-            <div className="flex items-center gap-1.5 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200">
+            <div className="flex items-center gap-2 bg-slate-50 px-3.5 py-2 rounded-xl border border-slate-200">
               <span className="text-xs font-bold text-slate-500">Classe :</span>
               <select
                 value={selectedClasse}
                 onChange={(e) => setSelectedClasse(e.target.value)}
                 className="bg-transparent text-xs font-bold text-slate-900 outline-none cursor-pointer"
               >
-                {CURRENT_ENSEIGNANT.classes_assignees.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
+                {CURRENT_ENSEIGNANT.classes_assignees.map((cls) => (
+                  <option key={cls} value={cls}>
+                    {cls}
                   </option>
                 ))}
               </select>
             </div>
 
             {/* Date */}
-            <div className="flex items-center gap-1.5 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200">
-              <Calendar className="h-3.5 w-3.5 text-slate-400" />
+            <div className="flex items-center gap-2 bg-slate-50 px-3.5 py-2 rounded-xl border border-slate-200">
+              <Calendar className="h-3.5 w-3.5 text-slate-500" />
               <input
                 type="date"
                 value={selectedDate}
                 onChange={(e) => setSelectedDate(e.target.value)}
-                className="bg-transparent text-xs font-semibold text-slate-900 outline-none cursor-pointer font-mono"
+                className="bg-transparent text-xs font-bold text-slate-900 outline-none cursor-pointer"
               />
             </div>
 
-            {/* Créneau */}
-            <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg border border-slate-200">
-              <button
-                onClick={() => setSelectedCreneau('matin')}
-                className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${
-                  selectedCreneau === 'matin'
-                    ? 'bg-white text-slate-900 shadow-2xs'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
+            {/* Créneau Horaire */}
+            <div className="flex items-center gap-2 bg-slate-50 px-3.5 py-2 rounded-xl border border-slate-200">
+              <Clock className="h-3.5 w-3.5 text-slate-500" />
+              <select
+                value={selectedCreneau}
+                onChange={(e) => setSelectedCreneau(e.target.value as 'matin' | 'apres_midi')}
+                className="bg-transparent text-xs font-bold text-slate-900 outline-none cursor-pointer"
               >
-                Matinée (08h–12h)
-              </button>
-              <button
-                onClick={() => setSelectedCreneau('apres_midi')}
-                className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${
-                  selectedCreneau === 'apres_midi'
-                    ? 'bg-white text-slate-900 shadow-2xs'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                Après-midi (15h–17h)
-              </button>
+                <option value="matin">Matin (08h - 12h)</option>
+                <option value="apres_midi">Après-midi (14h - 18h)</option>
+              </select>
             </div>
           </div>
 
-          {/* Real-time Status Counters */}
-          <div className="flex items-center gap-2 text-xs font-semibold">
-            <span className="rounded-full bg-emerald-50 text-emerald-700 px-2.5 py-1 border border-emerald-200 flex items-center gap-1">
-              <CheckCircle2 className="h-3.5 w-3.5" />
+          {/* Counters Pills */}
+          <div className="flex items-center gap-2.5 text-xs font-bold">
+            <span className="rounded-full bg-emerald-50 text-emerald-800 px-3 py-1.5 border border-emerald-200 flex items-center gap-1.5">
+              <CheckCircle2 className="h-4 w-4" />
               Présents : {countPresents}
             </span>
-            <span className="rounded-full bg-red-50 text-red-700 px-2.5 py-1 border border-red-200 flex items-center gap-1">
-              <XCircle className="h-3.5 w-3.5" />
+            <span className="rounded-full bg-red-50 text-red-700 px-3 py-1.5 border border-red-200 flex items-center gap-1.5">
+              <XCircle className="h-4 w-4" />
               Absents : {countAbsents}
             </span>
-            <span className="rounded-full bg-amber-50 text-amber-700 px-2.5 py-1 border border-amber-200 flex items-center gap-1">
-              <Clock className="h-3.5 w-3.5" />
+            <span className="rounded-full bg-amber-50 text-amber-700 px-3 py-1.5 border border-amber-200 flex items-center gap-1.5">
+              <Clock className="h-4 w-4" />
               Retards : {countRetards}
             </span>
           </div>
@@ -262,14 +251,14 @@ export const TeacherAbsencesPage: React.FC = () => {
       </Card>
 
       {/* Roster Attendance Table */}
-      <div className="rounded-xl border border-slate-200 bg-white shadow-2xs overflow-hidden">
+      <div className="rounded-2xl border border-slate-200 bg-white shadow-2xs overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs border-collapse">
             <thead>
               <tr className="border-b border-slate-200 bg-slate-50/80 font-bold uppercase tracking-wider text-slate-500">
-                <th className="py-3.5 px-4">Élève & Matricule</th>
-                <th className="py-3.5 px-4 text-center w-80">État de Présence (1 clic)</th>
-                <th className="py-3.5 px-4">Motif & Justification (si absent)</th>
+                <th className="py-4 px-6">Élève & Matricule</th>
+                <th className="py-4 px-6 text-center w-80">État de Présence (1 clic)</th>
+                <th className="py-4 px-6">Motif & Justification (si absent)</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -289,14 +278,14 @@ export const TeacherAbsencesPage: React.FC = () => {
                     }`}
                   >
                     {/* Student Info */}
-                    <td className="py-3.5 px-4">
+                    <td className="py-4.5 px-6">
                       <div className="flex items-center gap-3">
                         <StudentInitials nom={el.nom} prenom={el.prenom} size="sm" />
                         <div>
                           <div className="font-bold text-slate-900 text-sm leading-tight">
                             {el.prenom} {el.nom}
                           </div>
-                          <div className="text-[11px] text-slate-500 font-mono">
+                          <div className="text-[11px] text-slate-500 font-mono mt-0.5">
                             {el.matricule} • {el.sexe === 'M' ? 'Garçon' : 'Fille'}
                           </div>
                         </div>
@@ -304,7 +293,7 @@ export const TeacherAbsencesPage: React.FC = () => {
                     </td>
 
                     {/* Attendance Toggles (Présent / Absent / Retard) */}
-                    <td className="py-3.5 px-4 text-center">
+                    <td className="py-4.5 px-6 text-center">
                       <div className="inline-flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 gap-1">
                         <button
                           type="button"
@@ -348,7 +337,7 @@ export const TeacherAbsencesPage: React.FC = () => {
                     </td>
 
                     {/* Motif & Justification Inline */}
-                    <td className="py-3.5 px-4">
+                    <td className="py-4.5 px-6">
                       {status !== 'present' ? (
                         <div className="flex items-center gap-3 animate-scale-in">
                           <input

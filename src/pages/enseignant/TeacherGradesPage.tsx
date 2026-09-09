@@ -178,7 +178,7 @@ export const TeacherGradesPage: React.FC = () => {
   };
 
   return (
-    <div className="p-6 max-w-[1600px] mx-auto space-y-6 animate-stagger-rise relative">
+    <div className="p-6 sm:p-8 lg:p-10 max-w-[1600px] mx-auto space-y-8 sm:space-y-10 animate-stagger-rise relative">
       {/* Toast Notification */}
       {activeToast && (
         <ToastNotification
@@ -189,22 +189,22 @@ export const TeacherGradesPage: React.FC = () => {
       )}
 
       {/* Top Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-white p-6 sm:p-8 rounded-2xl border border-slate-200 shadow-2xs">
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
               Carnet de Notes & Évaluations
             </h1>
-            <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-bold text-emerald-800 border border-emerald-200">
+            <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-800 border border-emerald-200">
               Barème /20
             </span>
           </div>
-          <p className="text-xs text-slate-500 font-medium mt-1">
+          <p className="text-sm text-slate-500 font-medium mt-1.5">
             Saisie fluide des devoirs, contrôles continus et calcul automatique des moyennes de classe.
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-3 shrink-0">
           <Button
             variant="outline"
             size="sm"
@@ -228,11 +228,11 @@ export const TeacherGradesPage: React.FC = () => {
       </div>
 
       {/* Filter & Subject Selection Bar */}
-      <Card className="p-4 space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="flex flex-wrap items-center gap-3">
+      <Card className="p-6 rounded-2xl space-y-5">
+        <div className="flex flex-wrap items-center justify-between gap-5">
+          <div className="flex flex-wrap items-center gap-4">
             {/* Classe */}
-            <div className="flex items-center gap-1.5 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200">
+            <div className="flex items-center gap-2 bg-slate-50 px-3.5 py-2 rounded-xl border border-slate-200">
               <span className="text-xs font-bold text-slate-500">Classe :</span>
               <select
                 value={selectedClasse}
@@ -248,7 +248,7 @@ export const TeacherGradesPage: React.FC = () => {
             </div>
 
             {/* Matière */}
-            <div className="flex items-center gap-1.5 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200">
+            <div className="flex items-center gap-2 bg-slate-50 px-3.5 py-2 rounded-xl border border-slate-200">
               <span className="text-xs font-bold text-slate-500">Matière :</span>
               <select
                 value={selectedMatiere}
@@ -264,7 +264,7 @@ export const TeacherGradesPage: React.FC = () => {
             </div>
 
             {/* Trimestre */}
-            <div className="flex items-center gap-1.5 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200">
+            <div className="flex items-center gap-2 bg-slate-50 px-3.5 py-2 rounded-xl border border-slate-200">
               <span className="text-xs font-bold text-slate-500">Période :</span>
               <select
                 value={selectedTrimestre}
@@ -280,13 +280,13 @@ export const TeacherGradesPage: React.FC = () => {
 
           {/* Évaluation Selector Tabs */}
           {classEvals.length > 0 && (
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+            <div className="flex items-center gap-2 overflow-x-auto pb-1">
               <span className="text-xs font-bold text-slate-400 mr-1">Évaluation :</span>
               {classEvals.map((ev) => (
                 <button
                   key={ev.id}
                   onClick={() => setSelectedEvalId(ev.id)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
+                  className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
                     selectedEvalId === ev.id
                       ? 'bg-emerald-600 text-white shadow-xs'
                       : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
@@ -301,48 +301,48 @@ export const TeacherGradesPage: React.FC = () => {
       </Card>
 
       {/* Statistical Summary Bar */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-center">
-        <div className="p-4 rounded-xl border border-slate-200 bg-white shadow-2xs">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 text-center">
+        <div className="p-6 rounded-2xl border border-slate-200 bg-white shadow-2xs">
           <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
             Moyenne de la Classe
           </span>
-          <div className="text-2xl font-extrabold text-emerald-700 font-mono mt-1">
+          <div className="text-2xl sm:text-3xl font-extrabold text-emerald-700 font-mono mt-2">
             {stats.moyenne} {stats.moyenne !== '--' && '/ 20'}
           </div>
         </div>
 
-        <div className="p-4 rounded-xl border border-slate-200 bg-white shadow-2xs">
+        <div className="p-6 rounded-2xl border border-slate-200 bg-white shadow-2xs">
           <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
             Note la Plus Haute
           </span>
-          <div className="text-2xl font-extrabold text-blue-700 font-mono mt-1">
+          <div className="text-2xl sm:text-3xl font-extrabold text-blue-700 font-mono mt-2">
             {stats.max} {stats.max !== '--' && '/ 20'}
           </div>
         </div>
 
-        <div className="p-4 rounded-xl border border-slate-200 bg-white shadow-2xs">
+        <div className="p-6 rounded-2xl border border-slate-200 bg-white shadow-2xs">
           <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
             Note la Plus Basse
           </span>
-          <div className="text-2xl font-extrabold text-amber-600 font-mono mt-1">
+          <div className="text-2xl sm:text-3xl font-extrabold text-amber-700 font-mono mt-2">
             {stats.min} {stats.min !== '--' && '/ 20'}
           </div>
         </div>
 
-        <div className="p-4 rounded-xl border border-slate-200 bg-white shadow-2xs">
+        <div className="p-6 rounded-2xl border border-slate-200 bg-white shadow-2xs">
           <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
-            Taux de Réussite (≥10/20)
+            Taux de Réussite (≥10)
           </span>
-          <div className="text-2xl font-extrabold text-slate-900 font-mono mt-1">
+          <div className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-mono mt-2">
             {stats.tauxReussite}%
           </div>
         </div>
       </div>
 
       {/* Grade Entry Table */}
-      <div className="rounded-xl border border-slate-200 bg-white shadow-2xs overflow-hidden">
-        <div className="p-3.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between text-xs">
-          <div className="font-bold text-slate-900">
+      <div className="rounded-2xl border border-slate-200 bg-white shadow-2xs overflow-hidden">
+        <div className="py-4 px-6 bg-slate-50 border-b border-slate-200 flex items-center justify-between text-xs">
+          <div className="font-bold text-slate-900 text-sm">
             {currentEval ? currentEval.titre : 'Aucune évaluation sélectionnée'} — Classe : {selectedClasse}
           </div>
           <span className="text-slate-500 font-medium">
@@ -354,12 +354,12 @@ export const TeacherGradesPage: React.FC = () => {
           <table className="w-full text-left text-xs border-collapse">
             <thead>
               <tr className="border-b border-slate-200 bg-slate-50/60 font-bold uppercase tracking-wider text-slate-500">
-                <th className="py-3 px-4 w-12 text-center">N°</th>
-                <th className="py-3 px-4">Élève & Matricule</th>
-                <th className="py-3 px-4">Classe</th>
-                <th className="py-3 px-4 text-center w-40">Note (/20)</th>
-                <th className="py-3 px-4 text-center">Statut</th>
-                <th className="py-3 px-4">Appréciation Rapide</th>
+                <th className="py-4 px-6 w-12 text-center">N°</th>
+                <th className="py-4 px-6">Élève & Matricule</th>
+                <th className="py-4 px-6">Classe</th>
+                <th className="py-4 px-6 text-center w-40">Note (/20)</th>
+                <th className="py-4 px-6 text-center">Statut</th>
+                <th className="py-4 px-6">Appréciation Rapide</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -371,31 +371,31 @@ export const TeacherGradesPage: React.FC = () => {
 
                 return (
                   <tr key={el.id} className="hover:bg-slate-50/70 transition-colors">
-                    <td className="py-3.5 px-4 text-center text-slate-400 font-mono">
+                    <td className="py-4.5 px-6 text-center text-slate-400 font-mono">
                       {index + 1}
                     </td>
 
-                    <td className="py-3.5 px-4">
+                    <td className="py-4.5 px-6">
                       <div className="flex items-center gap-3">
                         <StudentInitials nom={el.nom} prenom={el.prenom} size="sm" />
                         <div>
                           <div className="font-bold text-slate-900 text-sm leading-tight">
                             {el.prenom} {el.nom}
                           </div>
-                          <div className="text-[11px] text-slate-500 font-mono">
+                          <div className="text-[11px] text-slate-500 font-mono mt-0.5">
                             {el.matricule}
                           </div>
                         </div>
                       </div>
                     </td>
 
-                    <td className="py-3.5 px-4">
-                      <span className="rounded bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-700">
+                    <td className="py-4.5 px-6">
+                      <span className="rounded-md bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
                         {el.classe}
                       </span>
                     </td>
 
-                    <td className="py-3.5 px-4 text-center">
+                    <td className="py-4.5 px-6 text-center">
                       <div className="inline-flex items-center gap-1.5">
                         <input
                           type="number"
@@ -405,7 +405,7 @@ export const TeacherGradesPage: React.FC = () => {
                           placeholder="-- / 20"
                           value={noteStr}
                           onChange={(e) => handleNoteChange(el.id, e.target.value)}
-                          className={`w-24 h-9 text-center font-mono font-extrabold text-sm rounded-lg border transition-all focus:outline-none focus:ring-2 ${
+                          className={`w-24 h-10 text-center font-mono font-extrabold text-sm rounded-xl border transition-all focus:outline-none focus:ring-2 ${
                             !isRated
                               ? 'border-slate-300 bg-white text-slate-800 focus:ring-emerald-600'
                               : isPassing
@@ -417,23 +417,23 @@ export const TeacherGradesPage: React.FC = () => {
                       </div>
                     </td>
 
-                    <td className="py-3.5 px-4 text-center">
+                    <td className="py-4.5 px-6 text-center">
                       {!isRated ? (
                         <span className="text-slate-400 font-medium italic text-[11px]">
                           Non noté
                         </span>
                       ) : isPassing ? (
-                        <span className="rounded-full bg-emerald-100 text-emerald-800 px-2.5 py-0.5 text-[11px] font-bold inline-flex items-center gap-1">
-                          <CheckCircle2 className="h-3 w-3" /> Validé
+                        <span className="rounded-full bg-emerald-100 text-emerald-800 px-3 py-1 text-[11px] font-bold inline-flex items-center gap-1.5">
+                          <CheckCircle2 className="h-3.5 w-3.5" /> Validé
                         </span>
                       ) : (
-                        <span className="rounded-full bg-red-100 text-red-800 px-2.5 py-0.5 text-[11px] font-bold inline-flex items-center gap-1">
-                          <AlertCircle className="h-3 w-3" /> À consolider
+                        <span className="rounded-full bg-red-100 text-red-800 px-3 py-1 text-[11px] font-bold inline-flex items-center gap-1.5">
+                          <AlertCircle className="h-3.5 w-3.5" /> À consolider
                         </span>
                       )}
                     </td>
 
-                    <td className="py-3.5 px-4 text-slate-500 text-xs">
+                    <td className="py-4.5 px-6 text-slate-500 text-xs">
                       {isRated && noteVal >= 16
                         ? 'Excellent travail, très bonne maîtrise.'
                         : isRated && noteVal >= 12

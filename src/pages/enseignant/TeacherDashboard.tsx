@@ -42,22 +42,22 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ onNavigateTo
   }, []);
 
   return (
-    <div className="p-6 max-w-[1600px] mx-auto space-y-8 animate-stagger-rise">
+    <div className="p-6 sm:p-8 lg:p-10 max-w-[1600px] mx-auto space-y-8 sm:space-y-10 animate-stagger-rise">
       {/* Top Welcome Banner */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-2xs">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <span className="rounded-full bg-emerald-100 px-3 py-0.5 text-xs font-bold text-emerald-800 border border-emerald-200">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-white p-6 sm:p-8 rounded-2xl border border-slate-200 shadow-2xs">
+        <div className="space-y-1.5">
+          <div className="flex items-center gap-2.5">
+            <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-800 border border-emerald-200">
               Espace Pédagogique
             </span>
             <span className="text-xs text-slate-500 font-semibold">
               Année 2025–2026 • Trimestre 2
             </span>
           </div>
-          <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
             Bonjour, {CURRENT_ENSEIGNANT.prenom} {CURRENT_ENSEIGNANT.nom} 👋
           </h1>
-          <p className="text-xs text-slate-500 font-medium">
+          <p className="text-sm text-slate-500 font-medium">
             Classes assignées :{' '}
             <span className="font-bold text-slate-800">
               {CURRENT_ENSEIGNANT.classes_assignees.join(', ')}
@@ -66,7 +66,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ onNavigateTo
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 shrink-0">
           <Button
             variant="outline"
             size="sm"
@@ -90,24 +90,24 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ onNavigateTo
       </div>
 
       {/* Pedagogical KPIs (Strictly ZERO financial metrics) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {/* KPI 1 : Effectif Total */}
         <Card
           onClick={() => onNavigateToTab && onNavigateToTab('teacher_classes')}
-          className="p-5 cursor-pointer group hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 border-slate-200 bg-white hover:border-emerald-300"
+          className="p-6 rounded-2xl cursor-pointer group hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 border-slate-200 bg-white hover:border-emerald-300"
         >
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
               Élèves Assignés
             </span>
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200/60 group-hover:scale-110 transition-transform">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200/60 group-hover:scale-110 transition-transform">
               <Users className="h-5 w-5" />
             </div>
           </div>
-          <div className="text-3xl font-extrabold text-slate-900 font-mono mt-3">
+          <div className="text-3xl sm:text-4xl font-extrabold text-slate-900 font-mono mt-3">
             {totalEleves}
           </div>
-          <p className="text-xs text-slate-500 font-medium mt-2 flex items-center justify-between">
+          <p className="text-xs text-slate-500 font-medium mt-3 flex items-center justify-between">
             <span>Répartis sur 2 classes</span>
             <span className="text-[10px] font-bold text-emerald-600 group-hover:translate-x-0.5 transition-transform">
               Voir classes →
@@ -118,17 +118,17 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ onNavigateTo
         {/* KPI 2 : Taux de Présence */}
         <Card
           onClick={() => onNavigateToTab && onNavigateToTab('teacher_absences')}
-          className="p-5 cursor-pointer group hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 border-slate-200 bg-white hover:border-blue-300"
+          className="p-6 rounded-2xl cursor-pointer group hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 border-slate-200 bg-white hover:border-blue-300"
         >
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
               Assiduité Globale
             </span>
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-50 text-blue-700 border border-blue-200/60 group-hover:scale-110 transition-transform">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-blue-700 border border-blue-200/60 group-hover:scale-110 transition-transform">
               <CalendarCheck className="h-5 w-5" />
             </div>
           </div>
-          <div className="text-3xl font-extrabold text-slate-900 font-mono mt-3">
+          <div className="text-3xl sm:text-4xl font-extrabold text-slate-900 font-mono mt-3">
             93.8%
           </div>
           <div className="mt-3">
@@ -136,7 +136,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ onNavigateTo
               <div className="h-full rounded-full bg-emerald-600" style={{ width: '93.8%' }} />
             </div>
           </div>
-          <p className="text-xs text-slate-500 font-medium mt-2 flex items-center justify-between">
+          <p className="text-xs text-slate-500 font-medium mt-3 flex items-center justify-between">
             <span>Présents cette semaine</span>
             <span className="text-[10px] font-bold text-blue-600 group-hover:translate-x-0.5 transition-transform">
               Émargement →
@@ -147,20 +147,20 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ onNavigateTo
         {/* KPI 3 : Absences Non Justifiées */}
         <Card
           onClick={() => onNavigateToTab && onNavigateToTab('teacher_absences')}
-          className="p-5 cursor-pointer group hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 border-slate-200 bg-white hover:border-amber-300"
+          className="p-6 rounded-2xl cursor-pointer group hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 border-slate-200 bg-white hover:border-amber-300"
         >
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
               Absences à Justifier
             </span>
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-50 text-amber-700 border border-amber-200/60 group-hover:scale-110 transition-transform">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-50 text-amber-700 border border-amber-200/60 group-hover:scale-110 transition-transform">
               <AlertCircle className="h-5 w-5" />
             </div>
           </div>
-          <div className="text-3xl font-extrabold text-amber-600 font-mono mt-3">
+          <div className="text-3xl sm:text-4xl font-extrabold text-amber-600 font-mono mt-3">
             {unverifiedAbsences}
           </div>
-          <p className="text-xs text-slate-500 font-medium mt-2 flex items-center justify-between">
+          <p className="text-xs text-slate-500 font-medium mt-3 flex items-center justify-between">
             <span>Motifs en attente tuteur</span>
             <span className="text-[10px] font-bold text-amber-600 group-hover:translate-x-0.5 transition-transform">
               Vérifier →
@@ -171,20 +171,20 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ onNavigateTo
         {/* KPI 4 : Moyenne Générale */}
         <Card
           onClick={() => onNavigateToTab && onNavigateToTab('teacher_grades')}
-          className="p-5 cursor-pointer group hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 border-slate-200 bg-white hover:border-indigo-300"
+          className="p-6 rounded-2xl cursor-pointer group hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 border-slate-200 bg-white hover:border-indigo-300"
         >
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
               Moyenne des Devoirs
             </span>
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-50 text-indigo-700 border border-indigo-200/60 group-hover:scale-110 transition-transform">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-indigo-50 text-indigo-700 border border-indigo-200/60 group-hover:scale-110 transition-transform">
               <BookOpen className="h-5 w-5" />
             </div>
           </div>
-          <div className="text-3xl font-extrabold text-indigo-700 font-mono mt-3">
+          <div className="text-3xl sm:text-4xl font-extrabold text-indigo-700 font-mono mt-3">
             {averageGrade} <span className="text-sm font-semibold text-slate-500">/ 20</span>
           </div>
-          <p className="text-xs text-slate-500 font-medium mt-2 flex items-center justify-between">
+          <p className="text-xs text-slate-500 font-medium mt-3 flex items-center justify-between">
             <span>Sur 4 évaluations récentes</span>
             <span className="text-[10px] font-bold text-indigo-600 group-hover:translate-x-0.5 transition-transform">
               Carnet →

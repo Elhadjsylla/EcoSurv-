@@ -95,7 +95,7 @@ export const ParentAssiduitePage: React.FC<ParentAssiduitePageProps> = ({
   };
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto p-4 sm:p-6 animate-fade-in">
+    <div className="p-6 sm:p-8 lg:p-10 max-w-5xl mx-auto space-y-8 sm:space-y-10 animate-fade-in">
       {/* Toast Notification */}
       {activeToast && (
         <div className="fixed bottom-6 right-6 z-50">
@@ -108,25 +108,25 @@ export const ParentAssiduitePage: React.FC<ParentAssiduitePageProps> = ({
       )}
 
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 border-b border-slate-200/80 pb-6">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-100 text-indigo-800 border border-indigo-200">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="px-3 py-1 rounded-full text-xs font-bold bg-indigo-100 text-indigo-800 border border-indigo-200">
               Vie Scolaire
             </span>
             <span className="text-xs text-slate-500">• Suivi de l'Assiduité</span>
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
             Assiduité & Absences — {enfant.prenom} {enfant.nom}
           </h1>
-          <p className="text-sm text-slate-500 mt-0.5">
+          <p className="text-sm text-slate-500 mt-1.5 leading-relaxed">
             Suivi des présences en temps réel. Justifiez une absence ou déclarez un empêchement directement à l'établissement.
           </p>
         </div>
 
         <Button
           onClick={() => setIsModalOpen(true)}
-          className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs gap-1.5 shadow-sm"
+          className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs gap-2 shadow-sm py-2.5 px-4 rounded-xl"
         >
           <Plus className="h-4 w-4" />
           Déclarer une Absence
@@ -134,44 +134,44 @@ export const ParentAssiduitePage: React.FC<ParentAssiduitePageProps> = ({
       </div>
 
       {/* 3 Cartes de Synthèse */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="p-5 border-slate-200 shadow-sm bg-white">
-          <div className="flex items-center justify-between text-slate-500 text-xs font-bold uppercase tracking-wider mb-2">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Card className="p-6 sm:p-7 rounded-2xl border-slate-200/80 shadow-xs bg-white">
+          <div className="flex items-center justify-between text-slate-500 text-xs font-bold uppercase tracking-wider mb-3">
             <span>Total Absences</span>
             <CalendarCheck className="h-4 w-4 text-indigo-600" />
           </div>
-          <div className="text-2xl font-black text-slate-900">
+          <div className="text-2xl sm:text-3xl font-black text-slate-900">
             {totalAbsences} séance(s)
           </div>
-          <p className="text-xs text-slate-500 mt-1">Depuis le début de l'année</p>
+          <p className="text-xs text-slate-500 mt-2">Depuis le début de l'année</p>
         </Card>
 
-        <Card className="p-5 border-slate-200 shadow-sm bg-white">
-          <div className="flex items-center justify-between text-slate-500 text-xs font-bold uppercase tracking-wider mb-2">
+        <Card className="p-6 sm:p-7 rounded-2xl border-slate-200/80 shadow-xs bg-white">
+          <div className="flex items-center justify-between text-slate-500 text-xs font-bold uppercase tracking-wider mb-3">
             <span>Absences Justifiées</span>
             <CheckCircle2 className="h-4 w-4 text-emerald-600" />
           </div>
-          <div className="text-2xl font-black text-emerald-600">
+          <div className="text-2xl sm:text-3xl font-black text-emerald-600">
             {justifiees}
           </div>
-          <p className="text-xs text-emerald-700 font-medium mt-1">
+          <p className="text-xs text-emerald-700 font-medium mt-2">
             Validées par l'administration
           </p>
         </Card>
 
-        <Card className="p-5 border-slate-200 shadow-sm bg-white">
-          <div className="flex items-center justify-between text-slate-500 text-xs font-bold uppercase tracking-wider mb-2">
+        <Card className="p-6 sm:p-7 rounded-2xl border-slate-200/80 shadow-xs bg-white">
+          <div className="flex items-center justify-between text-slate-500 text-xs font-bold uppercase tracking-wider mb-3">
             <span>À Justifier</span>
             <AlertCircle className="h-4 w-4 text-rose-500" />
           </div>
           <div
-            className={`text-2xl font-black ${
+            className={`text-2xl sm:text-3xl font-black ${
               nonJustifiees > 0 ? 'text-rose-600' : 'text-emerald-600'
             }`}
           >
             {nonJustifiees}
           </div>
-          <p className="text-xs text-slate-500 mt-1">
+          <p className="text-xs text-slate-500 mt-2">
             {nonJustifiees > 0
               ? 'Veuillez transmettre un justificatif'
               : 'Dossier d\'assiduité en règle'}
@@ -180,11 +180,11 @@ export const ParentAssiduitePage: React.FC<ParentAssiduitePageProps> = ({
       </div>
 
       {/* Historique des Absences */}
-      <Card className="p-6 border-slate-200 shadow-sm">
-        <div className="flex items-center justify-between pb-4 border-b border-slate-100 mb-4">
-          <div className="flex items-center gap-2">
+      <Card className="p-6 sm:p-8 rounded-2xl border-slate-200/80 shadow-xs">
+        <div className="flex items-center justify-between pb-5 border-b border-slate-100 mb-6">
+          <div className="flex items-center gap-2.5">
             <Clock className="h-5 w-5 text-indigo-600" />
-            <h3 className="text-base font-bold text-slate-900">
+            <h3 className="text-base sm:text-lg font-bold text-slate-900">
               Registre des Absences et Retards
             </h3>
           </div>
@@ -193,15 +193,15 @@ export const ParentAssiduitePage: React.FC<ParentAssiduitePageProps> = ({
           </span>
         </div>
 
-        <div className="space-y-3">
+        <div className="space-y-4">
           {absencesList.map((item) => (
             <div
               key={item.id}
-              className="p-4 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs"
+              className="p-4.5 sm:p-5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50/70 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-2xs"
             >
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-4">
                 <div
-                  className={`h-10 w-10 rounded-xl flex items-center justify-center shrink-0 ${
+                  className={`h-11 w-11 rounded-xl flex items-center justify-center shrink-0 ${
                     item.justifiee
                       ? 'bg-emerald-100 text-emerald-700'
                       : 'bg-rose-100 text-rose-700'
@@ -217,11 +217,11 @@ export const ParentAssiduitePage: React.FC<ParentAssiduitePageProps> = ({
                   <div className="font-bold text-slate-900 text-sm">
                     {item.type === 'absence' ? 'Absence' : 'Retard'} • Créneau du {item.creneau}
                   </div>
-                  <div className="text-xs text-slate-500">
+                  <div className="text-xs text-slate-500 mt-0.5">
                     Date : <span className="font-semibold text-slate-700">{item.date_absence}</span>
                   </div>
                   {item.motif && (
-                    <div className="text-xs text-slate-600 mt-1 italic">
+                    <div className="text-xs text-slate-600 mt-1.5 italic">
                       Motif : « {item.motif} »
                     </div>
                   )}
@@ -230,11 +230,11 @@ export const ParentAssiduitePage: React.FC<ParentAssiduitePageProps> = ({
 
               <div className="flex items-center gap-2">
                 {item.justifiee ? (
-                  <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
                     <FileCheck className="h-3.5 w-3.5" /> Justifiée
                   </span>
                 ) : (
-                  <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200">
                     <AlertCircle className="h-3.5 w-3.5" /> Non justifiée
                   </span>
                 )}

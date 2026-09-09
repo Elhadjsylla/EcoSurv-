@@ -73,10 +73,10 @@ export const ConfigPage: React.FC = () => {
   };
 
   return (
-    <div className="p-6 max-w-[1600px] mx-auto space-y-6 relative">
+    <div className="p-6 sm:p-8 lg:p-10 max-w-[1600px] mx-auto space-y-8 sm:space-y-10 relative">
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed top-20 right-6 z-50 flex items-center gap-3 bg-slate-900 text-white px-4 py-3 rounded-lg shadow-xl border border-slate-700 animate-in fade-in slide-in-from-top-4">
+        <div className="fixed top-20 right-6 z-50 flex items-center gap-3 bg-slate-900 text-white px-5 py-3.5 rounded-xl shadow-xl border border-slate-700 animate-in fade-in slide-in-from-top-4">
           <CheckCircle className="h-5 w-5 text-emerald-400 shrink-0" />
           <span className="text-xs font-semibold">{toastMessage}</span>
           <button
@@ -89,17 +89,17 @@ export const ConfigPage: React.FC = () => {
       )}
 
       {/* Top Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-5 rounded-xl border border-slate-200 shadow-2xs">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-white p-6 sm:p-8 rounded-2xl border border-slate-200 shadow-2xs">
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
               Configuration Établissement & Personnel
             </h1>
-            <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-bold text-emerald-800">
+            <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-800">
               Abonnement SaaS Actif
             </span>
           </div>
-          <p className="text-xs text-slate-500 font-medium mt-1">
+          <p className="text-sm text-slate-500 font-medium mt-1.5">
             Gestion du profil de l'école, choix de l'année scolaire active et administration des accès du personnel.
           </p>
         </div>
@@ -107,7 +107,7 @@ export const ConfigPage: React.FC = () => {
         <Button
           variant="primary"
           size="sm"
-          className="gap-2"
+          className="gap-2 shrink-0"
           onClick={() => setIsInviteModalOpen(true)}
         >
           <UserPlus className="h-4 w-4" />
@@ -116,11 +116,11 @@ export const ConfigPage: React.FC = () => {
       </div>
 
       {/* School Information Form */}
-      <Card className="p-6 space-y-6">
-        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-          <div className="flex items-center gap-2">
+      <Card className="p-6 sm:p-8 space-y-6 rounded-2xl">
+        <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+          <div className="flex items-center gap-2.5">
             <Building2 className="h-5 w-5 text-blue-600" />
-            <h3 className="text-base font-bold text-slate-900">
+            <h3 className="text-lg font-bold text-slate-900">
               Profil de l'Établissement Client
             </h3>
           </div>
@@ -129,28 +129,28 @@ export const ConfigPage: React.FC = () => {
           </span>
         </div>
 
-        <form onSubmit={handleSaveEcoleInfo} className="space-y-4 text-xs">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <form onSubmit={handleSaveEcoleInfo} className="space-y-6 text-xs">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div>
-              <label className="block font-semibold text-slate-700 mb-1">
+              <label className="block font-semibold text-slate-700 mb-1.5">
                 Nom officiel de l'école <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
                 value={ecole.nom}
                 onChange={(e) => setEcole({ ...ecole, nom: e.target.value })}
-                className="w-full h-9 px-3 rounded-lg border border-slate-300 text-xs font-bold text-slate-900 focus:ring-2 focus:ring-blue-600 focus:outline-none"
+                className="w-full h-11 px-3.5 rounded-xl border border-slate-300 text-sm font-bold text-slate-900 focus:ring-2 focus:ring-blue-600 focus:outline-none"
               />
             </div>
 
             <div>
-              <label className="block font-semibold text-slate-700 mb-1">
+              <label className="block font-semibold text-slate-700 mb-1.5">
                 Année Scolaire Active <span className="text-red-500">*</span>
               </label>
               <select
                 value={ecole.annee_scolaire}
                 onChange={(e) => setEcole({ ...ecole, annee_scolaire: e.target.value })}
-                className="w-full h-9 px-3 rounded-lg border border-slate-300 text-xs font-bold bg-white focus:ring-2 focus:ring-blue-600 focus:outline-none"
+                className="w-full h-11 px-3.5 rounded-xl border border-slate-300 text-sm font-bold bg-white focus:ring-2 focus:ring-blue-600 focus:outline-none"
               >
                 <option value="2025-2026">2025–2026 (Active)</option>
                 <option value="2024-2025">2024–2025 (Archivée)</option>
@@ -158,58 +158,58 @@ export const ConfigPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
             <div>
-              <label className="block font-semibold text-slate-700 mb-1">
+              <label className="block font-semibold text-slate-700 mb-1.5">
                 Ville / Commune
               </label>
               <input
                 type="text"
                 value={ecole.ville}
                 onChange={(e) => setEcole({ ...ecole, ville: e.target.value })}
-                className="w-full h-9 px-3 rounded-lg border border-slate-300 text-xs focus:ring-2 focus:ring-blue-600 focus:outline-none"
+                className="w-full h-11 px-3.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-blue-600 focus:outline-none"
               />
             </div>
 
             <div>
-              <label className="block font-semibold text-slate-700 mb-1">
+              <label className="block font-semibold text-slate-700 mb-1.5">
                 Téléphone Officiel
               </label>
               <input
                 type="text"
                 value={ecole.telephone}
                 onChange={(e) => setEcole({ ...ecole, telephone: e.target.value })}
-                className="w-full h-9 px-3 rounded-lg border border-slate-300 text-xs font-mono focus:ring-2 focus:ring-blue-600 focus:outline-none"
+                className="w-full h-11 px-3.5 rounded-xl border border-slate-300 text-sm font-mono focus:ring-2 focus:ring-blue-600 focus:outline-none"
               />
             </div>
 
             <div>
-              <label className="block font-semibold text-slate-700 mb-1">
+              <label className="block font-semibold text-slate-700 mb-1.5">
                 Email de Contact
               </label>
               <input
                 type="email"
                 value={ecole.email}
                 onChange={(e) => setEcole({ ...ecole, email: e.target.value })}
-                className="w-full h-9 px-3 rounded-lg border border-slate-300 text-xs focus:ring-2 focus:ring-blue-600 focus:outline-none"
+                className="w-full h-11 px-3.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-blue-600 focus:outline-none"
               />
             </div>
           </div>
 
           <div>
-            <label className="block font-semibold text-slate-700 mb-1">
+            <label className="block font-semibold text-slate-700 mb-1.5">
               Adresse Physique
             </label>
             <input
               type="text"
               value={ecole.adresse}
               onChange={(e) => setEcole({ ...ecole, adresse: e.target.value })}
-              className="w-full h-9 px-3 rounded-lg border border-slate-300 text-xs focus:ring-2 focus:ring-blue-600 focus:outline-none"
+              className="w-full h-11 px-3.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-blue-600 focus:outline-none"
             />
           </div>
 
           <div className="flex justify-end pt-2">
-            <Button type="submit" variant="primary" size="sm" className="gap-1.5">
+            <Button type="submit" variant="primary" size="sm" className="gap-2">
               <Save className="h-4 w-4" />
               Enregistrer les Modifs
             </Button>
@@ -218,9 +218,9 @@ export const ConfigPage: React.FC = () => {
       </Card>
 
       {/* Staff Directory Table */}
-      <div className="rounded-xl border border-slate-200 bg-white shadow-2xs overflow-hidden">
-        <div className="p-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
-          <div className="flex items-center gap-2">
+      <div className="rounded-2xl border border-slate-200 bg-white shadow-2xs overflow-hidden">
+        <div className="py-4 px-6 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
             <Users className="h-5 w-5 text-blue-600" />
             <h3 className="text-sm font-bold text-slate-900">
               Annuaire du Personnel & Rôles Habilités ({staffList.length})
@@ -235,55 +235,55 @@ export const ConfigPage: React.FC = () => {
           <table className="w-full text-left text-xs border-collapse">
             <thead>
               <tr className="border-b border-slate-200 bg-slate-50/80 font-bold uppercase tracking-wider text-slate-500">
-                <th className="py-3.5 px-4">Membre du Personnel</th>
-                <th className="py-3.5 px-4">Rôle Attribué</th>
-                <th className="py-3.5 px-4">Classe Assignée</th>
-                <th className="py-3.5 px-4">Coordonnées</th>
-                <th className="py-3.5 px-4 text-center">Date Ajout</th>
-                <th className="py-3.5 px-4 text-center">Statut Compte</th>
+                <th className="py-4 px-6">Membre du Personnel</th>
+                <th className="py-4 px-6">Rôle Attribué</th>
+                <th className="py-4 px-6">Classe Assignée</th>
+                <th className="py-4 px-6">Coordonnées</th>
+                <th className="py-4 px-6 text-center">Date Ajout</th>
+                <th className="py-4 px-6 text-center">Statut Compte</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {staffList.map((member) => {
                 const roleInfo = roleLabels[member.role] || roleLabels.enseignant;
                 return (
-                  <tr key={member.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="py-3.5 px-4">
-                      <div className="font-bold text-slate-900">
+                  <tr key={member.id} className="hover:bg-slate-50/80 transition-colors">
+                    <td className="py-4.5 px-6">
+                      <div className="font-bold text-slate-900 text-sm">
                         {member.prenom} {member.nom}
                       </div>
-                      <div className="text-[11px] text-slate-500">{member.email}</div>
+                      <div className="text-xs text-slate-500 mt-0.5">{member.email}</div>
                     </td>
 
-                    <td className="py-3.5 px-4">
+                    <td className="py-4.5 px-6">
                       <span
-                        className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-bold border ${roleInfo.badge}`}
+                        className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-bold border ${roleInfo.badge}`}
                       >
                         {roleInfo.label}
                       </span>
                     </td>
 
-                    <td className="py-3.5 px-4">
+                    <td className="py-4.5 px-6">
                       {member.classe_assignee ? (
-                        <span className="inline-flex items-center rounded bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-700">
+                        <span className="inline-flex items-center rounded-md bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
                           {member.classe_assignee}
                         </span>
                       ) : (
-                        <span className="text-slate-400 italic">Établissement entier</span>
+                        <span className="text-slate-400 italic text-xs">Établissement entier</span>
                       )}
                     </td>
 
-                    <td className="py-3.5 px-4 font-mono text-slate-700">
+                    <td className="py-4.5 px-6 font-mono text-slate-700 text-xs">
                       {member.telephone}
                     </td>
 
-                    <td className="py-3.5 px-4 text-center font-mono text-slate-500">
+                    <td className="py-4.5 px-6 text-center font-mono text-slate-500 text-xs">
                       {member.date_ajout}
                     </td>
 
-                    <td className="py-3.5 px-4 text-center">
-                      <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-800 border border-emerald-200 px-2.5 py-0.5 rounded-full font-bold text-[11px]">
-                        <CheckCircle className="h-3 w-3 text-emerald-600" />
+                    <td className="py-4.5 px-6 text-center">
+                      <span className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-800 border border-emerald-200 px-3 py-1 rounded-full font-bold text-xs">
+                        <CheckCircle className="h-3.5 w-3.5 text-emerald-600" />
                         Actif
                       </span>
                     </td>

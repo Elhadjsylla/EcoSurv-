@@ -221,7 +221,7 @@ export const DirectorDashboard: React.FC<DirectorDashboardProps> = ({
   };
 
   return (
-    <div className="p-6 max-w-[1600px] mx-auto space-y-8 relative">
+    <div className="p-6 sm:p-8 lg:p-10 max-w-[1600px] mx-auto space-y-8 sm:space-y-10 relative">
       {/* Toast de confirmation réactif animé */}
       {activeToast && (
         <ToastNotification
@@ -272,25 +272,25 @@ export const DirectorDashboard: React.FC<DirectorDashboardProps> = ({
       )}
 
       {/* Page Title & Actions */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-1">
+        <div className="space-y-1">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
             Tableau de Bord de Direction
           </h1>
-          <p className="text-sm text-slate-500 font-medium mt-1">
+          <p className="text-sm text-slate-500 font-medium">
             Suivi en temps réel du recouvrement et de la situation financière des élèves.
           </p>
         </div>
 
         <div className="flex items-center gap-3">
-          <Button variant="outline" size="sm" className="gap-2">
+          <Button variant="outline" size="sm" className="gap-2 h-10 px-4">
             <Download className="h-4 w-4" />
             Exporter Rapport PDF
           </Button>
           <Button
             variant="primary"
             size="sm"
-            className="gap-2"
+            className="gap-2 h-10 px-4"
             onClick={handleBulkRelance}
           >
             <Send className="h-4 w-4" />
@@ -300,7 +300,7 @@ export const DirectorDashboard: React.FC<DirectorDashboardProps> = ({
       </div>
 
       {/* Cartes KPI Interactives (Raccourcis de filtrage) avec apparition échelonnée */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <KpiCard
           staggerIndex={0}
           title="Total Scolarités Attendues"
@@ -360,22 +360,22 @@ export const DirectorDashboard: React.FC<DirectorDashboardProps> = ({
       </div>
 
       {/* Roster Controls: Search, Filters, Stats Summary */}
-      <Card className="p-4 space-y-4">
+      <Card className="p-6 space-y-4 border-slate-200/90 shadow-sm rounded-2xl">
         <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
           {/* Search bar avec raccourci clavier "/" */}
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+          <div className="relative flex-1 max-w-lg">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
             <input
               ref={searchInputRef}
               type="text"
-              placeholder="Rechercher... (Appuyez sur '/' pour accèder)"
+              placeholder="Rechercher... (Appuyez sur '/' pour accéder)"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className={`w-full h-10 pl-9 pr-12 rounded-lg border border-slate-300 bg-white text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all duration-200 ${
+              className={`w-full h-11 pl-10 pr-12 rounded-xl border border-slate-200 bg-slate-50/50 text-sm text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition-all duration-200 ${
                 isSearchPulseActive ? 'animate-search-focus ring-2 ring-blue-500' : ''
               }`}
             />
-            <kbd className="absolute right-3 top-2.5 px-1.5 py-0.5 text-[10px] font-mono font-semibold text-slate-400 bg-slate-100 border border-slate-200 rounded">
+            <kbd className="absolute right-3.5 top-1/2 -translate-y-1/2 px-2 py-0.5 text-[10px] font-mono font-semibold text-slate-400 bg-white border border-slate-200 rounded shadow-2xs">
               /
             </kbd>
           </div>
@@ -388,7 +388,7 @@ export const DirectorDashboard: React.FC<DirectorDashboardProps> = ({
               <select
                 value={selectedClasse}
                 onChange={(e) => setSelectedClasse(e.target.value)}
-                className="h-10 px-3 text-xs font-semibold rounded-lg border border-slate-300 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                className="h-11 px-3.5 text-xs font-semibold rounded-xl border border-slate-300 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-600"
               >
                 <option value="all">Toutes les classes ({classesList.length})</option>
                 {classesList.map((c) => (
@@ -403,7 +403,7 @@ export const DirectorDashboard: React.FC<DirectorDashboardProps> = ({
             <select
               value={selectedStatut}
               onChange={(e) => setSelectedStatut(e.target.value)}
-              className="h-10 px-3 text-xs font-semibold rounded-lg border border-slate-300 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-600 font-bold"
+              className="h-11 px-3.5 text-xs font-semibold rounded-xl border border-slate-300 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-600 font-bold"
             >
               <option value="all">Tous les statuts</option>
               <option value="paye">Réglé (Payé)</option>
@@ -415,13 +415,13 @@ export const DirectorDashboard: React.FC<DirectorDashboardProps> = ({
         </div>
 
         {/* Status count chips */}
-        <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100 text-xs font-medium">
-          <span className="text-slate-500 mr-2">Résultats :</span>
+        <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-slate-100 text-xs font-medium">
+          <span className="text-slate-500 mr-2 font-medium">Résultats :</span>
           <button
             onClick={() => setSelectedStatut('all')}
-            className={`px-2.5 py-1 rounded-full font-semibold transition-colors ${
+            className={`px-3 py-1.5 rounded-lg font-semibold transition-colors ${
               selectedStatut === 'all'
-                ? 'bg-slate-900 text-white'
+                ? 'bg-slate-900 text-white shadow-xs'
                 : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
             }`}
           >
@@ -429,9 +429,9 @@ export const DirectorDashboard: React.FC<DirectorDashboardProps> = ({
           </button>
           <button
             onClick={() => setSelectedStatut('paye')}
-            className={`px-2.5 py-1 rounded-full font-semibold transition-colors ${
+            className={`px-3 py-1.5 rounded-lg font-semibold transition-colors ${
               selectedStatut === 'paye'
-                ? 'bg-emerald-700 text-white'
+                ? 'bg-emerald-700 text-white shadow-xs'
                 : 'bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100'
             }`}
           >
@@ -439,9 +439,9 @@ export const DirectorDashboard: React.FC<DirectorDashboardProps> = ({
           </button>
           <button
             onClick={() => setSelectedStatut('en_retard')}
-            className={`px-2.5 py-1 rounded-full font-semibold transition-colors ${
+            className={`px-3 py-1.5 rounded-lg font-semibold transition-colors ${
               selectedStatut === 'en_retard'
-                ? 'bg-red-700 text-white'
+                ? 'bg-red-700 text-white shadow-xs'
                 : 'bg-red-50 text-red-800 border border-red-200 hover:bg-red-100'
             }`}
           >
@@ -449,9 +449,9 @@ export const DirectorDashboard: React.FC<DirectorDashboardProps> = ({
           </button>
           <button
             onClick={() => setSelectedStatut('partiel')}
-            className={`px-2.5 py-1 rounded-full font-semibold transition-colors ${
+            className={`px-3 py-1.5 rounded-lg font-semibold transition-colors ${
               selectedStatut === 'partiel'
-                ? 'bg-amber-700 text-white'
+                ? 'bg-amber-700 text-white shadow-xs'
                 : 'bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100'
             }`}
           >
@@ -461,12 +461,12 @@ export const DirectorDashboard: React.FC<DirectorDashboardProps> = ({
       </Card>
 
       {/* Data Table */}
-      <div className="rounded-xl border border-slate-200 bg-white shadow-2xs overflow-hidden">
+      <div className="rounded-2xl border border-slate-200/90 bg-white shadow-2xs overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm border-collapse">
             <thead>
               <tr className="border-b border-slate-200 bg-slate-50/80 text-xs font-bold uppercase tracking-wider text-slate-500">
-                <th className="py-3.5 px-4 w-10 text-center">
+                <th className="py-4 px-6 w-12 text-center">
                   <input
                     type="checkbox"
                     checked={isAllSelected}
@@ -474,20 +474,20 @@ export const DirectorDashboard: React.FC<DirectorDashboardProps> = ({
                     className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
                   />
                 </th>
-                <th className="py-3.5 px-4">Élève & Matricule</th>
-                <th className="py-3.5 px-4">Classe</th>
-                <th className="py-3.5 px-4">Tuteur / Contact</th>
-                <th className="py-3.5 px-4 text-right">Montant Attendu</th>
-                <th className="py-3.5 px-4 text-right">Montant Encaissé</th>
-                <th className="py-3.5 px-4 text-right">Reste à Payer</th>
-                <th className="py-3.5 px-4 text-center">Statut</th>
-                <th className="py-3.5 px-4 text-right">Actions Rapides</th>
+                <th className="py-4 px-6">Élève & Matricule</th>
+                <th className="py-4 px-6">Classe</th>
+                <th className="py-4 px-6">Tuteur / Contact</th>
+                <th className="py-4 px-6 text-right">Montant Attendu</th>
+                <th className="py-4 px-6 text-right">Montant Encaissé</th>
+                <th className="py-4 px-6 text-right">Reste à Payer</th>
+                <th className="py-4 px-6 text-center">Statut</th>
+                <th className="py-4 px-6 text-right">Actions Rapides</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {filteredEleves.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="py-10 text-center text-slate-500 font-medium">
+                  <td colSpan={9} className="py-14 text-center text-slate-500 font-medium">
                     Aucun élève trouvé correspondant à vos critères de recherche.
                   </td>
                 </tr>
@@ -510,7 +510,7 @@ export const DirectorDashboard: React.FC<DirectorDashboardProps> = ({
                       onClick={() => setSelectedEleveModal(eleve)}
                     >
                       {/* Checkbox */}
-                      <td className="py-3.5 px-4 text-center" onClick={(e) => e.stopPropagation()}>
+                      <td className="py-4.5 px-6 text-center" onClick={(e) => e.stopPropagation()}>
                         <input
                           type="checkbox"
                           checked={isChecked}
@@ -520,14 +520,14 @@ export const DirectorDashboard: React.FC<DirectorDashboardProps> = ({
                       </td>
 
                       {/* Élève */}
-                      <td className="py-3.5 px-4">
-                        <div className="flex items-center gap-3">
+                      <td className="py-4.5 px-6">
+                        <div className="flex items-center gap-3.5">
                           <StudentInitials nom={eleve.nom} prenom={eleve.prenom} />
                           <div>
-                            <div className="font-bold text-slate-900 leading-tight">
+                            <div className="font-bold text-slate-900 leading-snug">
                               {eleve.prenom} {eleve.nom}
                             </div>
-                            <div className="text-xs text-slate-500 font-mono">
+                            <div className="text-xs text-slate-500 font-mono mt-0.5">
                               {eleve.matricule}
                             </div>
                           </div>
@@ -535,44 +535,44 @@ export const DirectorDashboard: React.FC<DirectorDashboardProps> = ({
                       </td>
 
                       {/* Classe */}
-                      <td className="py-3.5 px-4">
-                        <span className="inline-flex items-center rounded bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-700">
+                      <td className="py-4.5 px-6">
+                        <span className="inline-flex items-center rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
                           {eleve.classe}
                         </span>
                       </td>
 
                       {/* Tuteur */}
-                      <td className="py-3.5 px-4">
-                        <div className="text-xs">
+                      <td className="py-4.5 px-6">
+                        <div className="text-xs space-y-0.5">
                           <div className="font-semibold text-slate-800">{eleve.nom_tuteur}</div>
-                          <div className="text-slate-500 flex items-center gap-1">
-                            <Phone className="h-3 w-3 text-slate-400" />
+                          <div className="text-slate-500 flex items-center gap-1.5">
+                            <Phone className="h-3 w-3 text-slate-400 shrink-0" />
                             <span>{eleve.telephone_tuteur}</span>
                           </div>
                         </div>
                       </td>
 
                       {/* Montant Attendu */}
-                      <td className="py-3.5 px-4 text-right font-mono font-semibold text-slate-700">
+                      <td className="py-4.5 px-6 text-right font-mono font-semibold text-slate-700">
                         {formatMRU(eleve.total_due)}
                       </td>
 
                       {/* Montant Encaissé */}
-                      <td className="py-3.5 px-4 text-right font-mono font-semibold text-emerald-700">
+                      <td className="py-4.5 px-6 text-right font-mono font-semibold text-emerald-700">
                         {formatMRU(eleve.total_paid)}
                       </td>
 
                       {/* Reste à payer */}
-                      <td className="py-3.5 px-4 text-right font-mono font-extrabold text-slate-900">
+                      <td className="py-4.5 px-6 text-right font-mono font-extrabold text-slate-900">
                         {eleve.remaining > 0 ? (
                           <span className="text-red-700">{formatMRU(eleve.remaining)}</span>
                         ) : (
-                          <span className="text-slate-400">0 MRU</span>
+                          <span className="text-slate-400 font-normal">0 MRU</span>
                         )}
                       </td>
 
                       {/* Statut Badge */}
-                      <td className="py-3.5 px-4 text-center">
+                      <td className="py-4.5 px-6 text-center">
                         <StatusBadge statut={eleve.statut} />
                       </td>
 

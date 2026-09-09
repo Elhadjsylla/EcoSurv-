@@ -174,7 +174,7 @@ export const CaissierGuichetPage: React.FC<CaissierGuichetPageProps> = ({
   };
 
   return (
-    <div className="p-6 max-w-[1600px] mx-auto space-y-6 animate-stagger-rise relative">
+    <div className="p-6 sm:p-8 lg:p-10 max-w-[1600px] mx-auto space-y-8 sm:space-y-10 animate-stagger-rise relative">
       {/* Toast Notification */}
       {activeToast && (
         <ToastNotification
@@ -185,49 +185,49 @@ export const CaissierGuichetPage: React.FC<CaissierGuichetPageProps> = ({
       )}
 
       {/* Top Banner */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-white p-6 sm:p-8 rounded-2xl border border-slate-200 shadow-2xs">
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
               Guichet d'Encaissement & Paiements
             </h1>
-            <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-bold text-amber-800 border border-amber-200">
+            <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-800 border border-amber-200">
               {CURRENT_CAISSIER.guichet}
             </span>
           </div>
-          <p className="text-xs text-slate-500 font-medium mt-1">
+          <p className="text-sm text-slate-500 font-medium mt-1.5">
             Enregistrez les versements des parents d'élèves en espèces ou mobile banking et délivrez instantanément un reçu numéroté.
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2.5 shrink-0">
           <span className="text-xs font-bold text-slate-500">Opérateur :</span>
-          <span className="text-xs font-bold text-slate-900 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200 flex items-center gap-1.5">
-            <Building className="h-3.5 w-3.5 text-amber-600" />
+          <span className="text-xs font-bold text-slate-900 bg-slate-100 px-3.5 py-2 rounded-xl border border-slate-200 flex items-center gap-2">
+            <Building className="h-4 w-4 text-amber-600" />
             {CURRENT_CAISSIER.prenom} {CURRENT_CAISSIER.nom}
           </span>
         </div>
       </div>
 
       {/* Main Grid: Search & Selection (Left) vs Payment Terminal (Right) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         {/* Left Col (5 cols): Student Search & Identification */}
-        <div className="lg:col-span-5 space-y-4">
-          <Card className="p-5 space-y-4">
-            <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+        <div className="lg:col-span-5 space-y-6">
+          <Card className="p-6 sm:p-7 rounded-2xl space-y-5">
+            <h2 className="text-base font-bold text-slate-900 flex items-center gap-2.5">
               <Search className="h-4 w-4 text-amber-600" />
               1. Identifier l'Élève au Guichet
             </h2>
 
             {/* Search Input */}
             <div className="relative">
-              <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+              <Search className="absolute left-3.5 top-3 h-4 w-4 text-slate-400" />
               <input
                 type="text"
                 placeholder="Rechercher par nom, matricule ou tuteur..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full h-10 pl-9 pr-4 rounded-lg border border-slate-300 bg-white text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-600 focus:border-transparent transition-all"
+                className="w-full h-11 pl-10 pr-4 rounded-xl border border-slate-300 bg-white text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-600 focus:border-transparent transition-all"
               />
             </div>
 

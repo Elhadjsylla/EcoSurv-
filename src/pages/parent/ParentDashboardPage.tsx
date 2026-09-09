@@ -37,14 +37,14 @@ export const ParentDashboardPage: React.FC<ParentDashboardPageProps> = ({
   const enfant = MOCK_PARENT_ENFANTS_DETAILS[selectedChildId] || MOCK_PARENT_ENFANTS_DETAILS['el-001'];
 
   return (
-    <div className="space-y-6 max-w-6xl mx-auto p-4 sm:p-6 animate-fade-in">
+    <div className="p-6 sm:p-8 lg:p-10 max-w-6xl mx-auto space-y-8 sm:space-y-10 animate-fade-in">
       {/* Welcome Banner */}
-      <div className="bg-gradient-to-r from-indigo-900 via-indigo-800 to-slate-900 rounded-2xl p-6 text-white shadow-xl relative overflow-hidden">
+      <div className="bg-gradient-to-r from-indigo-900 via-indigo-800 to-slate-900 rounded-2xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden">
         <div className="absolute right-0 top-0 h-full w-1/3 bg-radial from-indigo-500/10 to-transparent pointer-events-none" />
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
-            <div className="flex items-center gap-2 mb-2">
-              <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-500/30 text-indigo-200 border border-indigo-400/30">
+            <div className="flex items-center gap-2.5 mb-2">
+              <span className="px-3 py-1 rounded-full text-xs font-bold bg-indigo-500/30 text-indigo-200 border border-indigo-400/30">
                 Espace Tuteur Légal
               </span>
               <span className="text-xs text-indigo-300">• {CURRENT_ECOLE.nom}</span>
@@ -52,13 +52,13 @@ export const ParentDashboardPage: React.FC<ParentDashboardPageProps> = ({
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
               Bonjour, {CURRENT_PARENT.prenom} {CURRENT_PARENT.nom}
             </h1>
-            <p className="text-sm text-indigo-200/90 mt-1 max-w-xl">
+            <p className="text-sm text-indigo-200/90 mt-1.5 max-w-xl">
               Retrouvez la situation académique, l'assiduité en temps réel et le règlement des frais scolaires pour vos enfants inscrits.
             </p>
           </div>
 
           {/* Sélecteur rapide d'enfant pour Mobile / Tablette */}
-          <div className="flex flex-wrap gap-2 pt-2 md:pt-0">
+          <div className="flex flex-wrap gap-2.5 pt-2 md:pt-0 shrink-0">
             {CURRENT_PARENT.enfants_ids.map((id) => {
               const item = MOCK_PARENT_ENFANTS_DETAILS[id];
               const isSelected = selectedChildId === id;
@@ -66,7 +66,7 @@ export const ParentDashboardPage: React.FC<ParentDashboardPageProps> = ({
                 <button
                   key={id}
                   onClick={() => onSelectChild(id)}
-                  className={`flex items-center gap-2.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all border ${
+                  className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-xs font-bold transition-all border ${
                     isSelected
                       ? 'bg-white text-indigo-950 border-white shadow-lg scale-102'
                       : 'bg-indigo-950/60 border-indigo-700/60 text-indigo-200 hover:bg-indigo-900/60'
@@ -89,21 +89,21 @@ export const ParentDashboardPage: React.FC<ParentDashboardPageProps> = ({
       </div>
 
       {/* Focus Enfant Sélectionné Card */}
-      <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-3.5">
-          <div className="h-12 w-12 rounded-xl bg-indigo-100 text-indigo-700 font-extrabold text-lg flex items-center justify-center shrink-0 border border-indigo-200">
+      <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+        <div className="flex items-center gap-4">
+          <div className="h-14 w-14 rounded-2xl bg-indigo-100 text-indigo-700 font-extrabold text-xl flex items-center justify-center shrink-0 border border-indigo-200">
             {enfant.photo_initiales}
           </div>
           <div>
-            <div className="flex items-center gap-2">
-              <h2 className="text-lg font-bold text-slate-900">
+            <div className="flex items-center gap-2.5">
+              <h2 className="text-xl font-bold text-slate-900">
                 {enfant.prenom} {enfant.nom}
               </h2>
-              <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
+              <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
                 {enfant.classe}
               </span>
             </div>
-            <p className="text-xs text-slate-500 flex items-center gap-2 mt-0.5">
+            <p className="text-xs text-slate-500 flex items-center gap-2 mt-1">
               <span>Matricule: {enfant.matricule}</span>
               <span>•</span>
               <span>Prof. Principal: {enfant.professeur_principal}</span>
@@ -111,12 +111,12 @@ export const ParentDashboardPage: React.FC<ParentDashboardPageProps> = ({
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3 shrink-0">
           <Button
             variant="outline"
             size="sm"
             onClick={() => onNavigateTab('parent_pedagogie')}
-            className="text-xs font-semibold gap-1.5"
+            className="text-xs font-semibold gap-2 px-3.5 py-2"
           >
             <GraduationCap className="h-4 w-4 text-indigo-600" />
             Voir le Bulletin
@@ -125,7 +125,7 @@ export const ParentDashboardPage: React.FC<ParentDashboardPageProps> = ({
             <Button
               size="sm"
               onClick={() => onNavigateTab('parent_paiements')}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold gap-1.5 shadow-sm"
+              className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold gap-2 px-3.5 py-2 shadow-sm"
             >
               <CreditCard className="h-4 w-4" />
               Régler ({formatMRU(enfant.reste_a_payer)})
@@ -135,9 +135,9 @@ export const ParentDashboardPage: React.FC<ParentDashboardPageProps> = ({
       </div>
 
       {/* 3 Cartes Synthétiques */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Statut Financier */}
-        <Card className="p-5 border-slate-200 shadow-sm bg-white relative overflow-hidden">
+        <Card className="p-6 rounded-2xl border-slate-200 shadow-sm bg-white relative overflow-hidden">
           <div className="flex items-center justify-between text-slate-500 text-xs font-bold uppercase tracking-wider mb-2">
             <span>Frais de Scolarité</span>
             <CreditCard className="h-4 w-4 text-indigo-600" />
@@ -173,13 +173,13 @@ export const ParentDashboardPage: React.FC<ParentDashboardPageProps> = ({
         </Card>
 
         {/* Moyenne & Rang */}
-        <Card className="p-5 border-slate-200 shadow-sm bg-white">
+        <Card className="p-6 rounded-2xl border-slate-200 shadow-sm bg-white">
           <div className="flex items-center justify-between text-slate-500 text-xs font-bold uppercase tracking-wider mb-2">
             <span>Résultats Trimestre 2</span>
             <Sparkles className="h-4 w-4 text-amber-500" />
           </div>
           <div className="flex items-baseline gap-2 mt-1">
-            <span className="text-2xl font-black text-slate-900">
+            <span className="text-3xl font-black text-slate-900">
               {enfant.moyenne_generale.toFixed(1)}
             </span>
             <span className="text-sm font-bold text-slate-400">/ 20</span>
@@ -197,14 +197,14 @@ export const ParentDashboardPage: React.FC<ParentDashboardPageProps> = ({
         </Card>
 
         {/* Assiduité */}
-        <Card className="p-5 border-slate-200 shadow-sm bg-white">
+        <Card className="p-6 rounded-2xl border-slate-200 shadow-sm bg-white">
           <div className="flex items-center justify-between text-slate-500 text-xs font-bold uppercase tracking-wider mb-2">
             <span>Assiduité & Présence</span>
             <CalendarCheck className="h-4 w-4 text-emerald-600" />
           </div>
           <div className="flex items-center gap-2 mt-1">
-            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
-              <CheckCircle2 className="h-3 w-3" /> Présent aujourd'hui
+            <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+              <CheckCircle2 className="h-3.5 w-3.5" /> Présent aujourd'hui
             </span>
           </div>
           <p className="text-xs text-slate-500 mt-2">

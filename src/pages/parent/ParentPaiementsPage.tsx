@@ -119,7 +119,7 @@ export const ParentPaiementsPage: React.FC<ParentPaiementsPageProps> = ({
   };
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto p-4 sm:p-6 animate-fade-in">
+    <div className="p-6 sm:p-8 lg:p-10 max-w-5xl mx-auto space-y-8 sm:space-y-10 animate-fade-in">
       {/* Toast Notification */}
       {activeToast && (
         <div className="fixed bottom-6 right-6 z-50">
@@ -132,18 +132,18 @@ export const ParentPaiementsPage: React.FC<ParentPaiementsPageProps> = ({
       )}
 
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 bg-white p-6 sm:p-8 rounded-2xl border border-slate-200 shadow-2xs">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-100 text-indigo-800 border border-indigo-200">
+          <div className="flex items-center gap-2.5 mb-1.5">
+            <span className="px-3 py-1 rounded-full text-xs font-bold bg-indigo-100 text-indigo-800 border border-indigo-200">
               Espace Scolarité
             </span>
             <span className="text-xs text-slate-500">• Frais & Règlements Sécurisés</span>
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
             Frais de Scolarité — {enfantData.prenom} {enfantData.nom}
           </h1>
-          <p className="text-sm text-slate-500 mt-0.5">
+          <p className="text-sm text-slate-500 mt-1">
             Consultez le solde de la scolarité et réglez directement par Bankily, Masrvi ou Sedad avec quittance instantanée.
           </p>
         </div>
@@ -154,7 +154,7 @@ export const ParentPaiementsPage: React.FC<ParentPaiementsPageProps> = ({
               setPaymentAmount(Math.min(enfantData.reste_a_payer, 25000));
               setIsPaymentModalOpen(true);
             }}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold shadow-md flex items-center gap-2"
+            className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold shadow-md flex items-center gap-2 px-4 py-2.5 rounded-xl shrink-0"
           >
             <Smartphone className="h-4 w-4" />
             Payer par Mobile Money
@@ -163,43 +163,43 @@ export const ParentPaiementsPage: React.FC<ParentPaiementsPageProps> = ({
       </div>
 
       {/* 3 Cartes de Synthèse Financière */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="p-5 border-slate-200 shadow-sm bg-white">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Card className="p-6 rounded-2xl border-slate-200 shadow-sm bg-white">
           <div className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
             Montant Annuel Total
           </div>
-          <div className="text-2xl font-black text-slate-900">
+          <div className="text-3xl sm:text-4xl font-black text-slate-900 font-mono mt-1">
             {formatMRU(enfantData.total_scolarite)}
           </div>
-          <div className="text-xs text-slate-500 mt-1">
+          <div className="text-xs text-slate-500 mt-2">
             Classe : {enfantData.classe}
           </div>
         </Card>
 
-        <Card className="p-5 border-slate-200 shadow-sm bg-white">
+        <Card className="p-6 rounded-2xl border-slate-200 shadow-sm bg-white">
           <div className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
             Total Déjà Réglé
           </div>
-          <div className="text-2xl font-black text-emerald-600">
+          <div className="text-3xl sm:text-4xl font-black text-emerald-600 font-mono mt-1">
             {formatMRU(enfantData.total_regle)}
           </div>
-          <div className="text-xs text-slate-500 mt-1">
+          <div className="text-xs text-slate-500 mt-2">
             {Math.round((enfantData.total_regle / enfantData.total_scolarite) * 100)}% de la scolarité acquittée
           </div>
         </Card>
 
-        <Card className="p-5 border-slate-200 shadow-sm bg-white">
+        <Card className="p-6 rounded-2xl border-slate-200 shadow-sm bg-white">
           <div className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
             Reste à Régler
           </div>
           <div
-            className={`text-2xl font-black ${
+            className={`text-3xl sm:text-4xl font-black font-mono mt-1 ${
               enfantData.reste_a_payer > 0 ? 'text-rose-600' : 'text-emerald-600'
             }`}
           >
             {formatMRU(enfantData.reste_a_payer)}
           </div>
-          <div className="text-xs text-slate-500 mt-1">
+          <div className="text-xs text-slate-500 mt-2">
             {enfantData.reste_a_payer > 0 ? (
               <span className="text-rose-600 font-semibold">
                 Échéance limite : {enfantData.prochaine_echeance_date}
@@ -214,11 +214,11 @@ export const ParentPaiementsPage: React.FC<ParentPaiementsPageProps> = ({
       </div>
 
       {/* Historique des Règlements & Quittances */}
-      <Card className="p-6 border-slate-200 shadow-sm">
-        <div className="flex items-center justify-between pb-4 border-b border-slate-100 mb-4">
-          <div className="flex items-center gap-2">
+      <Card className="p-6 sm:p-7 rounded-2xl border-slate-200 shadow-sm space-y-6">
+        <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+          <div className="flex items-center gap-2.5">
             <Receipt className="h-5 w-5 text-indigo-600" />
-            <h3 className="text-base font-bold text-slate-900">
+            <h3 className="text-lg font-bold text-slate-900">
               Historique des Paiements Effectués
             </h3>
           </div>

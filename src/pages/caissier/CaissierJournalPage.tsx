@@ -10,7 +10,6 @@ import { Button } from '../../components/ui/Button';
 import { ToastNotification } from '../../components/ui/ToastNotification';
 import { formatMRU } from '../../lib/utils';
 import {
-  History,
   Search,
   Printer,
   Receipt,
@@ -113,7 +112,7 @@ export const CaissierJournalPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="p-6 sm:p-8 lg:p-10 max-w-[1600px] mx-auto space-y-8 sm:space-y-10 animate-fade-in">
       {/* Toast Notification */}
       {activeToast && (
         <div className="fixed bottom-6 right-6 z-50">
@@ -126,18 +125,18 @@ export const CaissierJournalPage: React.FC = () => {
       )}
 
       {/* Header Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 bg-white p-6 sm:p-8 rounded-2xl border border-slate-200 shadow-2xs">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200">
+          <div className="flex items-center gap-2.5 mb-1.5">
+            <span className="px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200">
               Audit & Traçabilité
             </span>
             <span className="text-xs text-slate-500">• Journal des Encaissements</span>
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
             Journal de Caisse
           </h1>
-          <p className="text-sm text-slate-500 mt-0.5">
+          <p className="text-sm text-slate-500 mt-1">
             Historique complet des quittances émises au {CURRENT_CAISSIER.guichet} par{' '}
             <span className="font-semibold text-slate-700">
               {CURRENT_CAISSIER.prenom} {CURRENT_CAISSIER.nom}
@@ -146,7 +145,7 @@ export const CaissierJournalPage: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-3 shrink-0">
           <Button
             variant="outline"
             size="sm"
@@ -156,7 +155,7 @@ export const CaissierJournalPage: React.FC = () => {
                 type: 'info',
               });
             }}
-            className="flex items-center gap-1.5"
+            className="flex items-center gap-2"
           >
             <Download className="h-4 w-4" />
             Exporter CSV
@@ -166,7 +165,7 @@ export const CaissierJournalPage: React.FC = () => {
             size="sm"
             disabled={clotureDone}
             onClick={handleCloture}
-            className={`flex items-center gap-1.5 font-semibold ${
+            className={`flex items-center gap-2 font-semibold ${
               clotureDone
                 ? 'bg-emerald-600 text-white cursor-default'
                 : 'bg-amber-600 hover:bg-amber-700 text-white'
@@ -178,77 +177,77 @@ export const CaissierJournalPage: React.FC = () => {
               </>
             ) : (
               <>
-                <Lock className="h-4 w-4" /> Clôturer la Caisse
+                <Lock className="h-4 w-4" /> Clôturer la Caisse du Jour
               </>
             )}
           </Button>
         </div>
       </div>
 
-      {/* KPI Cards Summary */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="p-4 bg-gradient-to-br from-slate-900 to-slate-800 text-white border-none shadow-md">
-          <div className="flex items-center justify-between text-slate-400 text-xs font-semibold uppercase tracking-wider mb-2">
-            <span>Total Encaissé (Session)</span>
-            <History className="h-4 w-4 text-amber-400" />
+      {/* KPI Tiles */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Card className="p-6 sm:p-7 rounded-2xl border-slate-200 shadow-sm bg-white">
+          <div className="flex items-center justify-between text-slate-500 text-xs font-bold uppercase tracking-wider mb-2">
+            <span>Total Encaissé (Aujourd'hui)</span>
+            <Receipt className="h-5 w-5 text-amber-600" />
           </div>
-          <div className="text-2xl font-extrabold text-white">
+          <div className="text-3xl sm:text-4xl font-extrabold text-slate-900 font-mono mt-2">
             {formatMRU(totalGeneral)}
           </div>
-          <div className="text-xs text-slate-400 mt-1">
-            {transactions.length} quittances validées
+          <div className="text-xs text-slate-500 mt-2">
+            {transactions.length} versements enregistrés aujourd'hui
           </div>
         </Card>
 
-        <Card className="p-4 border-slate-200 shadow-sm bg-white">
-          <div className="flex items-center justify-between text-slate-500 text-xs font-semibold uppercase tracking-wider mb-2">
+        <Card className="p-6 rounded-2xl border-slate-200 shadow-sm bg-white">
+          <div className="flex items-center justify-between text-slate-500 text-xs font-bold uppercase tracking-wider mb-2">
             <span>Espèces en Tiroir</span>
-            <Banknote className="h-4 w-4 text-emerald-600" />
+            <Banknote className="h-5 w-5 text-emerald-600" />
           </div>
-          <div className="text-2xl font-extrabold text-emerald-600">
+          <div className="text-3xl sm:text-4xl font-extrabold text-emerald-600 font-mono mt-2">
             {formatMRU(totalEspeces)}
           </div>
-          <div className="text-xs text-slate-500 mt-1">
+          <div className="text-xs text-slate-500 mt-2">
             À vérifier lors du comptage physique
           </div>
         </Card>
 
-        <Card className="p-4 border-slate-200 shadow-sm bg-white">
-          <div className="flex items-center justify-between text-slate-500 text-xs font-semibold uppercase tracking-wider mb-2">
+        <Card className="p-6 rounded-2xl border-slate-200 shadow-sm bg-white">
+          <div className="flex items-center justify-between text-slate-500 text-xs font-bold uppercase tracking-wider mb-2">
             <span>Paiements Mobiles (Bankily / Masrvi)</span>
-            <Smartphone className="h-4 w-4 text-blue-600" />
+            <Smartphone className="h-5 w-5 text-blue-600" />
           </div>
-          <div className="text-2xl font-extrabold text-blue-600">
+          <div className="text-3xl sm:text-4xl font-extrabold text-blue-600 font-mono mt-2">
             {formatMRU(totalMobile)}
           </div>
-          <div className="text-xs text-slate-500 mt-1">
+          <div className="text-xs text-slate-500 mt-2">
             Confirmés via API bancaire & SMS
           </div>
         </Card>
       </div>
 
       {/* Table & Filters */}
-      <Card className="p-5 border-slate-200 shadow-sm">
+      <Card className="p-6 sm:p-7 rounded-2xl border-slate-200 shadow-sm space-y-6">
         {/* Barre de recherche et filtres */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
           <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
             <input
               type="text"
               placeholder="Rechercher par reçu (REC-...), élève, matricule..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50/50 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-colors"
+              className="w-full h-11 pl-10 pr-4 border border-slate-200 rounded-xl text-sm bg-slate-50/50 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-colors"
             />
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2.5">
             <Filter className="h-4 w-4 text-slate-400 shrink-0" />
             <span className="text-xs font-semibold text-slate-600">Mode :</span>
             <select
               value={selectedMethod}
               onChange={(e) => setSelectedMethod(e.target.value)}
-              className="px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs font-medium bg-white text-slate-700 focus:outline-none focus:ring-1 focus:ring-amber-500"
+              className="h-11 px-3.5 border border-slate-200 rounded-xl text-xs font-medium bg-white text-slate-700 focus:outline-none focus:ring-1 focus:ring-amber-500"
             >
               <option value="all">Tous les modes</option>
               <option value="especes">Espèces uniquement</option>
@@ -260,67 +259,69 @@ export const CaissierJournalPage: React.FC = () => {
         </div>
 
         {/* Tableau des transactions */}
-        <div className="overflow-x-auto mt-4">
-          <table className="w-full text-left border-collapse text-sm">
-            <thead>
-              <tr className="border-b border-slate-200 bg-slate-50/70 text-slate-600 text-xs font-bold uppercase tracking-wider">
-                <th className="py-3 px-4">Heure / Date</th>
-                <th className="py-3 px-4">N° Quittance</th>
-                <th className="py-3 px-4">Élève & Classe</th>
-                <th className="py-3 px-4">Échéance Réglée</th>
-                <th className="py-3 px-4">Mode Règlement</th>
-                <th className="py-3 px-4 text-right">Montant</th>
-                <th className="py-3 px-4 text-center">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {filteredTransactions.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="py-8 text-center text-slate-400 text-sm">
-                    Aucune transaction ne correspond à vos filtres.
-                  </td>
+        <div className="rounded-2xl border border-slate-200 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse text-sm">
+              <thead>
+                <tr className="border-b border-slate-200 bg-slate-50/70 text-slate-600 text-xs font-bold uppercase tracking-wider">
+                  <th className="py-4 px-6">Heure / Date</th>
+                  <th className="py-4 px-6">N° Quittance</th>
+                  <th className="py-4 px-6">Élève & Classe</th>
+                  <th className="py-4 px-6">Échéance Réglée</th>
+                  <th className="py-4 px-6">Mode Règlement</th>
+                  <th className="py-4 px-6 text-right">Montant</th>
+                  <th className="py-4 px-6 text-center">Actions</th>
                 </tr>
-              ) : (
-                filteredTransactions.map((tx) => (
-                  <tr key={tx.id} className="hover:bg-slate-50/60 transition-colors">
-                    <td className="py-3.5 px-4">
-                      <div className="font-semibold text-slate-800 text-xs">{tx.heure}</div>
-                      <div className="text-[11px] text-slate-400">{tx.date}</div>
-                    </td>
-                    <td className="py-3.5 px-4 font-mono font-bold text-amber-700 text-xs">
-                      {tx.recu_ref}
-                    </td>
-                    <td className="py-3.5 px-4">
-                      <div className="font-semibold text-slate-900">
-                        {tx.eleve_nom} {tx.eleve_prenom}
-                      </div>
-                      <div className="text-[11px] text-slate-500 font-mono">
-                        {tx.matricule} • {tx.classe}
-                      </div>
-                    </td>
-                    <td className="py-3.5 px-4 text-slate-700 text-xs font-medium">
-                      {tx.echeance_libelle}
-                    </td>
-                    <td className="py-3.5 px-4">{getMethodBadge(tx.methode)}</td>
-                    <td className="py-3.5 px-4 text-right font-extrabold text-slate-900">
-                      {formatMRU(tx.montant)}
-                    </td>
-                    <td className="py-3.5 px-4 text-center">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setSelectedReceipt(tx)}
-                        className="h-8 px-2 text-slate-600 hover:text-amber-700 hover:bg-amber-50 gap-1 text-xs"
-                      >
-                        <Printer className="h-3.5 w-3.5" />
-                        Reçu
-                      </Button>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {filteredTransactions.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="py-12 text-center text-slate-400 text-sm">
+                      Aucune transaction ne correspond à vos filtres.
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                ) : (
+                  filteredTransactions.map((tx) => (
+                    <tr key={tx.id} className="hover:bg-slate-50/60 transition-colors">
+                      <td className="py-4.5 px-6">
+                        <div className="font-semibold text-slate-800 text-xs">{tx.heure}</div>
+                        <div className="text-[11px] text-slate-400">{tx.date}</div>
+                      </td>
+                      <td className="py-4.5 px-6 font-mono font-bold text-amber-700 text-xs">
+                        {tx.recu_ref}
+                      </td>
+                      <td className="py-4.5 px-6">
+                        <div className="font-semibold text-slate-900">
+                          {tx.eleve_nom} {tx.eleve_prenom}
+                        </div>
+                        <div className="text-[11px] text-slate-500 font-mono">
+                          {tx.matricule} • {tx.classe}
+                        </div>
+                      </td>
+                      <td className="py-4.5 px-6 text-slate-700 text-xs font-medium">
+                        {tx.echeance_libelle}
+                      </td>
+                      <td className="py-4.5 px-6">{getMethodBadge(tx.methode)}</td>
+                      <td className="py-4.5 px-6 text-right font-extrabold text-slate-900">
+                        {formatMRU(tx.montant)}
+                      </td>
+                      <td className="py-4.5 px-6 text-center">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setSelectedReceipt(tx)}
+                          className="h-8 px-2 text-slate-600 hover:text-amber-700 hover:bg-amber-50 gap-1 text-xs"
+                        >
+                          <Printer className="h-3.5 w-3.5" />
+                          Reçu
+                        </Button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </Card>
 

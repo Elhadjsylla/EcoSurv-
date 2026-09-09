@@ -61,7 +61,7 @@ export const EcheancesPage: React.FC = () => {
   const totalElevesCouverts = echeanciers.reduce((sum, e) => sum + e.nb_eleves_concernes, 0);
 
   return (
-    <div className="p-6 max-w-[1600px] mx-auto space-y-6 relative">
+    <div className="p-6 sm:p-8 lg:p-10 max-w-[1600px] mx-auto space-y-8 sm:space-y-10 relative">
       {/* Toast Notification */}
       {toastMessage && (
         <div className="fixed top-20 right-6 z-50 flex items-center gap-3 bg-slate-900 text-white px-4 py-3 rounded-lg shadow-xl border border-slate-700 animate-in fade-in slide-in-from-top-4">
@@ -77,17 +77,17 @@ export const EcheancesPage: React.FC = () => {
       )}
 
       {/* Top Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-5 rounded-xl border border-slate-200 shadow-2xs">
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200/90 shadow-2xs">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
               Échéances & Tarifs de Scolarité
             </h1>
             <span className="rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-bold text-blue-700">
               Année 2025–2026
             </span>
           </div>
-          <p className="text-xs text-slate-500 font-medium mt-1">
+          <p className="text-sm text-slate-500 font-medium">
             Configuration des frais de scolarité, des mensualités et des calendriers d'échéances par classe.
           </p>
         </div>
@@ -95,7 +95,7 @@ export const EcheancesPage: React.FC = () => {
         <Button
           variant="primary"
           size="sm"
-          className="gap-2"
+          className="gap-2 h-10 px-4"
           onClick={() => setIsModalOpen(true)}
         >
           <Plus className="h-4 w-4" />
@@ -104,79 +104,79 @@ export const EcheancesPage: React.FC = () => {
       </div>
 
       {/* Metric Tiles */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="p-4 flex items-center justify-between">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <Card className="p-6 rounded-2xl flex items-center justify-between">
           <div>
             <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
               Échéanciers Actifs
             </span>
-            <div className="text-2xl font-extrabold text-slate-900 font-mono mt-1">
+            <div className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-mono mt-2">
               {echeanciers.length}
             </div>
-            <span className="text-[11px] text-slate-500 font-medium mt-1 block">
+            <span className="text-[11px] text-slate-500 font-medium mt-2 block">
               Configurations par niveau
             </span>
           </div>
-          <div className="h-10 w-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+          <div className="h-11 w-11 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
             <CreditCard className="h-5 w-5" />
           </div>
         </Card>
 
-        <Card className="p-4 flex items-center justify-between">
+        <Card className="p-6 rounded-2xl flex items-center justify-between">
           <div>
             <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
               Élèves Couverts
             </span>
-            <div className="text-2xl font-extrabold text-emerald-700 font-mono mt-1">
+            <div className="text-2xl sm:text-3xl font-extrabold text-emerald-700 font-mono mt-2">
               {totalElevesCouverts}
             </div>
-            <span className="text-[11px] text-emerald-700 font-semibold mt-1 block">
+            <span className="text-[11px] text-emerald-700 font-semibold mt-2 block">
               ✓ Échéancier individuel actif
             </span>
           </div>
-          <div className="h-10 w-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+          <div className="h-11 w-11 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
             <Users className="h-5 w-5" />
           </div>
         </Card>
 
-        <Card className="p-4 flex items-center justify-between">
+        <Card className="p-6 rounded-2xl flex items-center justify-between">
           <div>
             <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-              Fréquence Dominante
+              Prochaine Échéance
             </span>
-            <div className="text-2xl font-extrabold text-indigo-700 font-mono mt-1">
-              Mensuel
+            <div className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-mono mt-2">
+              05 Avril
             </div>
-            <span className="text-[11px] text-slate-500 font-medium mt-1 block">
-              3 tranches principales
+            <span className="text-[11px] text-amber-700 font-semibold mt-2 block">
+              Tranche 3 / Mensualité
             </span>
           </div>
-          <div className="h-10 w-10 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+          <div className="h-11 w-11 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
             <Clock className="h-5 w-5" />
           </div>
         </Card>
 
-        <Card className="p-4 flex items-center justify-between">
+        <Card className="p-6 rounded-2xl flex items-center justify-between">
           <div>
             <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-              Moyenne Mensuelle
+              Modes de Règlement
             </span>
-            <div className="text-2xl font-extrabold text-slate-900 font-mono mt-1">
-              {formatMRU(15000)}
+            <div className="text-2xl sm:text-3xl font-extrabold text-blue-700 font-mono mt-2">
+              3 types
             </div>
-            <span className="text-[11px] text-slate-500 font-medium mt-1 block">
-              Par tranche élève
+            <span className="text-[11px] text-slate-500 font-medium mt-2 block">
+              Mensuel, Trimestriel, Annuel
             </span>
           </div>
-          <div className="h-10 w-10 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+          <div className="h-11 w-11 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
             <Layers className="h-5 w-5" />
           </div>
         </Card>
       </div>
 
       {/* Table of Configured Schedules */}
-      <div className="rounded-xl border border-slate-200 bg-white shadow-2xs overflow-hidden">
-        <div className="p-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+      <div className="rounded-2xl border border-slate-200/90 bg-white shadow-2xs overflow-hidden">
+        <div className="p-5 bg-slate-50/80 border-b border-slate-200 flex items-center justify-between">
           <h3 className="text-sm font-bold text-slate-900">
             Plans d'Échéances & Tarifs Configurés
           </h3>
@@ -186,36 +186,36 @@ export const EcheancesPage: React.FC = () => {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs border-collapse">
+          <table className="w-full text-left text-sm border-collapse">
             <thead>
-              <tr className="border-b border-slate-200 bg-slate-50/80 font-bold uppercase tracking-wider text-slate-500">
-                <th className="py-3.5 px-4">Libellé du Plan</th>
-                <th className="py-3.5 px-4">Classe Cible</th>
-                <th className="py-3.5 px-4 text-right">Montant Total</th>
-                <th className="py-3.5 px-4 text-center">Fréquence</th>
-                <th className="py-3.5 px-4 text-center">Nombre de Tranches</th>
-                <th className="py-3.5 px-4 text-right">Montant / Tranche</th>
-                <th className="py-3.5 px-4 text-center">Prochaine Limite</th>
-                <th className="py-3.5 px-4 text-center">Élèves Concernés</th>
+              <tr className="border-b border-slate-200 bg-slate-50/80 text-xs font-bold uppercase tracking-wider text-slate-500">
+                <th className="py-4 px-6">Libellé du Plan</th>
+                <th className="py-4 px-6">Classe Cible</th>
+                <th className="py-4 px-6 text-right">Montant Total</th>
+                <th className="py-4 px-6 text-center">Fréquence</th>
+                <th className="py-4 px-6 text-center">Nombre de Tranches</th>
+                <th className="py-4 px-6 text-right">Montant / Tranche</th>
+                <th className="py-4 px-6 text-center">Prochaine Limite</th>
+                <th className="py-4 px-6 text-center">Élèves Concernés</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {echeanciers.map((ech) => (
-                <tr key={ech.id} className="hover:bg-slate-50 transition-colors">
-                  <td className="py-3.5 px-4 font-bold text-slate-900">
+                <tr key={ech.id} className="hover:bg-slate-50/80 transition-colors">
+                  <td className="py-4.5 px-6 font-bold text-slate-900">
                     {ech.libelle}
                   </td>
-                  <td className="py-3.5 px-4">
-                    <span className="inline-flex items-center rounded bg-blue-50 px-2 py-0.5 text-xs font-semibold text-blue-700 border border-blue-200/60">
+                  <td className="py-4.5 px-6">
+                    <span className="inline-flex items-center rounded-lg bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700 border border-blue-200/60">
                       {ech.classe}
                     </span>
                   </td>
-                  <td className="py-3.5 px-4 text-right font-mono font-bold text-slate-900">
+                  <td className="py-4.5 px-6 text-right font-mono font-bold text-slate-900">
                     {formatMRU(ech.montant_total)}
                   </td>
-                  <td className="py-3.5 px-4 text-center">
+                  <td className="py-4.5 px-6 text-center">
                     <span
-                      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold capitalize ${
+                      className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold capitalize ${
                         ech.frequence === 'mensuel'
                           ? 'bg-sky-50 text-sky-800 border border-sky-200'
                           : ech.frequence === 'trimestriel'
@@ -226,18 +226,18 @@ export const EcheancesPage: React.FC = () => {
                       {ech.frequence}
                     </span>
                   </td>
-                  <td className="py-3.5 px-4 text-center font-mono font-semibold text-slate-700">
+                  <td className="py-4.5 px-6 text-center font-mono font-semibold text-slate-700">
                     {ech.nombre_tranches} tranche(s)
                   </td>
-                  <td className="py-3.5 px-4 text-right font-mono font-bold text-emerald-700">
+                  <td className="py-4.5 px-6 text-right font-mono font-bold text-emerald-700">
                     {formatMRU(ech.montant_par_tranche)}
                   </td>
-                  <td className="py-3.5 px-4 text-center font-mono text-slate-600">
+                  <td className="py-4.5 px-6 text-center font-mono text-slate-600">
                     {ech.date_limite_prochaine}
                   </td>
-                  <td className="py-3.5 px-4 text-center">
-                    <span className="inline-flex items-center gap-1 font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-full">
-                      <Users className="h-3 w-3 text-slate-500" />
+                  <td className="py-4.5 px-6 text-center">
+                    <span className="inline-flex items-center gap-1.5 font-bold text-slate-700 bg-slate-100 px-2.5 py-1 rounded-full text-xs">
+                      <Users className="h-3.5 w-3.5 text-slate-500" />
                       {ech.nb_eleves_concernes}
                     </span>
                   </td>

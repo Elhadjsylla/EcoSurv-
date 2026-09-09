@@ -310,7 +310,7 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
   };
 
   return (
-    <div className="p-6 max-w-[1600px] mx-auto space-y-6 relative">
+    <div className="p-6 sm:p-8 lg:p-10 max-w-[1600px] mx-auto space-y-8 sm:space-y-10 relative">
       {/* Toast de confirmation réactif animé */}
       {activeToast && (
         <ToastNotification
@@ -361,30 +361,30 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
       )}
 
       {/* Top Institutional Header & Global Actions */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-5 rounded-xl border border-slate-200 shadow-2xs">
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200/90 shadow-2xs">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
               Gestion des Élèves & Scolarités
             </h1>
             <span className="rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-bold text-blue-700">
               Année 2025–2026
             </span>
           </div>
-          <p className="text-xs text-slate-500 font-medium mt-1">
+          <p className="text-sm text-slate-500 font-medium">
             Registre académique centralisé, facturation mensuelle et suivi des recouvrements en Ouguiya (MRU).
           </p>
         </div>
 
         <div className="flex items-center gap-3">
-          <Button variant="outline" size="sm" className="gap-2">
+          <Button variant="outline" size="sm" className="gap-2 h-10 px-4">
             <FileSpreadsheet className="h-4 w-4 text-emerald-600" />
             Import Excel/CSV
           </Button>
           <Button
             variant="primary"
             size="sm"
-            className="gap-2"
+            className="gap-2 h-10 px-4"
             onClick={() => setIsEnrollModalOpen(true)}
           >
             <UserPlus className="h-4 w-4" />
@@ -394,11 +394,11 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
       </div>
 
       {/* Metric Quick Tiles (Interactive Status Shortcuts) avec animation échelonnée */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card
           onClick={() => handleStatutChange('all')}
           style={{ animationDelay: '0ms' }}
-          className={`p-4 flex items-center justify-between cursor-pointer transition-all duration-200 animate-stagger-rise hover:-translate-y-0.5 hover:shadow-md hover:border-blue-400 ${
+          className={`p-6 rounded-2xl flex items-center justify-between cursor-pointer transition-all duration-200 animate-stagger-rise hover:-translate-y-0.5 hover:shadow-md hover:border-blue-400 ${
             selectedStatut === 'all' ? 'border-blue-600 bg-blue-50/30 ring-2 ring-blue-500/20 shadow-sm' : ''
           }`}
         >
@@ -406,14 +406,14 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
             <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
               Effectif Total
             </span>
-            <div className="text-2xl font-extrabold text-slate-900 font-mono mt-1">
+            <div className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-mono mt-2">
               {kpis.nombreEleves}
             </div>
-            <span className="text-[11px] font-semibold text-slate-500 mt-1 flex items-center gap-1">
-              <CheckCircle2 className="h-3 w-3 text-slate-400" /> Afficher tous
+            <span className="text-[11px] font-semibold text-slate-500 mt-2 flex items-center gap-1">
+              <CheckCircle2 className="h-3.5 w-3.5 text-slate-400" /> Afficher tous
             </span>
           </div>
-          <div className="h-10 w-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+          <div className="h-11 w-11 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
             <Users className="h-5 w-5" />
           </div>
         </Card>
@@ -421,7 +421,7 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
         <Card
           onClick={() => handleStatutChange('paye')}
           style={{ animationDelay: '75ms' }}
-          className={`p-4 flex items-center justify-between cursor-pointer transition-all duration-200 animate-stagger-rise hover:-translate-y-0.5 hover:shadow-md hover:border-emerald-400 ${
+          className={`p-6 rounded-2xl flex items-center justify-between cursor-pointer transition-all duration-200 animate-stagger-rise hover:-translate-y-0.5 hover:shadow-md hover:border-emerald-400 ${
             selectedStatut === 'paye' ? 'border-emerald-600 bg-emerald-50/30 ring-2 ring-emerald-500/20 shadow-sm' : ''
           }`}
         >
@@ -429,14 +429,14 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
             <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
               Élèves En Règle
             </span>
-            <div className="text-2xl font-extrabold text-emerald-700 font-mono mt-1">
+            <div className="text-2xl sm:text-3xl font-extrabold text-emerald-700 font-mono mt-2">
               {kpis.nombrePaye + kpis.nombreAJour}
             </div>
-            <span className="text-[11px] text-emerald-700 font-semibold mt-1 block">
+            <span className="text-[11px] text-emerald-700 font-semibold mt-2 block">
               Filtrer les réglés →
             </span>
           </div>
-          <div className="h-10 w-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+          <div className="h-11 w-11 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
             <CheckCircle2 className="h-5 w-5" />
           </div>
         </Card>
@@ -444,7 +444,7 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
         <Card
           onClick={() => handleStatutChange('en_retard')}
           style={{ animationDelay: '150ms' }}
-          className={`p-4 flex items-center justify-between cursor-pointer transition-all duration-200 animate-stagger-rise hover:-translate-y-0.5 hover:shadow-md hover:border-red-400 ${
+          className={`p-6 rounded-2xl flex items-center justify-between cursor-pointer transition-all duration-200 animate-stagger-rise hover:-translate-y-0.5 hover:shadow-md hover:border-red-400 ${
             selectedStatut === 'en_retard' ? 'border-red-600 bg-red-50/30 ring-2 ring-red-500/20 shadow-sm' : ''
           }`}
         >
@@ -452,14 +452,14 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
             <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
               Échéances en Retard
             </span>
-            <div className="text-2xl font-extrabold text-red-700 font-mono mt-1">
+            <div className="text-2xl sm:text-3xl font-extrabold text-red-700 font-mono mt-2">
               {kpis.nombreEnRetard}
             </div>
-            <span className="text-[11px] font-semibold text-red-600 mt-1 block">
+            <span className="text-[11px] font-semibold text-red-600 mt-2 block">
               Filtrer les retards ({formatMRU(kpis.totalImpayes)}) →
             </span>
           </div>
-          <div className="h-10 w-10 rounded-lg bg-red-50 text-red-600 flex items-center justify-center shrink-0">
+          <div className="h-11 w-11 rounded-xl bg-red-50 text-red-600 flex items-center justify-center shrink-0">
             <AlertTriangle className="h-5 w-5" />
           </div>
         </Card>
@@ -467,7 +467,7 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
         <Card
           onClick={() => handleStatutChange('partiel')}
           style={{ animationDelay: '225ms' }}
-          className={`p-4 flex items-center justify-between cursor-pointer transition-all duration-200 animate-stagger-rise hover:-translate-y-0.5 hover:shadow-md hover:border-amber-400 ${
+          className={`p-6 rounded-2xl flex items-center justify-between cursor-pointer transition-all duration-200 animate-stagger-rise hover:-translate-y-0.5 hover:shadow-md hover:border-amber-400 ${
             selectedStatut === 'partiel' ? 'border-amber-600 bg-amber-50/30 ring-2 ring-amber-500/20 shadow-sm' : ''
           }`}
         >
@@ -475,42 +475,42 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
             <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
               Recouvrement Global
             </span>
-            <div className="text-2xl font-extrabold text-blue-700 font-mono mt-1">
+            <div className="text-2xl sm:text-3xl font-extrabold text-blue-700 font-mono mt-2">
               {kpis.tauxRecouvrement}%
             </div>
-            <span className="text-[11px] text-amber-700 font-semibold mt-1 block">
+            <span className="text-[11px] text-amber-700 font-semibold mt-2 block">
               Filtrer les partiels →
             </span>
           </div>
-          <div className="h-10 w-10 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+          <div className="h-11 w-11 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
             <CreditCard className="h-5 w-5" />
           </div>
         </Card>
       </div>
 
       {/* Filtration & Control Bar */}
-      <Card className="p-4 space-y-3">
+      <Card className="p-6 space-y-4 border-slate-200/90 shadow-sm rounded-2xl">
         <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
           {/* Search bar avec raccourci clavier "/" */}
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+          <div className="relative flex-1 max-w-lg">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
             <input
               ref={searchInputRef}
               type="text"
-              placeholder="Rechercher... (Appuyez sur '/' pour accèder)"
+              placeholder="Rechercher un élève, matricule, parent... (Touche '/')"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className={`w-full h-10 pl-9 pr-12 rounded-lg border border-slate-300 bg-white text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all duration-200 ${
+              className={`w-full h-11 pl-10 pr-12 rounded-xl border border-slate-200 bg-slate-50/50 text-sm text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition-all duration-200 ${
                 isSearchPulseActive ? 'animate-search-focus ring-2 ring-blue-500' : ''
               }`}
             />
-            <kbd className="absolute right-3 top-2.5 px-1.5 py-0.5 text-[10px] font-mono font-semibold text-slate-400 bg-slate-100 border border-slate-200 rounded">
+            <kbd className="absolute right-3.5 top-1/2 -translate-y-1/2 px-2 py-0.5 text-[10px] font-mono font-semibold text-slate-400 bg-white border border-slate-200 rounded shadow-2xs">
               /
             </kbd>
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
-            <div className="flex items-center gap-1.5 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200">
+            <div className="flex items-center gap-2 bg-slate-50 px-3.5 py-2.5 rounded-xl border border-slate-200">
               <Filter className="h-4 w-4 text-slate-400" />
               <select
                 value={selectedClasse}
@@ -526,11 +526,11 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
               </select>
             </div>
 
-            <div className="flex items-center gap-1.5 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200">
+            <div className="flex items-center gap-2 bg-slate-50 px-3.5 py-2.5 rounded-xl border border-slate-200">
               <select
                 value={selectedStatut}
                 onChange={(e) => handleStatutChange(e.target.value)}
-                className="bg-transparent text-xs font-semibold text-slate-700 outline-none cursor-pointer"
+                className="bg-transparent text-xs font-semibold text-slate-700 outline-none cursor-pointer font-bold"
               >
                 <option value="all">Tous statuts financiers</option>
                 <option value="paye">Réglé (Payé)</option>
@@ -540,7 +540,7 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
               </select>
             </div>
 
-            <div className="flex items-center gap-1.5 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200">
+            <div className="flex items-center gap-2 bg-slate-50 px-3.5 py-2.5 rounded-xl border border-slate-200">
               <ArrowUpDown className="h-3.5 w-3.5 text-slate-400" />
               <select
                 value={sortBy}
@@ -557,19 +557,19 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
       </Card>
 
       {/* Primary Split Architecture: 65% Roster Table / 35% Detailed Ledger Dossier */}
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start">
         {/* Left Wing (65% -> 8 cols on XL) */}
-        <div className="xl:col-span-8 flex flex-col bg-white rounded-xl border border-slate-200 shadow-2xs overflow-hidden">
+        <div className="xl:col-span-8 flex flex-col bg-white rounded-2xl border border-slate-200/90 shadow-2xs overflow-hidden">
           {/* Table Header Bar */}
-          <div className="p-3.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between text-xs text-slate-600">
-            <div className="flex items-center gap-2">
+          <div className="p-4 bg-slate-50/80 border-b border-slate-200 flex items-center justify-between text-xs text-slate-600">
+            <div className="flex items-center gap-2.5">
               <input
                 type="checkbox"
                 checked={isAllSelected}
                 onChange={toggleSelectAll}
                 className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
               />
-              <span className="font-bold text-slate-900">
+              <span className="font-bold text-slate-900 text-sm">
                 {filteredEleves.length} élève(s) affiché(s)
               </span>
             </div>
@@ -583,7 +583,7 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
             <table className="w-full text-left text-xs border-collapse">
               <thead>
                 <tr className="border-b border-slate-200 bg-slate-50/80 font-bold uppercase tracking-wider text-slate-500">
-                  <th className="py-3 px-4 w-10 text-center">
+                  <th className="py-4 px-5 w-10 text-center">
                     <input
                       type="checkbox"
                       checked={isAllSelected}
@@ -591,19 +591,19 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
                       className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
                     />
                   </th>
-                  <th className="py-3 px-4">Matricule</th>
-                  <th className="py-3 px-4">Élève</th>
-                  <th className="py-3 px-4">Classe</th>
-                  <th className="py-3 px-4">Tuteur Légal</th>
-                  <th className="py-3 px-4 text-right">Solde Dû</th>
-                  <th className="py-3 px-4 text-center">Statut</th>
-                  <th className="py-3 px-4 text-right">Actions Rapides</th>
+                  <th className="py-4 px-5">Matricule</th>
+                  <th className="py-4 px-5">Élève</th>
+                  <th className="py-4 px-5">Classe</th>
+                  <th className="py-4 px-5">Tuteur Légal</th>
+                  <th className="py-4 px-5 text-right">Solde Dû</th>
+                  <th className="py-4 px-5 text-center">Statut</th>
+                  <th className="py-4 px-5 text-right">Actions Rapides</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-slate-100 text-sm">
                 {filteredEleves.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="py-10 text-center text-slate-500 font-medium">
+                    <td colSpan={8} className="py-14 text-center text-slate-500 font-medium text-sm">
                       Aucun élève ne correspond à votre recherche.
                     </td>
                   </tr>
@@ -629,7 +629,7 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
                         }`}
                       >
                         {/* Checkbox */}
-                        <td className="py-3 px-4 text-center" onClick={(e) => e.stopPropagation()}>
+                        <td className="py-4.5 px-5 text-center" onClick={(e) => e.stopPropagation()}>
                           <input
                             type="checkbox"
                             checked={isChecked}
@@ -639,19 +639,19 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
                         </td>
 
                         {/* Matricule */}
-                        <td className="py-3 px-4 font-mono font-bold text-blue-700 whitespace-nowrap">
+                        <td className="py-4.5 px-5 font-mono font-bold text-blue-700 whitespace-nowrap">
                           {eleve.matricule}
                         </td>
 
                         {/* Élève */}
-                        <td className="py-3 px-4">
-                          <div className="flex items-center gap-2.5">
+                        <td className="py-4.5 px-5">
+                          <div className="flex items-center gap-3">
                             <StudentInitials nom={eleve.nom} prenom={eleve.prenom} size="sm" />
                             <div>
-                              <div className="font-bold text-slate-900 leading-tight">
+                              <div className="font-bold text-slate-900 leading-snug">
                                 {eleve.prenom} {eleve.nom}
                               </div>
-                              <div className="text-[11px] text-slate-500">
+                              <div className="text-[11px] text-slate-500 mt-0.5">
                                 Né le {eleve.date_naissance} • {eleve.sexe}
                               </div>
                             </div>
@@ -659,22 +659,24 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
                         </td>
 
                         {/* Classe */}
-                        <td className="py-3 px-4">
-                          <span className="inline-flex items-center rounded bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-700">
+                        <td className="py-4.5 px-5">
+                          <span className="inline-flex items-center rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
                             {eleve.classe}
                           </span>
                         </td>
 
                         {/* Tuteur */}
-                        <td className="py-3 px-4">
-                          <div className="font-semibold text-slate-800">{eleve.nom_tuteur}</div>
-                          <div className="text-[11px] text-slate-500 font-mono">
-                            {eleve.telephone_tuteur}
+                        <td className="py-4.5 px-5">
+                          <div className="text-xs space-y-0.5">
+                            <div className="font-semibold text-slate-800">{eleve.nom_tuteur}</div>
+                            <div className="text-slate-500 font-mono text-[11px]">
+                              {eleve.telephone_tuteur}
+                            </div>
                           </div>
                         </td>
 
                         {/* Solde Dû */}
-                        <td className="py-3 px-4 text-right font-mono font-bold whitespace-nowrap">
+                        <td className="py-4.5 px-5 text-right font-mono font-bold whitespace-nowrap text-sm">
                           {eleve.remaining > 0 ? (
                             <span className="text-red-700">{formatMRU(eleve.remaining)}</span>
                           ) : (
@@ -683,38 +685,38 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
                         </td>
 
                         {/* Statut Badge */}
-                        <td className="py-3 px-4 text-center whitespace-nowrap">
+                        <td className="py-4.5 px-5 text-center whitespace-nowrap">
                           <StatusBadge statut={eleve.statut} />
                         </td>
 
                         {/* Actions Rapides en Ligne */}
                         <td
-                          className="py-3 px-4 text-right"
+                          className="py-4.5 px-5 text-right"
                           onClick={(e) => e.stopPropagation()}
                         >
-                          <div className="flex items-center justify-end gap-1.5">
+                          <div className="flex items-center justify-end gap-2">
                             {eleve.remaining > 0 ? (
                               <>
                                 <Button
                                   size="sm"
                                   variant="outline"
-                                  className="h-7 px-2 text-[11px] gap-1 text-emerald-700 border-emerald-200 hover:bg-emerald-50 hover:scale-105 active:scale-95 transition-all duration-150"
+                                  className="h-8 px-2.5 text-xs gap-1 text-emerald-700 border-emerald-200 hover:bg-emerald-50 hover:scale-105 active:scale-95 transition-all duration-150"
                                   title="Marquer réglé immédiatement"
                                   onClick={(e) => triggerMarquerPayeExpress(eleve, e)}
                                 >
-                                  <Zap className="h-3 w-3 text-emerald-600 fill-emerald-600" />
+                                  <Zap className="h-3.5 w-3.5 text-emerald-600 fill-emerald-600" />
                                   Payé
                                 </Button>
 
                                 <Button
                                   size="sm"
                                   variant="danger"
-                                  className="h-7 px-2 text-[11px] gap-1 hover:scale-105 active:scale-95 transition-all duration-150 relative overflow-hidden"
+                                  className="h-8 px-2.5 text-xs gap-1 hover:scale-105 active:scale-95 transition-all duration-150 relative overflow-hidden"
                                   title="Envoyer rappel SMS"
                                   onClick={(e) => triggerRelance(eleve, e)}
                                 >
                                   <Send
-                                    className={`h-3 w-3 transition-transform ${
+                                    className={`h-3.5 w-3.5 transition-transform ${
                                       isRelancing ? 'animate-paper-plane' : ''
                                     }`}
                                   />
@@ -722,8 +724,8 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
                                 </Button>
                               </>
                             ) : (
-                              <span className="text-[11px] font-semibold text-emerald-700 flex items-center gap-1 pr-2 animate-scale-in">
-                                <Check className="h-3.5 w-3.5 text-emerald-600" /> Soldé
+                              <span className="text-xs font-semibold text-emerald-700 flex items-center gap-1 pr-2 animate-scale-in">
+                                <Check className="h-4 w-4 text-emerald-600" /> Soldé
                               </span>
                             )}
                           </div>
