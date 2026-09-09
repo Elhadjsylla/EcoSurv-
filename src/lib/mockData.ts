@@ -1085,4 +1085,181 @@ export const CURRENT_PARENT: ParentMock = {
   enfants_ids: ['el-001', 'el-003'], // Mamadou Oury Diallo (Term C) et Cheikh Tidiane Sow (6ème A)
 };
 
+export interface ParentMatiereNote {
+  matiere: string;
+  moyenne: number;
+  coefficient: number;
+  professeur: string;
+  appreciation: string;
+  moyenne_classe: number;
+}
+
+export interface ParentEnfantDetail {
+  id: string;
+  matricule: string;
+  nom: string;
+  prenom: string;
+  classe: string;
+  photo_initiales: string;
+  date_naissance: string;
+  professeur_principal: string;
+  // Données financières familiales
+  total_scolarite: number;
+  total_regle: number;
+  reste_a_payer: number;
+  statut_paiement: StatutEcheance;
+  prochaine_echeance_date: string;
+  prochaine_echeance_montant: number;
+  // Données pédagogiques
+  moyenne_generale: number;
+  rang: string;
+  nb_absences_total: number;
+  nb_retards_total: number;
+  bulletin: ParentMatiereNote[];
+  emploi_du_temps_aujourdhui: Array<{
+    heure: string;
+    matiere: string;
+    salle: string;
+    professeur: string;
+  }>;
+}
+
+export const MOCK_PARENT_ENFANTS_DETAILS: Record<string, ParentEnfantDetail> = {
+  'el-001': {
+    id: 'el-001',
+    matricule: 'DEMO-2025-001',
+    nom: 'DIALLO',
+    prenom: 'Mamadou Oury',
+    classe: 'Terminales C',
+    photo_initiales: 'MD',
+    date_naissance: '2008-04-12',
+    professeur_principal: 'Prof. Kane (Physique)',
+    total_scolarite: 150000,
+    total_regle: 150000,
+    reste_a_payer: 0,
+    statut_paiement: 'paye',
+    prochaine_echeance_date: '2026-04-05',
+    prochaine_echeance_montant: 0,
+    moyenne_generale: 15.6,
+    rang: '3ème / 34',
+    nb_absences_total: 1,
+    nb_retards_total: 0,
+    bulletin: [
+      {
+        matiere: 'Mathématiques',
+        moyenne: 16.5,
+        coefficient: 6,
+        professeur: 'Prof. Sow',
+        appreciation: 'Excellent esprit d\'analyse et régularité remarquable.',
+        moyenne_classe: 12.1,
+      },
+      {
+        matiere: 'Physique-Chimie',
+        moyenne: 15.0,
+        coefficient: 5,
+        professeur: 'Prof. Kane',
+        appreciation: 'Très bon travail expérimental et théorique.',
+        moyenne_classe: 11.4,
+      },
+      {
+        matiere: 'Sciences Naturelles',
+        moyenne: 14.5,
+        coefficient: 3,
+        professeur: 'Mme Ba',
+        appreciation: 'Bonne participation et rigueur dans les schémas.',
+        moyenne_classe: 12.8,
+      },
+      {
+        matiere: 'Français & Philosophie',
+        moyenne: 14.0,
+        coefficient: 3,
+        professeur: 'Prof. Ndiaye',
+        appreciation: 'Réflexion argumentée et structurée.',
+        moyenne_classe: 10.9,
+      },
+      {
+        matiere: 'Anglais',
+        moyenne: 17.0,
+        coefficient: 2,
+        professeur: 'M. Ould Mohamed',
+        appreciation: 'Aisance remarquable à l\'écrit et à l\'oral.',
+        moyenne_classe: 13.0,
+      },
+    ],
+    emploi_du_temps_aujourdhui: [
+      { heure: '08:00 - 10:00', matiere: 'Mathématiques', salle: 'Salle 12', professeur: 'Prof. Sow' },
+      { heure: '10:15 - 12:15', matiere: 'Physique-Chimie', salle: 'Labo 2', professeur: 'Prof. Kane' },
+      { heure: '14:00 - 16:00', matiere: 'Philosophie', salle: 'Salle 12', professeur: 'Prof. Ndiaye' },
+    ],
+  },
+  'el-003': {
+    id: 'el-003',
+    matricule: 'DEMO-2025-003',
+    nom: 'SOW',
+    prenom: 'Cheikh Tidiane',
+    classe: '6ème A',
+    photo_initiales: 'CS',
+    date_naissance: '2013-09-24',
+    professeur_principal: 'M. Mohamed Ould Vall (Maths)',
+    total_scolarite: 90000,
+    total_regle: 40000,
+    reste_a_payer: 50000,
+    statut_paiement: 'en_retard',
+    prochaine_echeance_date: '2026-03-05',
+    prochaine_echeance_montant: 25000,
+    moyenne_generale: 14.8,
+    rang: '5ème / 32',
+    nb_absences_total: 2,
+    nb_retards_total: 1,
+    bulletin: [
+      {
+        matiere: 'Mathématiques',
+        moyenne: 15.5,
+        coefficient: 4,
+        professeur: 'M. Mohamed Ould Vall',
+        appreciation: 'Très bon trimestre, travail sérieux et appliqué.',
+        moyenne_classe: 13.2,
+      },
+      {
+        matiere: 'Français',
+        moyenne: 13.5,
+        coefficient: 4,
+        professeur: 'Mme Sy',
+        appreciation: 'Des progrès en grammaire, continue ainsi.',
+        moyenne_classe: 12.0,
+      },
+      {
+        matiere: 'Histoire-Géo',
+        moyenne: 14.0,
+        coefficient: 2,
+        professeur: 'M. Diallo',
+        appreciation: 'Bonne mémorisation des cours et esprit curieux.',
+        moyenne_classe: 11.5,
+      },
+      {
+        matiere: 'Sciences de la Vie et de la Terre',
+        moyenne: 16.0,
+        coefficient: 2,
+        professeur: 'M. Mohamed Ould Vall',
+        appreciation: 'Très attentif et curieux des démarches scientifiques.',
+        moyenne_classe: 12.9,
+      },
+      {
+        matiere: 'Arabe',
+        moyenne: 15.0,
+        coefficient: 3,
+        professeur: 'Cheikh Sidi',
+        appreciation: 'Bonne expression et récitation soignée.',
+        moyenne_classe: 13.8,
+      },
+    ],
+    emploi_du_temps_aujourdhui: [
+      { heure: '08:00 - 09:50', matiere: 'Français', salle: 'Salle 4', professeur: 'Mme Sy' },
+      { heure: '10:05 - 12:00', matiere: 'Mathématiques', salle: 'Salle 4', professeur: 'M. Ould Vall' },
+      { heure: '14:30 - 16:30', matiere: 'SVT', salle: 'Salle SVT', professeur: 'M. Ould Vall' },
+    ],
+  },
+};
+
+
 

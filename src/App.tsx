@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Sidebar, NavTab } from './components/ui/Sidebar';
 import { TeacherSidebar, TeacherNavTab } from './components/enseignant/TeacherSidebar';
 import { CaissierSidebar, CaissierNavTab } from './components/caissier/CaissierSidebar';
+import { ParentSidebar, ParentNavTab } from './components/parent/ParentSidebar';
 import { Header, UserRole } from './components/ui/Header';
 import { DirectorDashboard } from './components/dashboard/DirectorDashboard';
 import { ElevesPage } from './pages/ElevesPage';
@@ -17,6 +18,10 @@ import { TeacherGradesPage } from './pages/enseignant/TeacherGradesPage';
 import { CaissierGuichetPage } from './pages/caissier/CaissierGuichetPage';
 import { CaissierJournalPage } from './pages/caissier/CaissierJournalPage';
 import { CaissierImpayesPage } from './pages/caissier/CaissierImpayesPage';
+import { ParentDashboardPage } from './pages/parent/ParentDashboardPage';
+import { ParentPaiementsPage } from './pages/parent/ParentPaiementsPage';
+import { ParentPedagogiePage } from './pages/parent/ParentPedagogiePage';
+import { ParentAssiduitePage } from './pages/parent/ParentAssiduitePage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -29,7 +34,7 @@ const queryClient = new QueryClient({
 
 export function AppContent() {
   // Rôle actif dans l'application (basculable dans le Header pour la démo)
-  const [currentRole, setCurrentRole] = useState<UserRole>('caissier');
+  const [currentRole, setCurrentRole] = useState<UserRole>('parent');
 
   // Onglet actif pour le portail Directeur
   const [activeDirectorTab, setActiveDirectorTab] = useState<NavTab>('dashboard');
@@ -41,6 +46,10 @@ export function AppContent() {
   // Onglet actif et état pour le portail Caissier
   const [activeCaissierTab, setActiveCaissierTab] = useState<CaissierNavTab>('caissier_guichet');
   const [preselectedEleveForGuichet, setPreselectedEleveForGuichet] = useState<string | undefined>(undefined);
+
+  // Onglet actif et état pour le portail Parent
+  const [activeParentTab, setActiveParentTab] = useState<ParentNavTab>('parent_dashboard');
+  const [selectedParentChildId, setSelectedParentChildId] = useState<string>('el-003');
 
   const handleNavigateToElevesWithFilter = (statut: string) => {
     setElevesStatutFilter(statut);
@@ -116,6 +125,45 @@ export function AppContent() {
     }
   };
 
+  const renderParentContent = () => {
+    switch (activeParentTab) {
+      case 'parent_dashboard':
+        return (
+          <ParentDashboardPage
+            selectedChildId={selectedParentChildId}
+            onSelectChild={setSelectedParentChildId}
+            onNavigateTab={setActiveParentTab}
+          />
+        );
+      case 'parent_paiements':
+        return (
+          <ParentPaiementsPage
+            selectedChildId={selectedParentChildId}
+          />
+        );
+      case 'parent_pedagogie':
+        return (
+          <ParentPedagogiePage
+            selectedChildId={selectedParentChildId}
+          />
+        );
+      case 'parent_assiduite':
+        return (
+          <ParentAssiduitePage
+            selectedChildId={selectedParentChildId}
+          />
+        );
+      default:
+        return (
+          <ParentDashboardPage
+            selectedChildId={selectedParentChildId}
+            onSelectChild={setSelectedParentChildId}
+            onNavigateTab={setActiveParentTab}
+          />
+        );
+    }
+  };
+
   return (
     <div className="flex min-h-screen bg-slate-50 font-['Plus_Jakarta_Sans',sans-serif] text-slate-900 antialiased">
       {/* Dynamic Sidebar based on current role */}
@@ -129,6 +177,14 @@ export function AppContent() {
         <CaissierSidebar
           activeTab={activeCaissierTab}
           onTabChange={setActiveCaissierTab}
+        />
+      )}
+      {currentRole === 'parent' && (
+        <ParentSidebar
+          activeTab={activeParentTab}
+          onTabChange={setActiveParentTab}
+          selectedChildId={selectedParentChildId}
+          onSelectChild={setSelectedParentChildId}
         />
       )}
       {currentRole === 'directeur' && (
@@ -147,6 +203,7 @@ export function AppContent() {
         <main className="flex-1 overflow-y-auto">
           {currentRole === 'enseignant' && renderTeacherContent()}
           {currentRole === 'caissier' && renderCaissierContent()}
+          {currentRole === 'parent' && renderParentContent()}
           {currentRole === 'directeur' && renderDirectorContent()}
         </main>
       </div>
