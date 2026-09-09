@@ -171,10 +171,17 @@ export function Select<T extends string | number = string>({
       'bg-transparent border-transparent hover:bg-slate-100 text-slate-700 shadow-none',
   };
 
+  const isFullWidth =
+    className?.includes('w-full') || triggerClassName?.includes('w-full');
+
   return (
     <div
       ref={containerRef}
-      className={cn('relative inline-flex flex-col text-left', className)}
+      className={cn(
+        'relative text-left',
+        isFullWidth ? 'w-full flex flex-col' : 'inline-flex flex-col',
+        className
+      )}
       onKeyDown={handleKeyDown}
     >
       {label && (

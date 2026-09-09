@@ -34,7 +34,7 @@ const queryClient = new QueryClient({
 
 export function AppContent() {
   // Rôle actif dans l'application (basculable dans le Header pour la démo)
-  const [currentRole, setCurrentRole] = useState<UserRole>('parent');
+  const [currentRole, setCurrentRole] = useState<UserRole>('directeur');
 
   // Onglet actif pour le portail Directeur
   const [activeDirectorTab, setActiveDirectorTab] = useState<NavTab>('dashboard');
@@ -165,7 +165,7 @@ export function AppContent() {
   };
 
   return (
-    <div className="flex min-h-screen bg-slate-50 font-['Plus_Jakarta_Sans',sans-serif] text-slate-900 antialiased">
+    <div className="flex h-screen overflow-hidden bg-slate-50 font-['Plus_Jakarta_Sans',sans-serif] text-slate-900 antialiased">
       {/* Dynamic Sidebar based on current role */}
       {currentRole === 'enseignant' && (
         <TeacherSidebar
@@ -195,12 +195,12 @@ export function AppContent() {
       )}
 
       {/* Main Area */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
         <Header
           currentRole={currentRole}
           onRoleChange={setCurrentRole}
         />
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden">
           {currentRole === 'enseignant' && renderTeacherContent()}
           {currentRole === 'caissier' && renderCaissierContent()}
           {currentRole === 'parent' && renderParentContent()}

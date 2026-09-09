@@ -12,13 +12,13 @@ import { Button } from '../../components/ui/Button';
 import { StudentInitials } from '../../components/ui/StudentInitials';
 import { ToastNotification } from '../../components/ui/ToastNotification';
 import { Select } from '../../components/ui/Select';
+import { DatePicker } from '../../components/ui/DatePicker';
 import {
   CalendarCheck,
   CheckCircle2,
   XCircle,
   Clock,
   Sparkles,
-  Calendar,
   FileCheck,
 } from 'lucide-react';
 
@@ -206,15 +206,12 @@ export const TeacherAbsencesPage: React.FC = () => {
             />
 
             {/* Date */}
-            <div className="flex items-center gap-2 bg-white px-3.5 py-2 rounded-xl border border-slate-200 h-10 shadow-2xs">
-              <Calendar className="h-3.5 w-3.5 text-slate-500" />
-              <input
-                type="date"
-                value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
-                className="bg-transparent text-xs font-bold text-slate-900 outline-none cursor-pointer"
-              />
-            </div>
+            <DatePicker
+              value={selectedDate}
+              onChange={setSelectedDate}
+              size="sm"
+              triggerClassName="h-10 rounded-xl text-xs font-bold"
+            />
 
             {/* Créneau Horaire */}
             <Select<'matin' | 'apres_midi'>

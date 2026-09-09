@@ -122,8 +122,8 @@ export const StudentDetailPanel: React.FC<StudentDetailPanelProps> = ({
       </div>
 
       {/* Bento Solde & Prochaine Échéance */}
-      <div className="grid grid-cols-2 gap-3.5">
-        <div className="rounded-xl bg-slate-50/80 border border-slate-200/80 p-4 flex flex-col justify-between hover:border-slate-300 transition-colors">
+      <div className="grid grid-cols-2 gap-3">
+        <div className="rounded-xl bg-slate-50/80 border border-slate-200/80 p-3.5 flex flex-col justify-between hover:border-slate-300 transition-colors">
           <span className="text-[11px] font-bold uppercase text-slate-500 tracking-wider">
             Solde Actuel Dû
           </span>
@@ -148,16 +148,16 @@ export const StudentDetailPanel: React.FC<StudentDetailPanelProps> = ({
           </span>
         </div>
 
-        <div className="rounded-xl bg-slate-50 border border-slate-200/80 p-3 flex flex-col justify-between hover:border-slate-300 transition-colors">
+        <div className="rounded-xl bg-slate-50 border border-slate-200/80 p-3.5 flex flex-col justify-between hover:border-slate-300 transition-colors">
           <span className="text-[11px] font-bold uppercase text-slate-500 tracking-wider">
             Prochaine Échéance
           </span>
-          <div className="mt-1">
+          <div className="mt-1.5">
             <span className="text-xl font-extrabold font-mono text-slate-900">
               {formatMRU(eleve.prochaine_echeance_montant || 15000)}
             </span>
           </div>
-          <span className="text-[11px] font-medium text-slate-500 mt-1 flex items-center gap-1">
+          <span className="text-[11px] font-medium text-slate-500 mt-1.5 flex items-center gap-1">
             <Calendar className="h-3 w-3 text-slate-400" />
             <span>{eleve.prochaine_echeance_date || '05/03/2026'}</span>
           </span>
@@ -180,7 +180,7 @@ export const StudentDetailPanel: React.FC<StudentDetailPanelProps> = ({
             Aucun paiement enregistré pour l'instant.
           </div>
         ) : (
-          <div className="relative pl-4 space-y-3">
+          <div className="relative pl-4 space-y-3 max-h-60 overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-slate-200">
             {/* Timeline vertical connector */}
             <div className="absolute left-1.5 top-2 bottom-2 w-[2px] bg-slate-200" />
 

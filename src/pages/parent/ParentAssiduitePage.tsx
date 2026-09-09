@@ -7,6 +7,7 @@ import {
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Select } from '../../components/ui/Select';
+import { DatePicker } from '../../components/ui/DatePicker';
 import { ToastNotification } from '../../components/ui/ToastNotification';
 import {
   CalendarCheck,
@@ -269,15 +270,15 @@ export const ParentAssiduitePage: React.FC<ParentAssiduitePageProps> = ({
 
             <form onSubmit={handleDeclareAbsence} className="p-6 space-y-4">
               <div>
-                <label className="text-xs font-bold text-slate-700 uppercase tracking-wider block mb-1">
+                <label className="text-xs font-bold text-slate-700 uppercase tracking-wider block mb-1.5">
                   Date de l'absence
                 </label>
-                <input
-                  type="date"
+                <DatePicker
                   value={dateAbsence}
-                  onChange={(e) => setDateAbsence(e.target.value)}
-                  required
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                  onChange={setDateAbsence}
+                  size="sm"
+                  className="w-full"
+                  triggerClassName="w-full h-10 rounded-xl text-xs font-semibold"
                 />
               </div>
 

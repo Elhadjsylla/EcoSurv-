@@ -12,6 +12,7 @@ import { Button } from '../../components/ui/Button';
 import { StudentInitials } from '../../components/ui/StudentInitials';
 import { ToastNotification } from '../../components/ui/ToastNotification';
 import { Select } from '../../components/ui/Select';
+import { DatePicker } from '../../components/ui/DatePicker';
 import {
   PlusCircle,
   Save,
@@ -514,11 +515,12 @@ export const TeacherGradesPage: React.FC = () => {
 
                 <div>
                   <label className="font-bold text-slate-700 block mb-1">Date</label>
-                  <input
-                    type="date"
+                  <DatePicker
                     value={newEvalDate}
-                    onChange={(e) => setNewEvalDate(e.target.value)}
-                    className="w-full h-9 px-3 rounded-lg border border-slate-300 text-slate-900 font-mono focus:outline-none focus:ring-2 focus:ring-emerald-600"
+                    onChange={setNewEvalDate}
+                    size="sm"
+                    className="w-full"
+                    triggerClassName="w-full h-9 rounded-lg font-mono text-xs"
                   />
                 </div>
               </div>

@@ -552,7 +552,7 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
       </Card>
 
       {/* Primary Split Architecture: 65% Roster Table / 35% Detailed Ledger Dossier */}
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start">
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 lg:gap-8 items-start">
         {/* Left Wing (65% -> 8 cols on XL) */}
         <div className="xl:col-span-8 flex flex-col bg-white rounded-2xl border border-slate-200/90 shadow-2xs overflow-hidden">
           {/* Table Header Bar */}
@@ -573,12 +573,12 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
             </span>
           </div>
 
-          {/* Tabular Roster */}
-          <div className="overflow-x-auto">
+          {/* Tabular Roster with smooth internal scrollbar */}
+          <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-transparent">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
                 <tr className="border-b border-slate-200 bg-slate-50/80 font-bold uppercase tracking-wider text-slate-500">
-                  <th className="py-4 px-5 w-10 text-center">
+                  <th className="py-3.5 px-3 w-8 text-center">
                     <input
                       type="checkbox"
                       checked={isAllSelected}
@@ -586,13 +586,13 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
                       className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
                     />
                   </th>
-                  <th className="py-4 px-5">Matricule</th>
-                  <th className="py-4 px-5">Élève</th>
-                  <th className="py-4 px-5">Classe</th>
-                  <th className="py-4 px-5">Tuteur Légal</th>
-                  <th className="py-4 px-5 text-right">Solde Dû</th>
-                  <th className="py-4 px-5 text-center">Statut</th>
-                  <th className="py-4 px-5 text-right">Actions Rapides</th>
+                  <th className="py-3.5 px-3">Matricule</th>
+                  <th className="py-3.5 px-3.5">Élève</th>
+                  <th className="py-3.5 px-3">Classe</th>
+                  <th className="py-3.5 px-3 hidden 2xl:table-cell">Tuteur Légal</th>
+                  <th className="py-3.5 px-3 text-right">Solde Dû</th>
+                  <th className="py-3.5 px-3 text-center">Statut</th>
+                  <th className="py-3.5 px-3 text-right">Actions Rapides</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-sm">
@@ -624,7 +624,7 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
                         }`}
                       >
                         {/* Checkbox */}
-                        <td className="py-4.5 px-5 text-center" onClick={(e) => e.stopPropagation()}>
+                        <td className="py-3.5 px-3 text-center" onClick={(e) => e.stopPropagation()}>
                           <input
                             type="checkbox"
                             checked={isChecked}
@@ -634,12 +634,12 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
                         </td>
 
                         {/* Matricule */}
-                        <td className="py-4.5 px-5 font-mono font-bold text-blue-700 whitespace-nowrap">
+                        <td className="py-3.5 px-3 font-mono font-bold text-blue-700 whitespace-nowrap">
                           {eleve.matricule}
                         </td>
 
                         {/* Élève */}
-                        <td className="py-4.5 px-5">
+                        <td className="py-3.5 px-3.5">
                           <div className="flex items-center gap-3">
                             <StudentInitials nom={eleve.nom} prenom={eleve.prenom} size="sm" />
                             <div>
@@ -654,14 +654,14 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
                         </td>
 
                         {/* Classe */}
-                        <td className="py-4.5 px-5">
+                        <td className="py-3.5 px-3">
                           <span className="inline-flex items-center rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
                             {eleve.classe}
                           </span>
                         </td>
 
-                        {/* Tuteur */}
-                        <td className="py-4.5 px-5">
+                        {/* Tuteur (visible sur grands écrans 2xl+, déjà visible dans le panneau détail à droite) */}
+                        <td className="py-3.5 px-3 hidden 2xl:table-cell">
                           <div className="text-xs space-y-0.5">
                             <div className="font-semibold text-slate-800">{eleve.nom_tuteur}</div>
                             <div className="text-slate-500 font-mono text-[11px]">
@@ -671,7 +671,7 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
                         </td>
 
                         {/* Solde Dû */}
-                        <td className="py-4.5 px-5 text-right font-mono font-bold whitespace-nowrap text-sm">
+                        <td className="py-3.5 px-3 text-right font-mono font-bold whitespace-nowrap text-sm">
                           {eleve.remaining > 0 ? (
                             <span className="text-red-700">{formatMRU(eleve.remaining)}</span>
                           ) : (
@@ -680,22 +680,22 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
                         </td>
 
                         {/* Statut Badge */}
-                        <td className="py-4.5 px-5 text-center whitespace-nowrap">
+                        <td className="py-3.5 px-3 text-center whitespace-nowrap">
                           <StatusBadge statut={eleve.statut} />
                         </td>
 
                         {/* Actions Rapides en Ligne */}
                         <td
-                          className="py-4.5 px-5 text-right"
+                          className="py-3.5 px-3 text-right whitespace-nowrap"
                           onClick={(e) => e.stopPropagation()}
                         >
-                          <div className="flex items-center justify-end gap-2">
+                          <div className="flex items-center justify-end gap-1.5">
                             {eleve.remaining > 0 ? (
                               <>
                                 <Button
                                   size="sm"
                                   variant="outline"
-                                  className="h-8 px-2.5 text-xs gap-1 text-emerald-700 border-emerald-200 hover:bg-emerald-50 hover:scale-105 active:scale-95 transition-all duration-150"
+                                  className="h-7.5 px-2 text-xs gap-1 text-emerald-700 border-emerald-200 hover:bg-emerald-50 hover:scale-105 active:scale-95 transition-all duration-150"
                                   title="Marquer réglé immédiatement"
                                   onClick={(e) => triggerMarquerPayeExpress(eleve, e)}
                                 >
@@ -706,7 +706,7 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
                                 <Button
                                   size="sm"
                                   variant="danger"
-                                  className="h-8 px-2.5 text-xs gap-1 hover:scale-105 active:scale-95 transition-all duration-150 relative overflow-hidden"
+                                  className="h-7.5 px-2 text-xs gap-1 hover:scale-105 active:scale-95 transition-all duration-150 relative overflow-hidden"
                                   title="Envoyer rappel SMS"
                                   onClick={(e) => triggerRelance(eleve, e)}
                                 >
@@ -715,11 +715,11 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
                                       isRelancing ? 'animate-paper-plane' : ''
                                     }`}
                                   />
-                                  {isRelancing ? 'Envoi...' : 'Relancer'}
+                                  {isRelancing ? '...' : 'Relancer'}
                                 </Button>
                               </>
                             ) : (
-                              <span className="text-xs font-semibold text-emerald-700 flex items-center gap-1 pr-2 animate-scale-in">
+                              <span className="text-xs font-semibold text-emerald-700 flex items-center gap-1 pr-1 animate-scale-in">
                                 <Check className="h-4 w-4 text-emerald-600" /> Soldé
                               </span>
                             )}
@@ -734,8 +734,8 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
           </div>
         </div>
 
-        {/* Right Wing: Dossier de l'élève sélectionné (35% -> 4 cols on XL) */}
-        <div className="xl:col-span-4">
+        {/* Right Wing: Dossier de l'élève sélectionné (35% -> 4 cols on XL) - Sticky on desktop */}
+        <div className="xl:col-span-4 xl:sticky xl:top-6 self-start space-y-4">
           <StudentDetailPanel
             eleve={selectedEleve}
             onPaymentTrigger={(el) => setPaymentModalEleve(el)}

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { z } from 'zod';
 import { Button } from '../ui/Button';
 import { Select } from '../ui/Select';
+import { DatePicker } from '../ui/DatePicker';
 import { EleveWithStats, LienParente } from '../../lib/mockData';
 import { X, UserPlus, ShieldAlert, CheckCircle } from 'lucide-react';
 
@@ -208,13 +209,15 @@ export const StudentEnrollmentModal: React.FC<StudentEnrollmentModalProps> = ({
                   <label className="block text-xs font-semibold text-slate-700 mb-1">
                     Date de naissance <span className="text-red-500">*</span>
                   </label>
-                  <input
-                    type="date"
+                  <DatePicker
                     value={formData.date_naissance || ''}
-                    onChange={(e) =>
-                      setFormData({ ...formData, date_naissance: e.target.value })
+                    onChange={(val) =>
+                      setFormData({ ...formData, date_naissance: val })
                     }
-                    className="w-full h-9 px-3 rounded-lg border border-slate-300 text-xs focus:ring-2 focus:ring-blue-600 focus:outline-none"
+                    size="sm"
+                    className="w-full"
+                    triggerClassName="w-full h-9 rounded-lg text-xs"
+                    placeholder="JJ/MM/AAAA"
                   />
                   {errors.date_naissance && (
                     <p className="text-[11px] text-red-600 mt-1 flex items-center gap-1">

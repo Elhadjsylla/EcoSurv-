@@ -33,7 +33,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange, classN
   return (
     <aside
       className={cn(
-        'flex flex-col w-64 border-r border-slate-200 bg-slate-900 text-slate-300 shrink-0 min-h-screen',
+        'flex flex-col w-64 border-r border-slate-200 bg-slate-900 text-slate-300 shrink-0 h-screen overflow-y-auto',
         className
       )}
     >
