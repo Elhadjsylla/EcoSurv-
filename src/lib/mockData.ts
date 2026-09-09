@@ -949,3 +949,140 @@ export function getElevesForTeacher(
     }));
 }
 
+// ---------------------------------------------------------------------------
+// PORTAIL CAISSIER (GUICHET FINANCIER — AUCUNE DONNÉE PÉDAGOGIQUE)
+// ---------------------------------------------------------------------------
+
+export interface CaissierMock {
+  id: string;
+  ecole_id: string;
+  nom: string;
+  prenom: string;
+  email: string;
+  telephone: string;
+  role: 'caissier';
+  guichet: string;
+}
+
+export const CURRENT_CAISSIER: CaissierMock = {
+  id: 'user-cais-001',
+  ecole_id: 'ecole-demo-001',
+  nom: 'OULD TALEB',
+  prenom: 'Ahmedou',
+  email: 'caissier.demo@ecosurv.test',
+  telephone: '+222 46 00 00 04',
+  role: 'caissier',
+  guichet: 'Guichet Central N°1',
+};
+
+export interface CaisseTransaction {
+  id: string;
+  eleve_id: string;
+  eleve_nom: string;
+  eleve_prenom: string;
+  matricule: string;
+  classe: string;
+  echeance_libelle: string;
+  montant: number;
+  date: string;
+  heure: string;
+  methode: MethodePaiement;
+  recu_ref: string;
+  encaisse_par: string;
+  statut: 'confirme' | 'en_attente';
+}
+
+export const MOCK_CAISSE_TRANSACTIONS_INITIAL: CaisseTransaction[] = [
+  {
+    id: 'cais-tx-001',
+    eleve_id: 'el-001',
+    eleve_nom: 'DIALLO',
+    eleve_prenom: 'Mamadou Oury',
+    matricule: 'DEMO-2025-001',
+    classe: 'Terminales C',
+    echeance_libelle: 'Mensualité Février 2026',
+    montant: 15000,
+    date: '2026-03-09',
+    heure: '09:15',
+    methode: 'bankily',
+    recu_ref: 'REC-NKTT-8812',
+    encaisse_par: 'Ahmedou Ould Taleb',
+    statut: 'confirme',
+  },
+  {
+    id: 'cais-tx-002',
+    eleve_id: 'el-004',
+    eleve_nom: 'MBOUP',
+    eleve_prenom: 'Fatou Binetou',
+    matricule: 'DEMO-2025-004',
+    classe: 'CM2 A',
+    echeance_libelle: 'Règlement Trimestre 2',
+    montant: 20000,
+    date: '2026-03-09',
+    heure: '10:30',
+    methode: 'especes',
+    recu_ref: 'REC-NKTT-8813',
+    encaisse_par: 'Ahmedou Ould Taleb',
+    statut: 'confirme',
+  },
+  {
+    id: 'cais-tx-003',
+    eleve_id: 'el-003',
+    eleve_nom: 'SOW',
+    eleve_prenom: 'Cheikh Tidiane',
+    matricule: 'DEMO-2025-003',
+    classe: '6ème A',
+    echeance_libelle: 'Acompte Janvier 2026',
+    montant: 10000,
+    date: '2026-03-09',
+    heure: '11:45',
+    methode: 'masrvi',
+    recu_ref: 'REC-NKTT-8814',
+    encaisse_par: 'Ahmedou Ould Taleb',
+    statut: 'confirme',
+  },
+  {
+    id: 'cais-tx-004',
+    eleve_id: 'el-009',
+    eleve_nom: 'TALL',
+    eleve_prenom: 'Hamady',
+    matricule: 'DEMO-2025-009',
+    classe: '6ème A',
+    echeance_libelle: 'Mensualité Février 2026',
+    montant: 12500,
+    date: '2026-03-08',
+    heure: '15:20',
+    methode: 'especes',
+    recu_ref: 'REC-NKTT-8809',
+    encaisse_par: 'Ahmedou Ould Taleb',
+    statut: 'confirme',
+  },
+];
+
+// ---------------------------------------------------------------------------
+// PORTAIL PARENT (VUE RESTREINTE AUX ENFANTS DE LA FAMILLE)
+// ---------------------------------------------------------------------------
+
+export interface ParentMock {
+  id: string;
+  ecole_id: string;
+  nom: string;
+  prenom: string;
+  telephone: string;
+  email: string;
+  role: 'parent';
+  enfants_ids: string[];
+}
+
+export const CURRENT_PARENT: ParentMock = {
+  id: 'user-parent-001',
+  ecole_id: 'ecole-demo-001',
+  nom: 'DIALLO',
+  prenom: 'Amadou',
+  telephone: '+222 22 11 33 44',
+  email: 'a.diallo@gmail.com',
+  role: 'parent',
+  enfants_ids: ['el-001', 'el-003'], // Mamadou Oury Diallo (Term C) et Cheikh Tidiane Sow (6ème A)
+};
+
+
