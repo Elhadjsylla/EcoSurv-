@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Sidebar, NavTab } from './components/ui/Sidebar';
+import { TeacherSidebar, TeacherNavTab } from './components/enseignant/TeacherSidebar';
 import { Header } from './components/ui/Header';
 import { DirectorDashboard } from './components/dashboard/DirectorDashboard';
 import { ElevesPage } from './pages/ElevesPage';
@@ -8,6 +9,10 @@ import { EcheancesPage } from './pages/EcheancesPage';
 import { RelancesPage } from './pages/RelancesPage';
 import { RapportsPage } from './pages/RapportsPage';
 import { ConfigPage } from './pages/ConfigPage';
+import { TeacherDashboard } from './pages/enseignant/TeacherDashboard';
+import { TeacherClassesPage } from './pages/enseignant/TeacherClassesPage';
+import { TeacherAbsencesPage } from './pages/enseignant/TeacherAbsencesPage';
+import { TeacherGradesPage } from './pages/enseignant/TeacherGradesPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -19,16 +24,23 @@ const queryClient = new QueryClient({
 });
 
 export function AppContent() {
-  const [activeTab, setActiveTab] = useState<NavTab>('dashboard');
+  // Rôle actif dans l'application (basculable dans le Header pour la démo)
+  const [currentRole, setCurrentRole] = useState<'directeur' | 'enseignant'>('enseignant');
+
+  // Onglet actif pour le portail Directeur
+  const [activeDirectorTab, setActiveDirectorTab] = useState<NavTab>('dashboard');
   const [elevesStatutFilter, setElevesStatutFilter] = useState<string>('all');
+
+  // Onglet actif pour le portail Enseignant
+  const [activeTeacherTab, setActiveTeacherTab] = useState<TeacherNavTab>('teacher_dashboard');
 
   const handleNavigateToElevesWithFilter = (statut: string) => {
     setElevesStatutFilter(statut);
-    setActiveTab('eleves');
+    setActiveDirectorTab('eleves');
   };
 
-  const renderContent = () => {
-    switch (activeTab) {
+  const renderDirectorContent = () => {
+    switch (activeDirectorTab) {
       case 'dashboard':
         return <DirectorDashboard onNavigateToEleves={handleNavigateToElevesWithFilter} />;
       case 'eleves':
@@ -51,15 +63,53 @@ export function AppContent() {
     }
   };
 
+  const renderTeacherContent = () => {
+    switch (activeTeacherTab) {
+      case 'teacher_dashboard':
+        return (
+          <TeacherDashboard
+            onNavigateToTab={(tab) => setActiveTeacherTab(tab)}
+          />
+        );
+      case 'teacher_classes':
+        return <TeacherClassesPage />;
+      case 'teacher_absences':
+        return <TeacherAbsencesPage />;
+      case 'teacher_grades':
+        return <TeacherGradesPage />;
+      default:
+        return (
+          <TeacherDashboard
+            onNavigateToTab={(tab) => setActiveTeacherTab(tab)}
+          />
+        );
+    }
+  };
+
   return (
     <div className="flex min-h-screen bg-slate-50 font-['Plus_Jakarta_Sans',sans-serif] text-slate-900 antialiased">
-      {/* Left Sidebar */}
-      <Sidebar activeTab={activeTab} onTabChange={setActiveTab} />
+      {/* Dynamic Sidebar based on current role */}
+      {currentRole === 'enseignant' ? (
+        <TeacherSidebar
+          activeTab={activeTeacherTab}
+          onTabChange={setActiveTeacherTab}
+        />
+      ) : (
+        <Sidebar
+          activeTab={activeDirectorTab}
+          onTabChange={setActiveDirectorTab}
+        />
+      )}
 
       {/* Main Area */}
       <div className="flex-1 flex flex-col min-w-0">
-        <Header />
-        <main className="flex-1 overflow-y-auto">{renderContent()}</main>
+        <Header
+          currentRole={currentRole}
+          onRoleChange={setCurrentRole}
+        />
+        <main className="flex-1 overflow-y-auto">
+          {currentRole === 'enseignant' ? renderTeacherContent() : renderDirectorContent()}
+        </main>
       </div>
     </div>
   );

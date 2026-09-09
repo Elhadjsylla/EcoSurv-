@@ -433,6 +433,106 @@ export const MOCK_ELEVES: EleveWithStats[] = [
       },
     ],
   },
+  {
+    id: 'el-009',
+    ecole_id: 'ecole-demo-001',
+    matricule: 'DEMO-2025-009',
+    nom: 'TALL',
+    prenom: 'Hamady',
+    date_naissance: '2012-07-14',
+    lieu_naissance: 'Boghé',
+    sexe: 'M',
+    classe: '6ème A',
+    nom_tuteur: 'Amadou Tall',
+    telephone_tuteur: '+222 41 22 33 44',
+    adresse_tuteur: 'El Mina, Nouakchott',
+    lien_parente: 'pere',
+    actif: true,
+    total_due: 35000,
+    total_paid: 35000,
+    remaining: 0,
+    statut: 'paye',
+    derniere_echeance_date: '2026-02-15',
+    prochaine_echeance_date: '2026-03-15',
+    prochaine_echeance_montant: 12500,
+    nb_absences: 1,
+    timeline_paiements: [],
+  },
+  {
+    id: 'el-010',
+    ecole_id: 'ecole-demo-001',
+    matricule: 'DEMO-2025-010',
+    nom: 'MINT CHEIKH',
+    prenom: 'Khadija',
+    date_naissance: '2012-09-03',
+    lieu_naissance: 'Nouakchott',
+    sexe: 'F',
+    classe: '6ème A',
+    nom_tuteur: 'Cheikh Ould Sidya',
+    telephone_tuteur: '+222 37 88 99 00',
+    adresse_tuteur: 'Tevragh-Zeina, Nouakchott',
+    lien_parente: 'pere',
+    actif: true,
+    total_due: 35000,
+    total_paid: 20000,
+    remaining: 15000,
+    statut: 'partiel',
+    derniere_echeance_date: '2026-02-01',
+    prochaine_echeance_date: '2026-03-01',
+    prochaine_echeance_montant: 12500,
+    nb_absences: 0,
+    timeline_paiements: [],
+  },
+  {
+    id: 'el-011',
+    ecole_id: 'ecole-demo-001',
+    matricule: 'DEMO-2025-011',
+    nom: 'SYLLA',
+    prenom: 'Bilal',
+    date_naissance: '2014-02-18',
+    lieu_naissance: 'Nouakchott',
+    sexe: 'M',
+    classe: 'CM2 A',
+    nom_tuteur: 'Yacoub Sylla',
+    telephone_tuteur: '+222 29 11 22 33',
+    adresse_tuteur: 'Socogim PS, Nouakchott',
+    lien_parente: 'pere',
+    actif: true,
+    total_due: 30000,
+    total_paid: 30000,
+    remaining: 0,
+    statut: 'paye',
+    derniere_echeance_date: '2026-02-10',
+    prochaine_echeance_date: '2026-03-10',
+    prochaine_echeance_montant: 10000,
+    nb_absences: 3,
+    timeline_paiements: [],
+  },
+  {
+    id: 'el-012',
+    ecole_id: 'ecole-demo-001',
+    matricule: 'DEMO-2025-012',
+    nom: 'WANE',
+    prenom: 'Mariam',
+    date_naissance: '2014-06-25',
+    lieu_naissance: 'Nouakchott',
+    sexe: 'F',
+    classe: 'CM2 A',
+    nom_tuteur: 'Ibrahima Wane',
+    telephone_tuteur: '+222 48 55 66 77',
+    adresse_tuteur: 'Ksar, Nouakchott',
+    lien_parente: 'pere',
+    actif: true,
+    total_due: 30000,
+    total_paid: 10000,
+    remaining: 20000,
+    statut: 'en_retard',
+    derniere_echeance_date: '2026-01-20',
+    prochaine_echeance_date: '2026-01-20',
+    prochaine_echeance_montant: 10000,
+    nb_absences: 1,
+    timeline_paiements: [],
+  },
 ];
 
 export const MOCK_ECHEANCIERS: EcheancierConfig[] = [
@@ -608,3 +708,244 @@ export function getDashboardKpis(eleves: EleveWithStats[]) {
     nombreAJour,
   };
 }
+
+// ---------------------------------------------------------------------------
+// PORTAIL ENSEIGNANT (ESPACE PÉDAGOGIQUE — AUCUNE DONNÉE FINANCIÈRE)
+// ---------------------------------------------------------------------------
+
+export interface EnseignantMock {
+  id: string;
+  ecole_id: string;
+  nom: string;
+  prenom: string;
+  email: string;
+  telephone: string;
+  role: 'enseignant';
+  classes_assignees: string[];
+  matieres: string[];
+}
+
+export const CURRENT_ENSEIGNANT: EnseignantMock = {
+  id: 'prof-salma-001',
+  ecole_id: 'ecole-demo-001',
+  nom: 'MINT AHMED',
+  prenom: 'Salma',
+  email: 'enseignant.demo@ecosurv.test',
+  telephone: '+222 46 00 00 03',
+  role: 'enseignant',
+  classes_assignees: ['6ème A', 'CM2 A'],
+  matieres: ['Mathématiques', 'Sciences de la Vie et de la Terre', 'Français'],
+};
+
+/**
+ * Vue élève pédagogique restreinte — AUCUN montant, AUCUN solde, AUCUN reçu.
+ * Conforme aux policies RLS de BACKEND_AGENT.md.
+ */
+export interface ElevePedagogique {
+  id: string;
+  matricule: string;
+  nom: string;
+  prenom: string;
+  date_naissance: string;
+  lieu_naissance: string;
+  sexe: 'M' | 'F';
+  classe: string;
+  nom_tuteur: string;
+  telephone_tuteur: string;
+  adresse_tuteur: string;
+  lien_parente: LienParente;
+  actif: boolean;
+  nb_absences: number;
+  nb_retards: number;
+  moyenne_generale: number;
+  statut_presence_jour?: 'present' | 'absent' | 'retard';
+}
+
+export interface AbsenceRecord {
+  id: string;
+  eleve_id: string;
+  eleve_nom: string;
+  eleve_prenom: string;
+  classe: string;
+  date_absence: string; // YYYY-MM-DD
+  creneau: 'matin' | 'apres_midi';
+  type: 'absence' | 'retard';
+  justifiee: boolean;
+  motif?: string;
+  minutes_retard?: number;
+}
+
+export interface EvaluationRecord {
+  id: string;
+  classe: string;
+  matiere: string;
+  titre: string;
+  date: string;
+  trimestre: 'Trimestre 1' | 'Trimestre 2' | 'Trimestre 3';
+  coefficient: number;
+  bareme: number; // ex: 20
+  notes: Record<string, number | null>; // eleve_id -> note (/20)
+}
+
+export const MOCK_ABSENCES_INITIAL: AbsenceRecord[] = [
+  {
+    id: 'abs-001',
+    eleve_id: 'el-003',
+    eleve_nom: 'SOW',
+    eleve_prenom: 'Cheikh Tidiane',
+    classe: '6ème A',
+    date_absence: '2026-03-08',
+    creneau: 'matin',
+    type: 'retard',
+    justifiee: true,
+    motif: 'Panne de transport scolaire',
+    minutes_retard: 20,
+  },
+  {
+    id: 'abs-002',
+    eleve_id: 'el-007',
+    eleve_nom: 'CAMARA',
+    eleve_prenom: 'Boubacar',
+    classe: '6ème A',
+    date_absence: '2026-03-05',
+    creneau: 'matin',
+    type: 'absence',
+    justifiee: false,
+    motif: 'Raison non communiquée',
+  },
+  {
+    id: 'abs-003',
+    eleve_id: 'el-004',
+    eleve_nom: 'MBOUP',
+    eleve_prenom: 'Fatou Binetou',
+    classe: 'CM2 A',
+    date_absence: '2026-03-06',
+    creneau: 'apres_midi',
+    type: 'absence',
+    justifiee: true,
+    motif: 'Rendez-vous médical dentaire',
+  },
+  {
+    id: 'abs-004',
+    eleve_id: 'el-011',
+    eleve_nom: 'SYLLA',
+    eleve_prenom: 'Bilal',
+    classe: 'CM2 A',
+    date_absence: '2026-03-08',
+    creneau: 'matin',
+    type: 'absence',
+    justifiee: false,
+    motif: 'Absence non justifiée',
+  },
+];
+
+export const MOCK_EVALUATIONS_INITIAL: EvaluationRecord[] = [
+  {
+    id: 'eval-001',
+    classe: '6ème A',
+    matiere: 'Mathématiques',
+    titre: 'Contrôle N°2 : Algèbre & Fractions',
+    date: '2026-02-25',
+    trimestre: 'Trimestre 2',
+    coefficient: 2,
+    bareme: 20,
+    notes: {
+      'el-003': 15.5,
+      'el-007': 12.0,
+      'el-009': 17.0,
+      'el-010': 14.5,
+    },
+  },
+  {
+    id: 'eval-002',
+    classe: '6ème A',
+    matiere: 'Sciences de la Vie et de la Terre',
+    titre: 'Devoir N°1 : Classification du Vivant',
+    date: '2026-02-18',
+    trimestre: 'Trimestre 2',
+    coefficient: 1,
+    bareme: 20,
+    notes: {
+      'el-003': 14.0,
+      'el-007': 11.5,
+      'el-009': 16.0,
+      'el-010': 15.0,
+    },
+  },
+  {
+    id: 'eval-003',
+    classe: 'CM2 A',
+    matiere: 'Mathématiques',
+    titre: 'Calcul Mental & Problèmes Géométriques',
+    date: '2026-02-27',
+    trimestre: 'Trimestre 2',
+    coefficient: 2,
+    bareme: 20,
+    notes: {
+      'el-004': 18.0,
+      'el-008': 14.0,
+      'el-011': 13.5,
+      'el-012': 11.0,
+    },
+  },
+  {
+    id: 'eval-004',
+    classe: 'CM2 A',
+    matiere: 'Français',
+    titre: 'Dictée & Compréhension de Texte',
+    date: '2026-02-20',
+    trimestre: 'Trimestre 2',
+    coefficient: 2,
+    bareme: 20,
+    notes: {
+      'el-004': 16.5,
+      'el-008': 13.0,
+      'el-011': 12.0,
+      'el-012': 10.5,
+    },
+  },
+];
+
+/**
+ * Filtre les élèves pour un enseignant :
+ * 1. Uniquement ses classes assignées (ex: 6ème A, CM2 A)
+ * 2. Purge totale de tout champ financier (montant, solde, impayé, timeline)
+ */
+export function getElevesForTeacher(
+  eleves: EleveWithStats[],
+  classesAssignees: string[]
+): ElevePedagogique[] {
+  const moyennesParEleve: Record<string, number> = {
+    'el-003': 14.8,
+    'el-004': 17.2,
+    'el-007': 11.8,
+    'el-008': 13.5,
+    'el-009': 16.5,
+    'el-010': 14.8,
+    'el-011': 12.8,
+    'el-012': 10.8,
+  };
+
+  return eleves
+    .filter((e) => classesAssignees.includes(e.classe))
+    .map((e) => ({
+      id: e.id,
+      matricule: e.matricule,
+      nom: e.nom,
+      prenom: e.prenom,
+      date_naissance: e.date_naissance,
+      lieu_naissance: e.lieu_naissance,
+      sexe: e.sexe,
+      classe: e.classe,
+      nom_tuteur: e.nom_tuteur,
+      telephone_tuteur: e.telephone_tuteur,
+      adresse_tuteur: e.adresse_tuteur,
+      lien_parente: e.lien_parente,
+      actif: e.actif,
+      nb_absences: e.nb_absences,
+      nb_retards: e.id === 'el-003' ? 1 : 0,
+      moyenne_generale: moyennesParEleve[e.id] || 13.0,
+      statut_presence_jour: 'present',
+    }));
+}
+
