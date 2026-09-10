@@ -27,6 +27,7 @@ import {
   Check,
   Zap,
 } from 'lucide-react';
+import { ConfirmBulkRelanceModal } from './ConfirmBulkRelanceModal';
 
 interface DirectorDashboardProps {
   onNavigateToEleves?: (statutFilter: string) => void;
@@ -204,10 +205,44 @@ export const DirectorDashboard: React.FC<DirectorDashboardProps> = ({
     setTimeout(() => setJustPaidEleveId(null), 1400);
   };
 
-  // Action groupée : Relancer la sélection
+  // Export & Relance modal state
+  const [isExportingPdf, setIsExportingPdf] = useState(false);
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+  const [isSendingRelance, setIsSendingRelance] = useState(false);
+  const [relancedStudentIds, setRelancedStudentIds] = useState<string[]>([]);
+
+  // Export PDF réactif avec spinner et confirmation toast
+  const handleExportPdf = () => {
+    setIsExportingPdf(true);
+    setTimeout(() => {
+      setIsExportingPdf(false);
+      showToast('✓ Rapport de synthèse PDF généré et téléchargé avec succès !', 'success');
+    }, 850);
+  };
+
+  // Confirmation relance groupée
+  const handleConfirmBulkRelance = () => {
+    setIsSendingRelance(true);
+    setTimeout(() => {
+      setIsSendingRelance(false);
+      setIsConfirmModalOpen(false);
+      triggerConfettiCelebration();
+      const overdueIds = elevesList
+        .filter((e) => e.statut === 'en_retard' || e.statut === 'partiel')
+        .map((e) => e.id);
+      setRelancedStudentIds((prev) => Array.from(new Set([...prev, ...overdueIds])));
+      showToast(
+        `⚡ Campagne de relance envoyée avec succès à ${kpis.nombreEnRetard} familles !`,
+        'info'
+      );
+    }, 900);
+  };
+
+  // Actions groupées (Bulk actions)
   const handleBulkRelance = () => {
     const count = selectedEleveIds.length;
     if (count === 0) return;
+    setRelancedStudentIds((prev) => Array.from(new Set([...prev, ...selectedEleveIds])));
     showToast(
       `⚡ Campagne de relance envoyée avec succès à ${count} tuteur(s) d'élèves présélectionnés.`,
       'info'
@@ -218,7 +253,7 @@ export const DirectorDashboard: React.FC<DirectorDashboardProps> = ({
   // Action groupée : Exporter la sélection
   const handleBulkExport = () => {
     const count = selectedEleveIds.length;
-    showToast(`Export du rapport comptable pour ${count} élève(s) sélectionné(s).`, 'info');
+    showToast(`✓ Export du rapport comptable pour ${count} élève(s) généré avec succès.`, 'info');
   };
 
   return (
@@ -284,7 +319,14 @@ export const DirectorDashboard: React.FC<DirectorDashboardProps> = ({
         </div>
 
         <div className="flex items-center gap-3">
-          <Button variant="outline" size="sm" className="gap-2 h-10 px-4">
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-2 h-10 px-4"
+            loading={isExportingPdf}
+            loadingText="Génération PDF..."
+            onClick={handleExportPdf}
+          >
             <Download className="h-4 w-4" />
             Exporter Rapport PDF
           </Button>
@@ -292,7 +334,7 @@ export const DirectorDashboard: React.FC<DirectorDashboardProps> = ({
             variant="primary"
             size="sm"
             className="gap-2 h-10 px-4"
-            onClick={handleBulkRelance}
+            onClick={() => setIsConfirmModalOpen(true)}
           >
             <Send className="h-4 w-4" />
             Relancer tous les impayés ({kpis.nombreEnRetard})
@@ -570,7 +612,14 @@ export const DirectorDashboard: React.FC<DirectorDashboardProps> = ({
 
                       {/* Statut Badge */}
                       <td className="py-4.5 px-6 text-center">
-                        <StatusBadge statut={eleve.statut} />
+                        <div className="flex flex-col items-center gap-1">
+                          <StatusBadge statut={eleve.statut} />
+                          {relancedStudentIds.includes(eleve.id) && (
+                            <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700 border border-emerald-200 animate-in fade-in zoom-in-95">
+                              <Check className="h-3 w-3" /> Relancé aujourd'hui
+                            </span>
+                          )}
+                        </div>
                       </td>
 
                       {/* Actions Rapides en Ligne */}
@@ -725,6 +774,16 @@ export const DirectorDashboard: React.FC<DirectorDashboardProps> = ({
           </div>
         </div>
       )}
+
+      {/* Modale de Confirmation de Relance Groupée */}
+      <ConfirmBulkRelanceModal
+        isOpen={isConfirmModalOpen}
+        count={kpis.nombreEnRetard}
+        totalAmount={kpis.totalImpayes}
+        isSending={isSendingRelance}
+        onConfirm={handleConfirmBulkRelance}
+        onClose={() => setIsConfirmModalOpen(false)}
+      />
     </div>
   );
 };

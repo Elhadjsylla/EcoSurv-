@@ -21,6 +21,8 @@ import {
 export const RapportsPage: React.FC = () => {
   const [reports] = useState<MonthlyFinancialReport[]>(MOCK_MONTHLY_REPORTS);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+  const [isExportingExcel, setIsExportingExcel] = useState(false);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -28,11 +30,20 @@ export const RapportsPage: React.FC = () => {
   };
 
   const handleExportExcel = () => {
-    showToast('✓ Rapport Financier récapitulatif exporté au format Excel (.xlsx)');
+    setIsExportingExcel(true);
+    setTimeout(() => {
+      setIsExportingExcel(false);
+      showToast('✓ Rapport Financier récapitulatif exporté au format Excel (.xlsx)');
+    }, 750);
   };
 
   const handlePrint = () => {
-    window.print();
+    setIsGeneratingPdf(true);
+    setTimeout(() => {
+      setIsGeneratingPdf(false);
+      showToast('✓ Rapport prêt pour impression ou export PDF');
+      window.print();
+    }, 600);
   };
 
   // KPIs annuels calculés
@@ -79,11 +90,25 @@ export const RapportsPage: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-3">
-          <Button variant="outline" size="sm" className="gap-2 h-10 px-4" onClick={handlePrint}>
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-2 h-10 px-4"
+            onClick={handlePrint}
+            loading={isGeneratingPdf}
+            loadingText="Génération..."
+          >
             <Printer className="h-4 w-4 text-slate-600" />
             Imprimer / PDF
           </Button>
-          <Button variant="primary" size="sm" className="gap-2 h-10 px-4" onClick={handleExportExcel}>
+          <Button
+            variant="primary"
+            size="sm"
+            className="gap-2 h-10 px-4"
+            onClick={handleExportExcel}
+            loading={isExportingExcel}
+            loadingText="Export XLSX..."
+          >
             <FileSpreadsheet className="h-4 w-4" />
             Exporter Excel
           </Button>
@@ -92,9 +117,9 @@ export const RapportsPage: React.FC = () => {
 
       {/* Summary KPI Tiles */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="p-6 rounded-2xl flex items-center justify-between min-w-0">
-          <div className="min-w-0">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 truncate block">
+        <Card className="p-6 rounded-2xl flex items-start justify-between gap-3 min-w-0">
+          <div className="min-w-0 flex-1">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 leading-snug break-words block">
               Total Attendu Cumulé
             </span>
             <div
@@ -107,14 +132,14 @@ export const RapportsPage: React.FC = () => {
               7 mois comptabilisés
             </span>
           </div>
-          <div className="h-12 w-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-            <TrendingUp className="h-6 w-6" />
+          <div className="h-12 w-12 rounded-xl bg-blue-50/80 border border-blue-100/60 text-blue-600 flex items-center justify-center shrink-0 shadow-2xs">
+            <TrendingUp className="h-6 w-6 stroke-[1.75]" />
           </div>
         </Card>
 
-        <Card className="p-6 rounded-2xl flex items-center justify-between min-w-0">
-          <div className="min-w-0">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 truncate block">
+        <Card className="p-6 rounded-2xl flex items-start justify-between gap-3 min-w-0">
+          <div className="min-w-0 flex-1">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 leading-snug break-words block">
               Total Encaissé Cumulé
             </span>
             <div
@@ -127,14 +152,14 @@ export const RapportsPage: React.FC = () => {
               Recouvrés sur l'exercice
             </span>
           </div>
-          <div className="h-12 w-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-            <CheckCircle className="h-6 w-6" />
+          <div className="h-12 w-12 rounded-xl bg-emerald-50/80 border border-emerald-100/60 text-emerald-600 flex items-center justify-center shrink-0 shadow-2xs">
+            <CheckCircle className="h-6 w-6 stroke-[1.75]" />
           </div>
         </Card>
 
-        <Card className="p-6 rounded-2xl flex items-center justify-between min-w-0">
-          <div className="min-w-0">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 truncate block">
+        <Card className="p-6 rounded-2xl flex items-start justify-between gap-3 min-w-0">
+          <div className="min-w-0 flex-1">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 leading-snug break-words block">
               Reste à Recouvrer
             </span>
             <div
@@ -147,15 +172,15 @@ export const RapportsPage: React.FC = () => {
               Total des relances en cours
             </span>
           </div>
-          <div className="h-12 w-12 rounded-xl bg-red-50 text-red-600 flex items-center justify-center shrink-0">
-            <FileText className="h-6 w-6" />
+          <div className="h-12 w-12 rounded-xl bg-red-50/80 border border-red-100/60 text-red-600 flex items-center justify-center shrink-0 shadow-2xs">
+            <FileText className="h-6 w-6 stroke-[1.75]" />
           </div>
         </Card>
 
-        <Card className="p-6 rounded-2xl flex items-center justify-between min-w-0">
-          <div className="min-w-0">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 truncate block">
-              Taux Moyen Ancienneté
+        <Card className="p-6 rounded-2xl flex items-start justify-between gap-3 min-w-0">
+          <div className="min-w-0 flex-1">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 leading-snug break-words block">
+              Taux Moyen Recouvrement
             </span>
             <div className="text-2xl sm:text-3xl font-extrabold text-indigo-700 font-mono mt-2 truncate">
               {tauxGlobalAnnee}%
@@ -164,8 +189,8 @@ export const RapportsPage: React.FC = () => {
               Taux global d'efficacité
             </span>
           </div>
-          <div className="h-12 w-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
-            <Percent className="h-6 w-6" />
+          <div className="h-12 w-12 rounded-xl bg-indigo-50/80 border border-indigo-100/60 text-indigo-600 flex items-center justify-center shrink-0 shadow-2xs">
+            <Percent className="h-6 w-6 stroke-[1.75]" />
           </div>
         </Card>
       </div>

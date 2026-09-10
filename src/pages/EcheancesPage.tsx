@@ -106,9 +106,9 @@ export const EcheancesPage: React.FC = () => {
 
       {/* Metric Tiles */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="p-6 rounded-2xl flex items-center justify-between min-w-0">
-          <div className="min-w-0">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 truncate block">
+        <Card className="p-6 rounded-2xl flex items-start justify-between gap-3 min-w-0">
+          <div className="min-w-0 flex-1">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 leading-snug break-words block">
               Échéanciers Actifs
             </span>
             <div className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-mono mt-2 truncate">
@@ -118,14 +118,14 @@ export const EcheancesPage: React.FC = () => {
               Configurations par niveau
             </span>
           </div>
-          <div className="h-11 w-11 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-            <CreditCard className="h-5 w-5" />
+          <div className="h-11 w-11 rounded-xl bg-blue-50/80 border border-blue-100/60 text-blue-600 flex items-center justify-center shrink-0 shadow-2xs">
+            <CreditCard className="h-5 w-5 stroke-[1.75]" />
           </div>
         </Card>
 
-        <Card className="p-6 rounded-2xl flex items-center justify-between min-w-0">
-          <div className="min-w-0">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 truncate block">
+        <Card className="p-6 rounded-2xl flex items-start justify-between gap-3 min-w-0">
+          <div className="min-w-0 flex-1">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 leading-snug break-words block">
               Élèves Couverts
             </span>
             <div className="text-2xl sm:text-3xl font-extrabold text-emerald-700 font-mono mt-2 truncate">
@@ -135,14 +135,14 @@ export const EcheancesPage: React.FC = () => {
               ✓ Échéancier individuel actif
             </span>
           </div>
-          <div className="h-11 w-11 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-            <Users className="h-5 w-5" />
+          <div className="h-11 w-11 rounded-xl bg-emerald-50/80 border border-emerald-100/60 text-emerald-600 flex items-center justify-center shrink-0 shadow-2xs">
+            <Users className="h-5 w-5 stroke-[1.75]" />
           </div>
         </Card>
 
-        <Card className="p-6 rounded-2xl flex items-center justify-between min-w-0">
-          <div className="min-w-0">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 truncate block">
+        <Card className="p-6 rounded-2xl flex items-start justify-between gap-3 min-w-0">
+          <div className="min-w-0 flex-1">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 leading-snug break-words block">
               Prochaine Échéance
             </span>
             <div className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-mono mt-2 truncate">
@@ -152,14 +152,14 @@ export const EcheancesPage: React.FC = () => {
               Tranche 3 / Mensualité
             </span>
           </div>
-          <div className="h-11 w-11 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
-            <Clock className="h-5 w-5" />
+          <div className="h-11 w-11 rounded-xl bg-amber-50/80 border border-amber-100/60 text-amber-600 flex items-center justify-center shrink-0 shadow-2xs">
+            <Clock className="h-5 w-5 stroke-[1.75]" />
           </div>
         </Card>
 
-        <Card className="p-6 rounded-2xl flex items-center justify-between min-w-0">
-          <div className="min-w-0">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 truncate block">
+        <Card className="p-6 rounded-2xl flex items-start justify-between gap-3 min-w-0">
+          <div className="min-w-0 flex-1">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 leading-snug break-words block">
               Modes de Règlement
             </span>
             <div className="text-2xl sm:text-3xl font-extrabold text-blue-700 font-mono mt-2 truncate">
@@ -169,8 +169,8 @@ export const EcheancesPage: React.FC = () => {
               Mensuel, Trimestriel, Annuel
             </span>
           </div>
-          <div className="h-11 w-11 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
-            <Layers className="h-5 w-5" />
+          <div className="h-11 w-11 rounded-xl bg-indigo-50/80 border border-indigo-100/60 text-indigo-600 flex items-center justify-center shrink-0 shadow-2xs">
+            <Layers className="h-5 w-5 stroke-[1.75]" />
           </div>
         </Card>
       </div>

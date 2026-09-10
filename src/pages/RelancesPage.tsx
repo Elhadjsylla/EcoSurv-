@@ -26,6 +26,7 @@ export const RelancesPage: React.FC = () => {
   const [relancesHistory, setRelancesHistory] = useState<HistoriqueRelance[]>(MOCK_HISTORIQUE_RELANCES);
   const [selectedEleveIds, setSelectedEleveIds] = useState<string[]>([]);
   const [isCampaignModalOpen, setIsCampaignModalOpen] = useState(false);
+  const [isSendingCampaign, setIsSendingCampaign] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // Filtrer les élèves en retard ou partiels
@@ -94,9 +95,13 @@ export const RelancesPage: React.FC = () => {
 
   // Déclenchement campagne globale SMS
   const handleConfirmCampaign = () => {
-    const count = overdueEleves.length;
-    showToast(`🚀 Campagne SMS globale initiée vers ${count} tuteurs. Reçus transmis.`);
-    setIsCampaignModalOpen(false);
+    setIsSendingCampaign(true);
+    setTimeout(() => {
+      setIsSendingCampaign(false);
+      const count = overdueEleves.length;
+      showToast(`🚀 Campagne SMS globale expédiée avec succès vers ${count} tuteurs.`);
+      setIsCampaignModalOpen(false);
+    }, 750);
   };
 
   return (
@@ -174,9 +179,9 @@ export const RelancesPage: React.FC = () => {
 
       {/* KPI Tiles */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="p-6 rounded-2xl flex items-center justify-between min-w-0">
-          <div className="min-w-0">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 truncate block">
+        <Card className="p-6 rounded-2xl flex items-start justify-between gap-3 min-w-0">
+          <div className="min-w-0 flex-1">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 leading-snug break-words block">
               Relances Expédiées
             </span>
             <div className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-mono mt-2 truncate">
@@ -186,14 +191,14 @@ export const RelancesPage: React.FC = () => {
               <CheckCircle2 className="h-3.5 w-3.5 shrink-0" /> 100% délivrées
             </span>
           </div>
-          <div className="h-12 w-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-            <MessageSquare className="h-6 w-6" />
+          <div className="h-12 w-12 rounded-xl bg-blue-50/80 border border-blue-100/60 text-blue-600 flex items-center justify-center shrink-0 shadow-2xs">
+            <MessageSquare className="h-6 w-6 stroke-[1.75]" />
           </div>
         </Card>
 
-        <Card className="p-6 rounded-2xl flex items-center justify-between min-w-0">
-          <div className="min-w-0">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 truncate block">
+        <Card className="p-6 rounded-2xl flex items-start justify-between gap-3 min-w-0">
+          <div className="min-w-0 flex-1">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 leading-snug break-words block">
               Élèves Cibles
             </span>
             <div className="text-2xl sm:text-3xl font-extrabold text-red-700 font-mono mt-2 truncate">
@@ -203,14 +208,14 @@ export const RelancesPage: React.FC = () => {
               Familles en retard de paiement
             </span>
           </div>
-          <div className="h-12 w-12 rounded-xl bg-red-50 text-red-600 flex items-center justify-center shrink-0">
-            <AlertTriangle className="h-6 w-6" />
+          <div className="h-12 w-12 rounded-xl bg-red-50/80 border border-red-100/60 text-red-600 flex items-center justify-center shrink-0 shadow-2xs">
+            <AlertTriangle className="h-6 w-6 stroke-[1.75]" />
           </div>
         </Card>
 
-        <Card className="p-6 rounded-2xl flex items-center justify-between min-w-0">
-          <div className="min-w-0">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 truncate block">
+        <Card className="p-6 rounded-2xl flex items-start justify-between gap-3 min-w-0">
+          <div className="min-w-0 flex-1">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 leading-snug break-words block">
               Volume Impayé Cible
             </span>
             <div
@@ -223,14 +228,14 @@ export const RelancesPage: React.FC = () => {
               À recouvrer
             </span>
           </div>
-          <div className="h-12 w-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
-            <Send className="h-6 w-6" />
+          <div className="h-12 w-12 rounded-xl bg-amber-50/80 border border-amber-100/60 text-amber-600 flex items-center justify-center shrink-0 shadow-2xs">
+            <Send className="h-6 w-6 stroke-[1.75]" />
           </div>
         </Card>
 
-        <Card className="p-6 rounded-2xl flex items-center justify-between min-w-0">
-          <div className="min-w-0">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 truncate block">
+        <Card className="p-6 rounded-2xl flex items-start justify-between gap-3 min-w-0">
+          <div className="min-w-0 flex-1">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 leading-snug break-words block">
               Canal Principal
             </span>
             <div className="text-2xl sm:text-3xl font-extrabold text-emerald-700 font-mono mt-2 truncate">
@@ -240,8 +245,8 @@ export const RelancesPage: React.FC = () => {
               Taux d'ouverture 96%
             </span>
           </div>
-          <div className="h-12 w-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-            <Phone className="h-6 w-6" />
+          <div className="h-12 w-12 rounded-xl bg-emerald-50/80 border border-emerald-100/60 text-emerald-600 flex items-center justify-center shrink-0 shadow-2xs">
+            <Phone className="h-6 w-6 stroke-[1.75]" />
           </div>
         </Card>
       </div>
@@ -458,6 +463,8 @@ export const RelancesPage: React.FC = () => {
                 size="sm"
                 className="gap-1.5"
                 onClick={handleConfirmCampaign}
+                loading={isSendingCampaign}
+                loadingText="Expédition..."
               >
                 <Send className="h-3.5 w-3.5" />
                 Confirmer & Expédier SMS ({overdueEleves.length})

@@ -73,17 +73,19 @@ export const KpiCard: React.FC<KpiCardProps> = ({
         className
       )}
     >
-      <div className="min-w-0">
-        <div className="flex items-center justify-between gap-2.5">
-          <span
-            title={title}
-            className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5 truncate min-w-0"
-          >
-            <span className="truncate">{title}</span>
+      <div>
+        <div className="flex items-start justify-between gap-2.5">
+          <div className="flex items-center gap-1.5 min-w-0 flex-1">
+            <span
+              title={title}
+              className="text-[11px] font-bold uppercase tracking-wider text-slate-500 leading-snug break-words"
+            >
+              {title}
+            </span>
             {onClick && (
               <ArrowUpRight className="h-3.5 w-3.5 text-slate-400 group-hover:text-blue-600 transition-colors shrink-0" />
             )}
-          </span>
+          </div>
           {icon && (
             <div
               className={cn(

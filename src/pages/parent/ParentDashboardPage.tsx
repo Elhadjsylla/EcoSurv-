@@ -2,8 +2,8 @@ import React from 'react';
 import {
   MOCK_PARENT_ENFANTS_DETAILS,
   CURRENT_PARENT,
-  CURRENT_ECOLE,
 } from '../../lib/mockData';
+import { useEcoleStore } from '../../store/useEcoleStore';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { formatMRU } from '../../lib/utils';
@@ -34,6 +34,7 @@ export const ParentDashboardPage: React.FC<ParentDashboardPageProps> = ({
   onSelectChild,
   onNavigateTab,
 }) => {
+  const ecole = useEcoleStore((s) => s.ecole);
   const enfant = MOCK_PARENT_ENFANTS_DETAILS[selectedChildId] || MOCK_PARENT_ENFANTS_DETAILS['el-001'];
 
   return (
@@ -47,7 +48,7 @@ export const ParentDashboardPage: React.FC<ParentDashboardPageProps> = ({
               <span className="px-3 py-1 rounded-full text-xs font-bold bg-indigo-500/30 text-indigo-200 border border-indigo-400/30">
                 Espace Tuteur Légal
               </span>
-              <span className="text-xs text-indigo-300">• {CURRENT_ECOLE.nom}</span>
+              <span className="text-xs text-indigo-300">• {ecole.nom}</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
               Bonjour, {CURRENT_PARENT.prenom} {CURRENT_PARENT.nom}
@@ -313,7 +314,7 @@ export const ParentDashboardPage: React.FC<ParentDashboardPageProps> = ({
             <School className="h-5 w-5 text-white" />
           </div>
           <div>
-            <h4 className="text-sm font-bold">{CURRENT_ECOLE.nom} • Secrétariat</h4>
+            <h4 className="text-sm font-bold">{ecole.nom} • Secrétariat</h4>
             <p className="text-xs text-slate-400">
               Ouvert du Lundi au Vendredi de 08:00 à 17:00 (Tevragh-Zeina)
             </p>
@@ -322,11 +323,11 @@ export const ParentDashboardPage: React.FC<ParentDashboardPageProps> = ({
 
         <div className="flex items-center gap-3">
           <a
-            href={`tel:${CURRENT_ECOLE.telephone}`}
+            href={`tel:${ecole.telephone}`}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-white border border-slate-700 transition-colors"
           >
             <Phone className="h-3.5 w-3.5 text-indigo-400" />
-            {CURRENT_ECOLE.telephone}
+            {ecole.telephone}
           </a>
           <button
             onClick={() => onNavigateTab('parent_assiduite')}

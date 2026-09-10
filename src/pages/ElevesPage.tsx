@@ -62,6 +62,15 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
   const [justPaidEleveId, setJustPaidEleveId] = useState<string | null>(null);
   const [relancingId, setRelancingId] = useState<string | null>(null);
   const [isSearchPulseActive, setIsSearchPulseActive] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+
+  const handleImportClick = () => {
+    setIsImporting(true);
+    setTimeout(() => {
+      setIsImporting(false);
+      showToast("✓ Module d'import prêt : Sélectionnez un fichier .xlsx ou .csv conforme.", 'info');
+    }, 650);
+  };
 
   // Ref pour le raccourci clavier "/"
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -380,7 +389,14 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
         </div>
 
         <div className="flex items-center gap-3">
-          <Button variant="outline" size="sm" className="gap-2 h-10 px-4">
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-2 h-10 px-4"
+            onClick={handleImportClick}
+            loading={isImporting}
+            loadingText="Lecture du fichier..."
+          >
             <FileSpreadsheet className="h-4 w-4 text-emerald-600" />
             Import Excel/CSV
           </Button>
@@ -401,12 +417,12 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
         <Card
           onClick={() => handleStatutChange('all')}
           style={{ animationDelay: '0ms' }}
-          className={`p-6 rounded-2xl flex items-center justify-between cursor-pointer transition-all duration-200 animate-stagger-rise hover:-translate-y-0.5 hover:shadow-md hover:border-blue-400 min-w-0 ${
+          className={`p-6 rounded-2xl flex items-start justify-between gap-3 cursor-pointer transition-all duration-200 animate-stagger-rise hover:-translate-y-0.5 hover:shadow-md hover:border-blue-400 min-w-0 ${
             selectedStatut === 'all' ? 'border-blue-600 bg-blue-50/30 ring-2 ring-blue-500/20 shadow-sm' : ''
           }`}
         >
-          <div className="min-w-0">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 truncate block">
+          <div className="min-w-0 flex-1">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 leading-snug break-words block">
               Effectif Total
             </span>
             <div className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-mono mt-2 truncate">
@@ -416,20 +432,20 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
               <CheckCircle2 className="h-3.5 w-3.5 text-slate-400 shrink-0" /> Afficher tous
             </span>
           </div>
-          <div className="h-11 w-11 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-            <Users className="h-5 w-5" />
+          <div className="h-11 w-11 rounded-xl bg-blue-50/80 border border-blue-100/60 text-blue-600 flex items-center justify-center shrink-0 shadow-2xs">
+            <Users className="h-5 w-5 stroke-[1.75]" />
           </div>
         </Card>
 
         <Card
           onClick={() => handleStatutChange('paye')}
           style={{ animationDelay: '75ms' }}
-          className={`p-6 rounded-2xl flex items-center justify-between cursor-pointer transition-all duration-200 animate-stagger-rise hover:-translate-y-0.5 hover:shadow-md hover:border-emerald-400 min-w-0 ${
+          className={`p-6 rounded-2xl flex items-start justify-between gap-3 cursor-pointer transition-all duration-200 animate-stagger-rise hover:-translate-y-0.5 hover:shadow-md hover:border-emerald-400 min-w-0 ${
             selectedStatut === 'paye' ? 'border-emerald-600 bg-emerald-50/30 ring-2 ring-emerald-500/20 shadow-sm' : ''
           }`}
         >
-          <div className="min-w-0">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 truncate block">
+          <div className="min-w-0 flex-1">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 leading-snug break-words block">
               Élèves En Règle
             </span>
             <div className="text-2xl sm:text-3xl font-extrabold text-emerald-700 font-mono mt-2 truncate">
@@ -439,20 +455,20 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
               Filtrer les réglés →
             </span>
           </div>
-          <div className="h-11 w-11 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-            <CheckCircle2 className="h-5 w-5" />
+          <div className="h-11 w-11 rounded-xl bg-emerald-50/80 border border-emerald-100/60 text-emerald-600 flex items-center justify-center shrink-0 shadow-2xs">
+            <CheckCircle2 className="h-5 w-5 stroke-[1.75]" />
           </div>
         </Card>
 
         <Card
           onClick={() => handleStatutChange('en_retard')}
           style={{ animationDelay: '150ms' }}
-          className={`p-6 rounded-2xl flex items-center justify-between cursor-pointer transition-all duration-200 animate-stagger-rise hover:-translate-y-0.5 hover:shadow-md hover:border-red-400 min-w-0 ${
+          className={`p-6 rounded-2xl flex items-start justify-between gap-3 cursor-pointer transition-all duration-200 animate-stagger-rise hover:-translate-y-0.5 hover:shadow-md hover:border-red-400 min-w-0 ${
             selectedStatut === 'en_retard' ? 'border-red-600 bg-red-50/30 ring-2 ring-red-500/20 shadow-sm' : ''
           }`}
         >
-          <div className="min-w-0">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 truncate block">
+          <div className="min-w-0 flex-1">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 leading-snug break-words block">
               Échéances en Retard
             </span>
             <div className="text-2xl sm:text-3xl font-extrabold text-red-700 font-mono mt-2 truncate">
@@ -465,20 +481,20 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
               Filtrer les retards ({formatCompactMRU(kpis.totalImpayes)}) →
             </span>
           </div>
-          <div className="h-11 w-11 rounded-xl bg-red-50 text-red-600 flex items-center justify-center shrink-0">
-            <AlertTriangle className="h-5 w-5" />
+          <div className="h-11 w-11 rounded-xl bg-red-50/80 border border-red-100/60 text-red-600 flex items-center justify-center shrink-0 shadow-2xs">
+            <AlertTriangle className="h-5 w-5 stroke-[1.75]" />
           </div>
         </Card>
 
         <Card
           onClick={() => handleStatutChange('partiel')}
           style={{ animationDelay: '225ms' }}
-          className={`p-6 rounded-2xl flex items-center justify-between cursor-pointer transition-all duration-200 animate-stagger-rise hover:-translate-y-0.5 hover:shadow-md hover:border-amber-400 min-w-0 ${
+          className={`p-6 rounded-2xl flex items-start justify-between gap-3 cursor-pointer transition-all duration-200 animate-stagger-rise hover:-translate-y-0.5 hover:shadow-md hover:border-amber-400 min-w-0 ${
             selectedStatut === 'partiel' ? 'border-amber-600 bg-amber-50/30 ring-2 ring-amber-500/20 shadow-sm' : ''
           }`}
         >
-          <div className="min-w-0">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 truncate block">
+          <div className="min-w-0 flex-1">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 leading-snug break-words block">
               Recouvrement Global
             </span>
             <div className="text-2xl sm:text-3xl font-extrabold text-blue-700 font-mono mt-2 truncate">
@@ -488,8 +504,8 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
               Filtrer les partiels →
             </span>
           </div>
-          <div className="h-11 w-11 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
-            <CreditCard className="h-5 w-5" />
+          <div className="h-11 w-11 rounded-xl bg-indigo-50/80 border border-indigo-100/60 text-indigo-600 flex items-center justify-center shrink-0 shadow-2xs">
+            <CreditCard className="h-5 w-5 stroke-[1.75]" />
           </div>
         </Card>
       </div>

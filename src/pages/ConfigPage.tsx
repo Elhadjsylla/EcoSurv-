@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Select } from '../components/ui/Select';
+import { useEcoleStore } from '../store/useEcoleStore';
 import {
-  CURRENT_ECOLE,
   MOCK_STAFF,
   StaffMember,
   RoleUtilisateur,
@@ -18,10 +18,17 @@ import {
 } from 'lucide-react';
 
 export const ConfigPage: React.FC = () => {
-  const [ecole, setEcole] = useState(CURRENT_ECOLE);
+  const { ecole, updateEcole } = useEcoleStore();
+  const [formData, setFormData] = useState(ecole);
+  const [isSaving, setIsSaving] = useState(false);
   const [staffList, setStaffList] = useState<StaffMember[]>(MOCK_STAFF);
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Synchronise le formulaire si le store change
+  useEffect(() => {
+    setFormData(ecole);
+  }, [ecole]);
 
   // Form state pour invitation membre
   const [newNom, setNewNom] = useState('');
@@ -38,7 +45,12 @@ export const ConfigPage: React.FC = () => {
 
   const handleSaveEcoleInfo = (e: React.FormEvent) => {
     e.preventDefault();
-    showToast('✓ Coordonnées et paramètres de l\'établissement enregistrés avec succès !');
+    setIsSaving(true);
+    setTimeout(() => {
+      updateEcole(formData);
+      setIsSaving(false);
+      showToast('✓ Coordonnées et paramètres de l\'établissement mis à jour et synchronisés en direct !');
+    }, 600);
   };
 
   const handleInviteStaff = (e: React.FormEvent) => {
@@ -126,7 +138,7 @@ export const ConfigPage: React.FC = () => {
             </h3>
           </div>
           <span className="text-xs text-slate-500 font-medium">
-            Code Tenant: <span className="font-bold text-blue-700 font-mono">{ecole.code_ecole}</span>
+            Code Tenant: <span className="font-bold text-blue-700 font-mono">{formData.code_ecole}</span>
           </span>
         </div>
 
@@ -138,8 +150,8 @@ export const ConfigPage: React.FC = () => {
               </label>
               <input
                 type="text"
-                value={ecole.nom}
-                onChange={(e) => setEcole({ ...ecole, nom: e.target.value })}
+                value={formData.nom}
+                onChange={(e) => setFormData({ ...formData, nom: e.target.value })}
                 className="w-full h-11 px-3.5 rounded-xl border border-slate-300 text-sm font-bold text-slate-900 focus:ring-2 focus:ring-blue-600 focus:outline-none"
               />
             </div>
@@ -149,8 +161,8 @@ export const ConfigPage: React.FC = () => {
                 Année Scolaire Active <span className="text-red-500">*</span>
               </label>
               <Select
-                value={ecole.annee_scolaire}
-                onChange={(val) => setEcole({ ...ecole, annee_scolaire: val })}
+                value={formData.annee_scolaire}
+                onChange={(val) => setFormData({ ...formData, annee_scolaire: val })}
                 options={[
                   { value: '2025-2026', label: '2025–2026 (Active)' },
                   { value: '2024-2025', label: '2024–2025 (Archivée)' },
@@ -167,8 +179,8 @@ export const ConfigPage: React.FC = () => {
               </label>
               <input
                 type="text"
-                value={ecole.ville}
-                onChange={(e) => setEcole({ ...ecole, ville: e.target.value })}
+                value={formData.ville}
+                onChange={(e) => setFormData({ ...formData, ville: e.target.value })}
                 className="w-full h-11 px-3.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-blue-600 focus:outline-none"
               />
             </div>
@@ -179,8 +191,8 @@ export const ConfigPage: React.FC = () => {
               </label>
               <input
                 type="text"
-                value={ecole.telephone}
-                onChange={(e) => setEcole({ ...ecole, telephone: e.target.value })}
+                value={formData.telephone}
+                onChange={(e) => setFormData({ ...formData, telephone: e.target.value })}
                 className="w-full h-11 px-3.5 rounded-xl border border-slate-300 text-sm font-mono focus:ring-2 focus:ring-blue-600 focus:outline-none"
               />
             </div>
@@ -191,8 +203,8 @@ export const ConfigPage: React.FC = () => {
               </label>
               <input
                 type="email"
-                value={ecole.email}
-                onChange={(e) => setEcole({ ...ecole, email: e.target.value })}
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 className="w-full h-11 px-3.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-blue-600 focus:outline-none"
               />
             </div>
@@ -204,16 +216,23 @@ export const ConfigPage: React.FC = () => {
             </label>
             <input
               type="text"
-              value={ecole.adresse}
-              onChange={(e) => setEcole({ ...ecole, adresse: e.target.value })}
+              value={formData.adresse}
+              onChange={(e) => setFormData({ ...formData, adresse: e.target.value })}
               className="w-full h-11 px-3.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-blue-600 focus:outline-none"
             />
           </div>
 
           <div className="flex justify-end pt-2">
-            <Button type="submit" variant="primary" size="sm" className="gap-2">
+            <Button
+              type="submit"
+              variant="primary"
+              size="sm"
+              className="gap-2"
+              loading={isSaving}
+              loadingText="Enregistrement..."
+            >
               <Save className="h-4 w-4" />
-              Enregistrer les Modifs
+              Enregistrer les modifications
             </Button>
           </div>
         </form>

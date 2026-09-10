@@ -3,9 +3,9 @@ import confetti from 'canvas-confetti';
 import {
   MOCK_PARENT_ENFANTS_DETAILS,
   CURRENT_PARENT,
-  CURRENT_ECOLE,
   MethodePaiement,
 } from '../../lib/mockData';
+import { useEcoleStore } from '../../store/useEcoleStore';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { ToastNotification } from '../../components/ui/ToastNotification';
@@ -29,6 +29,7 @@ interface ParentPaiementsPageProps {
 export const ParentPaiementsPage: React.FC<ParentPaiementsPageProps> = ({
   selectedChildId,
 }) => {
+  const ecole = useEcoleStore((s) => s.ecole);
   const [enfantData, setEnfantData] = useState(
     MOCK_PARENT_ENFANTS_DETAILS[selectedChildId] || MOCK_PARENT_ENFANTS_DETAILS['el-003']
   );
@@ -480,7 +481,7 @@ export const ParentPaiementsPage: React.FC<ParentPaiementsPageProps> = ({
               <div className="text-center border-b border-slate-200 pb-3">
                 <div className="flex items-center justify-center gap-1 text-slate-900 font-extrabold text-base">
                   <Building className="h-4 w-4 text-indigo-600" />
-                  {CURRENT_ECOLE.nom}
+                  {ecole.nom}
                 </div>
                 <div className="text-slate-500 text-[11px] mt-0.5">
                   Reçu Officiel de Paiement Numérique
