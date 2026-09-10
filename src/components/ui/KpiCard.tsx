@@ -7,6 +7,7 @@ import { useCountUp } from '../../hooks/useCountUp';
 interface KpiCardProps {
   title: string;
   amount?: number;
+  customValue?: ReactNode;
   subtitle?: string;
   icon?: ReactNode;
   variant?: 'default' | 'primary' | 'success' | 'danger' | 'warning';
@@ -21,6 +22,7 @@ interface KpiCardProps {
 export const KpiCard: React.FC<KpiCardProps> = ({
   title,
   amount,
+  customValue,
   subtitle,
   icon,
   variant = 'default',
@@ -108,7 +110,11 @@ export const KpiCard: React.FC<KpiCardProps> = ({
         </div>
 
         <div className="mt-3 sm:mt-4 min-w-0">
-          {displayAmount !== null ? (
+          {customValue !== undefined ? (
+            <div className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 dark:text-white font-mono transition-colors truncate">
+              {customValue}
+            </div>
+          ) : displayAmount !== null ? (
             <div
               title={fullAmountText}
               className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 dark:text-white font-mono transition-colors truncate cursor-help"

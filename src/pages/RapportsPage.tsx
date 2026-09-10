@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
+import { KpiCard } from '../components/ui/KpiCard';
 import {
   MOCK_MONTHLY_REPORTS,
   MonthlyFinancialReport,
 } from '../lib/mockData';
 import { formatMRU } from '../lib/utils';
-import { formatCompactMRU } from '../lib/formatCompactMRU';
 import {
   FileText,
   FileSpreadsheet,
@@ -16,6 +16,8 @@ import {
   Printer,
   BarChart3,
   Percent,
+  MoreHorizontal,
+  Download,
 } from 'lucide-react';
 
 export const RapportsPage: React.FC = () => {
@@ -23,6 +25,7 @@ export const RapportsPage: React.FC = () => {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [isExportingExcel, setIsExportingExcel] = useState(false);
+  const [openMenuRowId, setOpenMenuRowId] = useState<string | null>(null);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -74,17 +77,17 @@ export const RapportsPage: React.FC = () => {
       )}
 
       {/* Top Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200/90 shadow-2xs">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-2xs">
         <div className="space-y-1">
           <div className="flex items-center gap-2.5">
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
               Rapports Financiers & Comptabilité
             </h1>
-            <span className="rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-bold text-blue-700">
+            <span className="rounded-full bg-blue-100 dark:bg-blue-950/60 px-2.5 py-0.5 text-xs font-bold text-blue-700 dark:text-blue-300 border border-blue-200/50 dark:border-blue-800/60">
               Exercice 2025–2026
             </span>
           </div>
-          <p className="text-sm text-slate-500 font-medium">
+          <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">
             Historique analytique des flux de scolarité, taux de recouvrement mensuels et prévisions comptables.
           </p>
         </div>
@@ -98,7 +101,7 @@ export const RapportsPage: React.FC = () => {
             loading={isGeneratingPdf}
             loadingText="Génération..."
           >
-            <Printer className="h-4 w-4 text-slate-600" />
+            <Printer className="h-4 w-4 text-slate-600 dark:text-slate-300" />
             Imprimer / PDF
           </Button>
           <Button
@@ -115,106 +118,66 @@ export const RapportsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Summary KPI Tiles */}
+      {/* Summary KPI Tiles (Nexoov Pastel Cards) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="p-6 rounded-2xl flex items-start justify-between gap-3 min-w-0">
-          <div className="min-w-0 flex-1">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 leading-snug break-words block">
-              Total Attendu Cumulé
-            </span>
-            <div
-              title={formatMRU(totalAttenduAnnee)}
-              className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-mono mt-2 truncate cursor-help"
-            >
-              {formatCompactMRU(totalAttenduAnnee)}
-            </div>
-            <span className="text-xs text-slate-500 font-medium mt-1.5 block truncate">
-              7 mois comptabilisés
-            </span>
-          </div>
-          <div className="h-12 w-12 rounded-xl bg-blue-50/80 border border-blue-100/60 text-blue-600 flex items-center justify-center shrink-0 shadow-2xs">
-            <TrendingUp className="h-6 w-6 stroke-[1.75]" />
-          </div>
-        </Card>
+        <KpiCard
+          staggerIndex={0}
+          title="Total Attendu Cumulé"
+          amount={totalAttenduAnnee}
+          subtitle="7 mois d'exercice comptabilisés"
+          icon={<TrendingUp className="h-5 w-5" />}
+          variant="primary"
+        />
 
-        <Card className="p-6 rounded-2xl flex items-start justify-between gap-3 min-w-0">
-          <div className="min-w-0 flex-1">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 leading-snug break-words block">
-              Total Encaissé Cumulé
-            </span>
-            <div
-              title={formatMRU(totalEncaisseAnnee)}
-              className="text-2xl sm:text-3xl font-extrabold text-emerald-700 font-mono mt-2 truncate cursor-help"
-            >
-              {formatCompactMRU(totalEncaisseAnnee)}
-            </div>
-            <span className="text-xs text-emerald-700 font-semibold mt-1.5 block truncate">
-              Recouvrés sur l'exercice
-            </span>
-          </div>
-          <div className="h-12 w-12 rounded-xl bg-emerald-50/80 border border-emerald-100/60 text-emerald-600 flex items-center justify-center shrink-0 shadow-2xs">
-            <CheckCircle className="h-6 w-6 stroke-[1.75]" />
-          </div>
-        </Card>
+        <KpiCard
+          staggerIndex={1}
+          title="Total Encaissé Cumulé"
+          amount={totalEncaisseAnnee}
+          progress={tauxGlobalAnnee}
+          subtitle="Recouvrés sur l'exercice"
+          icon={<CheckCircle className="h-5 w-5" />}
+          variant="success"
+        />
 
-        <Card className="p-6 rounded-2xl flex items-start justify-between gap-3 min-w-0">
-          <div className="min-w-0 flex-1">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 leading-snug break-words block">
-              Reste à Recouvrer
-            </span>
-            <div
-              title={formatMRU(totalImpayesAnnee)}
-              className="text-2xl sm:text-3xl font-extrabold text-red-700 font-mono mt-2 truncate cursor-help"
-            >
-              {formatCompactMRU(totalImpayesAnnee)}
-            </div>
-            <span className="text-xs text-red-600 font-semibold mt-1.5 block truncate">
-              Total des relances en cours
-            </span>
-          </div>
-          <div className="h-12 w-12 rounded-xl bg-red-50/80 border border-red-100/60 text-red-600 flex items-center justify-center shrink-0 shadow-2xs">
-            <FileText className="h-6 w-6 stroke-[1.75]" />
-          </div>
-        </Card>
+        <KpiCard
+          staggerIndex={2}
+          title="Reste à Recouvrer"
+          amount={totalImpayesAnnee}
+          subtitle="Total des relances en cours"
+          icon={<FileText className="h-5 w-5" />}
+          variant="danger"
+        />
 
-        <Card className="p-6 rounded-2xl flex items-start justify-between gap-3 min-w-0">
-          <div className="min-w-0 flex-1">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 leading-snug break-words block">
-              Taux Moyen Recouvrement
-            </span>
-            <div className="text-2xl sm:text-3xl font-extrabold text-indigo-700 font-mono mt-2 truncate">
-              {tauxGlobalAnnee}%
-            </div>
-            <span className="text-xs text-slate-500 font-medium mt-1.5 block truncate">
-              Taux global d'efficacité
-            </span>
-          </div>
-          <div className="h-12 w-12 rounded-xl bg-indigo-50/80 border border-indigo-100/60 text-indigo-600 flex items-center justify-center shrink-0 shadow-2xs">
-            <Percent className="h-6 w-6 stroke-[1.75]" />
-          </div>
-        </Card>
+        <KpiCard
+          staggerIndex={3}
+          title="Taux Moyen Recouvrement"
+          progress={tauxGlobalAnnee}
+          subtitle="Taux global d'efficacité"
+          icon={<Percent className="h-5 w-5" />}
+          variant="warning"
+        />
       </div>
 
       {/* Visual Chart: Évolution des encaissements mensuels */}
-      <Card className="p-6 sm:p-8 space-y-6 rounded-2xl">
-        <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+      <Card className="p-6 sm:p-8 space-y-6 rounded-2xl border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xs">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-4">
           <div>
-            <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2.5">
-              <BarChart3 className="h-5 w-5 text-blue-600" />
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2.5">
+              <BarChart3 className="h-5 w-5 text-blue-600 dark:text-blue-400" />
               Évolution Chronologique des Encaissements (Septembre 2025 - Mars 2026)
             </h3>
-            <p className="text-xs text-slate-500 mt-1">
-              Comparatif mensuel entre le montant attendu (fond gris) et l'encaissement réel (barre bleue/verte).
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+              Comparatif mensuel entre le montant attendu (fond neutre) et l'encaissement réel (barre dynamique).
             </p>
           </div>
 
-          <div className="flex items-center gap-5 text-xs font-semibold">
+          <div className="flex items-center gap-5 text-xs font-semibold text-slate-600 dark:text-slate-300">
             <div className="flex items-center gap-2">
               <div className="h-3 w-3 rounded bg-blue-600" />
               <span>Encaissé (MRU)</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="h-3 w-3 rounded bg-slate-200" />
+              <div className="h-3 w-3 rounded bg-slate-200 dark:bg-slate-700" />
               <span>Attendu Total</span>
             </div>
           </div>
@@ -222,22 +185,22 @@ export const RapportsPage: React.FC = () => {
 
         {/* Histogramme Pure CSS/SVG */}
         <div className="pt-6 pb-2">
-          <div className="grid grid-cols-7 gap-4 sm:gap-8 items-end h-64 border-b border-slate-200 px-4">
+          <div className="grid grid-cols-7 gap-4 sm:gap-8 items-end h-64 border-b border-slate-200 dark:border-slate-800 px-4">
             {reports.map((r) => {
               const heightPercent = Math.round((r.encaisse / maxMonthlyAttendu) * 100);
-              const bgClass = r.taux >= 80 ? 'bg-emerald-600' : 'bg-blue-600';
+              const bgClass = r.taux >= 80 ? 'bg-emerald-600 dark:bg-emerald-500' : 'bg-blue-600 dark:bg-blue-500';
               return (
                 <div key={r.mois} className="flex flex-col items-center gap-2.5 h-full justify-end group">
-                  <div className="text-xs font-mono font-bold text-slate-700 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="text-xs font-mono font-bold text-slate-700 dark:text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity">
                     {r.taux}%
                   </div>
-                  <div className="w-full max-w-[52px] bg-slate-100 rounded-t-xl h-full flex items-end overflow-hidden relative border border-slate-200/60">
+                  <div className="w-full max-w-[52px] bg-slate-100 dark:bg-slate-800 rounded-t-xl h-full flex items-end overflow-hidden relative border border-slate-200/60 dark:border-slate-700/60">
                     <div
                       className={`w-full rounded-t-xl transition-all duration-500 ${bgClass}`}
                       style={{ height: `${heightPercent}%` }}
                     />
                   </div>
-                  <span className="text-xs font-bold text-slate-600 text-center truncate max-w-[80px]">
+                  <span className="text-xs font-bold text-slate-600 dark:text-slate-400 text-center truncate max-w-[80px]">
                     {r.mois.split(' ')[0]}
                   </span>
                 </div>
@@ -248,71 +211,128 @@ export const RapportsPage: React.FC = () => {
       </Card>
 
       {/* Monthly Breakdown Table */}
-      <div className="rounded-2xl border border-slate-200 bg-white shadow-2xs overflow-hidden">
-        <div className="py-4 px-6 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
-          <h3 className="text-sm font-bold text-slate-900">
+      <div className="rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xs overflow-hidden">
+        <div className="py-4 px-5 sm:px-6 bg-slate-50/80 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+          <h3 className="text-sm font-bold text-slate-900 dark:text-white">
             Tableau Récapitulatif par Mois (Exercice 2025-2026)
           </h3>
-          <span className="text-xs text-slate-500 font-medium">
-            Données comptables agrégées
+          <span className="text-xs text-slate-500 dark:text-slate-400 font-medium hidden sm:inline">
+            Données comptables agrégées et archivées
           </span>
         </div>
 
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs border-collapse">
             <thead>
-              <tr className="border-b border-slate-200 bg-slate-50/80 font-bold uppercase tracking-wider text-slate-500">
-                <th className="py-4 px-6">Période Mensuelle</th>
-                <th className="py-4 px-6 text-right">Montant Attendu</th>
-                <th className="py-4 px-6 text-right">Montant Encaissé</th>
-                <th className="py-4 px-6 text-right">Impayés & Retards</th>
-                <th className="py-4 px-6 text-center">Taux de Recouvrement</th>
-                <th className="py-4 px-6 text-center">Statut Clôture</th>
+              <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/60 font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                <th className="py-4 px-5">Période Mensuelle</th>
+                <th className="py-4 px-5 text-right">Montant Attendu</th>
+                <th className="py-4 px-5 text-right">Montant Encaissé</th>
+                <th className="py-4 px-5 text-right">Impayés & Retards</th>
+                <th className="py-4 px-5 text-center">Taux de Recouvrement</th>
+                <th className="py-4 px-5 text-center">Statut Clôture</th>
+                <th className="py-4 px-4 text-center w-12"></th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 font-mono">
-              {reports.map((r) => (
-                <tr key={r.mois} className="hover:bg-slate-50/80 transition-colors">
-                  <td className="py-4.5 px-6 font-sans font-bold text-slate-900">
-                    {r.mois}
-                  </td>
-                  <td className="py-4.5 px-6 text-right font-bold text-slate-900">
-                    {formatMRU(r.attendu)}
-                  </td>
-                  <td className="py-4.5 px-6 text-right font-bold text-emerald-700">
-                    {formatMRU(r.encaisse)}
-                  </td>
-                  <td className="py-4.5 px-6 text-right font-bold text-red-700">
-                    {formatMRU(r.impayes)}
-                  </td>
-                  <td className="py-4.5 px-6 text-center">
-                    <div className="flex items-center justify-center gap-2.5">
-                      <div className="w-20 bg-slate-100 rounded-full h-2 overflow-hidden hidden sm:block">
-                        <div
-                          className={`h-full rounded-full ${
-                            r.taux >= 80 ? 'bg-emerald-600' : 'bg-blue-600'
-                          }`}
-                          style={{ width: `${r.taux}%` }}
-                        />
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80 font-mono">
+              {reports.map((r) => {
+                const isMenuOpen = openMenuRowId === r.mois;
+                return (
+                  <tr key={r.mois} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors">
+                    {/* Période sur 2 lignes */}
+                    <td className="py-4.5 px-5 font-sans">
+                      <div className="font-bold text-slate-900 dark:text-white text-sm">
+                        {r.mois}
                       </div>
-                      <span className="font-bold text-slate-900">{r.taux}%</span>
-                    </div>
-                  </td>
-                  <td className="py-4.5 px-6 text-center font-sans">
-                    <span
-                      className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-bold ${
-                        r.taux >= 90
-                          ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
-                          : r.taux >= 75
-                          ? 'bg-blue-50 text-blue-800 border border-blue-200'
-                          : 'bg-amber-50 text-amber-800 border border-amber-200'
-                      }`}
-                    >
-                      {r.taux >= 90 ? 'Clôturé' : 'En cours'}
-                    </span>
-                  </td>
-                </tr>
-              ))}
+                      <div className="text-[11px] text-slate-400 dark:text-slate-500 font-mono mt-0.5">
+                        Exercice 2025–2026
+                      </div>
+                    </td>
+
+                    <td className="py-4.5 px-5 text-right font-bold text-slate-900 dark:text-white">
+                      {formatMRU(r.attendu)}
+                    </td>
+
+                    <td className="py-4.5 px-5 text-right font-bold text-emerald-700 dark:text-emerald-400">
+                      {formatMRU(r.encaisse)}
+                    </td>
+
+                    <td className="py-4.5 px-5 text-right font-bold text-rose-600 dark:text-rose-400">
+                      {formatMRU(r.impayes)}
+                    </td>
+
+                    <td className="py-4.5 px-5 text-center">
+                      <div className="flex items-center justify-center gap-2.5">
+                        <div className="w-20 bg-slate-100 dark:bg-slate-800 rounded-full h-2 overflow-hidden hidden sm:block">
+                          <div
+                            className={`h-full rounded-full ${
+                              r.taux >= 80 ? 'bg-emerald-600 dark:bg-emerald-500' : 'bg-blue-600 dark:bg-blue-500'
+                            }`}
+                            style={{ width: `${r.taux}%` }}
+                          />
+                        </div>
+                        <span className="font-bold text-slate-900 dark:text-white text-xs">{r.taux}%</span>
+                      </div>
+                    </td>
+
+                    <td className="py-4.5 px-5 text-center font-sans">
+                      <span
+                        className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold border ${
+                          r.taux >= 90
+                            ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
+                            : r.taux >= 75
+                            ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-800 dark:text-blue-300 border-blue-200 dark:border-blue-800'
+                            : 'bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800'
+                        }`}
+                      >
+                        <span
+                          className={`h-1.5 w-1.5 rounded-full ${
+                            r.taux >= 90 ? 'bg-emerald-600 dark:bg-emerald-400' : 'bg-blue-600 dark:bg-blue-400'
+                          }`}
+                        />
+                        {r.taux >= 90 ? 'Clôturé' : 'En cours'}
+                      </span>
+                    </td>
+
+                    {/* Context menu "..." */}
+                    <td className="py-4.5 px-4 text-center font-sans relative" onClick={(e) => e.stopPropagation()}>
+                      <button
+                        type="button"
+                        onClick={() => setOpenMenuRowId(isMenuOpen ? null : r.mois)}
+                        className="h-8 w-8 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 flex items-center justify-center transition-colors mx-auto"
+                      >
+                        <MoreHorizontal className="h-4 w-4" />
+                      </button>
+
+                      {isMenuOpen && (
+                        <div className="absolute right-4 top-10 w-48 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xl z-30 py-1 text-xs text-left animate-in fade-in zoom-in-95 font-sans">
+                          <button
+                            onClick={() => {
+                              setOpenMenuRowId(null);
+                              showToast(`Téléchargement de l'état financier de ${r.mois}...`);
+                            }}
+                            className="w-full flex items-center gap-2.5 px-3 py-2 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/60 font-semibold"
+                          >
+                            <Download className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+                            <span>Télécharger l'état</span>
+                          </button>
+
+                          <button
+                            onClick={() => {
+                              setOpenMenuRowId(null);
+                              window.print();
+                            }}
+                            className="w-full flex items-center gap-2.5 px-3 py-2 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/60 border-t border-slate-100 dark:border-slate-700"
+                          >
+                            <Printer className="h-3.5 w-3.5 text-slate-500" />
+                            <span>Imprimer journal</span>
+                          </button>
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

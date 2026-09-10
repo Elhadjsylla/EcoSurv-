@@ -10,10 +10,11 @@ import { StatusBadge } from '../components/ui/StatusBadge';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { ToastNotification } from '../components/ui/ToastNotification';
+import { KpiCard } from '../components/ui/KpiCard';
+import { StudentDetailDrawer } from '../components/dashboard/StudentDetailDrawer';
 import { formatMRU } from '../lib/utils';
 import { formatCompactMRU } from '../lib/formatCompactMRU';
 import { StudentEnrollmentModal } from '../components/eleves/StudentEnrollmentModal';
-import { StudentDetailPanel } from '../components/eleves/StudentDetailPanel';
 import { Select } from '../components/ui/Select';
 import {
   Search,
@@ -30,7 +31,12 @@ import {
   Zap,
   Send,
   Download,
-  Check,
+  MoreHorizontal,
+  ChevronLeft,
+  ChevronRight,
+  Eye,
+  FileText,
+  Phone,
 } from 'lucide-react';
 
 interface ElevesPageProps {
@@ -43,11 +49,18 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
   onFilterChange,
 }) => {
   const [elevesList, setElevesList] = useState<EleveWithStats[]>(MOCK_ELEVES);
-  const [selectedEleveId, setSelectedEleveId] = useState<string>(MOCK_ELEVES[0]?.id || '');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedClasse, setSelectedClasse] = useState<string>('all');
   const [selectedStatut, setSelectedStatut] = useState<string>(initialStatutFilter);
   const [sortBy, setSortBy] = useState<'nom' | 'matricule' | 'solde'>('nom');
+
+  // Pagination (Nexoov Style)
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 8;
+
+  // Context Menu & Drawer
+  const [openMenuRowId, setOpenMenuRowId] = useState<string | null>(null);
+  const [drawerEleve, setDrawerEleve] = useState<EleveWithStats | null>(null);
 
   // Sélection multiple (Bulk selection)
   const [selectedEleveIds, setSelectedEleveIds] = useState<string[]>([]);
@@ -151,21 +164,27 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
     return result;
   }, [elevesList, searchQuery, selectedClasse, selectedStatut, sortBy]);
 
-  // Élève sélectionné pour le panneau de droite
-  const selectedEleve = useMemo(() => {
-    return elevesList.find((e) => e.id === selectedEleveId) || filteredEleves[0] || null;
-  }, [elevesList, selectedEleveId, filteredEleves]);
+  // Reset pagination on filter change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, selectedClasse, selectedStatut, sortBy]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredEleves.length / pageSize));
+  const paginatedEleves = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredEleves.slice(start, start + pageSize);
+  }, [filteredEleves, currentPage, pageSize]);
 
   // Gestion de la sélection multiple
   const isAllSelected =
-    filteredEleves.length > 0 &&
-    filteredEleves.every((e) => selectedEleveIds.includes(e.id));
+    paginatedEleves.length > 0 &&
+    paginatedEleves.every((e) => selectedEleveIds.includes(e.id));
 
   const toggleSelectAll = () => {
     if (isAllSelected) {
       setSelectedEleveIds([]);
     } else {
-      setSelectedEleveIds(filteredEleves.map((e) => e.id));
+      setSelectedEleveIds(paginatedEleves.map((e) => e.id));
     }
   };
 
@@ -203,7 +222,7 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
   // Inscription d'un nouvel élève
   const handleEnrollStudent = (newEleve: EleveWithStats) => {
     setElevesList((prev) => [newEleve, ...prev]);
-    setSelectedEleveId(newEleve.id);
+    setDrawerEleve(newEleve);
     showToast(`Élève ${newEleve.prenom} ${newEleve.nom} inscrit avec succès !`, 'success');
   };
 
@@ -373,17 +392,17 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
       )}
 
       {/* Top Institutional Header & Global Actions */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200/90 shadow-2xs">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-2xs">
         <div className="space-y-1">
           <div className="flex items-center gap-2.5">
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
               Gestion des Élèves & Scolarités
             </h1>
-            <span className="rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-bold text-blue-700">
+            <span className="rounded-full bg-blue-100 dark:bg-blue-950/60 px-2.5 py-0.5 text-xs font-bold text-blue-700 dark:text-blue-300 border border-blue-200/50 dark:border-blue-800/60">
               Année 2025–2026
             </span>
           </div>
-          <p className="text-sm text-slate-500 font-medium">
+          <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">
             Registre académique centralisé, facturation mensuelle et suivi des recouvrements en Ouguiya (MRU).
           </p>
         </div>
@@ -397,7 +416,7 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
             loading={isImporting}
             loadingText="Lecture du fichier..."
           >
-            <FileSpreadsheet className="h-4 w-4 text-emerald-600" />
+            <FileSpreadsheet className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
             Import Excel/CSV
           </Button>
           <Button
@@ -412,121 +431,70 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
         </div>
       </div>
 
-      {/* Metric Quick Tiles (Interactive Status Shortcuts) avec animation échelonnée */}
+      {/* Metric Quick Tiles (Nexoov Pastel Cards) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card
+        <KpiCard
+          staggerIndex={0}
+          title="Effectif Total"
+          amount={kpis.nombreEleves}
+          subtitle="Afficher tous les élèves"
+          icon={<Users className="h-5 w-5" />}
+          variant="primary"
+          active={selectedStatut === 'all'}
           onClick={() => handleStatutChange('all')}
-          style={{ animationDelay: '0ms' }}
-          className={`p-6 rounded-2xl flex items-start justify-between gap-3 cursor-pointer transition-all duration-200 animate-stagger-rise hover:-translate-y-0.5 hover:shadow-md hover:border-blue-400 min-w-0 ${
-            selectedStatut === 'all' ? 'border-blue-600 bg-blue-50/30 ring-2 ring-blue-500/20 shadow-sm' : ''
-          }`}
-        >
-          <div className="min-w-0 flex-1">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 leading-snug break-words block">
-              Effectif Total
-            </span>
-            <div className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-mono mt-2 truncate">
-              {kpis.nombreEleves}
-            </div>
-            <span className="text-[11px] font-semibold text-slate-500 mt-2 flex items-center gap-1 truncate">
-              <CheckCircle2 className="h-3.5 w-3.5 text-slate-400 shrink-0" /> Afficher tous
-            </span>
-          </div>
-          <div className="h-11 w-11 rounded-xl bg-blue-50/80 border border-blue-100/60 text-blue-600 flex items-center justify-center shrink-0 shadow-2xs">
-            <Users className="h-5 w-5 stroke-[1.75]" />
-          </div>
-        </Card>
+        />
 
-        <Card
+        <KpiCard
+          staggerIndex={1}
+          title="Élèves En Règle"
+          amount={kpis.nombrePaye + kpis.nombreAJour}
+          subtitle="Filtrer les élèves réglés"
+          icon={<CheckCircle2 className="h-5 w-5" />}
+          variant="success"
+          active={selectedStatut === 'paye'}
           onClick={() => handleStatutChange('paye')}
-          style={{ animationDelay: '75ms' }}
-          className={`p-6 rounded-2xl flex items-start justify-between gap-3 cursor-pointer transition-all duration-200 animate-stagger-rise hover:-translate-y-0.5 hover:shadow-md hover:border-emerald-400 min-w-0 ${
-            selectedStatut === 'paye' ? 'border-emerald-600 bg-emerald-50/30 ring-2 ring-emerald-500/20 shadow-sm' : ''
-          }`}
-        >
-          <div className="min-w-0 flex-1">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 leading-snug break-words block">
-              Élèves En Règle
-            </span>
-            <div className="text-2xl sm:text-3xl font-extrabold text-emerald-700 font-mono mt-2 truncate">
-              {kpis.nombrePaye + kpis.nombreAJour}
-            </div>
-            <span className="text-[11px] text-emerald-700 font-semibold mt-2 block truncate">
-              Filtrer les réglés →
-            </span>
-          </div>
-          <div className="h-11 w-11 rounded-xl bg-emerald-50/80 border border-emerald-100/60 text-emerald-600 flex items-center justify-center shrink-0 shadow-2xs">
-            <CheckCircle2 className="h-5 w-5 stroke-[1.75]" />
-          </div>
-        </Card>
+        />
 
-        <Card
+        <KpiCard
+          staggerIndex={2}
+          title="Échéances en Retard"
+          amount={kpis.nombreEnRetard}
+          subtitle={`Total impayés : ${formatCompactMRU(kpis.totalImpayes)}`}
+          icon={<AlertTriangle className="h-5 w-5" />}
+          variant="danger"
+          active={selectedStatut === 'en_retard'}
           onClick={() => handleStatutChange('en_retard')}
-          style={{ animationDelay: '150ms' }}
-          className={`p-6 rounded-2xl flex items-start justify-between gap-3 cursor-pointer transition-all duration-200 animate-stagger-rise hover:-translate-y-0.5 hover:shadow-md hover:border-red-400 min-w-0 ${
-            selectedStatut === 'en_retard' ? 'border-red-600 bg-red-50/30 ring-2 ring-red-500/20 shadow-sm' : ''
-          }`}
-        >
-          <div className="min-w-0 flex-1">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 leading-snug break-words block">
-              Échéances en Retard
-            </span>
-            <div className="text-2xl sm:text-3xl font-extrabold text-red-700 font-mono mt-2 truncate">
-              {kpis.nombreEnRetard}
-            </div>
-            <span
-              title={`Total impayés : ${formatMRU(kpis.totalImpayes)}`}
-              className="text-[11px] font-semibold text-red-600 mt-2 block truncate cursor-help"
-            >
-              Filtrer les retards ({formatCompactMRU(kpis.totalImpayes)}) →
-            </span>
-          </div>
-          <div className="h-11 w-11 rounded-xl bg-red-50/80 border border-red-100/60 text-red-600 flex items-center justify-center shrink-0 shadow-2xs">
-            <AlertTriangle className="h-5 w-5 stroke-[1.75]" />
-          </div>
-        </Card>
+        />
 
-        <Card
+        <KpiCard
+          staggerIndex={3}
+          title="Recouvrement Global"
+          progress={kpis.tauxRecouvrement}
+          subtitle="Filtrer les dossiers partiels"
+          icon={<CreditCard className="h-5 w-5" />}
+          variant="warning"
+          active={selectedStatut === 'partiel'}
           onClick={() => handleStatutChange('partiel')}
-          style={{ animationDelay: '225ms' }}
-          className={`p-6 rounded-2xl flex items-start justify-between gap-3 cursor-pointer transition-all duration-200 animate-stagger-rise hover:-translate-y-0.5 hover:shadow-md hover:border-amber-400 min-w-0 ${
-            selectedStatut === 'partiel' ? 'border-amber-600 bg-amber-50/30 ring-2 ring-amber-500/20 shadow-sm' : ''
-          }`}
-        >
-          <div className="min-w-0 flex-1">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 leading-snug break-words block">
-              Recouvrement Global
-            </span>
-            <div className="text-2xl sm:text-3xl font-extrabold text-blue-700 font-mono mt-2 truncate">
-              {kpis.tauxRecouvrement}%
-            </div>
-            <span className="text-[11px] text-amber-700 font-semibold mt-2 block truncate">
-              Filtrer les partiels →
-            </span>
-          </div>
-          <div className="h-11 w-11 rounded-xl bg-indigo-50/80 border border-indigo-100/60 text-indigo-600 flex items-center justify-center shrink-0 shadow-2xs">
-            <CreditCard className="h-5 w-5 stroke-[1.75]" />
-          </div>
-        </Card>
+        />
       </div>
 
       {/* Filtration & Control Bar */}
-      <Card className="p-6 space-y-4 border-slate-200/90 shadow-sm rounded-2xl">
+      <Card className="p-5 sm:p-6 space-y-4 border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xs rounded-2xl">
         <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
           {/* Search bar avec raccourci clavier "/" */}
           <div className="relative flex-1 max-w-lg">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-slate-500" />
             <input
               ref={searchInputRef}
               type="text"
               placeholder="Rechercher un élève, matricule, parent... (Touche '/')"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className={`w-full h-11 pl-10 pr-12 rounded-xl border border-slate-200 bg-slate-50/50 text-sm text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition-all duration-200 ${
+              className={`w-full h-10 pl-10 pr-12 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/60 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition-all duration-200 ${
                 isSearchPulseActive ? 'animate-search-focus ring-2 ring-blue-500' : ''
               }`}
             />
-            <kbd className="absolute right-3.5 top-1/2 -translate-y-1/2 px-2 py-0.5 text-[10px] font-mono font-semibold text-slate-400 bg-white border border-slate-200 rounded shadow-2xs">
+            <kbd className="absolute right-3 top-1/2 -translate-y-1/2 px-1.5 py-0.5 text-[10px] font-mono font-semibold text-slate-400 dark:text-slate-500 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded shadow-2xs">
               /
             </kbd>
           </div>
@@ -540,7 +508,7 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
                 { value: 'all', label: `Toutes les classes (${classesList.length})` },
                 ...classesList.map((c) => ({ value: c, label: c })),
               ]}
-              triggerClassName="h-11 rounded-xl text-xs font-semibold"
+              triggerClassName="h-10 rounded-xl text-xs font-semibold"
             />
 
             <Select
@@ -553,7 +521,7 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
                 { value: 'partiel', label: 'Partiel' },
                 { value: 'a_jour', label: 'À jour' },
               ]}
-              triggerClassName="h-11 rounded-xl text-xs font-bold"
+              triggerClassName="h-10 rounded-xl text-xs font-bold"
             />
 
             <Select
@@ -565,213 +533,339 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
                 { value: 'matricule', label: 'Trier par Matricule' },
                 { value: 'solde', label: 'Trier par Solde Dû' },
               ]}
-              triggerClassName="h-11 rounded-xl text-xs font-semibold"
+              triggerClassName="h-10 rounded-xl text-xs font-semibold"
             />
           </div>
         </div>
+
+        {/* Status count chips */}
+        <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-slate-100 dark:border-slate-800 text-xs font-medium">
+          <span className="text-slate-400 dark:text-slate-500 mr-2 text-[11px] font-bold uppercase tracking-wider">
+            Filtres rapides :
+          </span>
+          <button
+            onClick={() => handleStatutChange('all')}
+            className={`px-3 py-1 rounded-xl text-xs font-bold transition-all ${
+              selectedStatut === 'all'
+                ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-xs'
+                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+            }`}
+          >
+            Tous ({filteredEleves.length})
+          </button>
+          <button
+            onClick={() => handleStatutChange('paye')}
+            className={`px-3 py-1 rounded-xl text-xs font-bold transition-all ${
+              selectedStatut === 'paye'
+                ? 'bg-emerald-600 text-white shadow-xs'
+                : 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800/60 hover:bg-emerald-100'
+            }`}
+          >
+            Payés ({filteredEleves.filter((e) => e.statut === 'paye').length})
+          </button>
+          <button
+            onClick={() => handleStatutChange('en_retard')}
+            className={`px-3 py-1 rounded-xl text-xs font-bold transition-all ${
+              selectedStatut === 'en_retard'
+                ? 'bg-rose-600 text-white shadow-xs'
+                : 'bg-rose-50 dark:bg-rose-950/40 text-rose-800 dark:text-rose-300 border border-rose-200/80 dark:border-rose-800/60 hover:bg-rose-100'
+            }`}
+          >
+            En retard ({filteredEleves.filter((e) => e.statut === 'en_retard').length})
+          </button>
+          <button
+            onClick={() => handleStatutChange('partiel')}
+            className={`px-3 py-1 rounded-xl text-xs font-bold transition-all ${
+              selectedStatut === 'partiel'
+                ? 'bg-amber-600 text-white shadow-xs'
+                : 'bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border border-amber-200/80 dark:border-amber-800/60 hover:bg-amber-100'
+            }`}
+          >
+            Partiels ({filteredEleves.filter((e) => e.statut === 'partiel').length})
+          </button>
+        </div>
       </Card>
 
-      {/* Primary Split Architecture: 65% Roster Table / 35% Detailed Ledger Dossier */}
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 lg:gap-8 items-start">
-        {/* Left Wing (65% -> 8 cols on XL) */}
-        <div className="xl:col-span-8 flex flex-col bg-white rounded-2xl border border-slate-200/90 shadow-2xs overflow-hidden">
-          {/* Table Header Bar */}
-          <div className="p-4 bg-slate-50/80 border-b border-slate-200 flex items-center justify-between text-xs text-slate-600">
-            <div className="flex items-center gap-2.5">
-              <input
-                type="checkbox"
-                checked={isAllSelected}
-                onChange={toggleSelectAll}
-                className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
-              />
-              <span className="font-bold text-slate-900 text-sm">
-                {filteredEleves.length} élève(s) affiché(s)
-              </span>
-            </div>
-            <span className="text-slate-500 font-medium">
-              Cliquez sur une ligne pour afficher son dossier complet.
+      {/* Tabular Roster Table (Nexoov Style) */}
+      <div className="flex flex-col bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-2xs overflow-hidden">
+        {/* Table Header Bar */}
+        <div className="p-4 bg-slate-50/80 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between text-xs text-slate-600 dark:text-slate-400">
+          <div className="flex items-center gap-2.5">
+            <input
+              type="checkbox"
+              checked={isAllSelected}
+              onChange={toggleSelectAll}
+              className="h-4 w-4 rounded border-slate-300 dark:border-slate-600 text-blue-600 focus:ring-blue-500 cursor-pointer"
+            />
+            <span className="font-bold text-slate-900 dark:text-white text-sm">
+              {filteredEleves.length} élève(s) au registre
             </span>
           </div>
+          <span className="text-slate-500 dark:text-slate-400 font-medium hidden sm:inline">
+            Cliquez sur un élève pour ouvrir son dossier individuel.
+          </span>
+        </div>
 
-          {/* Tabular Roster with smooth internal scrollbar */}
-          <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-transparent">
-            <table className="w-full text-left text-xs border-collapse">
-              <thead>
-                <tr className="border-b border-slate-200 bg-slate-50/80 font-bold uppercase tracking-wider text-slate-500">
-                  <th className="py-3.5 px-3 w-8 text-center">
-                    <input
-                      type="checkbox"
-                      checked={isAllSelected}
-                      onChange={toggleSelectAll}
-                      className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
-                    />
-                  </th>
-                  <th className="py-3.5 px-3">Matricule</th>
-                  <th className="py-3.5 px-3.5">Élève</th>
-                  <th className="py-3.5 px-3">Classe</th>
-                  <th className="py-3.5 px-3 hidden 2xl:table-cell">Tuteur Légal</th>
-                  <th className="py-3.5 px-3 text-right">Solde Dû</th>
-                  <th className="py-3.5 px-3 text-center">Statut</th>
-                  <th className="py-3.5 px-3 text-right">Actions Rapides</th>
+        {/* Tabular Roster with smooth internal scrollbar */}
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs border-collapse">
+            <thead>
+              <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/60 font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                <th className="py-4 px-4 w-10 text-center">
+                  <input
+                    type="checkbox"
+                    checked={isAllSelected}
+                    onChange={toggleSelectAll}
+                    className="h-4 w-4 rounded border-slate-300 dark:border-slate-600 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                  />
+                </th>
+                <th className="py-4 px-4">Élève</th>
+                <th className="py-4 px-4">Tuteur Légal</th>
+                <th className="py-4 px-4 hidden md:table-cell">Ville / Quartier</th>
+                <th className="py-4 px-4 text-center">Statut</th>
+                <th className="py-4 px-4 text-right">Solde Dû</th>
+                <th className="py-4 px-4 text-center w-16">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80 text-sm">
+              {paginatedEleves.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="py-14 text-center text-slate-500 dark:text-slate-400 font-medium text-sm">
+                    Aucun élève ne correspond à votre recherche.
+                  </td>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 text-sm">
-                {filteredEleves.length === 0 ? (
-                  <tr>
-                    <td colSpan={8} className="py-14 text-center text-slate-500 font-medium text-sm">
-                      Aucun élève ne correspond à votre recherche.
-                    </td>
-                  </tr>
-                ) : (
-                  filteredEleves.map((eleve) => {
-                    const isSelected = eleve.id === selectedEleve?.id;
-                    const isChecked = selectedEleveIds.includes(eleve.id);
-                    const isJustPaid = justPaidEleveId === eleve.id;
-                    const isRelancing = relancingId === eleve.id;
+              ) : (
+                paginatedEleves.map((eleve) => {
+                  const isChecked = selectedEleveIds.includes(eleve.id);
+                  const isJustPaid = justPaidEleveId === eleve.id;
+                  const isRelancing = relancingId === eleve.id;
+                  const isMenuOpen = openMenuRowId === eleve.id;
 
-                    return (
-                      <tr
-                        key={eleve.id}
-                        onClick={() => setSelectedEleveId(eleve.id)}
-                        className={`cursor-pointer transition-all duration-300 ${
-                          isJustPaid
-                            ? 'bg-emerald-50/90 ring-1 ring-emerald-400'
-                            : isSelected
-                            ? 'bg-blue-50/90 border-l-4 border-blue-600'
-                            : isChecked
-                            ? 'bg-blue-50/40'
-                            : 'hover:bg-slate-50'
-                        }`}
-                      >
-                        {/* Checkbox */}
-                        <td className="py-3.5 px-3 text-center" onClick={(e) => e.stopPropagation()}>
-                          <input
-                            type="checkbox"
-                            checked={isChecked}
-                            onChange={(e) => toggleSelectEleve(eleve.id, e as any)}
-                            className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
-                          />
-                        </td>
+                  return (
+                    <tr
+                      key={eleve.id}
+                      onClick={() => setDrawerEleve(eleve)}
+                      className={`cursor-pointer transition-all duration-200 group ${
+                        isJustPaid
+                          ? 'bg-emerald-50/90 dark:bg-emerald-950/60 ring-1 ring-emerald-400'
+                          : isChecked
+                          ? 'bg-blue-50/60 dark:bg-blue-950/40'
+                          : 'hover:bg-slate-50/80 dark:hover:bg-slate-800/50'
+                      }`}
+                    >
+                      {/* Checkbox */}
+                      <td className="py-4 px-4 text-center" onClick={(e) => e.stopPropagation()}>
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={(e) => toggleSelectEleve(eleve.id, e as any)}
+                          className="h-4 w-4 rounded border-slate-300 dark:border-slate-600 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                        />
+                      </td>
 
-                        {/* Matricule */}
-                        <td className="py-3.5 px-3 font-mono font-bold text-blue-700 whitespace-nowrap">
-                          {eleve.matricule}
-                        </td>
-
-                        {/* Élève */}
-                        <td className="py-3.5 px-3.5">
-                          <div className="flex items-center gap-3">
-                            <StudentInitials nom={eleve.nom} prenom={eleve.prenom} size="sm" />
-                            <div>
-                              <div className="font-bold text-slate-900 leading-snug">
-                                {eleve.prenom} {eleve.nom}
-                              </div>
-                              <div className="text-[11px] text-slate-500 mt-0.5">
-                                Né le {eleve.date_naissance} • {eleve.sexe}
-                              </div>
+                      {/* Élève (Nom en gras sur ligne 1 + matricule et classe en ligne 2) */}
+                      <td className="py-4 px-4">
+                        <div className="flex items-center gap-3.5">
+                          <StudentInitials nom={eleve.nom} prenom={eleve.prenom} />
+                          <div>
+                            <div className="font-bold text-slate-900 dark:text-white leading-snug text-sm">
+                              {eleve.prenom} {eleve.nom}
+                            </div>
+                            <div className="text-xs text-slate-400 dark:text-slate-500 font-mono mt-0.5 flex items-center gap-1.5">
+                              <span>#{eleve.matricule}</span>
+                              <span>•</span>
+                              <span className="font-semibold text-slate-600 dark:text-slate-400">{eleve.classe}</span>
                             </div>
                           </div>
-                        </td>
+                        </div>
+                      </td>
 
-                        {/* Classe */}
-                        <td className="py-3.5 px-3">
-                          <span className="inline-flex items-center rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
-                            {eleve.classe}
+                      {/* Tuteur */}
+                      <td className="py-4 px-4">
+                        <div className="text-xs space-y-0.5">
+                          <div className="font-semibold text-slate-800 dark:text-slate-200">{eleve.nom_tuteur}</div>
+                          <div className="text-slate-400 dark:text-slate-500 font-mono flex items-center gap-1 text-[11px]">
+                            <Phone className="h-3 w-3 text-slate-400 shrink-0" />
+                            <span>{eleve.telephone_tuteur}</span>
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* Ville / Quartier */}
+                      <td className="py-4 px-4 hidden md:table-cell text-xs text-slate-600 dark:text-slate-400 font-medium">
+                        {eleve.adresse_tuteur ? eleve.adresse_tuteur.split(',')[0] : 'Tevragh-Zeina'}
+                      </td>
+
+                      {/* Statut Badge */}
+                      <td className="py-4 px-4 text-center whitespace-nowrap">
+                        <StatusBadge statut={eleve.statut} />
+                      </td>
+
+                      {/* Solde Dû */}
+                      <td className="py-4 px-4 text-right font-mono font-black whitespace-nowrap text-xs">
+                        {eleve.remaining > 0 ? (
+                          <span
+                            title={formatMRU(eleve.remaining)}
+                            className="text-rose-600 dark:text-rose-400 cursor-help"
+                          >
+                            {eleve.remaining >= 100000
+                              ? formatCompactMRU(eleve.remaining)
+                              : formatMRU(eleve.remaining)}
                           </span>
-                        </td>
+                        ) : (
+                          <span className="text-emerald-600 dark:text-emerald-400 font-bold">Soldé</span>
+                        )}
+                      </td>
 
-                        {/* Tuteur (visible sur grands écrans 2xl+, déjà visible dans le panneau détail à droite) */}
-                        <td className="py-3.5 px-3 hidden 2xl:table-cell">
-                          <div className="text-xs space-y-0.5">
-                            <div className="font-semibold text-slate-800">{eleve.nom_tuteur}</div>
-                            <div className="text-slate-500 font-mono text-[11px]">
-                              {eleve.telephone_tuteur}
-                            </div>
-                          </div>
-                        </td>
-
-                        {/* Solde Dû */}
-                        <td className="py-3.5 px-3 text-right font-mono font-bold whitespace-nowrap text-sm">
-                          {eleve.remaining > 0 ? (
-                            <span
-                              title={formatMRU(eleve.remaining)}
-                              className="text-red-700 cursor-help"
-                            >
-                              {eleve.remaining >= 100000
-                                ? formatCompactMRU(eleve.remaining)
-                                : formatMRU(eleve.remaining)}
-                            </span>
-                          ) : (
-                            <span className="text-emerald-700">0 MRU</span>
-                          )}
-                        </td>
-
-                        {/* Statut Badge */}
-                        <td className="py-3.5 px-3 text-center whitespace-nowrap">
-                          <StatusBadge statut={eleve.statut} />
-                        </td>
-
-                        {/* Actions Rapides en Ligne */}
-                        <td
-                          className="py-3.5 px-3 text-right whitespace-nowrap"
-                          onClick={(e) => e.stopPropagation()}
+                      {/* Context Menu "..." Button */}
+                      <td
+                        className="py-4 px-4 text-center relative"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setOpenMenuRowId(isMenuOpen ? null : eleve.id);
+                          }}
+                          className="h-8 w-8 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 flex items-center justify-center transition-colors mx-auto"
+                          title="Options"
                         >
-                          <div className="flex items-center justify-end gap-1.5">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </button>
+
+                        {/* Dropdown Menu */}
+                        {isMenuOpen && (
+                          <div className="absolute right-4 top-10 w-48 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xl z-30 py-1 text-xs text-left animate-in fade-in zoom-in-95">
+                            <button
+                              onClick={() => {
+                                setOpenMenuRowId(null);
+                                setDrawerEleve(eleve);
+                              }}
+                              className="w-full flex items-center gap-2.5 px-3 py-2 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/60 font-semibold"
+                            >
+                              <Eye className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+                              <span>Voir la fiche élève</span>
+                            </button>
+
                             {eleve.remaining > 0 ? (
                               <>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="h-7.5 px-2 text-xs gap-1 text-emerald-700 border-emerald-200 hover:bg-emerald-50 hover:scale-105 active:scale-95 transition-all duration-150"
-                                  title="Marquer réglé immédiatement"
-                                  onClick={(e) => triggerMarquerPayeExpress(eleve, e)}
+                                <button
+                                  onClick={(e) => {
+                                    setOpenMenuRowId(null);
+                                    triggerMarquerPayeExpress(eleve, e);
+                                  }}
+                                  className="w-full flex items-center gap-2.5 px-3 py-2 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 font-semibold"
                                 >
-                                  <Zap className="h-3.5 w-3.5 text-emerald-600 fill-emerald-600" />
-                                  Payé
-                                </Button>
+                                  <Zap className="h-3.5 w-3.5" />
+                                  <span>Encaisser comptant</span>
+                                </button>
 
-                                <Button
-                                  size="sm"
-                                  variant="danger"
-                                  className="h-7.5 px-2 text-xs gap-1 hover:scale-105 active:scale-95 transition-all duration-150 relative overflow-hidden"
-                                  title="Envoyer rappel SMS"
-                                  onClick={(e) => triggerRelance(eleve, e)}
+                                <button
+                                  onClick={(e) => {
+                                    setOpenMenuRowId(null);
+                                    triggerRelance(eleve, e);
+                                  }}
+                                  className="w-full flex items-center gap-2.5 px-3 py-2 text-rose-700 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 font-semibold"
                                 >
-                                  <Send
-                                    className={`h-3.5 w-3.5 transition-transform ${
-                                      isRelancing ? 'animate-paper-plane' : ''
-                                    }`}
-                                  />
-                                  {isRelancing ? '...' : 'Relancer'}
-                                </Button>
+                                  <Send className="h-3.5 w-3.5" />
+                                  <span>{isRelancing ? 'Envoi...' : 'Envoyer relance SMS'}</span>
+                                </button>
                               </>
-                            ) : (
-                              <span className="text-xs font-semibold text-emerald-700 flex items-center gap-1 pr-1 animate-scale-in">
-                                <Check className="h-4 w-4 text-emerald-600" /> Soldé
-                              </span>
-                            )}
+                            ) : null}
+
+                            <button
+                              onClick={() => {
+                                setOpenMenuRowId(null);
+                                setPaymentModalEleve(eleve);
+                              }}
+                              className="w-full flex items-center gap-2.5 px-3 py-2 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/60 border-t border-slate-100 dark:border-slate-700"
+                            >
+                              <PlusCircle className="h-3.5 w-3.5 text-slate-500" />
+                              <span>Enregistrer paiement</span>
+                            </button>
+
+                            <button
+                              onClick={() => {
+                                setOpenMenuRowId(null);
+                                window.print();
+                              }}
+                              className="w-full flex items-center gap-2.5 px-3 py-2 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/60"
+                            >
+                              <FileText className="h-3.5 w-3.5 text-slate-500" />
+                              <span>Imprimer reçu</span>
+                            </button>
                           </div>
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Numbered Pagination (Nexoov Style) */}
+        <div className="p-4 sm:px-6 bg-slate-50/60 dark:bg-slate-800/40 border-t border-slate-200/90 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+          <div className="text-slate-500 dark:text-slate-400 font-medium">
+            Affichage de{' '}
+            <span className="font-bold text-slate-800 dark:text-slate-200">
+              {filteredEleves.length === 0 ? 0 : (currentPage - 1) * pageSize + 1}
+            </span>{' '}
+            à{' '}
+            <span className="font-bold text-slate-800 dark:text-slate-200">
+              {Math.min(currentPage * pageSize, filteredEleves.length)}
+            </span>{' '}
+            sur <span className="font-bold text-slate-800 dark:text-slate-200">{filteredEleves.length}</span> élèves
+          </div>
+
+          <div className="flex items-center gap-1.5">
+            {/* Previous */}
+            <button
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+            >
+              <ChevronLeft className="h-3.5 w-3.5" />
+              <span>Précédent</span>
+            </button>
+
+            {/* Page Numbers */}
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+              <button
+                key={pageNum}
+                onClick={() => setCurrentPage(pageNum)}
+                className={`h-8 w-8 rounded-lg text-xs font-bold transition-all ${
+                  currentPage === pageNum
+                    ? 'bg-blue-600 text-white shadow-xs'
+                    : 'border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
+                }`}
+              >
+                {pageNum}
+              </button>
+            ))}
+
+            {/* Next */}
+            <button
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+            >
+              <span>Suivant</span>
+              <ChevronRight className="h-3.5 w-3.5" />
+            </button>
           </div>
         </div>
-
-        {/* Right Wing: Dossier de l'élève sélectionné (35% -> 4 cols on XL) - Sticky on desktop */}
-        <div className="xl:col-span-4 xl:sticky xl:top-6 self-start space-y-4">
-          <StudentDetailPanel
-            eleve={selectedEleve}
-            onPaymentTrigger={(el) => setPaymentModalEleve(el)}
-            onRelanceTrigger={(el) =>
-              showToast(`Rappel SMS/WhatsApp envoyé au tuteur de ${el.prenom} ${el.nom}`)
-            }
-          />
-        </div>
       </div>
+
+      {/* Slide-over Drawer Dossier Élève */}
+      <StudentDetailDrawer
+        eleve={drawerEleve}
+        onClose={() => setDrawerEleve(null)}
+        onQuickPay={(el) => triggerMarquerPayeExpress(el)}
+        onQuickRelance={(el) => triggerRelance(el)}
+      />
 
       {/* Modale d'Inscription Élève */}
       <StudentEnrollmentModal
@@ -783,45 +877,45 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
 
       {/* Modale d'Encaissement Fictif */}
       {paymentModalEleve && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 animate-in fade-in">
-          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl border border-slate-200 space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <PlusCircle className="h-5 w-5 text-emerald-600" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 dark:bg-slate-950/75 backdrop-blur-xs p-4 animate-in fade-in">
+          <div className="w-full max-w-md rounded-2xl bg-white dark:bg-slate-900 p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+              <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <PlusCircle className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
                 Encaisser un paiement
               </h3>
               <button
                 onClick={() => setPaymentModalEleve(null)}
-                className="text-slate-400 hover:text-slate-600"
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
 
-            <div className="text-xs space-y-1 bg-slate-50 p-3 rounded-lg border border-slate-100">
-              <p className="font-bold text-slate-900">
+            <div className="text-xs space-y-1 bg-slate-50 dark:bg-slate-800/60 p-3 rounded-xl border border-slate-100 dark:border-slate-700">
+              <p className="font-bold text-slate-900 dark:text-white">
                 Élève: {paymentModalEleve.prenom} {paymentModalEleve.nom}
               </p>
-              <p className="text-slate-500 font-mono">
+              <p className="text-slate-500 dark:text-slate-400 font-mono">
                 Reste à payer actuel: {formatMRU(paymentModalEleve.remaining)}
               </p>
             </div>
 
             <div className="space-y-3">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Montant encaisse (MRU)
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Montant encaissé (MRU)
                 </label>
                 <input
                   type="number"
                   defaultValue={Math.min(15000, paymentModalEleve.remaining || 15000)}
                   id="payAmountInput"
-                  className="w-full h-10 px-3 rounded-lg border border-slate-300 text-sm font-mono font-bold focus:ring-2 focus:ring-blue-600 focus:outline-none"
+                  className="w-full h-10 px-3 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm font-mono font-bold focus:ring-2 focus:ring-blue-600 focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
                   Mode de règlement
                 </label>
                 <Select
@@ -839,7 +933,7 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
               </div>
             </div>
 
-            <div className="flex items-center justify-end gap-3 pt-2">
+            <div className="flex items-center justify-end gap-3 pt-2 border-t border-slate-100 dark:border-slate-800">
               <Button
                 variant="outline"
                 size="sm"

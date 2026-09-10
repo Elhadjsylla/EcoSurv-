@@ -120,26 +120,26 @@ export const StudentEnrollmentModal: React.FC<StudentEnrollmentModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 animate-in fade-in overflow-y-auto">
-      <div className="w-full max-w-2xl rounded-2xl bg-white p-6 shadow-2xl border border-slate-200 space-y-6 my-8">
-        {/* Header */}
-        <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 dark:bg-slate-950/75 backdrop-blur-xs p-4 animate-in fade-in">
+      <div className="w-full max-w-2xl rounded-2xl bg-white dark:bg-slate-900 p-6 sm:p-8 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-6 max-h-[90vh] overflow-y-auto">
+        {/* Header Modal */}
+        <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
+            <div className="h-10 w-10 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center">
               <UserPlus className="h-5 w-5" />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-slate-900">
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white">
                 Inscrire un nouvel élève
               </h3>
-              <p className="text-xs text-slate-500">
-                Création de la fiche académique et raccordement au tuteur légal.
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Enregistrement dans l'annuaire académique de l'établissement
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-600 rounded-lg p-1.5 hover:bg-slate-100 transition-colors"
+            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
           >
             <X className="h-5 w-5" />
           </button>
@@ -148,13 +148,13 @@ export const StudentEnrollmentModal: React.FC<StudentEnrollmentModalProps> = ({
         {/* Message de Succès */}
         {isSuccess ? (
           <div className="py-12 text-center space-y-3">
-            <div className="h-14 w-14 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto animate-bounce">
+            <div className="h-14 w-14 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto animate-bounce">
               <CheckCircle className="h-8 w-8" />
             </div>
-            <h4 className="text-lg font-bold text-slate-900">
+            <h4 className="text-lg font-bold text-slate-900 dark:text-white">
               Inscription validée avec succès !
             </h4>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-slate-500 dark:text-slate-400">
               L'élève a été ajouté au registre académique et à l'échéancier.
             </p>
           </div>
@@ -162,13 +162,13 @@ export const StudentEnrollmentModal: React.FC<StudentEnrollmentModalProps> = ({
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Section 1: Informations Élève */}
             <div className="space-y-4">
-              <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-500 border-b border-slate-100 pb-2">
+              <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400 border-b border-slate-100 dark:border-slate-800 pb-2">
                 1. Identité de l'Élève
               </h4>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                     Prénom <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -176,17 +176,17 @@ export const StudentEnrollmentModal: React.FC<StudentEnrollmentModalProps> = ({
                     value={formData.prenom || ''}
                     onChange={(e) => setFormData({ ...formData, prenom: e.target.value })}
                     placeholder="Ex: Mamadou Oury"
-                    className="w-full h-9 px-3 rounded-lg border border-slate-300 text-xs focus:ring-2 focus:ring-blue-600 focus:outline-none"
+                    className="w-full h-9 px-3 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 text-xs focus:ring-2 focus:ring-blue-600 focus:outline-none"
                   />
                   {errors.prenom && (
-                    <p className="text-[11px] text-red-600 mt-1 flex items-center gap-1">
+                    <p className="text-[11px] text-red-600 dark:text-red-400 mt-1 flex items-center gap-1">
                       <ShieldAlert className="h-3 w-3" /> {errors.prenom}
                     </p>
                   )}
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                     Nom de famille <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -194,10 +194,10 @@ export const StudentEnrollmentModal: React.FC<StudentEnrollmentModalProps> = ({
                     value={formData.nom || ''}
                     onChange={(e) => setFormData({ ...formData, nom: e.target.value })}
                     placeholder="Ex: DIALLO"
-                    className="w-full h-9 px-3 rounded-lg border border-slate-300 text-xs focus:ring-2 focus:ring-blue-600 focus:outline-none"
+                    className="w-full h-9 px-3 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 text-xs focus:ring-2 focus:ring-blue-600 focus:outline-none"
                   />
                   {errors.nom && (
-                    <p className="text-[11px] text-red-600 mt-1 flex items-center gap-1">
+                    <p className="text-[11px] text-red-600 dark:text-red-400 mt-1 flex items-center gap-1">
                       <ShieldAlert className="h-3 w-3" /> {errors.nom}
                     </p>
                   )}
@@ -206,7 +206,7 @@ export const StudentEnrollmentModal: React.FC<StudentEnrollmentModalProps> = ({
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                     Date de naissance <span className="text-red-500">*</span>
                   </label>
                   <DatePicker
@@ -220,14 +220,14 @@ export const StudentEnrollmentModal: React.FC<StudentEnrollmentModalProps> = ({
                     placeholder="JJ/MM/AAAA"
                   />
                   {errors.date_naissance && (
-                    <p className="text-[11px] text-red-600 mt-1 flex items-center gap-1">
+                    <p className="text-[11px] text-red-600 dark:text-red-400 mt-1 flex items-center gap-1">
                       <ShieldAlert className="h-3 w-3" /> {errors.date_naissance}
                     </p>
                   )}
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                     Lieu de naissance
                   </label>
                   <input
@@ -237,12 +237,12 @@ export const StudentEnrollmentModal: React.FC<StudentEnrollmentModalProps> = ({
                       setFormData({ ...formData, lieu_naissance: e.target.value })
                     }
                     placeholder="Ex: Nouakchott"
-                    className="w-full h-9 px-3 rounded-lg border border-slate-300 text-xs focus:ring-2 focus:ring-blue-600 focus:outline-none"
+                    className="w-full h-9 px-3 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 text-xs focus:ring-2 focus:ring-blue-600 focus:outline-none"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                     Sexe <span className="text-red-500">*</span>
                   </label>
                   <Select<'M' | 'F'>
@@ -259,7 +259,7 @@ export const StudentEnrollmentModal: React.FC<StudentEnrollmentModalProps> = ({
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                   Classe d'affectation <span className="text-red-500">*</span>
                 </label>
                 <Select<string>
@@ -275,33 +275,33 @@ export const StudentEnrollmentModal: React.FC<StudentEnrollmentModalProps> = ({
 
             {/* Section 2: Tuteur Légal */}
             <div className="space-y-4">
-              <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-500 border-b border-slate-100 pb-2">
+              <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400 border-b border-slate-100 dark:border-slate-800 pb-2">
                 2. Tuteur Légal & Responsables
               </h4>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                     Nom complet du tuteur <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
                     value={formData.nom_tuteur || ''}
                     onChange={(e) =>
-                    setFormData({ ...formData, nom_tuteur: e.target.value })
+                      setFormData({ ...formData, nom_tuteur: e.target.value })
                     }
                     placeholder="Ex: Amadou Diallo"
-                    className="w-full h-9 px-3 rounded-lg border border-slate-300 text-xs focus:ring-2 focus:ring-blue-600 focus:outline-none"
+                    className="w-full h-9 px-3 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 text-xs focus:ring-2 focus:ring-blue-600 focus:outline-none"
                   />
                   {errors.nom_tuteur && (
-                    <p className="text-[11px] text-red-600 mt-1 flex items-center gap-1">
+                    <p className="text-[11px] text-red-600 dark:text-red-400 mt-1 flex items-center gap-1">
                       <ShieldAlert className="h-3 w-3" /> {errors.nom_tuteur}
                     </p>
                   )}
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                     Lien de parenté <span className="text-red-500">*</span>
                   </label>
                   <Select<LienParente>
@@ -321,7 +321,7 @@ export const StudentEnrollmentModal: React.FC<StudentEnrollmentModalProps> = ({
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                     Téléphone (WhatsApp) <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -331,17 +331,17 @@ export const StudentEnrollmentModal: React.FC<StudentEnrollmentModalProps> = ({
                       setFormData({ ...formData, telephone_tuteur: e.target.value })
                     }
                     placeholder="+222 22 11 33 44"
-                    className="w-full h-9 px-3 rounded-lg border border-slate-300 text-xs focus:ring-2 focus:ring-blue-600 focus:outline-none font-mono"
+                    className="w-full h-9 px-3 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 text-xs focus:ring-2 focus:ring-blue-600 focus:outline-none font-mono"
                   />
                   {errors.telephone_tuteur && (
-                    <p className="text-[11px] text-red-600 mt-1 flex items-center gap-1">
+                    <p className="text-[11px] text-red-600 dark:text-red-400 mt-1 flex items-center gap-1">
                       <ShieldAlert className="h-3 w-3" /> {errors.telephone_tuteur}
                     </p>
                   )}
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                     Email tuteur (Optionnel)
                   </label>
                   <input
@@ -351,10 +351,10 @@ export const StudentEnrollmentModal: React.FC<StudentEnrollmentModalProps> = ({
                       setFormData({ ...formData, email_tuteur: e.target.value })
                     }
                     placeholder="tuteur@domaine.mr"
-                    className="w-full h-9 px-3 rounded-lg border border-slate-300 text-xs focus:ring-2 focus:ring-blue-600 focus:outline-none"
+                    className="w-full h-9 px-3 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 text-xs focus:ring-2 focus:ring-blue-600 focus:outline-none"
                   />
                   {errors.email_tuteur && (
-                    <p className="text-[11px] text-red-600 mt-1 flex items-center gap-1">
+                    <p className="text-[11px] text-red-600 dark:text-red-400 mt-1 flex items-center gap-1">
                       <ShieldAlert className="h-3 w-3" /> {errors.email_tuteur}
                     </p>
                   )}
@@ -362,7 +362,7 @@ export const StudentEnrollmentModal: React.FC<StudentEnrollmentModalProps> = ({
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                   Adresse de résidence <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -372,13 +372,13 @@ export const StudentEnrollmentModal: React.FC<StudentEnrollmentModalProps> = ({
                     setFormData({ ...formData, adresse_tuteur: e.target.value })
                   }
                   placeholder="Quartier, Rue / Repère..."
-                  className="w-full h-9 px-3 rounded-lg border border-slate-300 text-xs focus:ring-2 focus:ring-blue-600 focus:outline-none"
+                  className="w-full h-9 px-3 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 text-xs focus:ring-2 focus:ring-blue-600 focus:outline-none"
                 />
               </div>
             </div>
 
             {/* Footer Buttons */}
-            <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
+            <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
               <Button type="button" variant="outline" size="sm" onClick={onClose}>
                 Annuler
               </Button>
