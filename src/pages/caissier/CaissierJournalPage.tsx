@@ -10,6 +10,7 @@ import { Button } from '../../components/ui/Button';
 import { ToastNotification } from '../../components/ui/ToastNotification';
 import { Select } from '../../components/ui/Select';
 import { formatMRU } from '../../lib/utils';
+import { formatCompactMRU } from '../../lib/formatCompactMRU';
 import {
   Search,
   Printer,
@@ -187,41 +188,50 @@ export const CaissierJournalPage: React.FC = () => {
 
       {/* KPI Tiles */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="p-6 sm:p-7 rounded-2xl border-slate-200 shadow-sm bg-white">
-          <div className="flex items-center justify-between text-slate-500 text-xs font-bold uppercase tracking-wider mb-2">
-            <span>Total Encaissé (Aujourd'hui)</span>
-            <Receipt className="h-5 w-5 text-amber-600" />
+        <Card className="p-6 sm:p-7 rounded-2xl border-slate-200 shadow-sm bg-white min-w-0">
+          <div className="flex items-center justify-between text-slate-500 text-xs font-bold uppercase tracking-wider mb-2 min-w-0">
+            <span className="truncate">Total Encaissé (Aujourd'hui)</span>
+            <Receipt className="h-5 w-5 text-amber-600 shrink-0" />
           </div>
-          <div className="text-3xl sm:text-4xl font-extrabold text-slate-900 font-mono mt-2">
-            {formatMRU(totalGeneral)}
+          <div
+            title={formatMRU(totalGeneral)}
+            className="text-3xl sm:text-4xl font-extrabold text-slate-900 font-mono mt-2 truncate cursor-help"
+          >
+            {formatCompactMRU(totalGeneral)}
           </div>
-          <div className="text-xs text-slate-500 mt-2">
+          <div className="text-xs text-slate-500 mt-2 truncate">
             {transactions.length} versements enregistrés aujourd'hui
           </div>
         </Card>
 
-        <Card className="p-6 rounded-2xl border-slate-200 shadow-sm bg-white">
-          <div className="flex items-center justify-between text-slate-500 text-xs font-bold uppercase tracking-wider mb-2">
-            <span>Espèces en Tiroir</span>
-            <Banknote className="h-5 w-5 text-emerald-600" />
+        <Card className="p-6 sm:p-7 rounded-2xl border-slate-200 shadow-sm bg-white min-w-0">
+          <div className="flex items-center justify-between text-slate-500 text-xs font-bold uppercase tracking-wider mb-2 min-w-0">
+            <span className="truncate">Espèces en Tiroir</span>
+            <Banknote className="h-5 w-5 text-emerald-600 shrink-0" />
           </div>
-          <div className="text-3xl sm:text-4xl font-extrabold text-emerald-600 font-mono mt-2">
-            {formatMRU(totalEspeces)}
+          <div
+            title={formatMRU(totalEspeces)}
+            className="text-3xl sm:text-4xl font-extrabold text-emerald-600 font-mono mt-2 truncate cursor-help"
+          >
+            {formatCompactMRU(totalEspeces)}
           </div>
-          <div className="text-xs text-slate-500 mt-2">
+          <div className="text-xs text-slate-500 mt-2 truncate">
             À vérifier lors du comptage physique
           </div>
         </Card>
 
-        <Card className="p-6 rounded-2xl border-slate-200 shadow-sm bg-white">
-          <div className="flex items-center justify-between text-slate-500 text-xs font-bold uppercase tracking-wider mb-2">
-            <span>Paiements Mobiles (Bankily / Masrvi)</span>
-            <Smartphone className="h-5 w-5 text-blue-600" />
+        <Card className="p-6 sm:p-7 rounded-2xl border-slate-200 shadow-sm bg-white min-w-0">
+          <div className="flex items-center justify-between text-slate-500 text-xs font-bold uppercase tracking-wider mb-2 min-w-0">
+            <span className="truncate">Paiements Mobiles (Bankily / Masrvi)</span>
+            <Smartphone className="h-5 w-5 text-blue-600 shrink-0" />
           </div>
-          <div className="text-3xl sm:text-4xl font-extrabold text-blue-600 font-mono mt-2">
-            {formatMRU(totalMobile)}
+          <div
+            title={formatMRU(totalMobile)}
+            className="text-3xl sm:text-4xl font-extrabold text-blue-600 font-mono mt-2 truncate cursor-help"
+          >
+            {formatCompactMRU(totalMobile)}
           </div>
-          <div className="text-xs text-slate-500 mt-2">
+          <div className="text-xs text-slate-500 mt-2 truncate">
             Confirmés via API bancaire & SMS
           </div>
         </Card>

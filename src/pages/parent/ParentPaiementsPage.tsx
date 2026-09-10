@@ -10,6 +10,7 @@ import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { ToastNotification } from '../../components/ui/ToastNotification';
 import { formatMRU } from '../../lib/utils';
+import { formatCompactMRU } from '../../lib/formatCompactMRU';
 import {
   CheckCircle2,
   Smartphone,
@@ -164,48 +165,55 @@ export const ParentPaiementsPage: React.FC<ParentPaiementsPageProps> = ({
 
       {/* 3 Cartes de Synthèse Financière */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="p-6 rounded-2xl border-slate-200 shadow-sm bg-white">
-          <div className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
+        <Card className="p-6 rounded-2xl border-slate-200 shadow-sm bg-white min-w-0">
+          <div className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1 truncate">
             Montant Annuel Total
           </div>
-          <div className="text-3xl sm:text-4xl font-black text-slate-900 font-mono mt-1">
-            {formatMRU(enfantData.total_scolarite)}
+          <div
+            title={formatMRU(enfantData.total_scolarite)}
+            className="text-3xl sm:text-4xl font-black text-slate-900 font-mono mt-1 truncate cursor-help"
+          >
+            {formatCompactMRU(enfantData.total_scolarite)}
           </div>
-          <div className="text-xs text-slate-500 mt-2">
+          <div className="text-xs text-slate-500 mt-2 truncate">
             Classe : {enfantData.classe}
           </div>
         </Card>
 
-        <Card className="p-6 rounded-2xl border-slate-200 shadow-sm bg-white">
-          <div className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
+        <Card className="p-6 rounded-2xl border-slate-200 shadow-sm bg-white min-w-0">
+          <div className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1 truncate">
             Total Déjà Réglé
           </div>
-          <div className="text-3xl sm:text-4xl font-black text-emerald-600 font-mono mt-1">
-            {formatMRU(enfantData.total_regle)}
+          <div
+            title={formatMRU(enfantData.total_regle)}
+            className="text-3xl sm:text-4xl font-black text-emerald-600 font-mono mt-1 truncate cursor-help"
+          >
+            {formatCompactMRU(enfantData.total_regle)}
           </div>
-          <div className="text-xs text-slate-500 mt-2">
+          <div className="text-xs text-slate-500 mt-2 truncate">
             {Math.round((enfantData.total_regle / enfantData.total_scolarite) * 100)}% de la scolarité acquittée
           </div>
         </Card>
 
-        <Card className="p-6 rounded-2xl border-slate-200 shadow-sm bg-white">
-          <div className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
+        <Card className="p-6 rounded-2xl border-slate-200 shadow-sm bg-white min-w-0">
+          <div className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1 truncate">
             Reste à Régler
           </div>
           <div
-            className={`text-3xl sm:text-4xl font-black font-mono mt-1 ${
+            title={formatMRU(enfantData.reste_a_payer)}
+            className={`text-3xl sm:text-4xl font-black font-mono mt-1 truncate cursor-help ${
               enfantData.reste_a_payer > 0 ? 'text-rose-600' : 'text-emerald-600'
             }`}
           >
-            {formatMRU(enfantData.reste_a_payer)}
+            {formatCompactMRU(enfantData.reste_a_payer)}
           </div>
-          <div className="text-xs text-slate-500 mt-2">
+          <div className="text-xs text-slate-500 mt-2 truncate">
             {enfantData.reste_a_payer > 0 ? (
-              <span className="text-rose-600 font-semibold">
+              <span className="text-rose-600 font-semibold truncate block">
                 Échéance limite : {enfantData.prochaine_echeance_date}
               </span>
             ) : (
-              <span className="text-emerald-700 font-semibold">
+              <span className="text-emerald-700 font-semibold truncate block">
                 Aucun impayé • Bravo !
               </span>
             )}

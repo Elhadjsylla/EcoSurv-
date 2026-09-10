@@ -5,6 +5,7 @@ import { Button } from '../../components/ui/Button';
 import { Select } from '../../components/ui/Select';
 import { StudentInitials } from '../../components/ui/StudentInitials';
 import { formatMRU } from '../../lib/utils';
+import { formatCompactMRU } from '../../lib/formatCompactMRU';
 import {
   AlertCircle,
   Search,
@@ -88,42 +89,45 @@ export const CaissierImpayesPage: React.FC<CaissierImpayesPageProps> = ({
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="p-6 rounded-2xl border-slate-200 shadow-sm bg-white">
-          <div className="flex items-center justify-between text-slate-500 text-xs font-bold uppercase tracking-wider mb-2">
-            <span>Total des Arriérés Dûs</span>
-            <AlertCircle className="h-5 w-5 text-rose-500" />
+        <Card className="p-6 rounded-2xl border-slate-200 shadow-sm bg-white min-w-0">
+          <div className="flex items-center justify-between text-slate-500 text-xs font-bold uppercase tracking-wider mb-2 min-w-0">
+            <span className="truncate">Total des Arriérés Dûs</span>
+            <AlertCircle className="h-5 w-5 text-rose-500 shrink-0" />
           </div>
-          <div className="text-3xl sm:text-4xl font-extrabold text-rose-600 font-mono mt-2">
-            {formatMRU(totalArrieres)}
+          <div
+            title={formatMRU(totalArrieres)}
+            className="text-3xl sm:text-4xl font-extrabold text-rose-600 font-mono mt-2 truncate cursor-help"
+          >
+            {formatCompactMRU(totalArrieres)}
           </div>
-          <div className="text-xs text-slate-500 mt-2">
+          <div className="text-xs text-slate-500 mt-2 truncate">
             Sur l'ensemble des {elevesAvecReste.length} élèves débiteurs
           </div>
         </Card>
 
-        <Card className="p-6 rounded-2xl border-slate-200 shadow-sm bg-white">
-          <div className="flex items-center justify-between text-slate-500 text-xs font-bold uppercase tracking-wider mb-2">
-            <span>Élèves en Retard Critique</span>
-            <Clock className="h-5 w-5 text-amber-600" />
+        <Card className="p-6 rounded-2xl border-slate-200 shadow-sm bg-white min-w-0">
+          <div className="flex items-center justify-between text-slate-500 text-xs font-bold uppercase tracking-wider mb-2 min-w-0">
+            <span className="truncate">Élèves en Retard Critique</span>
+            <Clock className="h-5 w-5 text-amber-600 shrink-0" />
           </div>
-          <div className="text-3xl sm:text-4xl font-extrabold text-amber-600 font-mono mt-2">
+          <div className="text-3xl sm:text-4xl font-extrabold text-amber-600 font-mono mt-2 truncate">
             {nbRetards} élèves
           </div>
-          <div className="text-xs text-slate-500 mt-2">
+          <div className="text-xs text-slate-500 mt-2 truncate">
             Échéance échue dépassée sans versement
           </div>
         </Card>
 
-        <Card className="p-6 rounded-2xl border-slate-200 shadow-sm bg-white">
-          <div className="flex items-center justify-between text-slate-500 text-xs font-bold uppercase tracking-wider mb-2">
-            <span>Guichet d'Accueil</span>
-            <CreditCard className="h-5 w-5 text-emerald-600" />
+        <Card className="p-6 rounded-2xl border-slate-200 shadow-sm bg-white min-w-0">
+          <div className="flex items-center justify-between text-slate-500 text-xs font-bold uppercase tracking-wider mb-2 min-w-0">
+            <span className="truncate">Guichet d'Accueil</span>
+            <CreditCard className="h-5 w-5 text-emerald-600 shrink-0" />
           </div>
-          <div className="text-base font-bold text-slate-900 mt-2">
+          <div className="text-base font-bold text-slate-900 mt-2 truncate">
             Orientation Immédiate
           </div>
-          <div className="text-xs text-slate-500 mt-1">
-            Cliquez sur "Encaisser" pour charger le dossier au guichet de paiement
+          <div className="text-xs text-slate-500 mt-1 truncate">
+            Cliquez sur "Encaisser" pour charger le dossier au guichet
           </div>
         </Card>
       </div>
