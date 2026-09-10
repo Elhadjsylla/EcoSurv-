@@ -8,7 +8,7 @@ import { ToastNotification } from '../../components/ui/ToastNotification';
 import { KpiCard } from '../../components/ui/KpiCard';
 import {
   GraduationCap,
-  Download,
+  ArrowDownToLine,
   Sparkles,
   Award,
   FileText,
@@ -116,7 +116,7 @@ export const ParentPedagogiePage: React.FC<ParentPedagogiePageProps> = ({
             }}
             className="bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold gap-2 px-3.5 py-2.5 rounded-xl shadow-xs"
           >
-            <Download className="h-4 w-4" />
+            <ArrowDownToLine className="h-4 w-4" />
             Bulletin PDF
           </Button>
         </div>

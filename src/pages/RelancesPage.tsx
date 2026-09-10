@@ -14,7 +14,7 @@ import { formatMRU } from '../lib/utils';
 import {
   Send,
   MessageSquare,
-  Phone,
+  PhoneCall,
   CheckCircle2,
   AlertTriangle,
   X,
@@ -229,7 +229,7 @@ export const RelancesPage: React.FC = () => {
           title="Canal Principal"
           progress={96}
           subtitle="WhatsApp (96% d'ouverture)"
-          icon={<Phone className="h-5 w-5" />}
+          icon={<PhoneCall className="h-5 w-5" />}
           variant="success"
         />
       </div>
@@ -318,7 +318,7 @@ export const RelancesPage: React.FC = () => {
                     <td className="py-4 px-5">
                       <div className="font-semibold text-slate-800 dark:text-slate-200">{eleve.nom_tuteur}</div>
                       <div className="text-slate-400 dark:text-slate-500 font-mono flex items-center gap-1.5 mt-0.5 text-[11px]">
-                        <Phone className="h-3 w-3 text-slate-400" />
+                        <PhoneCall className="h-3 w-3 text-slate-400" />
                         {eleve.telephone_tuteur}
                       </div>
                     </td>

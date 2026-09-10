@@ -12,7 +12,7 @@ import { formatMRU } from '../../lib/utils';
 import {
   CheckCircle2,
   Smartphone,
-  Download,
+  ArrowDownToLine,
   Receipt,
   X,
   Printer,
@@ -234,7 +234,7 @@ export const ParentPaiementsPage: React.FC<ParentPaiementsPageProps> = ({
                 }}
                 className="text-xs font-semibold gap-1.5"
               >
-                <Download className="h-3.5 w-3.5" />
+                <ArrowDownToLine className="h-3.5 w-3.5" />
                 Quittance
               </Button>
             </div>

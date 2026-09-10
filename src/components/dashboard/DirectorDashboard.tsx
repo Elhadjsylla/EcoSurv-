@@ -16,9 +16,9 @@ import { formatMRU } from '../../lib/utils';
 import {
   Search,
   Filter,
-  Phone,
+  PhoneCall,
   Send,
-  Download,
+  ArrowDownToLine,
   AlertCircle,
   CheckCircle2,
   Clock,
@@ -320,7 +320,7 @@ export const DirectorDashboard: React.FC<DirectorDashboardProps> = ({
               className="gap-1.5 py-1 text-xs border-slate-700 text-slate-200 hover:bg-slate-800"
               onClick={handleBulkExport}
             >
-              <Download className="h-3.5 w-3.5" />
+              <ArrowDownToLine className="h-3.5 w-3.5" />
               Exporter
             </Button>
 
@@ -354,7 +354,7 @@ export const DirectorDashboard: React.FC<DirectorDashboardProps> = ({
             loadingText="Génération PDF..."
             onClick={handleExportPdf}
           >
-            <Download className="h-4 w-4" />
+            <ArrowDownToLine className="h-4 w-4" />
             Exporter Rapport PDF
           </Button>
           <Button
@@ -608,7 +608,7 @@ export const DirectorDashboard: React.FC<DirectorDashboardProps> = ({
                         <div className="text-xs space-y-0.5">
                           <div className="font-semibold text-slate-800 dark:text-slate-200">{eleve.nom_tuteur}</div>
                           <div className="text-slate-400 dark:text-slate-500 flex items-center gap-1 font-mono text-[11px]">
-                            <Phone className="h-3 w-3 text-slate-400 shrink-0" />
+                            <PhoneCall className="h-3 w-3 text-slate-400 shrink-0" />
                             <span>{eleve.telephone_tuteur}</span>
                           </div>
                         </div>

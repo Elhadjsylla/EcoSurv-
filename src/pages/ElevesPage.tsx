@@ -30,13 +30,13 @@ import {
   PlusCircle,
   Zap,
   Send,
-  Download,
+  ArrowDownToLine,
   MoreHorizontal,
   ChevronLeft,
   ChevronRight,
   Eye,
   FileText,
-  Phone,
+  PhoneCall,
 } from 'lucide-react';
 
 interface ElevesPageProps {
@@ -377,7 +377,7 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
               className="gap-1.5 py-1 text-xs border-slate-700 text-slate-200 hover:bg-slate-800"
               onClick={handleBulkExport}
             >
-              <Download className="h-3.5 w-3.5" />
+              <ArrowDownToLine className="h-3.5 w-3.5" />
               Exporter
             </Button>
 
@@ -685,7 +685,7 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
                         <div className="text-xs space-y-0.5">
                           <div className="font-semibold text-slate-800 dark:text-slate-200">{eleve.nom_tuteur}</div>
                           <div className="text-slate-400 dark:text-slate-500 font-mono flex items-center gap-1 text-[11px]">
-                            <Phone className="h-3 w-3 text-slate-400 shrink-0" />
+                            <PhoneCall className="h-3 w-3 text-slate-400 shrink-0" />
                             <span>{eleve.telephone_tuteur}</span>
                           </div>
                         </div>

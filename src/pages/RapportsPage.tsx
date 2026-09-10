@@ -14,11 +14,11 @@ import {
   CheckCircle,
   X,
   Printer,
-  BarChart3,
   Percent,
   MoreHorizontal,
   Download,
 } from 'lucide-react';
+import { CollectionChart } from '../components/ui/CollectionChart';
 
 export const RapportsPage: React.FC = () => {
   const [reports] = useState<MonthlyFinancialReport[]>(MOCK_MONTHLY_REPORTS);
@@ -56,9 +56,6 @@ export const RapportsPage: React.FC = () => {
   const tauxGlobalAnnee = totalAttenduAnnee > 0
     ? Math.round((totalEncaisseAnnee / totalAttenduAnnee) * 100)
     : 0;
-
-  // Max attendu pour mise à l'échelle des barres
-  const maxMonthlyAttendu = Math.max(...reports.map((r) => r.attendu));
 
   return (
     <div className="p-6 sm:p-8 lg:p-10 max-w-[1600px] mx-auto space-y-8 sm:space-y-10 relative">
@@ -159,55 +156,8 @@ export const RapportsPage: React.FC = () => {
       </div>
 
       {/* Visual Chart: Évolution des encaissements mensuels */}
-      <Card className="p-6 sm:p-8 space-y-6 rounded-2xl border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xs">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-4">
-          <div>
-            <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2.5">
-              <BarChart3 className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-              Évolution Chronologique des Encaissements (Septembre 2025 - Mars 2026)
-            </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-              Comparatif mensuel entre le montant attendu (fond neutre) et l'encaissement réel (barre dynamique).
-            </p>
-          </div>
-
-          <div className="flex items-center gap-5 text-xs font-semibold text-slate-600 dark:text-slate-300">
-            <div className="flex items-center gap-2">
-              <div className="h-3 w-3 rounded bg-blue-600" />
-              <span>Encaissé (MRU)</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="h-3 w-3 rounded bg-slate-200 dark:bg-slate-700" />
-              <span>Attendu Total</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Histogramme Pure CSS/SVG */}
-        <div className="pt-6 pb-2">
-          <div className="grid grid-cols-7 gap-4 sm:gap-8 items-end h-64 border-b border-slate-200 dark:border-slate-800 px-4">
-            {reports.map((r) => {
-              const heightPercent = Math.round((r.encaisse / maxMonthlyAttendu) * 100);
-              const bgClass = r.taux >= 80 ? 'bg-emerald-600 dark:bg-emerald-500' : 'bg-blue-600 dark:bg-blue-500';
-              return (
-                <div key={r.mois} className="flex flex-col items-center gap-2.5 h-full justify-end group">
-                  <div className="text-xs font-mono font-bold text-slate-700 dark:text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity">
-                    {r.taux}%
-                  </div>
-                  <div className="w-full max-w-[52px] bg-slate-100 dark:bg-slate-800 rounded-t-xl h-full flex items-end overflow-hidden relative border border-slate-200/60 dark:border-slate-700/60">
-                    <div
-                      className={`w-full rounded-t-xl transition-all duration-500 ${bgClass}`}
-                      style={{ height: `${heightPercent}%` }}
-                    />
-                  </div>
-                  <span className="text-xs font-bold text-slate-600 dark:text-slate-400 text-center truncate max-w-[80px]">
-                    {r.mois.split(' ')[0]}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+      <Card className="p-6 sm:p-8 rounded-2xl border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xs">
+        <CollectionChart data={reports} />
       </Card>
 
       {/* Monthly Breakdown Table */}

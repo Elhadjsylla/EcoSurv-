@@ -15,7 +15,7 @@ import {
   Search,
   Printer,
   Receipt,
-  Download,
+  ArrowDownToLine,
   Filter,
   Banknote,
   Smartphone,
@@ -192,7 +192,7 @@ export const CaissierJournalPage: React.FC = () => {
             }}
             className="flex items-center gap-2"
           >
-            <Download className="h-4 w-4" />
+            <ArrowDownToLine className="h-4 w-4" />
             Exporter CSV
           </Button>
 

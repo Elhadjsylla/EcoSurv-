@@ -1,15 +1,13 @@
 import React, { useState } from 'react';
 import { cn } from '../../lib/utils';
 import {
-  LayoutDashboard,
-  Users,
-  CreditCard,
-  Send,
-  FileText,
-  Settings,
+  LayoutGrid,
   GraduationCap,
+  CalendarDays,
+  BellRing,
+  BarChart3,
+  SlidersHorizontal,
   ChevronLeft,
-  ShieldCheck,
 } from 'lucide-react';
 
 export type NavTab = 'dashboard' | 'eleves' | 'echeances' | 'relances' | 'rapports' | 'config';
@@ -37,27 +35,27 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange, classN
     {
       label: 'GÉNÉRAL',
       items: [
-        { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard className="h-4 w-4 shrink-0" /> },
+        { id: 'dashboard', label: 'Dashboard', icon: <LayoutGrid className="h-4 w-4 shrink-0" /> },
       ],
     },
     {
       label: 'ACADÉMIQUE',
       items: [
-        { id: 'eleves', label: 'Élèves & Inscriptions', icon: <Users className="h-4 w-4 shrink-0" /> },
-        { id: 'echeances', label: 'Échéances & Tarifs', icon: <CreditCard className="h-4 w-4 shrink-0" /> },
+        { id: 'eleves', label: 'Gestion Élèves', icon: <GraduationCap className="h-4 w-4 shrink-0" /> },
       ],
     },
     {
-      label: 'FINANCE & GESTION',
+      label: 'FINANCES',
       items: [
-        { id: 'relances', label: 'Relances Impayés', icon: <Send className="h-4 w-4 shrink-0" />, badge: '2' },
-        { id: 'rapports', label: 'Rapports Financiers', icon: <FileText className="h-4 w-4 shrink-0" /> },
+        { id: 'echeances', label: 'Échéances & Tarifs', icon: <CalendarDays className="h-4 w-4 shrink-0" /> },
+        { id: 'relances', label: 'Relances Impayés', icon: <BellRing className="h-4 w-4 shrink-0" />, badge: '5' },
+        { id: 'rapports', label: 'Rapports Financiers', icon: <BarChart3 className="h-4 w-4 shrink-0" /> },
       ],
     },
     {
-      label: 'PARAMÈTRES',
+      label: 'SYSTÈME',
       items: [
-        { id: 'config', label: 'Configuration Établissement', icon: <Settings className="h-4 w-4 shrink-0" /> },
+        { id: 'config', label: 'Configuration', icon: <SlidersHorizontal className="h-4 w-4 shrink-0" /> },
       ],
     },
   ];
@@ -65,7 +63,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange, classN
   return (
     <aside
       className={cn(
-        'flex flex-col border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 shrink-0 h-screen transition-all duration-200 z-20',
+        'flex flex-col border-r border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 transition-all duration-300 select-none shrink-0 z-20',
         isCollapsed ? 'w-20' : 'w-64',
         className
       )}
@@ -78,7 +76,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange, classN
           </div>
           {!isCollapsed && (
             <span className="text-lg font-black tracking-tight text-slate-900 dark:text-white">
-              ecosurv
+              EcoSurv
             </span>
           )}
         </div>
@@ -149,19 +147,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange, classN
           </div>
         ))}
       </div>
-
-      {/* Footer Security Badge */}
-      {!isCollapsed && (
-        <div className="p-3 m-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-800 text-xs">
-          <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400 font-bold mb-1">
-            <ShieldCheck className="h-4 w-4 shrink-0" />
-            <span>Isolation RLS Conforme</span>
-          </div>
-          <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">
-            Accès sécurisé réservé à l'établissement actif.
-          </p>
-        </div>
-      )}
     </aside>
   );
 };
