@@ -63,19 +63,31 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange, classN
   return (
     <aside
       className={cn(
-        'flex flex-col border-r border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 transition-all duration-300 select-none shrink-0 z-20',
+        'flex flex-col border-r border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 transition-all duration-300 select-none shrink-0 z-20 relative',
         isCollapsed ? 'w-20' : 'w-64',
         className
       )}
     >
-      {/* Brand Header (Minimalist Nexoov style) */}
-      <div className="flex h-16 items-center justify-between border-b border-slate-100 dark:border-slate-800 px-5">
-        <div className="flex items-center gap-3 min-w-0">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-600 text-white shadow-md shadow-blue-600/20 shrink-0">
-            <GraduationCap className="h-5 w-5" />
+      {/* Brand Header */}
+      <div
+        className={cn(
+          'flex h-16 items-center border-b border-slate-100 dark:border-slate-800 transition-all duration-300',
+          isCollapsed ? 'justify-center px-2 relative' : 'justify-between px-5'
+        )}
+      >
+        <div
+          className={cn(
+            'flex items-center min-w-0 transition-all',
+            isCollapsed ? 'justify-center cursor-pointer' : 'gap-3'
+          )}
+          onClick={isCollapsed ? () => setIsCollapsed(false) : undefined}
+          title={isCollapsed ? 'Cliquer pour déplier' : undefined}
+        >
+          <div className="flex h-10 w-10 min-h-10 min-w-10 items-center justify-center rounded-xl bg-blue-600 text-white shadow-md shadow-blue-600/20 shrink-0">
+            <GraduationCap className="h-5 w-5 min-h-5 min-w-5 shrink-0" />
           </div>
           {!isCollapsed && (
-            <span className="text-lg font-black tracking-tight text-slate-900 dark:text-white">
+            <span className="text-lg font-black tracking-tight text-slate-900 dark:text-white truncate">
               EcoSurv
             </span>
           )}
@@ -85,10 +97,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange, classN
         <button
           type="button"
           onClick={() => setIsCollapsed(!isCollapsed)}
-          className="h-7 w-7 rounded-lg border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors shrink-0"
+          className={cn(
+            'h-7 w-7 rounded-lg border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all shrink-0',
+            isCollapsed
+              ? 'absolute -right-3.5 top-1/2 -translate-y-1/2 bg-white dark:bg-slate-900 shadow-md z-30'
+              : ''
+          )}
           title={isCollapsed ? 'Déplier' : 'Replier'}
         >
-          <ChevronLeft className={cn('h-4 w-4 transition-transform', isCollapsed && 'rotate-180')} />
+          <ChevronLeft className={cn('h-4 w-4 shrink-0 transition-transform', isCollapsed && 'rotate-180')} />
         </button>
       </div>
 
