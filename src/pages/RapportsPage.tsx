@@ -6,6 +6,7 @@ import {
   MonthlyFinancialReport,
 } from '../lib/mockData';
 import { formatMRU } from '../lib/utils';
+import { formatCompactMRU } from '../lib/formatCompactMRU';
 import {
   FileText,
   FileSpreadsheet,
@@ -30,18 +31,17 @@ export const RapportsPage: React.FC = () => {
     showToast('✓ Rapport Financier récapitulatif exporté au format Excel (.xlsx)');
   };
 
-  const handleExportPDF = () => {
-    showToast('✓ Rapport PDF officiel de clôture généré avec succès');
+  const handlePrint = () => {
+    window.print();
   };
 
-  // Calculs globaux
+  // KPIs annuels calculés
   const totalAttenduAnnee = reports.reduce((sum, r) => sum + r.attendu, 0);
   const totalEncaisseAnnee = reports.reduce((sum, r) => sum + r.encaisse, 0);
   const totalImpayesAnnee = reports.reduce((sum, r) => sum + r.impayes, 0);
-  const tauxGlobalAnnee =
-    totalAttenduAnnee > 0
-      ? Math.round((totalEncaisseAnnee / totalAttenduAnnee) * 100)
-      : 0;
+  const tauxGlobalAnnee = totalAttenduAnnee > 0
+    ? Math.round((totalEncaisseAnnee / totalAttenduAnnee) * 100)
+    : 0;
 
   // Max attendu pour mise à l'échelle des barres
   const maxMonthlyAttendu = Math.max(...reports.map((r) => r.attendu));
@@ -50,7 +50,7 @@ export const RapportsPage: React.FC = () => {
     <div className="p-6 sm:p-8 lg:p-10 max-w-[1600px] mx-auto space-y-8 sm:space-y-10 relative">
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed top-20 right-6 z-50 flex items-center gap-3 bg-slate-900 text-white px-5 py-3.5 rounded-xl shadow-xl border border-slate-700 animate-in fade-in slide-in-from-top-4">
+        <div className="fixed top-20 right-6 z-50 flex items-center gap-3 bg-slate-900 text-white px-4 py-3 rounded-lg shadow-xl border border-slate-700 animate-in fade-in slide-in-from-top-4">
           <CheckCircle className="h-5 w-5 text-emerald-400 shrink-0" />
           <span className="text-xs font-semibold">{toastMessage}</span>
           <button
@@ -63,44 +63,47 @@ export const RapportsPage: React.FC = () => {
       )}
 
       {/* Top Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-white p-6 sm:p-8 rounded-2xl border border-slate-200 shadow-2xs">
-        <div>
-          <div className="flex items-center gap-3">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200/90 shadow-2xs">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2.5">
             <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-              Rapports Financiers & Exports
+              Rapports Financiers & Comptabilité
             </h1>
-            <span className="rounded-full bg-indigo-100 px-3 py-1 text-xs font-bold text-indigo-700">
-              Bilan 2025–2026
+            <span className="rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-bold text-blue-700">
+              Exercice 2025–2026
             </span>
           </div>
-          <p className="text-sm text-slate-500 font-medium mt-1.5">
-            Génération de bilans comptables, états de recouvrement mensuels et comptabilité analytique.
+          <p className="text-sm text-slate-500 font-medium">
+            Historique analytique des flux de scolarité, taux de recouvrement mensuels et prévisions comptables.
           </p>
         </div>
 
-        <div className="flex items-center gap-3 shrink-0">
-          <Button variant="outline" size="sm" className="gap-2" onClick={handleExportPDF}>
-            <Printer className="h-4 w-4" />
-            Imprimer PDF
+        <div className="flex items-center gap-3">
+          <Button variant="outline" size="sm" className="gap-2 h-10 px-4" onClick={handlePrint}>
+            <Printer className="h-4 w-4 text-slate-600" />
+            Imprimer / PDF
           </Button>
-          <Button variant="primary" size="sm" className="gap-2" onClick={handleExportExcel}>
+          <Button variant="primary" size="sm" className="gap-2 h-10 px-4" onClick={handleExportExcel}>
             <FileSpreadsheet className="h-4 w-4" />
-            Export Excel (XLSX)
+            Exporter Excel
           </Button>
         </div>
       </div>
 
       {/* Summary KPI Tiles */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="p-6 rounded-2xl flex items-center justify-between">
-          <div>
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+        <Card className="p-6 rounded-2xl flex items-center justify-between min-w-0">
+          <div className="min-w-0">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 truncate block">
               Total Attendu Cumulé
             </span>
-            <div className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-mono mt-2">
-              {formatMRU(totalAttenduAnnee)}
+            <div
+              title={formatMRU(totalAttenduAnnee)}
+              className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-mono mt-2 truncate cursor-help"
+            >
+              {formatCompactMRU(totalAttenduAnnee)}
             </div>
-            <span className="text-xs text-slate-500 font-medium mt-1.5 block">
+            <span className="text-xs text-slate-500 font-medium mt-1.5 block truncate">
               7 mois comptabilisés
             </span>
           </div>
@@ -109,15 +112,18 @@ export const RapportsPage: React.FC = () => {
           </div>
         </Card>
 
-        <Card className="p-6 rounded-2xl flex items-center justify-between">
-          <div>
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+        <Card className="p-6 rounded-2xl flex items-center justify-between min-w-0">
+          <div className="min-w-0">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 truncate block">
               Total Encaissé Cumulé
             </span>
-            <div className="text-2xl sm:text-3xl font-extrabold text-emerald-700 font-mono mt-2">
-              {formatMRU(totalEncaisseAnnee)}
+            <div
+              title={formatMRU(totalEncaisseAnnee)}
+              className="text-2xl sm:text-3xl font-extrabold text-emerald-700 font-mono mt-2 truncate cursor-help"
+            >
+              {formatCompactMRU(totalEncaisseAnnee)}
             </div>
-            <span className="text-xs text-emerald-700 font-semibold mt-1.5 block">
+            <span className="text-xs text-emerald-700 font-semibold mt-1.5 block truncate">
               Recouvrés sur l'exercice
             </span>
           </div>
@@ -126,15 +132,18 @@ export const RapportsPage: React.FC = () => {
           </div>
         </Card>
 
-        <Card className="p-6 rounded-2xl flex items-center justify-between">
-          <div>
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+        <Card className="p-6 rounded-2xl flex items-center justify-between min-w-0">
+          <div className="min-w-0">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 truncate block">
               Reste à Recouvrer
             </span>
-            <div className="text-2xl sm:text-3xl font-extrabold text-red-700 font-mono mt-2">
-              {formatMRU(totalImpayesAnnee)}
+            <div
+              title={formatMRU(totalImpayesAnnee)}
+              className="text-2xl sm:text-3xl font-extrabold text-red-700 font-mono mt-2 truncate cursor-help"
+            >
+              {formatCompactMRU(totalImpayesAnnee)}
             </div>
-            <span className="text-xs text-red-600 font-semibold mt-1.5 block">
+            <span className="text-xs text-red-600 font-semibold mt-1.5 block truncate">
               Total des relances en cours
             </span>
           </div>
@@ -143,15 +152,15 @@ export const RapportsPage: React.FC = () => {
           </div>
         </Card>
 
-        <Card className="p-6 rounded-2xl flex items-center justify-between">
-          <div>
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+        <Card className="p-6 rounded-2xl flex items-center justify-between min-w-0">
+          <div className="min-w-0">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 truncate block">
               Taux Moyen Ancienneté
             </span>
-            <div className="text-2xl sm:text-3xl font-extrabold text-indigo-700 font-mono mt-2">
+            <div className="text-2xl sm:text-3xl font-extrabold text-indigo-700 font-mono mt-2 truncate">
               {tauxGlobalAnnee}%
             </div>
-            <span className="text-xs text-slate-500 font-medium mt-1.5 block">
+            <span className="text-xs text-slate-500 font-medium mt-1.5 block truncate">
               Taux global d'efficacité
             </span>
           </div>

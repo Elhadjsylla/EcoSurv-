@@ -10,6 +10,7 @@ import {
   HistoriqueRelance,
 } from '../lib/mockData';
 import { formatMRU } from '../lib/utils';
+import { formatCompactMRU } from '../lib/formatCompactMRU';
 import {
   Send,
   MessageSquare,
@@ -173,16 +174,16 @@ export const RelancesPage: React.FC = () => {
 
       {/* KPI Tiles */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="p-6 rounded-2xl flex items-center justify-between">
-          <div>
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+        <Card className="p-6 rounded-2xl flex items-center justify-between min-w-0">
+          <div className="min-w-0">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 truncate block">
               Relances Expédiées
             </span>
-            <div className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-mono mt-2">
+            <div className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-mono mt-2 truncate">
               {relancesHistory.length}
             </div>
-            <span className="text-xs text-emerald-700 font-semibold mt-1.5 flex items-center gap-1">
-              <CheckCircle2 className="h-3.5 w-3.5" /> 100% délivrées
+            <span className="text-xs text-emerald-700 font-semibold mt-1.5 flex items-center gap-1 truncate">
+              <CheckCircle2 className="h-3.5 w-3.5 shrink-0" /> 100% délivrées
             </span>
           </div>
           <div className="h-12 w-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
@@ -190,15 +191,15 @@ export const RelancesPage: React.FC = () => {
           </div>
         </Card>
 
-        <Card className="p-6 rounded-2xl flex items-center justify-between">
-          <div>
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+        <Card className="p-6 rounded-2xl flex items-center justify-between min-w-0">
+          <div className="min-w-0">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 truncate block">
               Élèves Cibles
             </span>
-            <div className="text-2xl sm:text-3xl font-extrabold text-red-700 font-mono mt-2">
+            <div className="text-2xl sm:text-3xl font-extrabold text-red-700 font-mono mt-2 truncate">
               {overdueEleves.length}
             </div>
-            <span className="text-xs text-red-600 font-semibold mt-1.5 block">
+            <span className="text-xs text-red-600 font-semibold mt-1.5 block truncate">
               Familles en retard de paiement
             </span>
           </div>
@@ -207,15 +208,18 @@ export const RelancesPage: React.FC = () => {
           </div>
         </Card>
 
-        <Card className="p-6 rounded-2xl flex items-center justify-between">
-          <div>
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+        <Card className="p-6 rounded-2xl flex items-center justify-between min-w-0">
+          <div className="min-w-0">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 truncate block">
               Volume Impayé Cible
             </span>
-            <div className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-mono mt-2">
-              {formatMRU(totalImpayesCibles)}
+            <div
+              title={formatMRU(totalImpayesCibles)}
+              className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-mono mt-2 truncate cursor-help"
+            >
+              {formatCompactMRU(totalImpayesCibles)}
             </div>
-            <span className="text-xs text-slate-500 font-medium mt-1.5 block">
+            <span className="text-xs text-slate-500 font-medium mt-1.5 block truncate">
               À recouvrer
             </span>
           </div>
@@ -224,15 +228,15 @@ export const RelancesPage: React.FC = () => {
           </div>
         </Card>
 
-        <Card className="p-6 rounded-2xl flex items-center justify-between">
-          <div>
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+        <Card className="p-6 rounded-2xl flex items-center justify-between min-w-0">
+          <div className="min-w-0">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 truncate block">
               Canal Principal
             </span>
-            <div className="text-2xl sm:text-3xl font-extrabold text-emerald-700 font-mono mt-2">
+            <div className="text-2xl sm:text-3xl font-extrabold text-emerald-700 font-mono mt-2 truncate">
               WhatsApp
             </div>
-            <span className="text-xs text-slate-500 font-medium mt-1.5 block">
+            <span className="text-xs text-slate-500 font-medium mt-1.5 block truncate">
               Taux d'ouverture 96%
             </span>
           </div>

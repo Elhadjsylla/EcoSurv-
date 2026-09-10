@@ -100,7 +100,7 @@ export const Header: React.FC<HeaderProps> = ({
             <Building2 className="h-4.5 w-4.5" />
           </div>
           <div className="min-w-0">
-            <h2 className="text-sm font-bold text-slate-900 leading-tight truncate">
+            <h2 title={CURRENT_ECOLE.nom} className="text-sm font-bold text-slate-900 leading-tight truncate">
               {CURRENT_ECOLE.nom}
             </h2>
             <p className="text-xs text-slate-500 flex items-center gap-1.5 font-medium truncate mt-0.5">
@@ -161,17 +161,23 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="h-6 w-px bg-slate-200 hidden sm:block" />
 
         {/* User Info with Initials Avatar */}
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2.5 min-w-0">
           <StudentInitials
             nom={currentConfig.user.nom}
             prenom={currentConfig.user.prenom}
             size="sm"
           />
-          <div className="hidden lg:flex flex-col text-left">
-            <span className="text-xs font-bold text-slate-900 leading-tight">
+          <div className="hidden lg:flex flex-col text-left min-w-0 max-w-[140px] xl:max-w-[180px]">
+            <span
+              title={`${currentConfig.user.prenom} ${currentConfig.user.nom}`}
+              className="text-xs font-bold text-slate-900 leading-tight truncate"
+            >
               {currentConfig.user.prenom} {currentConfig.user.nom}
             </span>
-            <span className="text-[10px] font-medium text-slate-500">
+            <span
+              title={currentConfig.roleTitle}
+              className="text-[10px] font-medium text-slate-500 truncate"
+            >
               {currentConfig.roleTitle}
             </span>
           </div>

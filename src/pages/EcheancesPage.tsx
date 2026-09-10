@@ -106,15 +106,15 @@ export const EcheancesPage: React.FC = () => {
 
       {/* Metric Tiles */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="p-6 rounded-2xl flex items-center justify-between">
-          <div>
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+        <Card className="p-6 rounded-2xl flex items-center justify-between min-w-0">
+          <div className="min-w-0">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 truncate block">
               Échéanciers Actifs
             </span>
-            <div className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-mono mt-2">
+            <div className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-mono mt-2 truncate">
               {echeanciers.length}
             </div>
-            <span className="text-[11px] text-slate-500 font-medium mt-2 block">
+            <span className="text-[11px] text-slate-500 font-medium mt-2 block truncate">
               Configurations par niveau
             </span>
           </div>
@@ -123,15 +123,15 @@ export const EcheancesPage: React.FC = () => {
           </div>
         </Card>
 
-        <Card className="p-6 rounded-2xl flex items-center justify-between">
-          <div>
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+        <Card className="p-6 rounded-2xl flex items-center justify-between min-w-0">
+          <div className="min-w-0">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 truncate block">
               Élèves Couverts
             </span>
-            <div className="text-2xl sm:text-3xl font-extrabold text-emerald-700 font-mono mt-2">
+            <div className="text-2xl sm:text-3xl font-extrabold text-emerald-700 font-mono mt-2 truncate">
               {totalElevesCouverts}
             </div>
-            <span className="text-[11px] text-emerald-700 font-semibold mt-2 block">
+            <span className="text-[11px] text-emerald-700 font-semibold mt-2 block truncate">
               ✓ Échéancier individuel actif
             </span>
           </div>
@@ -140,15 +140,15 @@ export const EcheancesPage: React.FC = () => {
           </div>
         </Card>
 
-        <Card className="p-6 rounded-2xl flex items-center justify-between">
-          <div>
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+        <Card className="p-6 rounded-2xl flex items-center justify-between min-w-0">
+          <div className="min-w-0">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 truncate block">
               Prochaine Échéance
             </span>
-            <div className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-mono mt-2">
+            <div className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-mono mt-2 truncate">
               05 Avril
             </div>
-            <span className="text-[11px] text-amber-700 font-semibold mt-2 block">
+            <span className="text-[11px] text-amber-700 font-semibold mt-2 block truncate">
               Tranche 3 / Mensualité
             </span>
           </div>
@@ -157,15 +157,15 @@ export const EcheancesPage: React.FC = () => {
           </div>
         </Card>
 
-        <Card className="p-6 rounded-2xl flex items-center justify-between">
-          <div>
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+        <Card className="p-6 rounded-2xl flex items-center justify-between min-w-0">
+          <div className="min-w-0">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 truncate block">
               Modes de Règlement
             </span>
-            <div className="text-2xl sm:text-3xl font-extrabold text-blue-700 font-mono mt-2">
+            <div className="text-2xl sm:text-3xl font-extrabold text-blue-700 font-mono mt-2 truncate">
               3 types
             </div>
-            <span className="text-[11px] text-slate-500 font-medium mt-2 block">
+            <span className="text-[11px] text-slate-500 font-medium mt-2 block truncate">
               Mensuel, Trimestriel, Annuel
             </span>
           </div>
@@ -186,7 +186,7 @@ export const EcheancesPage: React.FC = () => {
           </span>
         </div>
 
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-transparent">
           <table className="w-full text-left text-sm border-collapse">
             <thead>
               <tr className="border-b border-slate-200 bg-slate-50/80 text-xs font-bold uppercase tracking-wider text-slate-500">
@@ -194,7 +194,7 @@ export const EcheancesPage: React.FC = () => {
                 <th className="py-4 px-6">Classe Cible</th>
                 <th className="py-4 px-6 text-right">Montant Total</th>
                 <th className="py-4 px-6 text-center">Fréquence</th>
-                <th className="py-4 px-6 text-center">Nombre de Tranches</th>
+                <th className="py-4 px-6 text-center">Tranches</th>
                 <th className="py-4 px-6 text-right">Montant / Tranche</th>
                 <th className="py-4 px-6 text-center">Prochaine Limite</th>
                 <th className="py-4 px-6 text-center">Élèves Concernés</th>
@@ -211,7 +211,10 @@ export const EcheancesPage: React.FC = () => {
                       {ech.classe}
                     </span>
                   </td>
-                  <td className="py-4.5 px-6 text-right font-mono font-bold text-slate-900">
+                  <td
+                    title={formatMRU(ech.montant_total)}
+                    className="py-4.5 px-6 text-right font-mono font-bold text-slate-900 whitespace-nowrap cursor-help"
+                  >
                     {formatMRU(ech.montant_total)}
                   </td>
                   <td className="py-4.5 px-6 text-center">
@@ -230,7 +233,10 @@ export const EcheancesPage: React.FC = () => {
                   <td className="py-4.5 px-6 text-center font-mono font-semibold text-slate-700">
                     {ech.nombre_tranches} tranche(s)
                   </td>
-                  <td className="py-4.5 px-6 text-right font-mono font-bold text-emerald-700">
+                  <td
+                    title={formatMRU(ech.montant_par_tranche)}
+                    className="py-4.5 px-6 text-right font-mono font-bold text-emerald-700 whitespace-nowrap cursor-help"
+                  >
                     {formatMRU(ech.montant_par_tranche)}
                   </td>
                   <td className="py-4.5 px-6 text-center font-mono text-slate-600">

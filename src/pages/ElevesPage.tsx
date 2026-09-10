@@ -11,6 +11,7 @@ import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { ToastNotification } from '../components/ui/ToastNotification';
 import { formatMRU } from '../lib/utils';
+import { formatCompactMRU } from '../lib/formatCompactMRU';
 import { StudentEnrollmentModal } from '../components/eleves/StudentEnrollmentModal';
 import { StudentDetailPanel } from '../components/eleves/StudentDetailPanel';
 import { Select } from '../components/ui/Select';
@@ -400,19 +401,19 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
         <Card
           onClick={() => handleStatutChange('all')}
           style={{ animationDelay: '0ms' }}
-          className={`p-6 rounded-2xl flex items-center justify-between cursor-pointer transition-all duration-200 animate-stagger-rise hover:-translate-y-0.5 hover:shadow-md hover:border-blue-400 ${
+          className={`p-6 rounded-2xl flex items-center justify-between cursor-pointer transition-all duration-200 animate-stagger-rise hover:-translate-y-0.5 hover:shadow-md hover:border-blue-400 min-w-0 ${
             selectedStatut === 'all' ? 'border-blue-600 bg-blue-50/30 ring-2 ring-blue-500/20 shadow-sm' : ''
           }`}
         >
-          <div>
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+          <div className="min-w-0">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 truncate block">
               Effectif Total
             </span>
-            <div className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-mono mt-2">
+            <div className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-mono mt-2 truncate">
               {kpis.nombreEleves}
             </div>
-            <span className="text-[11px] font-semibold text-slate-500 mt-2 flex items-center gap-1">
-              <CheckCircle2 className="h-3.5 w-3.5 text-slate-400" /> Afficher tous
+            <span className="text-[11px] font-semibold text-slate-500 mt-2 flex items-center gap-1 truncate">
+              <CheckCircle2 className="h-3.5 w-3.5 text-slate-400 shrink-0" /> Afficher tous
             </span>
           </div>
           <div className="h-11 w-11 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
@@ -423,18 +424,18 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
         <Card
           onClick={() => handleStatutChange('paye')}
           style={{ animationDelay: '75ms' }}
-          className={`p-6 rounded-2xl flex items-center justify-between cursor-pointer transition-all duration-200 animate-stagger-rise hover:-translate-y-0.5 hover:shadow-md hover:border-emerald-400 ${
+          className={`p-6 rounded-2xl flex items-center justify-between cursor-pointer transition-all duration-200 animate-stagger-rise hover:-translate-y-0.5 hover:shadow-md hover:border-emerald-400 min-w-0 ${
             selectedStatut === 'paye' ? 'border-emerald-600 bg-emerald-50/30 ring-2 ring-emerald-500/20 shadow-sm' : ''
           }`}
         >
-          <div>
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+          <div className="min-w-0">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 truncate block">
               Élèves En Règle
             </span>
-            <div className="text-2xl sm:text-3xl font-extrabold text-emerald-700 font-mono mt-2">
+            <div className="text-2xl sm:text-3xl font-extrabold text-emerald-700 font-mono mt-2 truncate">
               {kpis.nombrePaye + kpis.nombreAJour}
             </div>
-            <span className="text-[11px] text-emerald-700 font-semibold mt-2 block">
+            <span className="text-[11px] text-emerald-700 font-semibold mt-2 block truncate">
               Filtrer les réglés →
             </span>
           </div>
@@ -446,19 +447,22 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
         <Card
           onClick={() => handleStatutChange('en_retard')}
           style={{ animationDelay: '150ms' }}
-          className={`p-6 rounded-2xl flex items-center justify-between cursor-pointer transition-all duration-200 animate-stagger-rise hover:-translate-y-0.5 hover:shadow-md hover:border-red-400 ${
+          className={`p-6 rounded-2xl flex items-center justify-between cursor-pointer transition-all duration-200 animate-stagger-rise hover:-translate-y-0.5 hover:shadow-md hover:border-red-400 min-w-0 ${
             selectedStatut === 'en_retard' ? 'border-red-600 bg-red-50/30 ring-2 ring-red-500/20 shadow-sm' : ''
           }`}
         >
-          <div>
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+          <div className="min-w-0">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 truncate block">
               Échéances en Retard
             </span>
-            <div className="text-2xl sm:text-3xl font-extrabold text-red-700 font-mono mt-2">
+            <div className="text-2xl sm:text-3xl font-extrabold text-red-700 font-mono mt-2 truncate">
               {kpis.nombreEnRetard}
             </div>
-            <span className="text-[11px] font-semibold text-red-600 mt-2 block">
-              Filtrer les retards ({formatMRU(kpis.totalImpayes)}) →
+            <span
+              title={`Total impayés : ${formatMRU(kpis.totalImpayes)}`}
+              className="text-[11px] font-semibold text-red-600 mt-2 block truncate cursor-help"
+            >
+              Filtrer les retards ({formatCompactMRU(kpis.totalImpayes)}) →
             </span>
           </div>
           <div className="h-11 w-11 rounded-xl bg-red-50 text-red-600 flex items-center justify-center shrink-0">
@@ -469,18 +473,18 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
         <Card
           onClick={() => handleStatutChange('partiel')}
           style={{ animationDelay: '225ms' }}
-          className={`p-6 rounded-2xl flex items-center justify-between cursor-pointer transition-all duration-200 animate-stagger-rise hover:-translate-y-0.5 hover:shadow-md hover:border-amber-400 ${
+          className={`p-6 rounded-2xl flex items-center justify-between cursor-pointer transition-all duration-200 animate-stagger-rise hover:-translate-y-0.5 hover:shadow-md hover:border-amber-400 min-w-0 ${
             selectedStatut === 'partiel' ? 'border-amber-600 bg-amber-50/30 ring-2 ring-amber-500/20 shadow-sm' : ''
           }`}
         >
-          <div>
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+          <div className="min-w-0">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 truncate block">
               Recouvrement Global
             </span>
-            <div className="text-2xl sm:text-3xl font-extrabold text-blue-700 font-mono mt-2">
+            <div className="text-2xl sm:text-3xl font-extrabold text-blue-700 font-mono mt-2 truncate">
               {kpis.tauxRecouvrement}%
             </div>
-            <span className="text-[11px] text-amber-700 font-semibold mt-2 block">
+            <span className="text-[11px] text-amber-700 font-semibold mt-2 block truncate">
               Filtrer les partiels →
             </span>
           </div>
@@ -673,7 +677,14 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
                         {/* Solde Dû */}
                         <td className="py-3.5 px-3 text-right font-mono font-bold whitespace-nowrap text-sm">
                           {eleve.remaining > 0 ? (
-                            <span className="text-red-700">{formatMRU(eleve.remaining)}</span>
+                            <span
+                              title={formatMRU(eleve.remaining)}
+                              className="text-red-700 cursor-help"
+                            >
+                              {eleve.remaining >= 100000
+                                ? formatCompactMRU(eleve.remaining)
+                                : formatMRU(eleve.remaining)}
+                            </span>
                           ) : (
                             <span className="text-emerald-700">0 MRU</span>
                           )}

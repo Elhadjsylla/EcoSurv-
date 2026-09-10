@@ -1,5 +1,6 @@
 import React, { ReactNode } from 'react';
 import { cn, formatMRU } from '../../lib/utils';
+import { formatCompactMRU } from '../../lib/formatCompactMRU';
 import { ArrowUpRight } from 'lucide-react';
 import { useCountUp } from '../../hooks/useCountUp';
 
@@ -14,6 +15,8 @@ interface KpiCardProps {
   onClick?: () => void;
   active?: boolean;
   staggerIndex?: number;
+  /** Si faux, désactive le format compact k/M/Md (par défaut: true) */
+  compact?: boolean;
 }
 
 export const KpiCard: React.FC<KpiCardProps> = ({
@@ -27,6 +30,7 @@ export const KpiCard: React.FC<KpiCardProps> = ({
   onClick,
   active = false,
   staggerIndex,
+  compact = true,
 }) => {
   const animatedAmount = useCountUp(amount ?? 0, 850);
   const animatedProgress = useCountUp(progress ?? 0, 850);
@@ -47,12 +51,20 @@ export const KpiCard: React.FC<KpiCardProps> = ({
     warning: 'hover:border-amber-400 hover:shadow-amber-500/5',
   };
 
+  const fullAmountText = amount !== undefined ? formatMRU(amount) : undefined;
+  const displayAmount =
+    amount !== undefined
+      ? compact
+        ? formatCompactMRU(animatedAmount)
+        : formatMRU(animatedAmount)
+      : null;
+
   return (
     <div
       onClick={onClick}
       style={staggerIndex !== undefined ? { animationDelay: `${staggerIndex * 75}ms` } : undefined}
       className={cn(
-        'rounded-2xl border p-6 shadow-2xs transition-all duration-200 relative overflow-hidden flex flex-col justify-between',
+        'rounded-2xl border p-5 sm:p-6 shadow-2xs transition-all duration-200 relative overflow-hidden flex flex-col justify-between min-w-0',
         staggerIndex !== undefined && 'animate-stagger-rise',
         active
           ? 'border-blue-600 bg-blue-50/40 ring-2 ring-blue-600/20 shadow-sm'
@@ -61,12 +73,15 @@ export const KpiCard: React.FC<KpiCardProps> = ({
         className
       )}
     >
-      <div>
-        <div className="flex items-center justify-between gap-3">
-          <span className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
-            {title}
+      <div className="min-w-0">
+        <div className="flex items-center justify-between gap-2.5">
+          <span
+            title={title}
+            className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5 truncate min-w-0"
+          >
+            <span className="truncate">{title}</span>
             {onClick && (
-              <ArrowUpRight className="h-3.5 w-3.5 text-slate-400 group-hover:text-blue-600 transition-colors" />
+              <ArrowUpRight className="h-3.5 w-3.5 text-slate-400 group-hover:text-blue-600 transition-colors shrink-0" />
             )}
           </span>
           {icon && (
@@ -81,20 +96,23 @@ export const KpiCard: React.FC<KpiCardProps> = ({
           )}
         </div>
 
-        <div className="mt-4 sm:mt-5">
-          {amount !== undefined ? (
-            <div className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 font-mono transition-colors">
-              {formatMRU(animatedAmount)}
+        <div className="mt-4 sm:mt-5 min-w-0">
+          {displayAmount !== null ? (
+            <div
+              title={fullAmountText}
+              className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 font-mono transition-colors truncate cursor-help"
+            >
+              {displayAmount}
             </div>
           ) : (
-            <div className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 font-mono transition-colors">
+            <div className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 font-mono transition-colors truncate">
               {progress !== undefined ? `${animatedProgress}%` : '--'}
             </div>
           )}
         </div>
       </div>
 
-      <div className="mt-4">
+      <div className="mt-4 min-w-0">
         {progress !== undefined && (
           <div className="space-y-1.5 mb-2.5">
             <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100">
@@ -114,10 +132,13 @@ export const KpiCard: React.FC<KpiCardProps> = ({
         )}
 
         {subtitle && (
-          <p className="text-xs font-medium text-slate-500 flex items-center justify-between">
-            <span>{subtitle}</span>
+          <p
+            title={subtitle}
+            className="text-xs font-medium text-slate-500 flex items-center justify-between gap-2 min-w-0"
+          >
+            <span className="truncate min-w-0">{subtitle}</span>
             {onClick && (
-              <span className="text-[11px] font-bold text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity">
+              <span className="text-[11px] font-bold text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
                 Filtrer →
               </span>
             )}

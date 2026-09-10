@@ -233,7 +233,7 @@ export const ConfigPage: React.FC = () => {
           </span>
         </div>
 
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-transparent">
           <table className="w-full text-left text-xs border-collapse">
             <thead>
               <tr className="border-b border-slate-200 bg-slate-50/80 font-bold uppercase tracking-wider text-slate-500">
@@ -250,11 +250,16 @@ export const ConfigPage: React.FC = () => {
                 const roleInfo = roleLabels[member.role] || roleLabels.enseignant;
                 return (
                   <tr key={member.id} className="hover:bg-slate-50/80 transition-colors">
-                    <td className="py-4.5 px-6">
-                      <div className="font-bold text-slate-900 text-sm">
+                    <td className="py-4.5 px-6 min-w-0 max-w-[220px]">
+                      <div
+                        title={`${member.prenom} ${member.nom}`}
+                        className="font-bold text-slate-900 text-sm truncate"
+                      >
                         {member.prenom} {member.nom}
                       </div>
-                      <div className="text-xs text-slate-500 mt-0.5">{member.email}</div>
+                      <div title={member.email} className="text-xs text-slate-500 mt-0.5 truncate">
+                        {member.email}
+                      </div>
                     </td>
 
                     <td className="py-4.5 px-6">
