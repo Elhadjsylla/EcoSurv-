@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { useThemeStore } from './store/useThemeStore';
 import { Sidebar, NavTab } from './components/ui/Sidebar';
 import { TeacherSidebar, TeacherNavTab } from './components/enseignant/TeacherSidebar';
 import { CaissierSidebar, CaissierNavTab } from './components/caissier/CaissierSidebar';
@@ -33,6 +34,12 @@ const queryClient = new QueryClient({
 });
 
 export function AppContent() {
+  const initTheme = useThemeStore((s) => s.initTheme);
+
+  useEffect(() => {
+    initTheme();
+  }, [initTheme]);
+
   // Rôle actif dans l'application (basculable dans le Header pour la démo)
   const [currentRole, setCurrentRole] = useState<UserRole>('directeur');
 
@@ -165,7 +172,7 @@ export function AppContent() {
   };
 
   return (
-    <div className="flex h-screen overflow-hidden bg-slate-50 font-['Plus_Jakarta_Sans',sans-serif] text-slate-900 antialiased">
+    <div className="flex h-screen overflow-hidden bg-slate-50 dark:bg-slate-950 font-['Plus_Jakarta_Sans',sans-serif] text-slate-900 dark:text-slate-100 antialiased">
       {/* Dynamic Sidebar based on current role */}
       {currentRole === 'enseignant' && (
         <TeacherSidebar
@@ -199,6 +206,7 @@ export function AppContent() {
         <Header
           currentRole={currentRole}
           onRoleChange={setCurrentRole}
+          onNavigateTab={(tab) => setActiveDirectorTab(tab as any)}
         />
         <main className="flex-1 overflow-y-auto overflow-x-hidden">
           {currentRole === 'enseignant' && renderTeacherContent()}
