@@ -7,6 +7,7 @@ import { useCountUp } from '../../hooks/useCountUp';
 interface KpiCardProps {
   title: string;
   amount?: number;
+  unit?: string;
   customValue?: ReactNode;
   subtitle?: string;
   icon?: ReactNode;
@@ -22,6 +23,7 @@ interface KpiCardProps {
 export const KpiCard: React.FC<KpiCardProps> = ({
   title,
   amount,
+  unit,
   customValue,
   subtitle,
   icon,
@@ -64,10 +66,22 @@ export const KpiCard: React.FC<KpiCardProps> = ({
     purple: 'hover:border-purple-400 dark:hover:border-purple-700 hover:shadow-purple-500/5',
   };
 
-  const fullAmountText = amount !== undefined ? formatMRU(amount) : undefined;
+  const fullAmountText =
+    amount !== undefined
+      ? unit !== undefined
+        ? unit
+          ? `${amount.toLocaleString('fr-FR')} ${unit}`.trim()
+          : amount.toLocaleString('fr-FR')
+        : formatMRU(amount)
+      : undefined;
+
   const displayAmount =
     amount !== undefined
-      ? compact
+      ? unit !== undefined
+        ? unit
+          ? `${animatedAmount.toLocaleString('fr-FR')} ${unit}`.trim()
+          : animatedAmount.toLocaleString('fr-FR')
+        : compact
         ? formatCompactMRU(animatedAmount)
         : formatMRU(animatedAmount)
       : null;
