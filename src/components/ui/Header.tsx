@@ -103,9 +103,9 @@ export const Header: React.FC<HeaderProps> = ({
     parent: {
       label: 'Parent',
       roleTitle: 'Parent d\'élève (2 enfants)',
-      icon: <HeartHandshake className="h-4 w-4 text-indigo-600" />,
-      colorTheme: 'text-indigo-700 bg-indigo-50 border-indigo-200/60 dark:bg-indigo-950/60 dark:text-indigo-300 dark:border-indigo-800',
-      badgeColor: 'bg-indigo-50 text-indigo-800 border-indigo-200 dark:bg-indigo-950/60 dark:text-indigo-300 dark:border-indigo-800',
+      icon: <HeartHandshake className="h-4 w-4 text-purple-600 dark:text-purple-400" />,
+      colorTheme: 'text-purple-700 bg-purple-50 border-purple-200/60 dark:bg-purple-950/60 dark:text-purple-300 dark:border-purple-800',
+      badgeColor: 'bg-purple-50 text-purple-800 border-purple-200 dark:bg-purple-950/60 dark:text-purple-300 dark:border-purple-800',
       badgeText: 'RLS Parent',
       badgeScope: 'Restreint strictement aux enfants de la famille Diallo',
       user: CURRENT_PARENT as any,

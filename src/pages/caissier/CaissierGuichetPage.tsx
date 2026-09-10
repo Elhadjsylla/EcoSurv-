@@ -55,7 +55,6 @@ export const CaissierGuichetPage: React.FC<CaissierGuichetPageProps> = ({
     return elevesList.find((e) => e.id === selectedEleveId) || null;
   }, [elevesList, selectedEleveId]);
 
-  // Quand un élève est sélectionné, préremplir le montant avec son reste dû (ou tranche standard)
   React.useEffect(() => {
     if (selectedEleve) {
       const suggestedAmount =
@@ -66,7 +65,6 @@ export const CaissierGuichetPage: React.FC<CaissierGuichetPageProps> = ({
     }
   }, [selectedEleve]);
 
-  // Filtrage des élèves pour la recherche
   const searchedEleves = useMemo(() => {
     if (!searchQuery.trim()) return [];
     return elevesList.filter((e) => {
@@ -80,7 +78,6 @@ export const CaissierGuichetPage: React.FC<CaissierGuichetPageProps> = ({
     });
   }, [elevesList, searchQuery]);
 
-  // Célébration discrète par confetti
   const triggerConfetti = () => {
     try {
       confetti({
@@ -96,7 +93,6 @@ export const CaissierGuichetPage: React.FC<CaissierGuichetPageProps> = ({
     }
   };
 
-  // Traiter l'encaissement au guichet
   const handleProcessPayment = () => {
     if (!selectedEleve) {
       setActiveToast({ message: 'Veuillez rechercher et sélectionner un élève.', type: 'warning' });
@@ -129,7 +125,6 @@ export const CaissierGuichetPage: React.FC<CaissierGuichetPageProps> = ({
       statut: 'confirme',
     };
 
-    // Mettre à jour l'élève localement
     setElevesList((prev) =>
       prev.map((e) => {
         if (e.id === selectedEleve.id) {
@@ -185,25 +180,26 @@ export const CaissierGuichetPage: React.FC<CaissierGuichetPageProps> = ({
       )}
 
       {/* Top Banner */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-white p-6 sm:p-8 rounded-2xl border border-slate-200 shadow-2xs">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-white dark:bg-slate-900 p-6 sm:p-8 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xs">
         <div>
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
               Guichet d'Encaissement & Paiements
             </h1>
-            <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-800 border border-amber-200">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 dark:bg-amber-950/60 px-3 py-1 text-xs font-bold text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
               {CURRENT_CAISSIER.guichet}
             </span>
           </div>
-          <p className="text-sm text-slate-500 font-medium mt-1.5">
+          <p className="text-sm text-slate-500 dark:text-slate-400 font-medium mt-1.5">
             Enregistrez les versements des parents d'élèves en espèces ou mobile banking et délivrez instantanément un reçu numéroté.
           </p>
         </div>
 
         <div className="flex items-center gap-2.5 shrink-0">
-          <span className="text-xs font-bold text-slate-500">Opérateur :</span>
-          <span className="text-xs font-bold text-slate-900 bg-slate-100 px-3.5 py-2 rounded-xl border border-slate-200 flex items-center gap-2">
-            <Building className="h-4 w-4 text-amber-600" />
+          <span className="text-xs font-bold text-slate-500 dark:text-slate-400">Opérateur :</span>
+          <span className="text-xs font-bold text-slate-900 dark:text-white bg-slate-100 dark:bg-slate-800 px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 flex items-center gap-2">
+            <Building className="h-4 w-4 text-amber-600 dark:text-amber-400" />
             {CURRENT_CAISSIER.prenom} {CURRENT_CAISSIER.nom}
           </span>
         </div>
@@ -213,29 +209,29 @@ export const CaissierGuichetPage: React.FC<CaissierGuichetPageProps> = ({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         {/* Left Col (5 cols): Student Search & Identification */}
         <div className="lg:col-span-5 space-y-6">
-          <Card className="p-6 sm:p-7 rounded-2xl space-y-5">
-            <h2 className="text-base font-bold text-slate-900 flex items-center gap-2.5">
-              <Search className="h-4 w-4 text-amber-600" />
+          <Card className="p-6 sm:p-7 rounded-2xl space-y-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xs">
+            <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2.5">
+              <Search className="h-4 w-4 text-amber-600 dark:text-amber-400" />
               1. Identifier l'Élève au Guichet
             </h2>
 
             {/* Search Input */}
             <div className="relative">
-              <Search className="absolute left-3.5 top-3 h-4 w-4 text-slate-400" />
+              <Search className="absolute left-3.5 top-3 h-4 w-4 text-slate-400 dark:text-slate-500" />
               <input
                 type="text"
                 placeholder="Rechercher par nom, matricule ou tuteur..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full h-11 pl-10 pr-4 rounded-xl border border-slate-300 bg-white text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-600 focus:border-transparent transition-all"
+                className="w-full h-11 pl-10 pr-4 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-600 focus:border-transparent transition-all"
               />
             </div>
 
             {/* Quick search results dropdown */}
             {searchQuery.trim() && (
-              <div className="space-y-1 max-h-56 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50/50 p-1.5">
+              <div className="space-y-1 max-h-56 overflow-y-auto rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/60 p-1.5 scrollbar-thin">
                 {searchedEleves.length === 0 ? (
-                  <div className="p-3 text-center text-xs text-slate-500 font-medium">
+                  <div className="p-3 text-center text-xs text-slate-500 dark:text-slate-400 font-medium">
                     Aucun élève trouvé pour cette recherche.
                   </div>
                 ) : (
@@ -246,23 +242,23 @@ export const CaissierGuichetPage: React.FC<CaissierGuichetPageProps> = ({
                         setSelectedEleveId(el.id);
                         setSearchQuery('');
                       }}
-                      className="p-2.5 rounded-lg hover:bg-white hover:shadow-2xs cursor-pointer transition-all flex items-center justify-between border border-transparent hover:border-slate-200"
+                      className="p-2.5 rounded-lg hover:bg-white dark:hover:bg-slate-800 hover:shadow-2xs cursor-pointer transition-all flex items-center justify-between border border-transparent hover:border-slate-200 dark:hover:border-slate-700"
                     >
                       <div className="flex items-center gap-2.5">
                         <StudentInitials nom={el.nom} prenom={el.prenom} size="sm" />
                         <div>
-                          <div className="font-bold text-slate-900 text-xs">
+                          <div className="font-bold text-slate-900 dark:text-white text-xs">
                             {el.prenom} {el.nom}
                           </div>
-                          <div className="text-[10px] text-slate-500 font-mono">
+                          <div className="text-[10px] text-slate-500 dark:text-slate-400 font-mono">
                             {el.matricule} • {el.classe}
                           </div>
                         </div>
                       </div>
 
                       <div className="text-right">
-                        <span className="text-[10px] font-bold text-slate-500 block">Reste dû</span>
-                        <span className="text-xs font-extrabold font-mono text-red-600">
+                        <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 block">Reste dû</span>
+                        <span className="text-xs font-extrabold font-mono text-rose-600 dark:text-rose-400">
                           {formatMRU(el.remaining)}
                         </span>
                       </div>
@@ -274,7 +270,7 @@ export const CaissierGuichetPage: React.FC<CaissierGuichetPageProps> = ({
 
             {/* Selected Student Card */}
             {selectedEleve ? (
-              <div className="rounded-xl border border-amber-200 bg-amber-50/40 p-4 space-y-3 animate-scale-in">
+              <div className="rounded-2xl border border-amber-200 dark:border-amber-900/60 bg-amber-50/50 dark:bg-amber-950/25 p-4 space-y-3 animate-scale-in">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3">
                     <StudentInitials
@@ -283,10 +279,10 @@ export const CaissierGuichetPage: React.FC<CaissierGuichetPageProps> = ({
                       size="md"
                     />
                     <div>
-                      <h3 className="text-sm font-bold text-slate-900">
+                      <h3 className="text-sm font-bold text-slate-900 dark:text-white">
                         {selectedEleve.prenom} {selectedEleve.nom}
                       </h3>
-                      <p className="text-xs text-amber-800 font-mono font-bold">
+                      <p className="text-xs text-amber-800 dark:text-amber-300 font-mono font-bold">
                         {selectedEleve.matricule} • Classe : {selectedEleve.classe}
                       </p>
                     </div>
@@ -294,52 +290,52 @@ export const CaissierGuichetPage: React.FC<CaissierGuichetPageProps> = ({
 
                   <button
                     onClick={() => setSelectedEleveId('')}
-                    className="text-slate-400 hover:text-slate-600 p-1 rounded-md hover:bg-white"
+                    className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 rounded-md hover:bg-white dark:hover:bg-slate-800"
                     title="Changer d'élève"
                   >
                     <X className="h-4 w-4" />
                   </button>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2 pt-2 border-t border-amber-200/60 text-xs">
+                <div className="grid grid-cols-2 gap-2 pt-2 border-t border-amber-200/60 dark:border-amber-900/40 text-xs">
                   <div>
-                    <span className="text-slate-500 text-[11px] block">Tuteur Légal :</span>
-                    <span className="font-semibold text-slate-800">{selectedEleve.nom_tuteur}</span>
+                    <span className="text-slate-500 dark:text-slate-400 text-[11px] block">Tuteur Légal :</span>
+                    <span className="font-semibold text-slate-800 dark:text-slate-200">{selectedEleve.nom_tuteur}</span>
                   </div>
                   <div>
-                    <span className="text-slate-500 text-[11px] block">Téléphone :</span>
-                    <span className="font-mono font-semibold text-slate-800">
+                    <span className="text-slate-500 dark:text-slate-400 text-[11px] block">Téléphone :</span>
+                    <span className="font-mono font-semibold text-slate-800 dark:text-slate-200">
                       {selectedEleve.telephone_tuteur}
                     </span>
                   </div>
                 </div>
 
                 {/* Financial Summary Bento */}
-                <div className="grid grid-cols-2 gap-2 pt-2 border-t border-amber-200/60 text-center">
-                  <div className="p-2.5 rounded-lg bg-white border border-amber-200">
-                    <span className="text-[10px] uppercase font-bold text-slate-500 block">
+                <div className="grid grid-cols-2 gap-2 pt-2 border-t border-amber-200/60 dark:border-amber-900/40 text-center">
+                  <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-amber-200/80 dark:border-amber-900/40">
+                    <span className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 block">
                       Total Déjà Payé
                     </span>
-                    <span className="text-sm font-extrabold font-mono text-emerald-700">
+                    <span className="text-sm font-extrabold font-mono text-emerald-700 dark:text-emerald-400">
                       {formatMRU(selectedEleve.total_paid)}
                     </span>
                   </div>
 
-                  <div className="p-2.5 rounded-lg bg-white border border-amber-200">
-                    <span className="text-[10px] uppercase font-bold text-slate-500 block">
+                  <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-amber-200/80 dark:border-amber-900/40">
+                    <span className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 block">
                       Reste à Recouvrer
                     </span>
-                    <span className="text-sm font-extrabold font-mono text-red-600">
+                    <span className="text-sm font-extrabold font-mono text-rose-600 dark:text-rose-400">
                       {formatMRU(selectedEleve.remaining)}
                     </span>
                   </div>
                 </div>
               </div>
             ) : (
-              <div className="p-6 text-center rounded-xl border border-dashed border-slate-300 text-xs text-slate-500 space-y-2">
-                <User className="h-8 w-8 text-slate-400 mx-auto" />
-                <p className="font-semibold text-slate-700">Aucun élève sélectionné</p>
-                <p className="text-[11px] text-slate-500">
+              <div className="p-6 text-center rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 text-xs text-slate-500 dark:text-slate-400 space-y-2">
+                <User className="h-8 w-8 text-slate-400 dark:text-slate-500 mx-auto" />
+                <p className="font-semibold text-slate-700 dark:text-slate-300">Aucun élève sélectionné</p>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">
                   Recherchez un élève par nom ou matricule ci-dessus pour charger son dossier comptable.
                 </p>
               </div>
@@ -349,16 +345,16 @@ export const CaissierGuichetPage: React.FC<CaissierGuichetPageProps> = ({
 
         {/* Right Col (7 cols): Payment Terminal Form */}
         <div className="lg:col-span-7 space-y-4">
-          <Card className="p-6 space-y-5">
-            <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
-              <CreditCard className="h-4 w-4 text-amber-600" />
+          <Card className="p-6 space-y-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xs">
+            <h2 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
+              <CreditCard className="h-4 w-4 text-amber-600 dark:text-amber-400" />
               2. Enregistrement du Règlement au Comptoir
             </h2>
 
             <div className="space-y-4 text-xs">
               {/* Montant à encaisser */}
               <div>
-                <label className="font-bold text-slate-700 block mb-1">
+                <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
                   Montant à Encaisser (MRU) *
                 </label>
                 <div className="relative">
@@ -368,9 +364,9 @@ export const CaissierGuichetPage: React.FC<CaissierGuichetPageProps> = ({
                     step="500"
                     value={montant}
                     onChange={(e) => setMontant(parseFloat(e.target.value) || 0)}
-                    className="w-full h-12 pl-4 pr-16 text-xl font-extrabold font-mono text-slate-900 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-amber-600 focus:border-transparent"
+                    className="w-full h-12 pl-4 pr-16 text-xl font-extrabold font-mono text-slate-900 dark:text-white bg-white dark:bg-slate-800 rounded-xl border border-slate-300 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-amber-600 focus:border-transparent"
                   />
-                  <span className="absolute right-4 top-3 text-sm font-bold font-mono text-slate-400">
+                  <span className="absolute right-4 top-3 text-sm font-bold font-mono text-slate-400 dark:text-slate-500">
                     MRU
                   </span>
                 </div>
@@ -378,7 +374,7 @@ export const CaissierGuichetPage: React.FC<CaissierGuichetPageProps> = ({
 
               {/* Libellé / Échéance */}
               <div>
-                <label className="font-bold text-slate-700 block mb-1">
+                <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
                   Motif / Échéance concernée *
                 </label>
                 <input
@@ -386,16 +382,16 @@ export const CaissierGuichetPage: React.FC<CaissierGuichetPageProps> = ({
                   value={libelle}
                   onChange={(e) => setLibelle(e.target.value)}
                   placeholder="Ex: Mensualité Février 2026, Inscription, Acompte..."
-                  className="w-full h-10 px-3 rounded-lg border border-slate-300 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-600"
+                  className="w-full h-10 px-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-600"
                 />
               </div>
 
               {/* Mode de règlement */}
               <div>
-                <label className="font-bold text-slate-700 block mb-2">
+                <label className="font-bold text-slate-700 dark:text-slate-300 block mb-2">
                   Mode de Règlement *
                 </label>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                   {[
                     { id: 'especes', label: 'Espèces (Comptant)' },
                     { id: 'bankily', label: 'Bankily (BP)' },
@@ -410,12 +406,12 @@ export const CaissierGuichetPage: React.FC<CaissierGuichetPageProps> = ({
                       onClick={() => setMethode(m.id as MethodePaiement)}
                       className={`py-2.5 px-3 rounded-xl text-xs font-bold transition-all border text-left flex items-center justify-between ${
                         methode === m.id
-                          ? 'bg-amber-50 border-amber-600 text-amber-900 ring-2 ring-amber-500/20 shadow-2xs'
-                          : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300'
+                          ? 'bg-amber-50 dark:bg-amber-950/60 border-amber-600 dark:border-amber-500 text-amber-900 dark:text-amber-200 ring-2 ring-amber-500/20 shadow-2xs'
+                          : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-600'
                       }`}
                     >
                       <span>{m.label}</span>
-                      {methode === m.id && <Check className="h-4 w-4 text-amber-600" />}
+                      {methode === m.id && <Check className="h-4 w-4 text-amber-600 dark:text-amber-400" />}
                     </button>
                   ))}
                 </div>
@@ -424,7 +420,7 @@ export const CaissierGuichetPage: React.FC<CaissierGuichetPageProps> = ({
               {/* Référence de transaction pour mobile money ou chèque */}
               {methode !== 'especes' && (
                 <div className="animate-scale-in">
-                  <label className="font-bold text-slate-700 block mb-1">
+                  <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
                     Référence de Transaction / N° Chèque (Optionnel)
                   </label>
                   <input
@@ -432,18 +428,18 @@ export const CaissierGuichetPage: React.FC<CaissierGuichetPageProps> = ({
                     value={referenceOperateur}
                     onChange={(e) => setReferenceOperateur(e.target.value)}
                     placeholder="Ex: TX-992144, N° Chèque 004812..."
-                    className="w-full h-10 px-3 rounded-lg border border-slate-300 text-xs font-mono text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-600"
+                    className="w-full h-10 px-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-mono text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-600"
                   />
                 </div>
               )}
             </div>
 
             {/* Process Button */}
-            <div className="pt-2 border-t border-slate-100">
+            <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
               <Button
                 variant="primary"
                 size="lg"
-                className="w-full justify-center gap-2 bg-amber-600 hover:bg-amber-700 font-bold text-sm shadow-sm py-3"
+                className="w-full justify-center gap-2 bg-amber-600 hover:bg-amber-700 text-white font-bold text-sm shadow-sm py-3"
                 disabled={!selectedEleve}
                 onClick={handleProcessPayment}
               >
@@ -458,80 +454,80 @@ export const CaissierGuichetPage: React.FC<CaissierGuichetPageProps> = ({
       {/* Modal Reçu de Caisse Officiel Imprimable */}
       {printedReceipt && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 animate-in fade-in">
-          <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl border border-slate-200 space-y-6 animate-scale-in">
+          <div className="w-full max-w-lg rounded-2xl bg-white dark:bg-slate-900 p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-6 animate-scale-in">
             {/* Header Reçu */}
-            <div className="flex items-start justify-between border-b border-slate-100 pb-4">
+            <div className="flex items-start justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
               <div>
                 <div className="flex items-center gap-2">
-                  <Receipt className="h-5 w-5 text-amber-600" />
-                  <span className="text-sm font-extrabold text-slate-900">
+                  <Receipt className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                  <span className="text-sm font-extrabold text-slate-900 dark:text-white">
                     Reçu Officiel d'Encaissement
                   </span>
                 </div>
-                <p className="text-xs text-slate-500 font-mono mt-0.5">
+                <p className="text-xs text-slate-500 dark:text-slate-400 font-mono mt-0.5">
                   Réf. {printedReceipt.recu_ref}
                 </p>
               </div>
 
-              <span className="rounded-full bg-emerald-100 text-emerald-800 font-bold px-2.5 py-0.5 text-xs">
+              <span className="rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 font-bold px-3 py-1 text-xs">
                 Payé & Confirmé
               </span>
             </div>
 
             {/* Corps du Reçu */}
             <div className="space-y-4 text-xs">
-              <div className="rounded-xl bg-slate-50 p-4 border border-slate-200/80 space-y-2">
+              <div className="rounded-2xl bg-slate-50 dark:bg-slate-800/60 p-4 border border-slate-200/80 dark:border-slate-700/60 space-y-2.5">
                 <div className="flex justify-between">
-                  <span className="text-slate-500">Élève :</span>
-                  <span className="font-bold text-slate-900">
+                  <span className="text-slate-500 dark:text-slate-400">Élève :</span>
+                  <span className="font-bold text-slate-900 dark:text-white">
                     {printedReceipt.eleve_prenom} {printedReceipt.eleve_nom}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-500">Matricule & Classe :</span>
-                  <span className="font-mono font-bold text-slate-800">
-                    {printedReceipt.matricule} • {printedReceipt.classe}
+                  <span className="text-slate-500 dark:text-slate-400">Matricule & Classe :</span>
+                  <span className="font-mono font-bold text-slate-800 dark:text-slate-200">
+                    #{printedReceipt.matricule} • {printedReceipt.classe}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-500">Motif :</span>
-                  <span className="font-semibold text-slate-900">
+                  <span className="text-slate-500 dark:text-slate-400">Motif :</span>
+                  <span className="font-semibold text-slate-900 dark:text-white">
                     {printedReceipt.echeance_libelle}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-500">Mode de règlement :</span>
-                  <span className="font-bold uppercase text-amber-800">
+                  <span className="text-slate-500 dark:text-slate-400">Mode de règlement :</span>
+                  <span className="font-bold uppercase text-amber-700 dark:text-amber-400">
                     {printedReceipt.methode}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-500">Date & Heure :</span>
-                  <span className="font-mono text-slate-700">
+                  <span className="text-slate-500 dark:text-slate-400">Date & Heure :</span>
+                  <span className="font-mono text-slate-700 dark:text-slate-300">
                     {printedReceipt.date} à {printedReceipt.heure}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-500">Caissier :</span>
-                  <span className="font-semibold text-slate-800">
+                  <span className="text-slate-500 dark:text-slate-400">Caissier :</span>
+                  <span className="font-semibold text-slate-800 dark:text-slate-200">
                     {printedReceipt.encaisse_par}
                   </span>
                 </div>
               </div>
 
               {/* Montant Mis en Avant */}
-              <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-center">
-                <span className="text-xs font-bold text-emerald-800 uppercase tracking-wider block">
+              <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 text-center">
+                <span className="text-xs font-bold text-emerald-800 dark:text-emerald-300 uppercase tracking-wider block">
                   Montant Encaissé
                 </span>
-                <span className="text-3xl font-extrabold font-mono text-emerald-700 mt-1 block">
+                <span className="text-3xl font-extrabold font-mono text-emerald-700 dark:text-emerald-400 mt-1 block">
                   {formatMRU(printedReceipt.montant)}
                 </span>
               </div>
             </div>
 
             {/* Actions Reçu */}
-            <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+            <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800">
               <Button
                 variant="outline"
                 size="sm"
@@ -544,7 +540,7 @@ export const CaissierGuichetPage: React.FC<CaissierGuichetPageProps> = ({
               <Button
                 variant="primary"
                 size="sm"
-                className="gap-2 bg-amber-600 hover:bg-amber-700"
+                className="gap-2 bg-amber-600 hover:bg-amber-700 text-white"
                 onClick={() => {
                   window.print();
                 }}

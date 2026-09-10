@@ -5,21 +5,18 @@ import {
   CURRENT_PARENT,
   MethodePaiement,
 } from '../../lib/mockData';
-import { useEcoleStore } from '../../store/useEcoleStore';
-import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { ToastNotification } from '../../components/ui/ToastNotification';
+import { KpiCard } from '../../components/ui/KpiCard';
 import { formatMRU } from '../../lib/utils';
-import { formatCompactMRU } from '../../lib/formatCompactMRU';
 import {
   CheckCircle2,
   Smartphone,
   Download,
   Receipt,
-  ShieldCheck,
-  Building,
   X,
   Printer,
+  CreditCard,
 } from 'lucide-react';
 
 interface ParentPaiementsPageProps {
@@ -29,12 +26,10 @@ interface ParentPaiementsPageProps {
 export const ParentPaiementsPage: React.FC<ParentPaiementsPageProps> = ({
   selectedChildId,
 }) => {
-  const ecole = useEcoleStore((s) => s.ecole);
   const [enfantData, setEnfantData] = useState(
     MOCK_PARENT_ENFANTS_DETAILS[selectedChildId] || MOCK_PARENT_ENFANTS_DETAILS['el-003']
   );
 
-  // Mise à jour si l'enfant sélectionné change dans la sidebar
   React.useEffect(() => {
     if (MOCK_PARENT_ENFANTS_DETAILS[selectedChildId]) {
       setEnfantData(MOCK_PARENT_ENFANTS_DETAILS[selectedChildId]);
@@ -64,14 +59,13 @@ export const ParentPaiementsPage: React.FC<ParentPaiementsPageProps> = ({
     type: 'success' | 'info' | 'warning';
   } | null>(null);
 
-  // Déclenchement de confettis discrets
   const triggerConfetti = () => {
     try {
       confetti({
         particleCount: 40,
         spread: 60,
         origin: { y: 0.7 },
-        colors: ['#4f46e5', '#10b981', '#f59e0b'],
+        colors: ['#9333ea', '#10b981', '#f59e0b'],
         disableForReducedMotion: true,
       });
     } catch {
@@ -79,7 +73,6 @@ export const ParentPaiementsPage: React.FC<ParentPaiementsPageProps> = ({
     }
   };
 
-  // Soumission du paiement
   const handleConfirmPayment = (e: React.FormEvent) => {
     e.preventDefault();
     setIsProcessing(true);
@@ -89,7 +82,6 @@ export const ParentPaiementsPage: React.FC<ParentPaiementsPageProps> = ({
       const now = new Date();
       const ref = `REC-WEB-${Math.floor(1000 + Math.random() * 9000)}`;
 
-      // Mise à jour de l'état local
       const newPaid = enfantData.total_regle + paymentAmount;
       const newRemaining = Math.max(0, enfantData.reste_a_payer - paymentAmount);
 
@@ -117,11 +109,11 @@ export const ParentPaiementsPage: React.FC<ParentPaiementsPageProps> = ({
         message: `Paiement de ${formatMRU(paymentAmount)} validé avec succès via ${selectedMethod.toUpperCase()}. Quittance ${ref} émise.`,
         type: 'success',
       });
-    }, 1200);
+    }, 1000);
   };
 
   return (
-    <div className="p-6 sm:p-8 lg:p-10 max-w-5xl mx-auto space-y-8 sm:space-y-10 animate-fade-in">
+    <div className="p-6 sm:p-8 lg:p-10 max-w-5xl mx-auto space-y-8 sm:space-y-10 animate-stagger-rise relative">
       {/* Toast Notification */}
       {activeToast && (
         <div className="fixed bottom-6 right-6 z-50">
@@ -134,18 +126,19 @@ export const ParentPaiementsPage: React.FC<ParentPaiementsPageProps> = ({
       )}
 
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 bg-white p-6 sm:p-8 rounded-2xl border border-slate-200 shadow-2xs">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 bg-white dark:bg-slate-900 p-6 sm:p-8 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xs">
         <div>
           <div className="flex items-center gap-2.5 mb-1.5">
-            <span className="px-3 py-1 rounded-full text-xs font-bold bg-indigo-100 text-indigo-800 border border-indigo-200">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-purple-100 dark:bg-purple-950/60 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-800/60">
+              <span className="w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse"></span>
               Espace Scolarité
             </span>
-            <span className="text-xs text-slate-500">• Frais & Règlements Sécurisés</span>
+            <span className="text-xs text-slate-500 dark:text-slate-400">• Frais & Règlements Sécurisés</span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
             Frais de Scolarité — {enfantData.prenom} {enfantData.nom}
           </h1>
-          <p className="text-sm text-slate-500 mt-1">
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
             Consultez le solde de la scolarité et réglez directement par Bankily, Masrvi ou Sedad avec quittance instantanée.
           </p>
         </div>
@@ -156,7 +149,7 @@ export const ParentPaiementsPage: React.FC<ParentPaiementsPageProps> = ({
               setPaymentAmount(Math.min(enfantData.reste_a_payer, 25000));
               setIsPaymentModalOpen(true);
             }}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold shadow-md flex items-center gap-2 px-4 py-2.5 rounded-xl shrink-0"
+            className="bg-purple-600 hover:bg-purple-700 text-white font-bold shadow-xs flex items-center gap-2 px-4 py-2.5 rounded-xl shrink-0"
           >
             <Smartphone className="h-4 w-4" />
             Payer par Mobile Money
@@ -164,97 +157,70 @@ export const ParentPaiementsPage: React.FC<ParentPaiementsPageProps> = ({
         )}
       </div>
 
-      {/* 3 Cartes de Synthèse Financière */}
+      {/* 3 Cartes de Synthèse Financière (Pastel Nexoov Style) */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="p-6 rounded-2xl border-slate-200 shadow-sm bg-white min-w-0">
-          <div className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1 truncate">
-            Montant Annuel Total
-          </div>
-          <div
-            title={formatMRU(enfantData.total_scolarite)}
-            className="text-3xl sm:text-4xl font-black text-slate-900 font-mono mt-1 truncate cursor-help"
-          >
-            {formatCompactMRU(enfantData.total_scolarite)}
-          </div>
-          <div className="text-xs text-slate-500 mt-2 truncate">
-            Classe : {enfantData.classe}
-          </div>
-        </Card>
+        <KpiCard
+          title="Montant Annuel Total"
+          amount={enfantData.total_scolarite}
+          subtitle={`Classe : ${enfantData.classe}`}
+          icon={<CreditCard className="w-5 h-5 text-purple-600 dark:text-purple-400" />}
+          variant="purple"
+        />
 
-        <Card className="p-6 rounded-2xl border-slate-200 shadow-sm bg-white min-w-0">
-          <div className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1 truncate">
-            Total Déjà Réglé
-          </div>
-          <div
-            title={formatMRU(enfantData.total_regle)}
-            className="text-3xl sm:text-4xl font-black text-emerald-600 font-mono mt-1 truncate cursor-help"
-          >
-            {formatCompactMRU(enfantData.total_regle)}
-          </div>
-          <div className="text-xs text-slate-500 mt-2 truncate">
-            {Math.round((enfantData.total_regle / enfantData.total_scolarite) * 100)}% de la scolarité acquittée
-          </div>
-        </Card>
+        <KpiCard
+          title="Total Déjà Réglé"
+          amount={enfantData.total_regle}
+          subtitle={`${Math.round((enfantData.total_regle / enfantData.total_scolarite) * 100)}% de la scolarité acquittée`}
+          icon={<CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />}
+          variant="success"
+        />
 
-        <Card className="p-6 rounded-2xl border-slate-200 shadow-sm bg-white min-w-0">
-          <div className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1 truncate">
-            Reste à Régler
-          </div>
-          <div
-            title={formatMRU(enfantData.reste_a_payer)}
-            className={`text-3xl sm:text-4xl font-black font-mono mt-1 truncate cursor-help ${
-              enfantData.reste_a_payer > 0 ? 'text-rose-600' : 'text-emerald-600'
-            }`}
-          >
-            {formatCompactMRU(enfantData.reste_a_payer)}
-          </div>
-          <div className="text-xs text-slate-500 mt-2 truncate">
-            {enfantData.reste_a_payer > 0 ? (
-              <span className="text-rose-600 font-semibold truncate block">
-                Échéance limite : {enfantData.prochaine_echeance_date}
-              </span>
-            ) : (
-              <span className="text-emerald-700 font-semibold truncate block">
-                Aucun impayé • Bravo !
-              </span>
-            )}
-          </div>
-        </Card>
+        <KpiCard
+          title="Reste à Régler"
+          amount={enfantData.reste_a_payer}
+          subtitle={
+            enfantData.reste_a_payer > 0
+              ? `Échéance limite : ${enfantData.prochaine_echeance_date}`
+              : 'Aucun impayé • Bravo !'
+          }
+          icon={<Receipt className="w-5 h-5 text-rose-600 dark:text-rose-400" />}
+          variant={enfantData.reste_a_payer > 0 ? 'danger' : 'success'}
+        />
       </div>
 
       {/* Historique des Règlements & Quittances */}
-      <Card className="p-6 sm:p-7 rounded-2xl border-slate-200 shadow-sm space-y-6">
-        <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+      <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xs p-6 sm:p-7 space-y-6">
+        <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
           <div className="flex items-center gap-2.5">
-            <Receipt className="h-5 w-5 text-indigo-600" />
-            <h3 className="text-lg font-bold text-slate-900">
+            <Receipt className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white">
               Historique des Paiements Effectués
             </h3>
           </div>
-          <span className="text-xs text-slate-500 font-medium">
+          <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
             Quittances certifiées par l'établissement
           </span>
         </div>
 
         <div className="space-y-3">
           {/* Lignes d'historique */}
-          <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+          <div className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3.5">
+              <div className="h-10 w-10 rounded-xl bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 flex items-center justify-center shrink-0 border border-emerald-200 dark:border-emerald-800">
                 <CheckCircle2 className="h-5 w-5" />
               </div>
               <div>
-                <div className="font-bold text-slate-900 text-sm">
+                <div className="font-bold text-slate-900 dark:text-white text-sm">
                   Règlement Trimestre 1 (Inscription & Frais de rentrée)
                 </div>
-                <div className="text-xs text-slate-500">
-                  Payé le 15 Octobre 2025 • Via Bankily • Réf: REC-NKTT-7102
+                <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  Payé le 15 Octobre 2025 • Via Bankily • Réf: <span className="font-mono text-purple-700 dark:text-purple-400 font-semibold">REC-NKTT-7102</span>
                 </div>
               </div>
             </div>
 
             <div className="flex items-center gap-4">
-              <span className="font-black text-slate-900 text-base">
+              <span className="font-black text-slate-900 dark:text-white text-base font-mono">
                 {formatMRU(40000)}
               </span>
               <Button
@@ -275,23 +241,23 @@ export const ParentPaiementsPage: React.FC<ParentPaiementsPageProps> = ({
           </div>
 
           {confirmedReceipt && (
-            <div className="p-4 rounded-xl border border-emerald-300 bg-emerald-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-fade-in">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg bg-emerald-200 text-emerald-800 flex items-center justify-center shrink-0">
+            <div className="p-4 rounded-2xl border border-emerald-300 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-950/30 flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-in fade-in">
+              <div className="flex items-center gap-3.5">
+                <div className="h-10 w-10 rounded-xl bg-emerald-200 dark:bg-emerald-900 text-emerald-900 dark:text-emerald-100 flex items-center justify-center shrink-0">
                   <CheckCircle2 className="h-5 w-5" />
                 </div>
                 <div>
-                  <div className="font-bold text-emerald-950 text-sm">
+                  <div className="font-bold text-emerald-950 dark:text-emerald-200 text-sm">
                     Paiement Récent Validé en Ligne
                   </div>
-                  <div className="text-xs text-emerald-800">
+                  <div className="text-xs text-emerald-800 dark:text-emerald-300 mt-0.5">
                     Payé le {confirmedReceipt.date} à {confirmedReceipt.heure} • Via {confirmedReceipt.methode.toUpperCase()} • Réf: {confirmedReceipt.recu_ref}
                   </div>
                 </div>
               </div>
 
               <div className="flex items-center gap-4">
-                <span className="font-black text-emerald-900 text-base">
+                <span className="font-black text-emerald-900 dark:text-emerald-200 text-base font-mono">
                   {formatMRU(confirmedReceipt.montant)}
                 </span>
                 <Button
@@ -306,36 +272,36 @@ export const ParentPaiementsPage: React.FC<ParentPaiementsPageProps> = ({
             </div>
           )}
         </div>
-      </Card>
+      </div>
 
       {/* Modal de Paiement Direct Mobile Money */}
       {isPaymentModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-200">
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-200 dark:border-slate-800 animate-scale-in">
             {/* Modal Header */}
-            <div className="bg-gradient-to-r from-indigo-900 to-indigo-800 text-white p-5 flex items-center justify-between">
+            <div className="bg-purple-900 text-white p-5 flex items-center justify-between">
               <div>
                 <h3 className="font-bold text-base flex items-center gap-2">
-                  <Smartphone className="h-5 w-5 text-indigo-300" />
+                  <Smartphone className="h-5 w-5 text-purple-300" />
                   Règlement Sécurisé Mobile Money
                 </h3>
-                <p className="text-xs text-indigo-200 mt-0.5">
+                <p className="text-xs text-purple-200 mt-0.5">
                   Pour {enfantData.prenom} ({enfantData.classe})
                 </p>
               </div>
               <button
                 onClick={() => setIsPaymentModalOpen(false)}
-                className="text-indigo-300 hover:text-white transition-colors"
+                className="text-purple-300 hover:text-white transition-colors"
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
 
             {/* Modal Body */}
-            <form onSubmit={handleConfirmPayment} className="p-6 space-y-4">
+            <form onSubmit={handleConfirmPayment} className="p-6 space-y-4 text-xs">
               {/* Choix du mode de paiement */}
               <div>
-                <label className="text-xs font-bold text-slate-700 uppercase tracking-wider block mb-2">
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider block mb-2">
                   1. Choisissez votre portefeuille mobile
                 </label>
                 <div className="grid grid-cols-3 gap-2">
@@ -350,8 +316,8 @@ export const ParentPaiementsPage: React.FC<ParentPaiementsPageProps> = ({
                       onClick={() => setSelectedMethod(item.id as MethodePaiement)}
                       className={`p-3 rounded-xl border text-center font-bold text-xs flex flex-col items-center gap-1 transition-all ${
                         selectedMethod === item.id
-                          ? 'border-indigo-600 bg-indigo-50 text-indigo-950 shadow-xs'
-                          : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                          ? 'border-purple-600 bg-purple-50 dark:bg-purple-950/60 text-purple-950 dark:text-purple-200 shadow-xs ring-1 ring-purple-500/20'
+                          : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
                       }`}
                     >
                       <span className="text-lg">{item.logo}</span>
@@ -363,7 +329,7 @@ export const ParentPaiementsPage: React.FC<ParentPaiementsPageProps> = ({
 
               {/* Montant */}
               <div>
-                <label className="text-xs font-bold text-slate-700 uppercase tracking-wider block mb-1">
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider block mb-1">
                   2. Montant à payer (MRU)
                 </label>
                 <div className="relative">
@@ -374,9 +340,9 @@ export const ParentPaiementsPage: React.FC<ParentPaiementsPageProps> = ({
                     value={paymentAmount}
                     onChange={(e) => setPaymentAmount(Number(e.target.value))}
                     required
-                    className="w-full px-3 py-2.5 rounded-lg border border-slate-300 font-extrabold text-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                    className="w-full px-3 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-extrabold text-lg text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500"
                   />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400 dark:text-slate-500">
                     MRU
                   </span>
                 </div>
@@ -384,15 +350,15 @@ export const ParentPaiementsPage: React.FC<ParentPaiementsPageProps> = ({
                   <button
                     type="button"
                     onClick={() => setPaymentAmount(Math.min(enfantData.reste_a_payer, 25000))}
-                    className="text-[11px] font-semibold text-indigo-600 hover:underline"
+                    className="text-[11px] font-semibold text-purple-600 dark:text-purple-400 hover:underline"
                   >
                     Tranche courante (25 000 MRU)
                   </button>
-                  <span>•</span>
+                  <span className="text-slate-400">•</span>
                   <button
                     type="button"
                     onClick={() => setPaymentAmount(enfantData.reste_a_payer)}
-                    className="text-[11px] font-semibold text-indigo-600 hover:underline"
+                    className="text-[11px] font-semibold text-purple-600 dark:text-purple-400 hover:underline"
                   >
                     Totalité ({formatMRU(enfantData.reste_a_payer)})
                   </button>
@@ -401,143 +367,48 @@ export const ParentPaiementsPage: React.FC<ParentPaiementsPageProps> = ({
 
               {/* Numéro de téléphone */}
               <div>
-                <label className="text-xs font-bold text-slate-700 uppercase tracking-wider block mb-1">
-                  3. N° de téléphone associé au compte
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider block mb-1">
+                  3. Numéro de compte mobile
                 </label>
                 <input
                   type="text"
                   value={phoneNumber}
                   onChange={(e) => setPhoneNumber(e.target.value)}
-                  placeholder="+222 XX XX XX XX"
                   required
-                  className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                  placeholder="+222 46 12 34 56"
+                  className="w-full h-10 px-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-mono text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500/20"
                 />
               </div>
 
-              {/* Simulation OTP */}
+              {/* Code secret ou validation OTP */}
               <div>
-                <label className="text-xs font-bold text-slate-700 uppercase tracking-wider block mb-1">
-                  4. Code PIN de validation (Démo: 1234)
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider block mb-1">
+                  4. Code de confirmation / PIN
                 </label>
                 <input
                   type="password"
-                  maxLength={4}
                   value={otpCode}
                   onChange={(e) => setOtpCode(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm font-mono tracking-widest text-center focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                  required
+                  placeholder="••••"
+                  maxLength={4}
+                  className="w-full h-10 px-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-mono text-center tracking-widest text-lg text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500/20"
                 />
               </div>
 
-              {/* Sécurité */}
-              <div className="rounded-lg bg-indigo-50 p-2.5 border border-indigo-100 flex items-start gap-2 text-xs text-indigo-900">
-                <ShieldCheck className="h-4 w-4 text-indigo-600 shrink-0 mt-0.5" />
-                <span>
-                  Validation instantanée sans frais supplémentaires. La quittance est envoyée par SMS et enregistrée sur votre compte.
-                </span>
-              </div>
-
-              {/* Actions */}
-              <div className="pt-2 flex justify-end gap-2 border-t border-slate-100">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setIsPaymentModalOpen(false)}
-                >
-                  Annuler
-                </Button>
+              <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
                 <Button
                   type="submit"
-                  disabled={isProcessing}
-                  size="sm"
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4"
+                  variant="primary"
+                  size="lg"
+                  loading={isProcessing}
+                  loadingText="Validation auprès de la banque..."
+                  className="w-full justify-center bg-purple-600 hover:bg-purple-700 text-white font-bold"
                 >
-                  {isProcessing ? 'Validation en cours...' : `Confirmer ${formatMRU(paymentAmount)}`}
+                  Confirmer le paiement de {formatMRU(paymentAmount)}
                 </Button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
-
-      {/* Modal Reçu de Paiement Récent */}
-      {confirmedReceipt && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-200">
-            <div className="bg-emerald-800 text-white p-4 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="h-5 w-5 text-emerald-300" />
-                <span className="font-bold text-sm">Paiement Confirmé avec Succès</span>
-              </div>
-              <button
-                onClick={() => setConfirmedReceipt(null)}
-                className="text-emerald-200 hover:text-white"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-
-            <div className="p-6 space-y-4 text-xs font-sans">
-              <div className="text-center border-b border-slate-200 pb-3">
-                <div className="flex items-center justify-center gap-1 text-slate-900 font-extrabold text-base">
-                  <Building className="h-4 w-4 text-indigo-600" />
-                  {ecole.nom}
-                </div>
-                <div className="text-slate-500 text-[11px] mt-0.5">
-                  Reçu Officiel de Paiement Numérique
-                </div>
-                <div className="mt-2 inline-block px-3 py-1 bg-emerald-50 text-emerald-800 font-mono font-bold text-xs rounded border border-emerald-200">
-                  {confirmedReceipt.recu_ref}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2 text-slate-600">
-                <div>
-                  <span className="text-slate-400 block text-[10px]">ÉLÈVE</span>
-                  <span className="font-bold text-slate-800">{confirmedReceipt.enfant_nom}</span>
-                </div>
-                <div>
-                  <span className="text-slate-400 block text-[10px]">TUTEUR</span>
-                  <span className="font-semibold text-slate-800">{CURRENT_PARENT.prenom} {CURRENT_PARENT.nom}</span>
-                </div>
-                <div>
-                  <span className="text-slate-400 block text-[10px]">CANAL</span>
-                  <span className="font-semibold text-slate-800 uppercase">{confirmedReceipt.methode}</span>
-                </div>
-                <div>
-                  <span className="text-slate-400 block text-[10px]">DATE & HEURE</span>
-                  <span className="font-semibold text-slate-800">{confirmedReceipt.date} • {confirmedReceipt.heure}</span>
-                </div>
-              </div>
-
-              <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 flex justify-between items-center">
-                <span className="font-bold text-slate-900 text-sm">MONTANT RÉGLÉ :</span>
-                <span className="font-extrabold text-base text-emerald-600 font-mono">
-                  {formatMRU(confirmedReceipt.montant)}
-                </span>
-              </div>
-            </div>
-
-            <div className="p-4 bg-slate-50 border-t border-slate-200 flex justify-end gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setConfirmedReceipt(null)}
-              >
-                Fermer
-              </Button>
-              <Button
-                size="sm"
-                onClick={() => {
-                  window.print();
-                  setConfirmedReceipt(null);
-                }}
-                className="bg-slate-900 text-white hover:bg-slate-800 flex items-center gap-1.5"
-              >
-                <Printer className="h-4 w-4" />
-                Imprimer
-              </Button>
-            </div>
           </div>
         </div>
       )}

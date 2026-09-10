@@ -10,7 +10,7 @@ interface KpiCardProps {
   customValue?: ReactNode;
   subtitle?: string;
   icon?: ReactNode;
-  variant?: 'default' | 'primary' | 'success' | 'danger' | 'warning';
+  variant?: 'default' | 'primary' | 'success' | 'danger' | 'warning' | 'purple';
   progress?: number;
   className?: string;
   onClick?: () => void;
@@ -43,6 +43,7 @@ export const KpiCard: React.FC<KpiCardProps> = ({
     success: 'bg-emerald-50/75 dark:bg-emerald-950/35 border-emerald-200/70 dark:border-emerald-900/50',
     danger: 'bg-rose-50/75 dark:bg-rose-950/35 border-rose-200/70 dark:border-rose-900/50',
     warning: 'bg-amber-50/75 dark:bg-amber-950/35 border-amber-200/70 dark:border-amber-900/50',
+    purple: 'bg-purple-50/75 dark:bg-purple-950/35 border-purple-200/70 dark:border-purple-900/50',
   };
 
   const iconTextColors = {
@@ -51,6 +52,7 @@ export const KpiCard: React.FC<KpiCardProps> = ({
     success: 'text-emerald-600 dark:text-emerald-400',
     danger: 'text-rose-600 dark:text-rose-400',
     warning: 'text-amber-600 dark:text-amber-400',
+    purple: 'text-purple-600 dark:text-purple-400',
   };
 
   const borderHoverGlow = {
@@ -59,6 +61,7 @@ export const KpiCard: React.FC<KpiCardProps> = ({
     success: 'hover:border-emerald-400 dark:hover:border-emerald-700 hover:shadow-emerald-500/5',
     danger: 'hover:border-rose-400 dark:hover:border-rose-700 hover:shadow-rose-500/5',
     warning: 'hover:border-amber-400 dark:hover:border-amber-700 hover:shadow-amber-500/5',
+    purple: 'hover:border-purple-400 dark:hover:border-purple-700 hover:shadow-purple-500/5',
   };
 
   const fullAmountText = amount !== undefined ? formatMRU(amount) : undefined;

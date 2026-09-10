@@ -3,15 +3,14 @@ import {
   MOCK_PARENT_ENFANTS_DETAILS,
   ParentMatiereNote,
 } from '../../lib/mockData';
-import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { ToastNotification } from '../../components/ui/ToastNotification';
+import { KpiCard } from '../../components/ui/KpiCard';
 import {
   GraduationCap,
   Download,
   Sparkles,
   Award,
-  TrendingUp,
   FileText,
   Printer,
 } from 'lucide-react';
@@ -42,7 +41,7 @@ export const ParentPedagogiePage: React.FC<ParentPedagogiePageProps> = ({
   const moyenneCalculee = totalCoefs > 0 ? totalPoints / totalCoefs : 0;
 
   return (
-    <div className="p-6 sm:p-8 lg:p-10 max-w-5xl mx-auto space-y-8 sm:space-y-10 animate-fade-in">
+    <div className="p-6 sm:p-8 lg:p-10 max-w-5xl mx-auto space-y-8 sm:space-y-10 animate-stagger-rise relative">
       {/* Toast Notification */}
       {activeToast && (
         <div className="fixed bottom-6 right-6 z-50">
@@ -55,31 +54,32 @@ export const ParentPedagogiePage: React.FC<ParentPedagogiePageProps> = ({
       )}
 
       {/* Header Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 bg-white p-6 sm:p-8 rounded-2xl border border-slate-200 shadow-2xs">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 bg-white dark:bg-slate-900 p-6 sm:p-8 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xs">
         <div>
           <div className="flex items-center gap-2.5 mb-1.5">
-            <span className="px-3 py-1 rounded-full text-xs font-bold bg-indigo-100 text-indigo-800 border border-indigo-200">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-purple-100 dark:bg-purple-950/60 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-800/60">
+              <span className="w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse"></span>
               Résultats Scolaires
             </span>
-            <span className="text-xs text-slate-500">• Notes & Évaluations Périodiques</span>
+            <span className="text-xs text-slate-500 dark:text-slate-400">• Notes & Évaluations Périodiques</span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
             Bulletin de Notes — {enfant.prenom} {enfant.nom}
           </h1>
-          <p className="text-sm text-slate-500 mt-1">
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
             Classe de {enfant.classe} • Année scolaire 2025-2026
           </p>
         </div>
 
         <div className="flex items-center gap-3 shrink-0">
           {/* Sélecteur de trimestre */}
-          <div className="flex bg-slate-100 p-1.5 rounded-xl border border-slate-200 text-xs font-bold">
+          <div className="flex bg-slate-100 dark:bg-slate-800 p-1.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold">
             <button
               onClick={() => setSelectedTrimestre('T1')}
               className={`px-3 py-1.5 rounded-lg transition-all ${
                 selectedTrimestre === 'T1'
-                  ? 'bg-white text-indigo-700 shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
+                  ? 'bg-white dark:bg-slate-900 text-purple-700 dark:text-purple-300 shadow-xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
               }`}
             >
               Trimestre 1
@@ -88,8 +88,8 @@ export const ParentPedagogiePage: React.FC<ParentPedagogiePageProps> = ({
               onClick={() => setSelectedTrimestre('T2')}
               className={`px-3 py-1.5 rounded-lg transition-all ${
                 selectedTrimestre === 'T2'
-                  ? 'bg-indigo-600 text-white shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
+                  ? 'bg-purple-600 text-white shadow-xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
               }`}
             >
               Trimestre 2 (En cours)
@@ -98,8 +98,8 @@ export const ParentPedagogiePage: React.FC<ParentPedagogiePageProps> = ({
               onClick={() => setSelectedTrimestre('T3')}
               className={`px-3 py-1.5 rounded-lg transition-all ${
                 selectedTrimestre === 'T3'
-                  ? 'bg-white text-indigo-700 shadow-xs'
-                  : 'text-slate-400 cursor-not-allowed'
+                  ? 'bg-white dark:bg-slate-900 text-purple-700 dark:text-purple-300 shadow-xs'
+                  : 'text-slate-400 dark:text-slate-600 cursor-not-allowed'
               }`}
             >
               Trimestre 3
@@ -114,7 +114,7 @@ export const ParentPedagogiePage: React.FC<ParentPedagogiePageProps> = ({
                 type: 'success',
               });
             }}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold gap-2 px-3.5 py-2.5 rounded-xl shadow-sm"
+            className="bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold gap-2 px-3.5 py-2.5 rounded-xl shadow-xs"
           >
             <Download className="h-4 w-4" />
             Bulletin PDF
@@ -122,58 +122,39 @@ export const ParentPedagogiePage: React.FC<ParentPedagogiePageProps> = ({
         </div>
       </div>
 
-      {/* 3 Cartes de Synthèse Académique */}
+      {/* 3 Pastel KPI Cards (Purple & Complementary accents) */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="p-6 rounded-2xl border-slate-200 shadow-sm bg-gradient-to-br from-indigo-900 to-indigo-950 text-white border-none">
-          <div className="flex items-center justify-between text-indigo-300 text-xs font-bold uppercase tracking-wider mb-2">
-            <span>Moyenne Trimestrielle</span>
-            <Sparkles className="h-4 w-4 text-amber-400" />
-          </div>
-          <div className="flex items-baseline gap-2 mt-1">
-            <span className="text-3xl sm:text-4xl font-black text-white font-mono">
-              {moyenneCalculee.toFixed(2)}
-            </span>
-            <span className="text-sm font-bold text-indigo-300">/ 20</span>
-          </div>
-          <div className="mt-3 text-xs text-indigo-200 font-medium flex items-center gap-2">
-            <Award className="h-4 w-4 text-amber-300" />
-            <span>Mention : Félicitations du Conseil</span>
-          </div>
-        </Card>
+        <KpiCard
+          title="Moyenne Trimestrielle"
+          customValue={`${moyenneCalculee.toFixed(2)} / 20`}
+          subtitle="Mention : Félicitations du Conseil"
+          icon={<Sparkles className="w-5 h-5 text-purple-600 dark:text-purple-400" />}
+          variant="purple"
+        />
 
-        <Card className="p-6 rounded-2xl border-slate-200 shadow-sm bg-white">
-          <div className="flex items-center justify-between text-slate-500 text-xs font-bold uppercase tracking-wider mb-2">
-            <span>Rang & Classement</span>
-            <TrendingUp className="h-5 w-5 text-indigo-600" />
-          </div>
-          <div className="text-3xl sm:text-4xl font-black text-slate-900 font-mono mt-1">
-            {enfant.rang}
-          </div>
-          <p className="text-xs text-slate-500 mt-2">
-            Parmi tous les élèves inscrits en {enfant.classe}
-          </p>
-        </Card>
+        <KpiCard
+          title="Rang & Classement"
+          customValue={`${enfant.rang}e rang`}
+          subtitle={`Parmi les élèves de ${enfant.classe}`}
+          icon={<Award className="w-5 h-5 text-blue-600 dark:text-blue-400" />}
+          variant="primary"
+        />
 
-        <Card className="p-6 rounded-2xl border-slate-200 shadow-sm bg-white">
-          <div className="flex items-center justify-between text-slate-500 text-xs font-bold uppercase tracking-wider mb-2">
-            <span>Moyenne de la Classe</span>
-            <GraduationCap className="h-5 w-5 text-indigo-600" />
-          </div>
-          <div className="text-3xl sm:text-4xl font-black text-slate-700 font-mono mt-1">
-            12.4 <span className="text-sm font-normal text-slate-400">/ 20</span>
-          </div>
-          <p className="text-xs text-emerald-700 font-semibold mt-2">
-            +{(moyenneCalculee - 12.4).toFixed(1)} pts au-dessus de la moyenne de classe
-          </p>
-        </Card>
+        <KpiCard
+          title="Moyenne de la Classe"
+          customValue="12.4 / 20"
+          subtitle={`+${(moyenneCalculee - 12.4).toFixed(1)} pts au-dessus de la classe`}
+          icon={<GraduationCap className="w-5 h-5 text-slate-600 dark:text-slate-300" />}
+          variant="default"
+        />
       </div>
 
       {/* Tableau détaillé des Matières et Notes */}
-      <Card className="p-6 sm:p-7 rounded-2xl border-slate-200 shadow-sm space-y-6">
-        <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+      <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xs p-6 sm:p-7 space-y-6">
+        <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
           <div className="flex items-center gap-2.5">
-            <FileText className="h-5 w-5 text-indigo-600" />
-            <h3 className="text-lg font-bold text-slate-900">
+            <FileText className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white">
               Détail des Matières & Appréciations des Professeurs
             </h3>
           </div>
@@ -181,18 +162,18 @@ export const ParentPedagogiePage: React.FC<ParentPedagogiePageProps> = ({
             variant="ghost"
             size="sm"
             onClick={() => window.print()}
-            className="text-xs font-semibold gap-1.5 text-slate-500 hover:text-slate-800"
+            className="text-xs font-semibold gap-1.5 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"
           >
             <Printer className="h-4 w-4" />
             Imprimer
           </Button>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse text-sm">
+        <div className="rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+          <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700 scrollbar-track-transparent">
+            <table className="w-full text-left border-collapse text-xs">
               <thead>
-                <tr className="border-b border-slate-200 bg-slate-50/70 text-slate-600 text-xs font-bold uppercase tracking-wider">
+                <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/40 text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">
                   <th className="py-4 px-6">Matière & Enseignant</th>
                   <th className="py-4 px-6 text-center">Coef.</th>
                   <th className="py-4 px-6 text-right">Note /20</th>
@@ -200,26 +181,27 @@ export const ParentPedagogiePage: React.FC<ParentPedagogiePageProps> = ({
                   <th className="py-4 px-6">Appréciation Pédagogique</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                 {enfant.bulletin.map((m: ParentMatiereNote, idx: number) => (
-                  <tr key={idx} className="hover:bg-slate-50/60 transition-colors">
-                    <td className="py-4.5 px-6">
-                      <div className="font-bold text-slate-900 text-sm">{m.matiere}</div>
-                      <div className="text-xs text-slate-400 mt-0.5">{m.professeur}</div>
+                  <tr key={idx} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors">
+                    {/* 2-line: Matière + Professeur */}
+                    <td className="py-4.5 px-6 min-w-[200px]">
+                      <div className="font-bold text-slate-900 dark:text-white text-sm">{m.matiere}</div>
+                      <div className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">{m.professeur}</div>
                     </td>
-                    <td className="py-4.5 px-6 text-center font-mono font-bold text-slate-700 text-xs">
+                    <td className="py-4.5 px-6 text-center font-mono font-bold text-slate-700 dark:text-slate-300 text-xs">
                       {m.coefficient}
                     </td>
                     <td className="py-4.5 px-6 text-right">
-                      <span className="font-black text-indigo-700 text-base font-mono">
+                      <span className="font-black text-purple-600 dark:text-purple-400 text-base font-mono">
                         {m.moyenne.toFixed(1)}
                       </span>
                     </td>
-                    <td className="py-4.5 px-6 text-right font-mono text-xs text-slate-500">
+                    <td className="py-4.5 px-6 text-right font-mono text-xs text-slate-500 dark:text-slate-400">
                       {m.moyenne_classe.toFixed(1)}
                     </td>
                     <td className="py-4.5 px-6">
-                      <span className="text-xs text-slate-600 italic">
+                      <span className="text-xs text-slate-600 dark:text-slate-300 italic">
                         « {m.appreciation} »
                       </span>
                     </td>
@@ -229,7 +211,7 @@ export const ParentPedagogiePage: React.FC<ParentPedagogiePageProps> = ({
             </table>
           </div>
         </div>
-      </Card>
+      </div>
     </div>
   );
 };

@@ -7,18 +7,23 @@ import {
   MOCK_EVALUATIONS_INITIAL,
   EvaluationRecord,
 } from '../../lib/mockData';
-import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { StudentInitials } from '../../components/ui/StudentInitials';
 import { ToastNotification } from '../../components/ui/ToastNotification';
 import { Select } from '../../components/ui/Select';
 import { DatePicker } from '../../components/ui/DatePicker';
+import { KpiCard } from '../../components/ui/KpiCard';
 import {
   PlusCircle,
   Save,
   CheckCircle2,
   AlertCircle,
   X,
+  GraduationCap,
+  TrendingUp,
+  Award,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 
 export const TeacherGradesPage: React.FC = () => {
@@ -27,6 +32,10 @@ export const TeacherGradesPage: React.FC = () => {
   const [selectedMatiere, setSelectedMatiere] = useState<string>('Mathématiques');
   const [selectedTrimestre, setSelectedTrimestre] = useState<string>('Trimestre 2');
   const [activeToast, setActiveToast] = useState<{ message: string; type: 'success' | 'info' | 'warning' } | null>(null);
+
+  // Pagination pour la table de saisie
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 8;
 
   // Modal Nouvelle Évaluation
   const [isNewEvalModalOpen, setIsNewEvalModalOpen] = useState(false);
@@ -51,7 +60,6 @@ export const TeacherGradesPage: React.FC = () => {
   // Évaluation active sélectionnée pour la saisie
   const [selectedEvalId, setSelectedEvalId] = useState<string>(classEvals[0]?.id || '');
 
-  // Si selectedEvalId n'est plus dans classEvals, réassigner le premier
   React.useEffect(() => {
     if (classEvals.length > 0 && !classEvals.some((ev) => ev.id === selectedEvalId)) {
       setSelectedEvalId(classEvals[0].id);
@@ -65,7 +73,6 @@ export const TeacherGradesPage: React.FC = () => {
   // Notes en cours d'édition pour currentEval
   const [notesState, setNotesState] = useState<Record<string, string>>({});
 
-  // Synchroniser notesState quand currentEval change
   React.useEffect(() => {
     if (currentEval) {
       const initialNotes: Record<string, string> = {};
@@ -78,12 +85,17 @@ export const TeacherGradesPage: React.FC = () => {
   }, [currentEval, teacherStudents]);
 
   const handleNoteChange = (eleveId: string, val: string) => {
-    // Validation basique: autoriser vide ou chiffre entre 0 et 20
     const num = parseFloat(val);
     if (val === '' || (!isNaN(num) && num >= 0 && num <= 20)) {
       setNotesState((prev) => ({ ...prev, [eleveId]: val }));
     }
   };
+
+  const totalPages = Math.ceil(teacherStudents.length / itemsPerPage) || 1;
+  const paginatedStudents = teacherStudents.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
 
   // Statistiques en temps réel de l'évaluation en cours
   const stats = useMemo(() => {
@@ -107,7 +119,6 @@ export const TeacherGradesPage: React.FC = () => {
     return { moyenne, min, max, tauxReussite, count: validNotes.length };
   }, [notesState]);
 
-  // Célébration discrète par confetti
   const triggerConfettiCelebration = () => {
     try {
       confetti({
@@ -124,7 +135,6 @@ export const TeacherGradesPage: React.FC = () => {
     }
   };
 
-  // Enregistrer les notes
   const handleSaveGrades = () => {
     if (!currentEval) return;
 
@@ -150,7 +160,6 @@ export const TeacherGradesPage: React.FC = () => {
     });
   };
 
-  // Créer une nouvelle évaluation
   const handleCreateEvaluation = () => {
     if (!newEvalTitle.trim()) {
       setActiveToast({ message: 'Veuillez saisir un titre pour le devoir.', type: 'warning' });
@@ -191,17 +200,18 @@ export const TeacherGradesPage: React.FC = () => {
       )}
 
       {/* Top Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-white p-6 sm:p-8 rounded-2xl border border-slate-200 shadow-2xs">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-white dark:bg-slate-900 p-6 sm:p-8 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xs">
         <div>
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
               Carnet de Notes & Évaluations
             </h1>
-            <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-800 border border-emerald-200">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 px-3 py-1 text-xs font-bold text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
               Barème /20
             </span>
           </div>
-          <p className="text-sm text-slate-500 font-medium mt-1.5">
+          <p className="text-sm text-slate-500 dark:text-slate-400 font-medium mt-1.5">
             Saisie fluide des devoirs, contrôles continus et calcul automatique des moyennes de classe.
           </p>
         </div>
@@ -210,17 +220,17 @@ export const TeacherGradesPage: React.FC = () => {
           <Button
             variant="outline"
             size="sm"
-            className="gap-2 border-emerald-300 text-emerald-700 hover:bg-emerald-50"
+            className="gap-2 border-emerald-300 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/40"
             onClick={() => setIsNewEvalModalOpen(true)}
           >
-            <PlusCircle className="h-4 w-4 text-emerald-600" />
+            <PlusCircle className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
             + Nouvelle Évaluation
           </Button>
 
           <Button
             variant="primary"
             size="sm"
-            className="gap-2 bg-emerald-600 hover:bg-emerald-700 shadow-xs"
+            className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs"
             onClick={handleSaveGrades}
           >
             <Save className="h-4 w-4" />
@@ -229,14 +239,53 @@ export const TeacherGradesPage: React.FC = () => {
         </div>
       </div>
 
+      {/* 4 Pastel Stat Cards (Nexoov Style) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        <KpiCard
+          title="Moyenne de la Classe"
+          customValue={`${stats.moyenne} ${stats.moyenne !== '--' ? '/ 20' : ''}`}
+          subtitle={`${stats.count} notes saisies`}
+          icon={<GraduationCap className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />}
+          variant="success"
+        />
+
+        <KpiCard
+          title="Note la Plus Haute"
+          customValue={`${stats.max} ${stats.max !== '--' ? '/ 20' : ''}`}
+          subtitle="Meilleure performance"
+          icon={<Award className="w-5 h-5 text-blue-600 dark:text-blue-400" />}
+          variant="primary"
+        />
+
+        <KpiCard
+          title="Note la Plus Basse"
+          customValue={`${stats.min} ${stats.min !== '--' ? '/ 20' : ''}`}
+          subtitle="Seuil d'alerte pédagogique"
+          icon={<AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400" />}
+          variant="warning"
+        />
+
+        <KpiCard
+          title="Taux de Réussite"
+          customValue={`${stats.tauxReussite}%`}
+          progress={stats.tauxReussite}
+          subtitle="Notes supérieures ou égales à 10"
+          icon={<TrendingUp className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />}
+          variant="success"
+        />
+      </div>
+
       {/* Filter & Subject Selection Bar */}
-      <Card className="p-6 rounded-2xl space-y-5">
+      <div className="p-5 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xs space-y-5">
         <div className="flex flex-wrap items-center justify-between gap-5">
           <div className="flex flex-wrap items-center gap-4">
             {/* Classe */}
             <Select
               value={selectedClasse}
-              onChange={setSelectedClasse}
+              onChange={(v) => {
+                setSelectedClasse(v);
+                setCurrentPage(1);
+              }}
               prefix="Classe :"
               options={CURRENT_ENSEIGNANT.classes_assignees.map((c) => ({
                 value: c,
@@ -276,16 +325,18 @@ export const TeacherGradesPage: React.FC = () => {
 
           {/* Évaluation Selector Tabs */}
           {classEvals.length > 0 && (
-            <div className="flex items-center gap-2 overflow-x-auto pb-1">
-              <span className="text-xs font-bold text-slate-400 mr-1">Évaluation :</span>
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 max-w-xl">
+              <span className="text-xs font-bold text-slate-400 dark:text-slate-500 mr-1 shrink-0">
+                Évaluation :
+              </span>
               {classEvals.map((ev) => (
                 <button
                   key={ev.id}
                   onClick={() => setSelectedEvalId(ev.id)}
-                  className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                  className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 ${
                     selectedEvalId === ev.id
                       ? 'bg-emerald-600 text-white shadow-xs'
-                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
                   }`}
                 >
                   {ev.titre}
@@ -294,104 +345,67 @@ export const TeacherGradesPage: React.FC = () => {
             </div>
           )}
         </div>
-      </Card>
-
-      {/* Statistical Summary Bar */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 text-center">
-        <div className="p-6 rounded-2xl border border-slate-200 bg-white shadow-2xs">
-          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
-            Moyenne de la Classe
-          </span>
-          <div className="text-2xl sm:text-3xl font-extrabold text-emerald-700 font-mono mt-2">
-            {stats.moyenne} {stats.moyenne !== '--' && '/ 20'}
-          </div>
-        </div>
-
-        <div className="p-6 rounded-2xl border border-slate-200 bg-white shadow-2xs">
-          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
-            Note la Plus Haute
-          </span>
-          <div className="text-2xl sm:text-3xl font-extrabold text-blue-700 font-mono mt-2">
-            {stats.max} {stats.max !== '--' && '/ 20'}
-          </div>
-        </div>
-
-        <div className="p-6 rounded-2xl border border-slate-200 bg-white shadow-2xs">
-          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
-            Note la Plus Basse
-          </span>
-          <div className="text-2xl sm:text-3xl font-extrabold text-amber-700 font-mono mt-2">
-            {stats.min} {stats.min !== '--' && '/ 20'}
-          </div>
-        </div>
-
-        <div className="p-6 rounded-2xl border border-slate-200 bg-white shadow-2xs">
-          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
-            Taux de Réussite (≥10)
-          </span>
-          <div className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-mono mt-2">
-            {stats.tauxReussite}%
-          </div>
-        </div>
       </div>
 
       {/* Grade Entry Table */}
-      <div className="rounded-2xl border border-slate-200 bg-white shadow-2xs overflow-hidden">
-        <div className="py-4 px-6 bg-slate-50 border-b border-slate-200 flex items-center justify-between text-xs">
-          <div className="font-bold text-slate-900 text-sm">
+      <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xs overflow-hidden">
+        <div className="py-4 px-6 bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+          <div className="font-bold text-slate-900 dark:text-white text-sm">
             {currentEval ? currentEval.titre : 'Aucune évaluation sélectionnée'} — Classe : {selectedClasse}
           </div>
-          <span className="text-slate-500 font-medium">
-            Saisissez les notes (utilisez la touche Tab pour passer d'un élève à l'autre)
+          <span className="text-slate-500 dark:text-slate-400 font-medium">
+            Saisissez les notes (touche Tab pour passer à l'élève suivant)
           </span>
         </div>
 
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700 scrollbar-track-transparent">
           <table className="w-full text-left text-xs border-collapse">
             <thead>
-              <tr className="border-b border-slate-200 bg-slate-50/60 font-bold uppercase tracking-wider text-slate-500">
+              <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/40 font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                 <th className="py-4 px-6 w-12 text-center">N°</th>
-                <th className="py-4 px-6">Élève & Matricule</th>
+                <th className="py-4 px-6">Élève</th>
                 <th className="py-4 px-6">Classe</th>
                 <th className="py-4 px-6 text-center w-40">Note (/20)</th>
                 <th className="py-4 px-6 text-center">Statut</th>
                 <th className="py-4 px-6">Appréciation Rapide</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
-              {teacherStudents.map((el, index) => {
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+              {paginatedStudents.map((el, index) => {
                 const noteStr = notesState[el.id] ?? '';
                 const noteVal = parseFloat(noteStr);
                 const isRated = !isNaN(noteVal);
                 const isPassing = isRated && noteVal >= 10;
+                const studentNumber = (currentPage - 1) * itemsPerPage + index + 1;
 
                 return (
-                  <tr key={el.id} className="hover:bg-slate-50/70 transition-colors">
-                    <td className="py-4.5 px-6 text-center text-slate-400 font-mono">
-                      {index + 1}
+                  <tr key={el.id} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition-colors">
+                    <td className="py-4.5 px-6 text-center text-slate-400 dark:text-slate-500 font-mono">
+                      {studentNumber}
                     </td>
 
-                    <td className="py-4.5 px-6">
+                    {/* 2-line student display */}
+                    <td className="py-4.5 px-6 min-w-[220px]">
                       <div className="flex items-center gap-3">
                         <StudentInitials nom={el.nom} prenom={el.prenom} size="sm" />
-                        <div>
-                          <div className="font-bold text-slate-900 text-sm leading-tight">
+                        <div className="min-w-0">
+                          <div className="font-bold text-slate-900 dark:text-white text-sm leading-tight truncate">
                             {el.prenom} {el.nom}
                           </div>
-                          <div className="text-[11px] text-slate-500 font-mono mt-0.5">
-                            {el.matricule}
+                          <div className="text-[11px] text-slate-400 dark:text-slate-500 font-mono mt-0.5 truncate">
+                            #{el.matricule}
                           </div>
                         </div>
                       </div>
                     </td>
 
-                    <td className="py-4.5 px-6">
-                      <span className="rounded-md bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
+                    <td className="py-4.5 px-6 whitespace-nowrap">
+                      <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-2.5 py-1 text-xs font-semibold text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
                         {el.classe}
                       </span>
                     </td>
 
-                    <td className="py-4.5 px-6 text-center">
+                    <td className="py-4.5 px-6 text-center whitespace-nowrap">
                       <div className="inline-flex items-center gap-1.5">
                         <input
                           type="number"
@@ -403,33 +417,33 @@ export const TeacherGradesPage: React.FC = () => {
                           onChange={(e) => handleNoteChange(el.id, e.target.value)}
                           className={`w-24 h-10 text-center font-mono font-extrabold text-sm rounded-xl border transition-all focus:outline-none focus:ring-2 ${
                             !isRated
-                              ? 'border-slate-300 bg-white text-slate-800 focus:ring-emerald-600'
+                              ? 'border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-white focus:ring-emerald-600'
                               : isPassing
-                              ? 'border-emerald-400 bg-emerald-50/40 text-emerald-800 focus:ring-emerald-600'
-                              : 'border-red-400 bg-red-50/40 text-red-700 focus:ring-red-600'
+                              ? 'border-emerald-400 dark:border-emerald-700 bg-emerald-50/50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 focus:ring-emerald-600'
+                              : 'border-rose-400 dark:border-rose-700 bg-rose-50/50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 focus:ring-rose-600'
                           }`}
                         />
-                        <span className="text-slate-400 font-bold">/ 20</span>
+                        <span className="text-slate-400 dark:text-slate-500 font-bold">/ 20</span>
                       </div>
                     </td>
 
-                    <td className="py-4.5 px-6 text-center">
+                    <td className="py-4.5 px-6 text-center whitespace-nowrap">
                       {!isRated ? (
-                        <span className="text-slate-400 font-medium italic text-[11px]">
+                        <span className="text-slate-400 dark:text-slate-500 font-medium italic text-[11px]">
                           Non noté
                         </span>
                       ) : isPassing ? (
-                        <span className="rounded-full bg-emerald-100 text-emerald-800 px-3 py-1 text-[11px] font-bold inline-flex items-center gap-1.5">
-                          <CheckCircle2 className="h-3.5 w-3.5" /> Validé
+                        <span className="rounded-full bg-emerald-50 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 px-3 py-1 text-[11px] font-bold inline-flex items-center gap-1.5">
+                          <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" /> Validé
                         </span>
                       ) : (
-                        <span className="rounded-full bg-red-100 text-red-800 px-3 py-1 text-[11px] font-bold inline-flex items-center gap-1.5">
-                          <AlertCircle className="h-3.5 w-3.5" /> À consolider
+                        <span className="rounded-full bg-rose-50 dark:bg-rose-950/50 text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-800/60 px-3 py-1 text-[11px] font-bold inline-flex items-center gap-1.5">
+                          <AlertCircle className="h-3.5 w-3.5 text-rose-600 dark:text-rose-400" /> À consolider
                         </span>
                       )}
                     </td>
 
-                    <td className="py-4.5 px-6 text-slate-500 text-xs">
+                    <td className="py-4.5 px-6 text-slate-500 dark:text-slate-400 text-xs">
                       {isRated && noteVal >= 16
                         ? 'Excellent travail, très bonne maîtrise.'
                         : isRated && noteVal >= 12
@@ -446,19 +460,73 @@ export const TeacherGradesPage: React.FC = () => {
             </tbody>
           </table>
         </div>
+
+        {/* Numbered Pagination */}
+        <div className="p-4 sm:px-6 border-t border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+            Affichage de{' '}
+            <span className="font-bold text-slate-800 dark:text-slate-200">
+              {teacherStudents.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1}
+            </span>{' '}
+            à{' '}
+            <span className="font-bold text-slate-800 dark:text-slate-200">
+              {Math.min(currentPage * itemsPerPage, teacherStudents.length)}
+            </span>{' '}
+            sur{' '}
+            <span className="font-bold text-slate-800 dark:text-slate-200">
+              {teacherStudents.length}
+            </span>{' '}
+            élèves
+          </div>
+
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1 transition-colors"
+            >
+              <ChevronLeft className="w-3.5 h-3.5" />
+              Précédent
+            </button>
+
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+              <button
+                key={page}
+                onClick={() => setCurrentPage(page)}
+                className={`w-8 h-8 rounded-lg text-xs font-bold transition-colors ${
+                  currentPage === page
+                    ? 'bg-emerald-600 text-white shadow-xs'
+                    : 'border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
+                }`}
+              >
+                {page}
+              </button>
+            ))}
+
+            <button
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1 transition-colors"
+            >
+              Suivant
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Modal Création Nouvelle Évaluation */}
       {isNewEvalModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 animate-in fade-in">
-          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl border border-slate-200 space-y-5 animate-scale-in">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="text-base font-bold text-slate-900">
+          <div className="w-full max-w-md rounded-2xl bg-white dark:bg-slate-900 p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-5 animate-scale-in">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+              <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <PlusCircle className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
                 Créer une Nouvelle Évaluation
               </h3>
               <button
                 onClick={() => setIsNewEvalModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600 rounded-lg p-1 hover:bg-slate-100"
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg p-1 hover:bg-slate-100 dark:hover:bg-slate-800"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -466,7 +534,7 @@ export const TeacherGradesPage: React.FC = () => {
 
             <div className="space-y-3.5 text-xs">
               <div>
-                <label className="font-bold text-slate-700 block mb-1">
+                <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
                   Intitulé de l'Évaluation *
                 </label>
                 <input
@@ -474,47 +542,47 @@ export const TeacherGradesPage: React.FC = () => {
                   placeholder="Ex: Devoir Surveillé N°2, Contrôle de Mathématiques..."
                   value={newEvalTitle}
                   onChange={(e) => setNewEvalTitle(e.target.value)}
-                  className="w-full h-9 px-3 rounded-lg border border-slate-300 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-600"
+                  className="w-full h-9 px-3 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-600"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">Classe</label>
+                  <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">Classe</label>
                   <input
                     type="text"
                     disabled
                     value={selectedClasse}
-                    className="w-full h-9 px-3 rounded-lg border border-slate-200 bg-slate-100 text-slate-700 font-bold"
+                    className="w-full h-9 px-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold"
                   />
                 </div>
 
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">Matière</label>
+                  <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">Matière</label>
                   <input
                     type="text"
                     disabled
                     value={selectedMatiere}
-                    className="w-full h-9 px-3 rounded-lg border border-slate-200 bg-slate-100 text-slate-700 font-bold"
+                    className="w-full h-9 px-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">Coefficient</label>
+                  <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">Coefficient</label>
                   <input
                     type="number"
                     min="1"
                     max="10"
                     value={newEvalCoeff}
                     onChange={(e) => setNewEvalCoeff(parseInt(e.target.value) || 1)}
-                    className="w-full h-9 px-3 rounded-lg border border-slate-300 text-slate-900 font-mono focus:outline-none focus:ring-2 focus:ring-emerald-600"
+                    className="w-full h-9 px-3 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-mono focus:outline-none focus:ring-2 focus:ring-emerald-600"
                   />
                 </div>
 
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">Date</label>
+                  <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">Date</label>
                   <DatePicker
                     value={newEvalDate}
                     onChange={setNewEvalDate}
@@ -526,7 +594,7 @@ export const TeacherGradesPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
               <Button
                 variant="outline"
                 size="sm"
@@ -537,7 +605,7 @@ export const TeacherGradesPage: React.FC = () => {
               <Button
                 variant="primary"
                 size="sm"
-                className="bg-emerald-600 hover:bg-emerald-700"
+                className="bg-emerald-600 hover:bg-emerald-700 text-white"
                 onClick={handleCreateEvaluation}
               >
                 Créer l'Évaluation

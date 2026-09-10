@@ -1,11 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { cn } from '../../lib/utils';
 import {
   Home,
   CreditCard,
   GraduationCap,
   CalendarCheck,
-  ChevronRight,
+  ChevronLeft,
   ShieldCheck,
   Users,
   HeartHandshake,
@@ -33,6 +33,8 @@ export const ParentSidebar: React.FC<ParentSidebarProps> = ({
   onSelectChild,
   className,
 }) => {
+  const [isCollapsed, setIsCollapsed] = useState(false);
+
   const navItems: Array<{
     id: ParentNavTab;
     label: string;
@@ -42,12 +44,12 @@ export const ParentSidebar: React.FC<ParentSidebarProps> = ({
     {
       id: 'parent_dashboard',
       label: 'Accueil Famille',
-      icon: <Home className="h-4 w-4" />,
+      icon: <Home className="h-4 w-4 shrink-0" />,
     },
     {
       id: 'parent_paiements',
       label: 'Frais & Paiements',
-      icon: <CreditCard className="h-4 w-4" />,
+      icon: <CreditCard className="h-4 w-4 shrink-0" />,
       badge:
         MOCK_PARENT_ENFANTS_DETAILS[selectedChildId]?.reste_a_payer > 0
           ? 'À régler'
@@ -56,97 +58,119 @@ export const ParentSidebar: React.FC<ParentSidebarProps> = ({
     {
       id: 'parent_pedagogie',
       label: 'Notes & Bulletins',
-      icon: <GraduationCap className="h-4 w-4" />,
+      icon: <GraduationCap className="h-4 w-4 shrink-0" />,
     },
     {
       id: 'parent_assiduite',
       label: 'Assiduité & Absences',
-      icon: <CalendarCheck className="h-4 w-4" />,
+      icon: <CalendarCheck className="h-4 w-4 shrink-0" />,
     },
   ];
 
   return (
     <aside
       className={cn(
-        'flex flex-col w-64 border-r border-slate-200 bg-slate-900 text-slate-300 shrink-0 h-screen overflow-y-auto',
+        'flex flex-col border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 shrink-0 h-screen transition-all duration-200 z-20',
+        isCollapsed ? 'w-20' : 'w-64',
         className
       )}
     >
-      {/* Brand Header */}
-      <div className="flex h-16 items-center gap-3 border-b border-slate-800 px-6">
-        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-600 text-white shadow-md shadow-indigo-900/50 shrink-0">
-          <HeartHandshake className="h-5 w-5" />
-        </div>
-        <div className="flex flex-col">
-          <div className="flex items-center gap-1.5">
-            <span className="text-base font-bold tracking-tight text-white">EcoSurv</span>
-            <span className="rounded bg-indigo-950 px-1.5 py-0.2 text-[10px] font-bold text-indigo-400 border border-indigo-800/80">
-              Parent
-            </span>
+      {/* Brand Header (Minimalist Nexoov style) */}
+      <div className="flex h-16 items-center justify-between border-b border-slate-100 dark:border-slate-800 px-5">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-purple-600 text-white shadow-md shadow-purple-600/20 shrink-0">
+            <HeartHandshake className="h-5 w-5" />
           </div>
-          <span className="text-[11px] text-slate-400 font-medium">Espace Famille</span>
+          {!isCollapsed && (
+            <div className="flex flex-col min-w-0">
+              <span className="text-lg font-black tracking-tight text-slate-900 dark:text-white leading-tight">
+                ecosurv
+              </span>
+              <span className="text-[10px] font-bold text-purple-600 dark:text-purple-400 uppercase tracking-wider">
+                Parent
+              </span>
+            </div>
+          )}
         </div>
+
+        {/* Collapse toggle button */}
+        <button
+          type="button"
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          className="h-7 w-7 rounded-lg border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors shrink-0"
+          title={isCollapsed ? 'Déplier' : 'Replier'}
+        >
+          <ChevronLeft className={cn('h-4 w-4 transition-transform', isCollapsed && 'rotate-180')} />
+        </button>
       </div>
 
       {/* Switcher d'enfant */}
-      <div className="p-3 border-b border-slate-800 bg-slate-950/40">
-        <div className="flex items-center justify-between mb-2 px-1">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
-            <Users className="h-3 w-3 text-indigo-400" />
-            Mes Enfants ({CURRENT_PARENT.enfants_ids.length})
-          </span>
-        </div>
+      {!isCollapsed && (
+        <div className="p-3 mx-3 mt-3 rounded-xl border border-slate-200/80 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50">
+          <div className="flex items-center justify-between mb-2 px-1">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+              <Users className="h-3 w-3 text-purple-600 dark:text-purple-400" />
+              Mes Enfants ({CURRENT_PARENT.enfants_ids.length})
+            </span>
+          </div>
 
-        <div className="space-y-1.5">
-          {CURRENT_PARENT.enfants_ids.map((enfantId) => {
-            const enfant = MOCK_PARENT_ENFANTS_DETAILS[enfantId];
-            if (!enfant) return null;
-            const isSelected = selectedChildId === enfant.id;
+          <div className="space-y-1.5">
+            {CURRENT_PARENT.enfants_ids.map((id) => {
+              const item = MOCK_PARENT_ENFANTS_DETAILS[id];
+              const isSelected = selectedChildId === id;
+              if (!item) return null;
 
-            return (
-              <button
-                key={enfant.id}
-                onClick={() => onSelectChild(enfant.id)}
-                className={cn(
-                  'w-full flex items-center justify-between p-2 rounded-lg text-xs font-semibold transition-all border text-left',
-                  isSelected
-                    ? 'bg-indigo-600/30 border-indigo-500 text-white shadow-xs'
-                    : 'bg-slate-800/60 border-slate-700/60 text-slate-400 hover:text-slate-200 hover:bg-slate-800'
-                )}
-              >
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <div
-                    className={cn(
-                      'h-7 w-7 rounded-full flex items-center justify-center font-bold text-[11px] shrink-0',
-                      isSelected
-                        ? 'bg-indigo-500 text-white'
-                        : 'bg-slate-700 text-slate-300'
-                    )}
-                  >
-                    {enfant.photo_initiales}
-                  </div>
-                  <div className="truncate">
-                    <div className="truncate text-slate-100 font-bold">
-                      {enfant.prenom}
+              return (
+                <button
+                  key={id}
+                  onClick={() => onSelectChild(id)}
+                  className={cn(
+                    'w-full flex items-center justify-between p-2 rounded-lg text-left transition-all border text-xs',
+                    isSelected
+                      ? 'bg-white dark:bg-slate-900 border-purple-200 dark:border-purple-800 shadow-xs ring-1 ring-purple-500/20'
+                      : 'bg-transparent border-transparent hover:bg-slate-100 dark:hover:bg-slate-800/80 text-slate-600 dark:text-slate-400'
+                  )}
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span
+                      className={cn(
+                        'h-6 w-6 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0',
+                        isSelected
+                          ? 'bg-purple-600 text-white'
+                          : 'bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300'
+                      )}
+                    >
+                      {item.prenom.charAt(0)}
+                    </span>
+                    <div className="min-w-0">
+                      <div className="font-bold text-slate-900 dark:text-white truncate">
+                        {item.prenom}
+                      </div>
+                      <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
+                        {item.classe}
+                      </div>
                     </div>
-                    <div className="text-[10px] text-indigo-300/80">{enfant.classe}</div>
                   </div>
-                </div>
 
-                {enfant.reste_a_payer > 0 && (
-                  <span className="h-2 w-2 rounded-full bg-rose-500 shrink-0" title="Impayé en cours" />
-                )}
-              </button>
-            );
-          })}
+                  {item.reste_a_payer > 0 ? (
+                    <span className="h-2 w-2 rounded-full bg-rose-500 shrink-0" title="Impayé en cours" />
+                  ) : (
+                    <span className="h-2 w-2 rounded-full bg-emerald-500 shrink-0" title="À jour" />
+                  )}
+                </button>
+              );
+            })}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Navigation Links */}
-      <div className="flex-1 px-3 py-4 space-y-1">
-        <div className="px-3 pb-2 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-          Menu Principal
-        </div>
+      <div className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+        {!isCollapsed && (
+          <div className="px-3 pb-2 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+            Espace Suivi
+          </div>
+        )}
 
         {navItems.map((item) => {
           const isActive = activeTab === item.id;
@@ -155,59 +179,62 @@ export const ParentSidebar: React.FC<ParentSidebarProps> = ({
               key={item.id}
               onClick={() => onTabChange(item.id)}
               className={cn(
-                'w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all group',
+                'w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all group relative',
                 isActive
-                  ? 'bg-indigo-600 text-white font-semibold shadow-sm'
-                  : 'text-slate-400 hover:text-slate-100 hover:bg-slate-800/80'
+                  ? 'bg-purple-50 dark:bg-purple-950/60 text-purple-800 dark:text-purple-300 border border-purple-200/80 dark:border-purple-800/60 shadow-2xs font-bold'
+                  : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-slate-200',
+                isCollapsed && 'justify-center px-0'
               )}
+              title={isCollapsed ? item.label : undefined}
             >
-              <div className="flex items-center gap-3">
-                <span
-                  className={cn(
-                    'transition-colors',
-                    isActive ? 'text-white' : 'text-slate-400 group-hover:text-slate-200'
-                  )}
-                >
-                  {item.icon}
-                </span>
-                <span>{item.label}</span>
-              </div>
+              <span
+                className={cn(
+                  'transition-colors',
+                  isActive
+                    ? 'text-purple-600 dark:text-purple-400'
+                    : 'text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300'
+                )}
+              >
+                {item.icon}
+              </span>
 
-              {item.badge ? (
+              {!isCollapsed && <span className="truncate flex-1 text-left">{item.label}</span>}
+
+              {!isCollapsed && item.badge && (
                 <span
                   className={cn(
-                    'px-2 py-0.5 text-xs font-bold rounded-full',
+                    'px-2 py-0.5 text-[10px] font-bold rounded-full',
                     isActive
-                      ? 'bg-white text-indigo-700'
-                      : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+                      ? 'bg-rose-500 text-white'
+                      : 'bg-rose-100 dark:bg-rose-950/80 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800/60'
                   )}
                 >
                   {item.badge}
                 </span>
-              ) : isActive ? (
-                <ChevronRight className="h-4 w-4 text-indigo-200" />
-              ) : null}
+              )}
             </button>
           );
         })}
       </div>
 
       {/* Security & RLS Footer */}
-      <div className="p-3 border-t border-slate-800 space-y-2">
-        <div className="rounded-lg bg-slate-800/60 p-2.5 border border-slate-700/50 flex items-start gap-2.5">
-          <ShieldCheck className="h-4 w-4 text-indigo-400 shrink-0 mt-0.5" />
-          <div className="text-[11px] leading-tight">
-            <span className="font-bold text-slate-200 block">Espace Famille Sécurisé</span>
-            <span className="text-slate-400">
-              Données strictement isolées à vos enfants légitimes.
-            </span>
+      {!isCollapsed ? (
+        <div className="p-3 border-t border-slate-100 dark:border-slate-800 space-y-2">
+          <div className="rounded-xl bg-slate-50 dark:bg-slate-800/60 p-2.5 border border-slate-200/60 dark:border-slate-700/60 flex items-start gap-2.5">
+            <ShieldCheck className="h-4 w-4 text-purple-600 dark:text-purple-400 shrink-0 mt-0.5" />
+            <div className="text-[11px] leading-tight">
+              <span className="font-bold text-slate-800 dark:text-slate-200 block">Cloisonnement RLS</span>
+              <span className="text-slate-500 dark:text-slate-400 text-[10px]">
+                Restreint aux enfants de la famille.
+              </span>
+            </div>
           </div>
         </div>
-
-        <div className="px-3 py-1 text-[10px] text-slate-500 font-mono text-center">
-          EcoSurv Mobile Parent v0.1.0
+      ) : (
+        <div className="p-3 border-t border-slate-100 dark:border-slate-800 flex justify-center" title="RLS Famille Actif">
+          <ShieldCheck className="h-4 w-4 text-purple-600 dark:text-purple-400" />
         </div>
-      </div>
+      )}
     </aside>
   );
 };
