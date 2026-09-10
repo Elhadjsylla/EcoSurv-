@@ -71,7 +71,7 @@ export const CaissierJournalPage: React.FC = () => {
 
   const totalMobile = useMemo(() => {
     return transactions
-      .filter((tx) => ['bankily', 'masrvi', 'sedad'].includes(tx.methode))
+      .filter((tx) => ['bankily', 'masrvi'].includes(tx.methode))
       .reduce((acc, tx) => acc + tx.montant, 0);
   }, [transactions]);
 
@@ -118,21 +118,21 @@ export const CaissierJournalPage: React.FC = () => {
         return (
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-orange-50 dark:bg-orange-950/50 text-orange-800 dark:text-orange-300 border border-orange-200 dark:border-orange-800/60">
             <span className="w-1.5 h-1.5 rounded-full bg-orange-500"></span>
-            Bankily
+            Bankily (BPM)
           </span>
         );
       case 'masrvi':
         return (
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-blue-50 dark:bg-blue-950/50 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800/60">
             <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
-            Masrvi
+            Masrvi (BMCI)
           </span>
         );
-      case 'sedad':
+      case 'cheque':
         return (
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-purple-50 dark:bg-purple-950/50 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-800/60">
             <span className="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
-            Sedad
+            Chèque
           </span>
         );
       default:
@@ -240,7 +240,7 @@ export const CaissierJournalPage: React.FC = () => {
         <KpiCard
           title="Paiements Mobiles"
           amount={totalMobile}
-          subtitle="Bankily, Masrvi & Sedad"
+          subtitle="Bankily & Masrvi"
           icon={<Smartphone className="w-5 h-5 text-blue-600 dark:text-blue-400" />}
           variant="primary"
         />
@@ -283,9 +283,9 @@ export const CaissierJournalPage: React.FC = () => {
             options={[
               { value: 'all', label: 'Tous les modes' },
               { value: 'especes', label: 'Espèces uniquement' },
-              { value: 'bankily', label: 'Bankily' },
-              { value: 'masrvi', label: 'Masrvi' },
-              { value: 'sedad', label: 'Sedad' },
+              { value: 'bankily', label: 'Bankily (BPM)' },
+              { value: 'masrvi', label: 'Masrvi (BMCI)' },
+              { value: 'cheque', label: 'Chèque' },
             ]}
             size="sm"
             triggerClassName="h-10 rounded-xl text-xs font-semibold"

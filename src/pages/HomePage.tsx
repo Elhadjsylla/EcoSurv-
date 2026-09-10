@@ -114,7 +114,7 @@ export const HomePage: React.FC = () => {
                   </div>
                   <CardTitle>Caissier</CardTitle>
                   <CardDescription>
-                    Gestion des encaissements (espèces, Bankily, Masrvi, Sedad).
+                    Gestion des encaissements (espèces, Bankily, Masrvi, chèques).
                   </CardDescription>
                 </CardHeader>
                 <Badge variant="success">Paiements & Lecture Élèves</Badge>

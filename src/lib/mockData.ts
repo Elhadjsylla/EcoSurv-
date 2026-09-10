@@ -3,7 +3,7 @@
 export type RoleUtilisateur = 'super_admin' | 'directeur' | 'enseignant' | 'parent' | 'caissier';
 export type StatutEcheance = 'a_jour' | 'en_retard' | 'partiel' | 'paye';
 export type StatutPaiement = 'en_attente' | 'confirme' | 'echoue' | 'rembourse' | 'annule';
-export type MethodePaiement = 'especes' | 'bankily' | 'masrvi' | 'sedad' | 'virement' | 'cheque';
+export type MethodePaiement = 'especes' | 'bankily' | 'masrvi' | 'cheque';
 export type LienParente = 'pere' | 'mere' | 'tuteur' | 'autre';
 export type FrequenceEcheance = 'mensuel' | 'trimestriel' | 'annuel';
 
@@ -243,9 +243,9 @@ export const MOCK_ELEVES: EleveWithStats[] = [
         libelle: 'Mensualité Janvier 2026 (Acompte)',
         montant: 10000,
         date: '02/02/2026',
-        methode: 'sedad',
+        methode: 'masrvi',
         statut: 'regle',
-        recu_ref: 'SDD-4412',
+        recu_ref: 'MAS-4412',
       },
       {
         id: 'pay-006',
@@ -288,9 +288,9 @@ export const MOCK_ELEVES: EleveWithStats[] = [
         libelle: 'Trimestre 2 complet',
         montant: 20000,
         date: '10/02/2026',
-        methode: 'virement',
+        methode: 'cheque',
         statut: 'regle',
-        recu_ref: 'VIR-9981',
+        recu_ref: 'CHQ-9981',
       },
       {
         id: 'pay-008',

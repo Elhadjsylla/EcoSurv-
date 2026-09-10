@@ -139,7 +139,7 @@ export const ParentPaiementsPage: React.FC<ParentPaiementsPageProps> = ({
             Frais de Scolarité — {enfantData.prenom} {enfantData.nom}
           </h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Consultez le solde de la scolarité et réglez directement par Bankily, Masrvi ou Sedad avec quittance instantanée.
+            Consultez le solde de la scolarité et réglez directement par Bankily ou Masrvi avec quittance instantanée.
           </p>
         </div>
 
@@ -304,11 +304,10 @@ export const ParentPaiementsPage: React.FC<ParentPaiementsPageProps> = ({
                 <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider block mb-2">
                   1. Choisissez votre portefeuille mobile
                 </label>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-2 gap-3">
                   {[
-                    { id: 'bankily', name: 'Bankily', logo: '🟠' },
-                    { id: 'masrvi', name: 'Masrvi', logo: '🔵' },
-                    { id: 'sedad', name: 'Sedad', logo: '🟣' },
+                    { id: 'bankily', name: 'Bankily (BPM)', logo: '🟠' },
+                    { id: 'masrvi', name: 'Masrvi (BMCI)', logo: '🔵' },
                   ].map((item) => (
                     <button
                       type="button"

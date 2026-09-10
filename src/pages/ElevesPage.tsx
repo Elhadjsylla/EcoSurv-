@@ -922,11 +922,10 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
                   value={paymentMethod}
                   onChange={setPaymentMethod}
                   options={[
-                    { value: 'bankily', label: 'Bankily (Mobile Money)' },
-                    { value: 'especes', label: 'Espèces (Guichet)' },
-                    { value: 'masrvi', label: 'Masrvi' },
-                    { value: 'sedad', label: 'Sedad' },
-                    { value: 'virement', label: 'Virement bancaire' },
+                    { value: 'especes', label: 'Espèces (Comptant)' },
+                    { value: 'bankily', label: 'Bankily (BPM)' },
+                    { value: 'masrvi', label: 'Masrvi (BMCI)' },
+                    { value: 'cheque', label: 'Chèque' },
                   ]}
                   triggerClassName="w-full h-10 rounded-lg text-xs"
                 />
