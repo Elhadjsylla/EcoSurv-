@@ -33,6 +33,10 @@ main                    ← toujours déployable, jamais de commit direct
 - **`dev`** : branche de travail courante. C'est là que les features convergent avant d'aller en production.
 - **Toute nouvelle tâche = une nouvelle branche** créée depuis `dev`, jamais depuis `main` directement (sauf hotfix critique en prod, voir §6).
 - Une branche = un sujet. Ne pas mélanger une fonctionnalité et un refactor sans rapport dans la même branche.
+- **Pas de branche empilée sur une branche non mergée.** Une branche part de `dev` à jour et n'hérite que de ce qui y est déjà intégré. Si une tâche dépend d'un travail pas encore mergé dans `dev`, la dépendance est mentionnée explicitement dans la PR (section « Dépendances »), et la PR n'est mergée qu'une fois cette dépendance intégrée dans `dev`.
+- **Vérification au démarrage de chaque tâche** : l'agent exécute `git fetch` puis `git log dev..HEAD`, consulte les PR ouvertes, et signale tout travail non intégré dans `dev` avant de créer sa branche.
+
+> Pourquoi : le 14/09/2026, les PR #2 (navigation) et #3 (cartes KPI) visaient `feat/fix-ui-bugs-2` au lieu de `dev`. Mergées dans cette branche juste après qu'elle a elle-même été mergée dans `dev`, elles n'ont jamais atteint `dev` : la fonctionnalité semblait avoir « disparu ».
 
 ### Nommage des branches
 
