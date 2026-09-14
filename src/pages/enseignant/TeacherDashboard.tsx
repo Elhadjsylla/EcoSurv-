@@ -95,6 +95,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ onNavigateTo
         <KpiCard
           title="Élèves Assignés"
           amount={totalEleves}
+          unit="count"
           subtitle="Répartis sur 2 classes"
           icon={<Users className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />}
           variant="success"
@@ -114,6 +115,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ onNavigateTo
         <KpiCard
           title="Absences à Justifier"
           amount={unverifiedAbsences}
+          unit="count"
           subtitle="Motifs en attente de tuteur"
           icon={<AlertCircle className="w-5 h-5 text-rose-600 dark:text-rose-400" />}
           variant="danger"
