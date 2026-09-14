@@ -3,6 +3,7 @@ import { cn, formatMRU } from '../../lib/utils';
 import { formatCompactMRU } from '../../lib/formatCompactMRU';
 import { ArrowUpRight } from 'lucide-react';
 import { useCountUp } from '../../hooks/useCountUp';
+import { Tooltip } from './Tooltip';
 
 /**
  * Unité d'une valeur chiffrée :
@@ -88,6 +89,16 @@ export const KpiCard: React.FC<KpiCardProps> = ({
   const fullAmountText = amount !== undefined ? formatValue(amount, false) : undefined;
   const displayAmount = amount !== undefined ? formatValue(animatedAmount, compact) : null;
 
+  // Infobulle de l'icône : le titre, et le montant complet quand la carte l'affiche abrégé.
+  const tooltipContent = (
+    <>
+      <span className="block">{title}</span>
+      {amount !== undefined && fullAmountText !== formatValue(amount, compact) && (
+        <span className="block font-mono font-medium text-slate-300">{fullAmountText}</span>
+      )}
+    </>
+  );
+
   return (
     <div
       onClick={onClick}
@@ -106,10 +117,7 @@ export const KpiCard: React.FC<KpiCardProps> = ({
       <div>
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-1.5 min-w-0 flex-1">
-            <span
-              title={title}
-              className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 leading-snug break-words"
-            >
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 leading-snug break-words">
               {title}
             </span>
             {onClick && (
@@ -117,14 +125,16 @@ export const KpiCard: React.FC<KpiCardProps> = ({
             )}
           </div>
           {icon && (
-            <div
-              className={cn(
-                'flex h-11 w-11 items-center justify-center rounded-2xl bg-white/90 dark:bg-slate-800/90 border border-white/80 dark:border-slate-700/60 shrink-0 transition-transform duration-200 group-hover:scale-105 shadow-2xs',
-                iconTextColors[variant]
-              )}
-            >
-              {icon}
-            </div>
+            <Tooltip content={tooltipContent} className="shrink-0">
+              <div
+                className={cn(
+                  'flex h-11 w-11 items-center justify-center rounded-2xl bg-white/90 dark:bg-slate-800/90 border border-white/80 dark:border-slate-700/60 shrink-0 transition-transform duration-200 group-hover:scale-105 shadow-2xs',
+                  iconTextColors[variant]
+                )}
+              >
+                {icon}
+              </div>
+            </Tooltip>
           )}
         </div>
 
@@ -134,10 +144,7 @@ export const KpiCard: React.FC<KpiCardProps> = ({
               {customValue}
             </div>
           ) : displayAmount !== null ? (
-            <div
-              title={fullAmountText}
-              className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 dark:text-white font-mono transition-colors truncate cursor-help"
-            >
+            <div className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 dark:text-white font-mono transition-colors truncate">
               {displayAmount}
             </div>
           ) : (
