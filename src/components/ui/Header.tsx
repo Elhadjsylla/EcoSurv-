@@ -9,6 +9,7 @@ import { useEcoleStore } from '../../store/useEcoleStore';
 import { StudentInitials } from './StudentInitials';
 import { Select } from './Select';
 import { UserProfileDropdown } from './UserProfileDropdown';
+import { NavigationControls } from './NavigationControls';
 import {
   Building2,
   Calendar,
@@ -119,6 +120,12 @@ export const Header: React.FC<HeaderProps> = ({
     <header className="sticky top-0 z-30 h-16 w-full border-b border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xs px-4 sm:px-6 lg:px-8 flex items-center justify-between shadow-2xs transition-colors duration-200">
       {/* Left: School Information & Global Search Bar */}
       <div className="flex items-center gap-4 sm:gap-6 min-w-0 flex-1 max-w-2xl">
+        {/* Back / Forward navigation */}
+        <div className="flex items-center gap-4 sm:gap-6 shrink-0">
+          <NavigationControls role={currentRole} />
+          <div className="h-6 w-px bg-slate-200 dark:bg-slate-800" />
+        </div>
+
         <div className="flex items-center gap-3 min-w-0 shrink-0">
           <div
             className={`flex h-9 w-9 items-center justify-center rounded-xl border shrink-0 ${currentConfig.colorTheme}`}
