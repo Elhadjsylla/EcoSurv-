@@ -115,6 +115,7 @@ export const EcheancesPage: React.FC = () => {
           staggerIndex={0}
           title="Échéanciers Actifs"
           amount={echeanciers.length}
+          unit="count"
           subtitle="Configurations par niveau"
           icon={<CreditCard className="h-5 w-5" />}
           variant="primary"
@@ -124,6 +125,7 @@ export const EcheancesPage: React.FC = () => {
           staggerIndex={1}
           title="Élèves Couverts"
           amount={totalElevesCouverts}
+          unit="count"
           subtitle="✓ Échéancier individuel actif"
           icon={<Users className="h-5 w-5" />}
           variant="success"

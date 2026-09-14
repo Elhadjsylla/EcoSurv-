@@ -104,6 +104,7 @@ export const CaissierImpayesPage: React.FC<CaissierImpayesPageProps> = ({
         <KpiCard
           title="Total des Arriérés Dûs"
           amount={totalArrieres}
+          unit="MRU"
           subtitle={`Sur ${elevesAvecReste.length} élèves débiteurs`}
           icon={<AlertCircle className="w-5 h-5 text-rose-600 dark:text-rose-400" />}
           variant="danger"
@@ -112,6 +113,7 @@ export const CaissierImpayesPage: React.FC<CaissierImpayesPageProps> = ({
         <KpiCard
           title="Élèves en Retard Critique"
           amount={nbRetards}
+          unit="count"
           subtitle="Échéances échues sans versement"
           icon={<Clock className="w-5 h-5 text-amber-600 dark:text-amber-400" />}
           variant="warning"

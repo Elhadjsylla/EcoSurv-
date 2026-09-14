@@ -224,6 +224,7 @@ export const CaissierJournalPage: React.FC = () => {
         <KpiCard
           title="Total Encaissé Aujourd'hui"
           amount={totalGeneral}
+          unit="MRU"
           subtitle={`${transactions.length} versements enregistrés`}
           icon={<Receipt className="w-5 h-5 text-amber-600 dark:text-amber-400" />}
           variant="warning"
@@ -232,6 +233,7 @@ export const CaissierJournalPage: React.FC = () => {
         <KpiCard
           title="Espèces en Tiroir"
           amount={totalEspeces}
+          unit="MRU"
           subtitle="Comptage physique requis"
           icon={<Banknote className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />}
           variant="success"
@@ -240,6 +242,7 @@ export const CaissierJournalPage: React.FC = () => {
         <KpiCard
           title="Paiements Mobiles"
           amount={totalMobile}
+          unit="MRU"
           subtitle="Bankily & Masrvi"
           icon={<Smartphone className="w-5 h-5 text-blue-600 dark:text-blue-400" />}
           variant="primary"
@@ -248,6 +251,7 @@ export const CaissierJournalPage: React.FC = () => {
         <KpiCard
           title="Quittances Émises"
           amount={transactions.length}
+          unit="count"
           subtitle="Journal certifié conforme"
           icon={<FileCheck className="w-5 h-5 text-slate-600 dark:text-slate-300" />}
           variant="default"
