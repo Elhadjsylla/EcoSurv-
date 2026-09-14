@@ -91,18 +91,26 @@ chore: met à jour supabase-js vers la dernière version
 
 ## 4. Pull Requests
 
-Même à deux (Elhadj + agents IA), les PR restent obligatoires pour tout ce qui part vers `dev` ou `main` — c'est ce qui permet de relire ce que les agents IA ont produit avant de l'intégrer.
+Même à deux (Elhadj + agents IA), les PR restent obligatoires pour tout ce qui part vers `dev` ou `main` — c'est la trace qui permet à Elhadj de relire, après coup, ce que les agents IA ont intégré.
 
 ### Règles
 
-1. Toute branche `feat/`, `fix/`, `design/` passe par une PR vers `dev`, jamais de merge direct en ligne de commande sans revue, même rapide.
+1. Toute branche `feat/`, `fix/`, `design/` passe par une PR vers `dev`, jamais de merge direct en ligne de commande.
 2. La description de la PR doit répondre à trois questions minimum :
    - Qu'est-ce que ça change ?
    - Comment le tester ?
    - Y a-t-il un impact sur la sécurité ou les données (voir SECURITY_RULES.md) ?
-3. **Une PR générée par un agent IA (Gemini/Claude Code) doit être relue par Elhadj avant merge** — ne jamais laisser un agent fusionner automatiquement dans `dev` ou `main`.
+3. **Un agent IA (Gemini/Claude Code) peut merger lui-même ses propres PR sur `dev`, sans attendre de validation préalable.** La revue humaine par Elhadj se fait **après coup, de façon asynchrone**, pas avant le merge. En contrepartie, les garde-fous ci-dessous sont obligatoires.
 4. Merge en `dev` → mode **squash** (un commit propre par fonctionnalité dans l'historique de `dev`).
-5. Merge de `dev` vers `main` → mode **merge commit** classique, pour garder la trace des lots livrés en production.
+5. Merge de `dev` vers `main` → mode **merge commit** classique, **fait manuellement par Elhadj, sur sa décision**. Aucun agent ne merge sur `main`.
+
+### Garde-fous du merge par un agent
+
+1. **Vérifier le contenu avant de merger** : `git fetch` puis `git log dev..HEAD` sur sa propre branche, pour confirmer qu'elle contient bien tout ce qui est attendu et rien d'inattendu (commit oublié, commits d'une autre branche). En cas d'écart, ne pas merger et le signaler.
+2. **Squash merge uniquement**, jamais de merge commit fourre-tout. Le message du commit squash résume clairement ce qui a été intégré (titre au format du §3, numéro de PR, principaux changements), pour faciliter la revue a posteriori.
+3. **Jamais sur `main`** : l'agent ne merge que sur `dev`. `main` reste réservé au merge manuel depuis `dev`, décidé par Elhadj.
+4. **Migrations destructrices inchangées** : toute migration de base de données destructrice (`DROP`, `TRUNCATE`, `DELETE` massif) reste interdite sans confirmation explicite préalable d'Elhadj — y compris pour merger une PR qui en contient une. Ce point ne dépend pas de la règle de merge.
+5. **Compte rendu après chaque merge** : l'agent signale explicitement dans le chat ce qui vient d'être mergé (PR, commit squash) et un résumé des fichiers touchés.
 
 ---
 
@@ -130,6 +138,7 @@ Si un bug critique bloque une école cliente en production :
 
 1. Jamais de commit direct sur `main`.
 2. Jamais de merge sans PR, même pour une correction "évidente".
-3. Un agent IA ne fusionne jamais lui-même une PR — validation humaine obligatoire.
+3. Un agent IA ne merge jamais sur `main`. Sur `dev`, il ne merge que ses propres PR, en squash, en respectant les garde-fous du §4 ; la revue humaine se fait a posteriori.
 4. Aucun secret, clé API, ou donnée élève/parent réelle dans l'historique Git.
 5. Un commit = un sujet clair, décrit en français, avec le bon préfixe de type.
+6. Aucune migration destructrice (`DROP`, `TRUNCATE`, `DELETE` massif) sans confirmation explicite préalable d'Elhadj.
