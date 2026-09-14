@@ -3,6 +3,7 @@ import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Select } from '../components/ui/Select';
 import { KpiCard } from '../components/ui/KpiCard';
+import { Tooltip } from '../components/ui/Tooltip';
 import { useEcoleStore } from '../store/useEcoleStore';
 import {
   MOCK_STAFF,
@@ -368,18 +369,16 @@ export const ConfigPage: React.FC = () => {
                           {initials}
                         </div>
                         <div className="min-w-0">
-                          <div
-                            title={`${member.prenom} ${member.nom}`}
-                            className="font-bold text-slate-900 dark:text-white text-sm truncate"
-                          >
-                            {member.prenom} {member.nom}
-                          </div>
-                          <div
-                            title={member.email}
-                            className="text-xs text-slate-500 dark:text-slate-400 truncate font-normal"
-                          >
-                            {member.email}
-                          </div>
+                          <Tooltip content={`${member.prenom} ${member.nom}`} as="div" className="block min-w-0">
+                            <div className="font-bold text-slate-900 dark:text-white text-sm truncate">
+                              {member.prenom} {member.nom}
+                            </div>
+                          </Tooltip>
+                          <Tooltip content={member.email} as="div" className="block min-w-0">
+                            <div className="text-xs text-slate-500 dark:text-slate-400 truncate font-normal">
+                              {member.email}
+                            </div>
+                          </Tooltip>
                         </div>
                       </div>
                     </td>
@@ -426,15 +425,17 @@ export const ConfigPage: React.FC = () => {
 
                     {/* Context menu "..." */}
                     <td className="py-4 px-6 text-right whitespace-nowrap relative staff-menu-container">
-                      <button
-                        onClick={() =>
-                          setActiveMenuId(activeMenuId === member.id ? null : member.id)
-                        }
-                        className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
-                        title="Options"
-                      >
-                        <MoreHorizontal className="w-4 h-4" />
-                      </button>
+                      <Tooltip content="Options">
+                        <button
+                          onClick={() =>
+                            setActiveMenuId(activeMenuId === member.id ? null : member.id)
+                          }
+                          className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                          aria-label="Options"
+                        >
+                          <MoreHorizontal className="w-4 h-4" />
+                        </button>
+                      </Tooltip>
 
                       {activeMenuId === member.id && (
                         <div className="absolute right-6 top-12 z-30 w-52 bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-slate-200 dark:border-slate-800 py-1.5 text-left animate-in fade-in zoom-in-95">

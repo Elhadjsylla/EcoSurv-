@@ -10,6 +10,7 @@ import { StudentInitials } from './StudentInitials';
 import { Select } from './Select';
 import { UserProfileDropdown } from './UserProfileDropdown';
 import { NavigationControls } from './NavigationControls';
+import { Tooltip } from './Tooltip';
 import {
   Building2,
   Calendar,
@@ -133,9 +134,11 @@ export const Header: React.FC<HeaderProps> = ({
             <Building2 className="h-4.5 w-4.5" />
           </div>
           <div className="min-w-0 hidden md:block">
-            <h2 title={ecole.nom} className="text-sm font-bold text-slate-900 dark:text-white leading-tight truncate">
-              {ecole.nom}
-            </h2>
+            <Tooltip content={ecole.nom} side="bottom" as="div" className="block min-w-0">
+              <h2 className="text-sm font-bold text-slate-900 dark:text-white leading-tight truncate">
+                {ecole.nom}
+              </h2>
+            </Tooltip>
             <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5 font-medium truncate mt-0.5">
               <span>{ecole.ville}</span>
               <span>•</span>
@@ -197,17 +200,19 @@ export const Header: React.FC<HeaderProps> = ({
         )}
 
         {/* Notifications Icon Button */}
-        <button
-          type="button"
-          className="relative p-2 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-white transition-colors rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800"
-          title="Notifications"
-          onClick={() => {
-            if (onNavigateTab) onNavigateTab('relances');
-          }}
-        >
-          <Bell className="h-4.5 w-4.5" />
-          <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white dark:ring-slate-900" />
-        </button>
+        <Tooltip content="Notifications" side="bottom">
+          <button
+            type="button"
+            className="relative p-2 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-white transition-colors rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800"
+            aria-label="Notifications"
+            onClick={() => {
+              if (onNavigateTab) onNavigateTab('relances');
+            }}
+          >
+            <Bell className="h-4.5 w-4.5" />
+            <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white dark:ring-slate-900" />
+          </button>
+        </Tooltip>
 
         <div className="h-6 w-px bg-slate-200 dark:bg-slate-800 hidden sm:block" />
 
@@ -224,18 +229,16 @@ export const Header: React.FC<HeaderProps> = ({
               size="sm"
             />
             <div className="hidden lg:flex flex-col text-left min-w-0 max-w-[120px]">
-              <span
-                title={`${currentConfig.user.prenom} ${currentConfig.user.nom}`}
-                className="text-xs font-bold text-slate-900 dark:text-white leading-tight truncate"
-              >
-                {currentConfig.user.prenom}
-              </span>
-              <span
-                title={currentConfig.roleTitle}
-                className="text-[10px] font-medium text-slate-500 dark:text-slate-400 truncate"
-              >
-                {currentConfig.label}
-              </span>
+              <Tooltip content={`${currentConfig.user.prenom} ${currentConfig.user.nom}`} side="bottom" className="flex min-w-0">
+                <span className="text-xs font-bold text-slate-900 dark:text-white leading-tight truncate">
+                  {currentConfig.user.prenom}
+                </span>
+              </Tooltip>
+              <Tooltip content={currentConfig.roleTitle} side="bottom" className="flex min-w-0">
+                <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400 truncate">
+                  {currentConfig.label}
+                </span>
+              </Tooltip>
             </div>
             <ChevronDown className={`h-3.5 w-3.5 text-slate-400 transition-transform ${isProfileOpen ? 'rotate-180' : ''}`} />
           </button>

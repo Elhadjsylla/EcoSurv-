@@ -33,6 +33,7 @@ import {
 } from 'lucide-react';
 import { ConfirmBulkRelanceModal } from './ConfirmBulkRelanceModal';
 import { StudentDetailDrawer } from './StudentDetailDrawer';
+import { Tooltip } from '../ui/Tooltip';
 
 interface DirectorDashboardProps {
   onNavigateToEleves?: (statutFilter: string) => void;
@@ -653,17 +654,19 @@ export const DirectorDashboard: React.FC<DirectorDashboardProps> = ({
                         className="py-4 px-5 text-center relative"
                         onClick={(e) => e.stopPropagation()}
                       >
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setOpenMenuRowId(isMenuOpen ? null : eleve.id);
-                          }}
-                          className="h-8 w-8 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 flex items-center justify-center transition-colors mx-auto"
-                          title="Options"
-                        >
-                          <MoreHorizontal className="h-4 w-4" />
-                        </button>
+                        <Tooltip content="Options">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setOpenMenuRowId(isMenuOpen ? null : eleve.id);
+                            }}
+                            className="h-8 w-8 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 flex items-center justify-center transition-colors mx-auto"
+                            aria-label="Options"
+                          >
+                            <MoreHorizontal className="h-4 w-4" />
+                          </button>
+                        </Tooltip>
 
                         {/* Dropdown Menu */}
                         {isMenuOpen && (

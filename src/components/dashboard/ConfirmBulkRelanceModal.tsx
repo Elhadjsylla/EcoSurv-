@@ -1,5 +1,6 @@
 import React from 'react';
 import { Button } from '../ui/Button';
+import { Tooltip } from '../ui/Tooltip';
 import { formatMRU } from '../../lib/utils';
 import { formatCompactMRU } from '../../lib/formatCompactMRU';
 import {
@@ -80,12 +81,11 @@ export const ConfirmBulkRelanceModal: React.FC<ConfirmBulkRelanceModalProps> = (
               <span className="text-[10px] font-bold text-amber-700 uppercase tracking-wider block font-sans">
                 Volume d'Impayés
               </span>
-              <span
-                title={formatMRU(totalAmount)}
-                className="text-base font-extrabold text-red-700 cursor-help"
-              >
-                {formatCompactMRU(totalAmount)}
-              </span>
+              <Tooltip content={formatMRU(totalAmount)}>
+                <span className="text-base font-extrabold text-red-700 cursor-help">
+                  {formatCompactMRU(totalAmount)}
+                </span>
+              </Tooltip>
             </div>
           </div>
         </div>

@@ -7,6 +7,7 @@ import {
   X,
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
+import { Tooltip } from './Tooltip';
 
 export interface DatePickerProps {
   value: string; // Format 'YYYY-MM-DD'
@@ -253,15 +254,17 @@ export const DatePicker: React.FC<DatePickerProps> = ({
 
         <div className="flex items-center gap-1 shrink-0 ml-2">
           {value && !disabled && (
-            <span
-              role="button"
-              tabIndex={0}
-              onClick={handleClear}
-              className="p-0.5 text-slate-400 hover:text-slate-600 rounded hover:bg-slate-100 transition-colors"
-              title="Effacer la date"
-            >
-              <X className="h-3.5 w-3.5" />
-            </span>
+            <Tooltip content="Effacer la date">
+              <span
+                role="button"
+                tabIndex={0}
+                onClick={handleClear}
+                className="p-0.5 text-slate-400 hover:text-slate-600 rounded hover:bg-slate-100 transition-colors"
+                aria-label="Effacer la date"
+              >
+                <X className="h-3.5 w-3.5" />
+              </span>
+            </Tooltip>
           )}
           <ChevronDown
             className={cn(
@@ -283,22 +286,26 @@ export const DatePicker: React.FC<DatePickerProps> = ({
           {/* Month & Year Navigation Header */}
           <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
             <div className="flex items-center gap-0.5">
-              <button
-                type="button"
-                onClick={() => setViewYear((y) => y - 1)}
-                className="p-1 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 text-xs font-bold transition-colors"
-                title="Année précédente"
-              >
-                «
-              </button>
-              <button
-                type="button"
-                onClick={prevMonth}
-                className="p-1 rounded-lg hover:bg-slate-100 text-slate-600 transition-colors"
-                title="Mois précédent"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </button>
+              <Tooltip content="Année précédente">
+                <button
+                  type="button"
+                  onClick={() => setViewYear((y) => y - 1)}
+                  className="p-1 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 text-xs font-bold transition-colors"
+                  aria-label="Année précédente"
+                >
+                  «
+                </button>
+              </Tooltip>
+              <Tooltip content="Mois précédent">
+                <button
+                  type="button"
+                  onClick={prevMonth}
+                  className="p-1 rounded-lg hover:bg-slate-100 text-slate-600 transition-colors"
+                  aria-label="Mois précédent"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </button>
+              </Tooltip>
             </div>
 
             <div className="flex items-center gap-1">
@@ -311,22 +318,26 @@ export const DatePicker: React.FC<DatePickerProps> = ({
             </div>
 
             <div className="flex items-center gap-0.5">
-              <button
-                type="button"
-                onClick={nextMonth}
-                className="p-1 rounded-lg hover:bg-slate-100 text-slate-600 transition-colors"
-                title="Mois suivant"
-              >
-                <ChevronRight className="h-4 w-4" />
-              </button>
-              <button
-                type="button"
-                onClick={() => setViewYear((y) => y + 1)}
-                className="p-1 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 text-xs font-bold transition-colors"
-                title="Année suivante"
-              >
-                »
-              </button>
+              <Tooltip content="Mois suivant">
+                <button
+                  type="button"
+                  onClick={nextMonth}
+                  className="p-1 rounded-lg hover:bg-slate-100 text-slate-600 transition-colors"
+                  aria-label="Mois suivant"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+              </Tooltip>
+              <Tooltip content="Année suivante">
+                <button
+                  type="button"
+                  onClick={() => setViewYear((y) => y + 1)}
+                  className="p-1 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 text-xs font-bold transition-colors"
+                  aria-label="Année suivante"
+                >
+                  »
+                </button>
+              </Tooltip>
             </div>
           </div>
 

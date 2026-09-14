@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { formatMRU } from '../../lib/utils';
 import { LineChart, BarChart3 } from 'lucide-react';
+import { Tooltip, TooltipBubble } from './Tooltip';
 
 export interface MonthlyCollectionReport {
   mois: string;
@@ -71,6 +72,13 @@ export const CollectionChart: React.FC<CollectionChartProps> = ({
 
   const activePoint = hoveredIndex !== null ? points[hoveredIndex] : null;
 
+  // Point de la courbe ou barre survolé, vers lequel pointe l'infobulle de données.
+  const hoveredAnchorRef = useRef<Element | null>(null);
+  const hoverPoint = (idx: number, anchor: Element | null) => {
+    hoveredAnchorRef.current = anchor;
+    setHoveredIndex(idx);
+  };
+
   return (
     <div className={`space-y-4 ${className}`}>
       {/* Chart Header & Controls */}
@@ -100,32 +108,36 @@ export const CollectionChart: React.FC<CollectionChartProps> = ({
 
           {/* Toggle Type de Graphique */}
           <div className="flex items-center p-0.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700">
-            <button
-              type="button"
-              onClick={() => setChartType('line')}
-              className={`p-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all ${
-                chartType === 'line'
-                  ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-xs'
-                  : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
-              }`}
-              title="Affichage en Courbe"
-            >
-              <LineChart className="h-3.5 w-3.5" />
-              <span className="hidden md:inline">Courbe</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setChartType('bar')}
-              className={`p-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all ${
-                chartType === 'bar'
-                  ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-xs'
-                  : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
-              }`}
-              title="Affichage en Barres"
-            >
-              <BarChart3 className="h-3.5 w-3.5" />
-              <span className="hidden md:inline">Barres</span>
-            </button>
+            <Tooltip content="Affichage en Courbe">
+              <button
+                type="button"
+                onClick={() => setChartType('line')}
+                className={`p-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all ${
+                  chartType === 'line'
+                    ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-xs'
+                    : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                }`}
+                aria-label="Affichage en Courbe"
+              >
+                <LineChart className="h-3.5 w-3.5" />
+                <span className="hidden md:inline">Courbe</span>
+              </button>
+            </Tooltip>
+            <Tooltip content="Affichage en Barres">
+              <button
+                type="button"
+                onClick={() => setChartType('bar')}
+                className={`p-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all ${
+                  chartType === 'bar'
+                    ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-xs'
+                    : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                }`}
+                aria-label="Affichage en Barres"
+              >
+                <BarChart3 className="h-3.5 w-3.5" />
+                <span className="hidden md:inline">Barres</span>
+              </button>
+            </Tooltip>
           </div>
         </div>
       </div>
@@ -228,7 +240,7 @@ export const CollectionChart: React.FC<CollectionChartProps> = ({
                   <g
                     key={p.mois}
                     className="cursor-pointer"
-                    onMouseEnter={() => setHoveredIndex(idx)}
+                    onMouseEnter={(e) => hoverPoint(idx, e.currentTarget.querySelector('[data-chart-anchor]'))}
                     onMouseLeave={() => setHoveredIndex(null)}
                   >
                     {/* Zone de contact élargie transparente pour faciliter le survol tactile/souris */}
@@ -254,6 +266,7 @@ export const CollectionChart: React.FC<CollectionChartProps> = ({
 
                     {/* Point principal encaissé */}
                     <circle
+                      data-chart-anchor=""
                       cx={p.x}
                       cy={p.y}
                       r={isHovered ? 6 : 4.5}
@@ -290,7 +303,7 @@ export const CollectionChart: React.FC<CollectionChartProps> = ({
                 <div
                   key={r.mois}
                   className="flex flex-col items-center gap-2.5 h-full justify-end group cursor-pointer"
-                  onMouseEnter={() => setHoveredIndex(idx)}
+                  onMouseEnter={(e) => hoverPoint(idx, e.currentTarget.querySelector('[data-chart-anchor]'))}
                   onMouseLeave={() => setHoveredIndex(null)}
                 >
                   <div
@@ -304,6 +317,7 @@ export const CollectionChart: React.FC<CollectionChartProps> = ({
                   {/* Conteneur de barre : fond = Attendu total, remplissage = Encaissé réel */}
                   <div className="w-full max-w-[48px] bg-slate-100 dark:bg-slate-800 rounded-t-xl h-full flex items-end overflow-hidden relative border border-slate-200/70 dark:border-slate-700/70 shadow-2xs">
                     <div
+                      data-chart-anchor=""
                       className={`w-full rounded-t-xl transition-all duration-500 bg-blue-600 dark:bg-blue-500 ${
                         isHovered ? 'brightness-110' : ''
                       }`}
@@ -326,53 +340,33 @@ export const CollectionChart: React.FC<CollectionChartProps> = ({
           </div>
         )}
 
-        {/* Floating Tooltip with Glassmorphism */}
+        {/* Infobulle de données : même bulle que les autres tooltips de l'application */}
         {activePoint && (
-          <div
-            className="absolute top-2 left-1/2 -translate-x-1/2 sm:translate-x-0 sm:left-auto sm:right-6 pointer-events-none z-20 animate-fade-in"
-          >
-            <div className="p-3.5 rounded-2xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200/90 dark:border-slate-800 shadow-xl text-xs space-y-2 min-w-[220px]">
-              <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
-                <span className="font-extrabold text-slate-900 dark:text-white text-sm">
-                  {activePoint.mois}
+          <TooltipBubble
+            anchorRef={hoveredAnchorRef}
+            content={
+              <span className="block space-y-1">
+                <span className="flex items-center justify-between gap-4 border-b border-white/15 pb-1">
+                  <span className="font-bold">{activePoint.mois}</span>
+                  <span className="font-mono font-medium text-slate-300">{activePoint.taux}% recouvré</span>
                 </span>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 font-mono">
-                  {activePoint.taux}% recouvré
+                <span className="flex items-center justify-between gap-4">
+                  <span className="font-medium text-slate-300">Encaissé</span>
+                  <span className="font-mono">{formatMRU(activePoint.encaisse)}</span>
                 </span>
-              </div>
-
-              <div className="space-y-1.5 font-mono">
-                <div className="flex items-center justify-between gap-4">
-                  <span className="text-slate-500 dark:text-slate-400 flex items-center gap-1.5 font-sans">
-                    <span className="h-2 w-2 rounded-full bg-blue-600" />
-                    Encaissé :
-                  </span>
-                  <strong className="text-slate-900 dark:text-white">
-                    {formatMRU(activePoint.encaisse)}
-                  </strong>
-                </div>
-
-                <div className="flex items-center justify-between gap-4">
-                  <span className="text-slate-500 dark:text-slate-400 flex items-center gap-1.5 font-sans">
-                    <span className="h-2 w-2 rounded-full bg-slate-300 dark:bg-slate-600" />
-                    Attendu total :
-                  </span>
-                  <span className="text-slate-600 dark:text-slate-300">
-                    {formatMRU(activePoint.attendu)}
-                  </span>
-                </div>
-
+                <span className="flex items-center justify-between gap-4">
+                  <span className="font-medium text-slate-300">Attendu total</span>
+                  <span className="font-mono">{formatMRU(activePoint.attendu)}</span>
+                </span>
                 {activePoint.impayes > 0 && (
-                  <div className="flex items-center justify-between gap-4 pt-1 border-t border-slate-100 dark:border-slate-800 text-rose-600 dark:text-rose-400">
-                    <span className="font-sans">Reste impayé :</span>
-                    <strong className="font-mono">
-                      {formatMRU(activePoint.impayes)}
-                    </strong>
-                  </div>
+                  <span className="flex items-center justify-between gap-4 text-rose-300">
+                    <span className="font-medium">Reste impayé</span>
+                    <span className="font-mono">{formatMRU(activePoint.impayes)}</span>
+                  </span>
                 )}
-              </div>
-            </div>
-          </div>
+              </span>
+            }
+          />
         )}
       </div>
     </div>
