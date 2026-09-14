@@ -3,6 +3,7 @@ import { EleveWithStats } from '../../lib/mockData';
 import { StudentInitials } from '../ui/StudentInitials';
 import { StatusBadge } from '../ui/StatusBadge';
 import { Button } from '../ui/Button';
+import { Tooltip } from '../ui/Tooltip';
 import { formatMRU } from '../../lib/utils';
 import { formatCompactMRU } from '../../lib/formatCompactMRU';
 import {
@@ -60,12 +61,11 @@ export const StudentDetailPanel: React.FC<StudentDetailPanelProps> = ({
         <div className="flex items-center gap-3.5 min-w-0">
           <StudentInitials nom={eleve.nom} prenom={eleve.prenom} size="lg" />
           <div className="space-y-1 min-w-0">
-            <h3
-              title={`${eleve.prenom} ${eleve.nom}`}
-              className="text-base font-bold text-slate-900 dark:text-white leading-snug truncate"
-            >
-              {eleve.prenom} {eleve.nom}
-            </h3>
+            <Tooltip content={`${eleve.prenom} ${eleve.nom}`} as="div" className="block min-w-0">
+              <h3 className="text-base font-bold text-slate-900 dark:text-white leading-snug truncate">
+                {eleve.prenom} {eleve.nom}
+              </h3>
+            </Tooltip>
             <p className="text-xs text-blue-700 dark:text-blue-400 font-mono font-semibold truncate">
               Matricule: {eleve.matricule}
             </p>
@@ -103,13 +103,15 @@ export const StudentDetailPanel: React.FC<StudentDetailPanelProps> = ({
         </div>
 
         <div className="flex items-center justify-between min-w-0">
-          <span
-            title={`${eleve.nom_tuteur} (${lienParenteLabels[eleve.lien_parente] || 'Tuteur'})`}
-            className="font-semibold text-slate-900 dark:text-white flex items-center gap-2 truncate min-w-0"
+          <Tooltip
+            content={`${eleve.nom_tuteur} (${lienParenteLabels[eleve.lien_parente] || 'Tuteur'})`}
+            className="flex min-w-0"
           >
-            <User className="h-3.5 w-3.5 text-slate-500 dark:text-slate-400 shrink-0" />
-            <span className="truncate">{eleve.nom_tuteur} ({lienParenteLabels[eleve.lien_parente] || 'Tuteur'})</span>
-          </span>
+            <span className="font-semibold text-slate-900 dark:text-white flex items-center gap-2 truncate min-w-0">
+              <User className="h-3.5 w-3.5 text-slate-500 dark:text-slate-400 shrink-0" />
+              <span className="truncate">{eleve.nom_tuteur} ({lienParenteLabels[eleve.lien_parente] || 'Tuteur'})</span>
+            </span>
+          </Tooltip>
         </div>
 
         <div className="flex items-center justify-between min-w-0">
@@ -124,7 +126,9 @@ export const StudentDetailPanel: React.FC<StudentDetailPanelProps> = ({
 
         <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400 pt-0.5 min-w-0">
           <MapPin className="h-3.5 w-3.5 text-slate-400 shrink-0" />
-          <span title={eleve.adresse_tuteur} className="truncate">{eleve.adresse_tuteur}</span>
+          <Tooltip content={eleve.adresse_tuteur} className="flex min-w-0">
+            <span className="truncate">{eleve.adresse_tuteur}</span>
+          </Tooltip>
         </div>
       </div>
 
@@ -135,14 +139,15 @@ export const StudentDetailPanel: React.FC<StudentDetailPanelProps> = ({
             Solde Actuel Dû
           </span>
           <div className="mt-1.5 min-w-0">
-            <span
-              title={formatMRU(eleve.remaining)}
-              className={`text-xl font-extrabold font-mono truncate block cursor-help ${
-                eleve.remaining > 0 ? 'text-red-700 dark:text-rose-400' : 'text-emerald-700 dark:text-emerald-400'
-              }`}
-            >
-              {formatCompactMRU(eleve.remaining)}
-            </span>
+            <Tooltip content={formatMRU(eleve.remaining)} as="div" className="block min-w-0">
+              <span
+                className={`text-xl font-extrabold font-mono truncate block cursor-help ${
+                  eleve.remaining > 0 ? 'text-red-700 dark:text-rose-400' : 'text-emerald-700 dark:text-emerald-400'
+                }`}
+              >
+                {formatCompactMRU(eleve.remaining)}
+              </span>
+            </Tooltip>
           </div>
           <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 mt-1.5 flex items-center gap-1.5 truncate">
             {eleve.remaining > 0 ? (
@@ -161,12 +166,11 @@ export const StudentDetailPanel: React.FC<StudentDetailPanelProps> = ({
             Prochaine Échéance
           </span>
           <div className="mt-1.5 min-w-0">
-            <span
-              title={formatMRU(eleve.prochaine_echeance_montant || 15000)}
-              className="text-xl font-extrabold font-mono text-slate-900 dark:text-white truncate block cursor-help"
-            >
-              {formatCompactMRU(eleve.prochaine_echeance_montant || 15000)}
-            </span>
+            <Tooltip content={formatMRU(eleve.prochaine_echeance_montant || 15000)} as="div" className="block min-w-0">
+              <span className="text-xl font-extrabold font-mono text-slate-900 dark:text-white truncate block cursor-help">
+                {formatCompactMRU(eleve.prochaine_echeance_montant || 15000)}
+              </span>
+            </Tooltip>
           </div>
           <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 mt-1.5 flex items-center gap-1 truncate">
             <Calendar className="h-3 w-3 text-slate-400 shrink-0" />

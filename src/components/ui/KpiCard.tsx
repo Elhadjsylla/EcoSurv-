@@ -175,11 +175,11 @@ export const KpiCard: React.FC<KpiCardProps> = ({
         )}
 
         {subtitle && (
-          <p
-            title={subtitle}
-            className="text-xs font-medium text-slate-600 dark:text-slate-400 flex items-center justify-between gap-2 min-w-0"
-          >
-            <span className="truncate min-w-0">{subtitle}</span>
+          <p className="text-xs font-medium text-slate-600 dark:text-slate-400 flex items-center justify-between gap-2 min-w-0">
+            {/* Sous le texte : l'infobulle ne recouvre jamais le chiffre de la carte */}
+            <Tooltip content={subtitle} side="bottom" className="flex min-w-0">
+              <span className="truncate min-w-0">{subtitle}</span>
+            </Tooltip>
             {onClick && (
               <span className="text-[11px] font-bold text-blue-600 dark:text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
                 Filtrer →

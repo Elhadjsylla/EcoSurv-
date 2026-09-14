@@ -6,6 +6,7 @@ import {
   ElevePedagogique,
 } from '../../lib/mockData';
 import { StudentInitials } from '../../components/ui/StudentInitials';
+import { Tooltip } from '../../components/ui/Tooltip';
 import {
   Search,
   Phone,
@@ -312,16 +313,18 @@ export const TeacherClassesPage: React.FC = () => {
 
                           {/* Context menu "..." */}
                           <td className="py-4 px-6 text-right whitespace-nowrap relative student-menu-container">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setActiveMenuId(activeMenuId === el.id ? null : el.id);
-                              }}
-                              className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
-                              title="Options"
-                            >
-                              <MoreHorizontal className="w-4 h-4" />
-                            </button>
+                            <Tooltip content="Options">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setActiveMenuId(activeMenuId === el.id ? null : el.id);
+                                }}
+                                className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                                aria-label="Options"
+                              >
+                                <MoreHorizontal className="w-4 h-4" />
+                              </button>
+                            </Tooltip>
 
                             {activeMenuId === el.id && (
                               <div className="absolute right-6 top-12 z-30 w-48 bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-slate-200 dark:border-slate-800 py-1.5 text-left animate-in fade-in zoom-in-95">

@@ -3,6 +3,7 @@ import { EleveWithStats } from '../../lib/mockData';
 import { StudentInitials } from '../ui/StudentInitials';
 import { StatusBadge } from '../ui/StatusBadge';
 import { Button } from '../ui/Button';
+import { Tooltip } from '../ui/Tooltip';
 import { formatMRU } from '../../lib/utils';
 import {
   X,
@@ -98,50 +99,58 @@ export const StudentDetailDrawer: React.FC<StudentDetailDrawerProps> = ({
 
             {/* Quick Action Icons Row */}
             <div className="flex items-center justify-center gap-2.5 mt-4">
-              <button
-                type="button"
-                onClick={() => showActionToast('Dossier scolaire ouvert')}
-                className="h-9 w-9 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-300 hover:bg-blue-50/50 flex items-center justify-center transition-all shadow-2xs"
-                title="Dossier scolaire"
-              >
-                <FolderOpen className="h-4 w-4" />
-              </button>
+              <Tooltip content="Dossier scolaire">
+                <button
+                  type="button"
+                  onClick={() => showActionToast('Dossier scolaire ouvert')}
+                  className="h-9 w-9 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-300 hover:bg-blue-50/50 flex items-center justify-center transition-all shadow-2xs"
+                  aria-label="Dossier scolaire"
+                >
+                  <FolderOpen className="h-4 w-4" />
+                </button>
+              </Tooltip>
 
-              <button
-                type="button"
-                onClick={() => {
-                  setIsFavorite(!isFavorite);
-                  showActionToast(isFavorite ? 'Retiré des favoris' : 'Ajouté aux favoris');
-                }}
-                className={`h-9 w-9 rounded-xl border flex items-center justify-center transition-all shadow-2xs ${
-                  isFavorite
-                    ? 'bg-amber-50 dark:bg-amber-950/50 border-amber-300 text-amber-500'
-                    : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-amber-500'
-                }`}
-                title="Favori"
-              >
-                <Star className={`h-4 w-4 ${isFavorite ? 'fill-amber-400' : ''}`} />
-              </button>
+              <Tooltip content="Favori">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsFavorite(!isFavorite);
+                    showActionToast(isFavorite ? 'Retiré des favoris' : 'Ajouté aux favoris');
+                  }}
+                  className={`h-9 w-9 rounded-xl border flex items-center justify-center transition-all shadow-2xs ${
+                    isFavorite
+                      ? 'bg-amber-50 dark:bg-amber-950/50 border-amber-300 text-amber-500'
+                      : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-amber-500'
+                  }`}
+                  aria-label="Favori"
+                >
+                  <Star className={`h-4 w-4 ${isFavorite ? 'fill-amber-400' : ''}`} />
+                </button>
+              </Tooltip>
 
-              <button
-                type="button"
-                onClick={() => {
-                  showActionToast('Impression attestation / reçu');
-                  window.print();
-                }}
-                className="h-9 w-9 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-300 hover:bg-blue-50/50 flex items-center justify-center transition-all shadow-2xs"
-                title="Imprimer attestation"
-              >
-                <Printer className="h-4 w-4" />
-              </button>
+              <Tooltip content="Imprimer attestation">
+                <button
+                  type="button"
+                  onClick={() => {
+                    showActionToast('Impression attestation / reçu');
+                    window.print();
+                  }}
+                  className="h-9 w-9 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-300 hover:bg-blue-50/50 flex items-center justify-center transition-all shadow-2xs"
+                  aria-label="Imprimer attestation"
+                >
+                  <Printer className="h-4 w-4" />
+                </button>
+              </Tooltip>
 
-              <a
-                href={`tel:${eleve.telephone_tuteur}`}
-                className="h-9 w-9 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-emerald-600 dark:hover:text-emerald-400 hover:border-emerald-300 hover:bg-emerald-50/50 flex items-center justify-center transition-all shadow-2xs"
-                title="Appeler tuteur"
-              >
-                <Phone className="h-4 w-4" />
-              </a>
+              <Tooltip content="Appeler tuteur">
+                <a
+                  href={`tel:${eleve.telephone_tuteur}`}
+                  className="h-9 w-9 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-emerald-600 dark:hover:text-emerald-400 hover:border-emerald-300 hover:bg-emerald-50/50 flex items-center justify-center transition-all shadow-2xs"
+                  aria-label="Appeler tuteur"
+                >
+                  <Phone className="h-4 w-4" />
+                </a>
+              </Tooltip>
             </div>
           </div>
 

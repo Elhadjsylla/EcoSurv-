@@ -11,6 +11,7 @@ import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { StudentInitials } from '../../components/ui/StudentInitials';
 import { ToastNotification } from '../../components/ui/ToastNotification';
+import { Tooltip } from '../../components/ui/Tooltip';
 import { formatMRU } from '../../lib/utils';
 import {
   CreditCard,
@@ -288,13 +289,15 @@ export const CaissierGuichetPage: React.FC<CaissierGuichetPageProps> = ({
                     </div>
                   </div>
 
-                  <button
-                    onClick={() => setSelectedEleveId('')}
-                    className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 rounded-md hover:bg-white dark:hover:bg-slate-800"
-                    title="Changer d'élève"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
+                  <Tooltip content="Changer d'élève">
+                    <button
+                      onClick={() => setSelectedEleveId('')}
+                      className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 rounded-md hover:bg-white dark:hover:bg-slate-800"
+                      aria-label="Changer d'élève"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </Tooltip>
                 </div>
 
                 <div className="grid grid-cols-2 gap-2 pt-2 border-t border-amber-200/60 dark:border-amber-900/40 text-xs">

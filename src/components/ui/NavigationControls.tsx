@@ -2,6 +2,7 @@ import React from 'react';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import type { UserRole } from './Header';
+import { Tooltip } from './Tooltip';
 import { useNavigationStore } from '../../store/useNavigationStore';
 
 // Couleur d'accent du portail, appliquée uniquement au survol d'un bouton actif.
@@ -25,7 +26,7 @@ interface NavButtonProps {
 }
 
 const NavButton: React.FC<NavButtonProps> = ({ label, icon, disabled, onClick, role }) => (
-  <div className="relative group/nav">
+  <Tooltip content={label} side="bottom">
     <button
       type="button"
       onClick={onClick}
@@ -39,13 +40,7 @@ const NavButton: React.FC<NavButtonProps> = ({ label, icon, disabled, onClick, r
     >
       {icon}
     </button>
-    <span
-      aria-hidden="true"
-      className="pointer-events-none absolute left-1/2 top-full mt-2 -translate-x-1/2 whitespace-nowrap rounded-lg bg-slate-900 dark:bg-slate-700 px-2 py-1 text-[10px] font-semibold text-white shadow-lg opacity-0 transition-opacity group-hover/nav:opacity-100 group-focus-within/nav:opacity-100 z-50"
-    >
-      {label}
-    </span>
-  </div>
+  </Tooltip>
 );
 
 export const NavigationControls: React.FC<{ role: UserRole }> = ({ role }) => {

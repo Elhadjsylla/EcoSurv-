@@ -3,6 +3,7 @@ import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Select } from '../components/ui/Select';
 import { KpiCard } from '../components/ui/KpiCard';
+import { Tooltip } from '../components/ui/Tooltip';
 import {
   MOCK_ECHEANCIERS,
   EcheancierConfig,
@@ -225,10 +226,7 @@ export const EcheancesPage: React.FC = () => {
                     </td>
 
                     {/* Montant Total */}
-                    <td
-                      title={formatMRU(ech.montant_total)}
-                      className="py-4.5 px-5 text-right font-mono font-bold text-slate-900 dark:text-white whitespace-nowrap cursor-help text-xs"
-                    >
+                    <td className="py-4.5 px-5 text-right font-mono font-bold text-slate-900 dark:text-white whitespace-nowrap text-xs">
                       {formatMRU(ech.montant_total)}
                     </td>
 
@@ -253,10 +251,7 @@ export const EcheancesPage: React.FC = () => {
                     </td>
 
                     {/* Montant / Tranche */}
-                    <td
-                      title={formatMRU(ech.montant_par_tranche)}
-                      className="py-4.5 px-5 text-right font-mono font-bold text-emerald-700 dark:text-emerald-400 whitespace-nowrap cursor-help text-xs"
-                    >
+                    <td className="py-4.5 px-5 text-right font-mono font-bold text-emerald-700 dark:text-emerald-400 whitespace-nowrap text-xs">
                       {formatMRU(ech.montant_par_tranche)}
                     </td>
 
@@ -275,14 +270,16 @@ export const EcheancesPage: React.FC = () => {
 
                     {/* Actions Context Menu "..." */}
                     <td className="py-4.5 px-4 text-center relative">
-                      <button
-                        type="button"
-                        onClick={() => setOpenMenuRowId(isMenuOpen ? null : ech.id)}
-                        className="h-8 w-8 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 flex items-center justify-center transition-colors mx-auto"
-                        title="Options"
-                      >
-                        <MoreHorizontal className="h-4 w-4" />
-                      </button>
+                      <Tooltip content="Options">
+                        <button
+                          type="button"
+                          onClick={() => setOpenMenuRowId(isMenuOpen ? null : ech.id)}
+                          className="h-8 w-8 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 flex items-center justify-center transition-colors mx-auto"
+                          aria-label="Options"
+                        >
+                          <MoreHorizontal className="h-4 w-4" />
+                        </button>
+                      </Tooltip>
 
                       {isMenuOpen && (
                         <div className="absolute right-4 top-10 w-48 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xl z-30 py-1 text-xs text-left animate-in fade-in zoom-in-95">

@@ -11,6 +11,7 @@ import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { ToastNotification } from '../components/ui/ToastNotification';
 import { KpiCard } from '../components/ui/KpiCard';
+import { Tooltip } from '../components/ui/Tooltip';
 import { StudentDetailDrawer } from '../components/dashboard/StudentDetailDrawer';
 import { formatMRU } from '../lib/utils';
 import { formatCompactMRU } from '../lib/formatCompactMRU';
@@ -707,14 +708,13 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
                       {/* Solde Dû */}
                       <td className="py-4 px-4 text-right font-mono font-black whitespace-nowrap text-xs">
                         {eleve.remaining > 0 ? (
-                          <span
-                            title={formatMRU(eleve.remaining)}
-                            className="text-rose-600 dark:text-rose-400 cursor-help"
-                          >
-                            {eleve.remaining >= 100000
-                              ? formatCompactMRU(eleve.remaining)
-                              : formatMRU(eleve.remaining)}
-                          </span>
+                          <Tooltip content={formatMRU(eleve.remaining)}>
+                            <span className="text-rose-600 dark:text-rose-400 cursor-help">
+                              {eleve.remaining >= 100000
+                                ? formatCompactMRU(eleve.remaining)
+                                : formatMRU(eleve.remaining)}
+                            </span>
+                          </Tooltip>
                         ) : (
                           <span className="text-emerald-600 dark:text-emerald-400 font-bold">Soldé</span>
                         )}
@@ -725,17 +725,19 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
                         className="py-4 px-4 text-center relative"
                         onClick={(e) => e.stopPropagation()}
                       >
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setOpenMenuRowId(isMenuOpen ? null : eleve.id);
-                          }}
-                          className="h-8 w-8 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 flex items-center justify-center transition-colors mx-auto"
-                          title="Options"
-                        >
-                          <MoreHorizontal className="h-4 w-4" />
-                        </button>
+                        <Tooltip content="Options">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setOpenMenuRowId(isMenuOpen ? null : eleve.id);
+                            }}
+                            className="h-8 w-8 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 flex items-center justify-center transition-colors mx-auto"
+                            aria-label="Options"
+                          >
+                            <MoreHorizontal className="h-4 w-4" />
+                          </button>
+                        </Tooltip>
 
                         {/* Dropdown Menu */}
                         {isMenuOpen && (
