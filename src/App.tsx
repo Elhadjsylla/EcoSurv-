@@ -5,7 +5,8 @@ import { Sidebar, NavTab } from './components/ui/Sidebar';
 import { TeacherSidebar, TeacherNavTab } from './components/enseignant/TeacherSidebar';
 import { CaissierSidebar, CaissierNavTab } from './components/caissier/CaissierSidebar';
 import { ParentSidebar, ParentNavTab } from './components/parent/ParentSidebar';
-import { Header, UserRole } from './components/ui/Header';
+import { Header } from './components/ui/Header';
+import { useNavigationStore, selectCurrentRoute } from './store/useNavigationStore';
 import { DirectorDashboard } from './components/dashboard/DirectorDashboard';
 import { ElevesPage } from './pages/ElevesPage';
 import { EcheancesPage } from './pages/EcheancesPage';
@@ -40,32 +41,42 @@ export function AppContent() {
     initTheme();
   }, [initTheme]);
 
-  // Rôle actif dans l'application (basculable dans le Header pour la démo)
-  const [currentRole, setCurrentRole] = useState<UserRole>('directeur');
+  // Rôle actif (basculable dans le Header pour la démo) et écran courant,
+  // pilotés par l'historique de navigation (boutons Précédent / Suivant)
+  const currentRole = useNavigationStore((s) => s.portal);
+  const currentRoute = useNavigationStore(selectCurrentRoute);
+  const navigate = useNavigationStore((s) => s.navigate);
+  const switchPortal = useNavigationStore((s) => s.switchPortal);
 
-  // Onglet actif pour le portail Directeur
-  const [activeDirectorTab, setActiveDirectorTab] = useState<NavTab>('dashboard');
+  // L'écran courant n'appartient qu'au portail actif : les switchs de rendu
+  // ci-dessous ne sont évalués que pour ce portail.
+  const activeDirectorTab = currentRoute as NavTab;
+  const activeTeacherTab = currentRoute as TeacherNavTab;
+  const activeCaissierTab = currentRoute as CaissierNavTab;
+  const activeParentTab = currentRoute as ParentNavTab;
+
+  // État propre au portail Directeur
   const [elevesStatutFilter, setElevesStatutFilter] = useState<string>('all');
 
-  // Onglet actif pour le portail Enseignant
-  const [activeTeacherTab, setActiveTeacherTab] = useState<TeacherNavTab>('teacher_dashboard');
-
-  // Onglet actif et état pour le portail Caissier
-  const [activeCaissierTab, setActiveCaissierTab] = useState<CaissierNavTab>('caissier_guichet');
+  // État propre au portail Caissier
   const [preselectedEleveForGuichet, setPreselectedEleveForGuichet] = useState<string | undefined>(undefined);
 
-  // Onglet actif et état pour le portail Parent
-  const [activeParentTab, setActiveParentTab] = useState<ParentNavTab>('parent_dashboard');
+  // État propre au portail Parent
   const [selectedParentChildId, setSelectedParentChildId] = useState<string>('el-003');
 
   const handleNavigateToElevesWithFilter = (statut: string) => {
     setElevesStatutFilter(statut);
-    setActiveDirectorTab('eleves');
+    navigate('eleves');
   };
 
   const handleGoToGuichetWithEleve = (eleveId: string) => {
     setPreselectedEleveForGuichet(eleveId);
-    setActiveCaissierTab('caissier_guichet');
+    navigate('caissier_guichet');
+  };
+
+  // Les raccourcis du Header (notifications, profil) ciblent des écrans Directeur
+  const handleHeaderNavigate = (tab: string) => {
+    if (currentRole === 'directeur') navigate(tab as NavTab);
   };
 
   const renderDirectorContent = () => {
@@ -97,7 +108,7 @@ export function AppContent() {
       case 'teacher_dashboard':
         return (
           <TeacherDashboard
-            onNavigateToTab={(tab) => setActiveTeacherTab(tab)}
+            onNavigateToTab={navigate}
           />
         );
       case 'teacher_classes':
@@ -109,7 +120,7 @@ export function AppContent() {
       default:
         return (
           <TeacherDashboard
-            onNavigateToTab={(tab) => setActiveTeacherTab(tab)}
+            onNavigateToTab={navigate}
           />
         );
     }
@@ -139,7 +150,7 @@ export function AppContent() {
           <ParentDashboardPage
             selectedChildId={selectedParentChildId}
             onSelectChild={setSelectedParentChildId}
-            onNavigateTab={setActiveParentTab}
+            onNavigateTab={navigate}
           />
         );
       case 'parent_paiements':
@@ -165,7 +176,7 @@ export function AppContent() {
           <ParentDashboardPage
             selectedChildId={selectedParentChildId}
             onSelectChild={setSelectedParentChildId}
-            onNavigateTab={setActiveParentTab}
+            onNavigateTab={navigate}
           />
         );
     }
@@ -177,19 +188,19 @@ export function AppContent() {
       {currentRole === 'enseignant' && (
         <TeacherSidebar
           activeTab={activeTeacherTab}
-          onTabChange={setActiveTeacherTab}
+          onTabChange={navigate}
         />
       )}
       {currentRole === 'caissier' && (
         <CaissierSidebar
           activeTab={activeCaissierTab}
-          onTabChange={setActiveCaissierTab}
+          onTabChange={navigate}
         />
       )}
       {currentRole === 'parent' && (
         <ParentSidebar
           activeTab={activeParentTab}
-          onTabChange={setActiveParentTab}
+          onTabChange={navigate}
           selectedChildId={selectedParentChildId}
           onSelectChild={setSelectedParentChildId}
         />
@@ -197,7 +208,7 @@ export function AppContent() {
       {currentRole === 'directeur' && (
         <Sidebar
           activeTab={activeDirectorTab}
-          onTabChange={setActiveDirectorTab}
+          onTabChange={navigate}
         />
       )}
 
@@ -205,8 +216,8 @@ export function AppContent() {
       <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
         <Header
           currentRole={currentRole}
-          onRoleChange={setCurrentRole}
-          onNavigateTab={(tab) => setActiveDirectorTab(tab as any)}
+          onRoleChange={switchPortal}
+          onNavigateTab={handleHeaderNavigate}
         />
         <main className="flex-1 overflow-y-auto overflow-x-hidden">
           {currentRole === 'enseignant' && renderTeacherContent()}
