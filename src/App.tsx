@@ -7,6 +7,7 @@ import { CaissierSidebar, CaissierNavTab } from './components/caissier/CaissierS
 import { ParentSidebar, ParentNavTab } from './components/parent/ParentSidebar';
 import { Header } from './components/ui/Header';
 import { useNavigationStore, selectCurrentRoute } from './store/useNavigationStore';
+import { useSwipeNavigation } from './hooks/useSwipeNavigation';
 import { DirectorDashboard } from './components/dashboard/DirectorDashboard';
 import { ElevesPage } from './pages/ElevesPage';
 import { EcheancesPage } from './pages/EcheancesPage';
@@ -40,6 +41,8 @@ export function AppContent() {
   useEffect(() => {
     initTheme();
   }, [initTheme]);
+
+  useSwipeNavigation();
 
   // Rôle actif (basculable dans le Header pour la démo) et écran courant,
   // pilotés par l'historique de navigation (boutons Précédent / Suivant)

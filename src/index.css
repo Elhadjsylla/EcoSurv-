@@ -6,6 +6,12 @@
   :root {
     --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
   }
+  /* Désactive le swipe « page précédente » natif du navigateur : le geste est
+     géré par useSwipeNavigation, sinon il naviguerait deux fois ou quitterait l'app. */
+  html,
+  body {
+    overscroll-behavior-x: none;
+  }
   body {
     @apply bg-slate-50 text-slate-900 antialiased transition-colors duration-200;
   }
