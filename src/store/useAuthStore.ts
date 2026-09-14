@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { User } from '@supabase/supabase-js';
+import { useNavigationStore } from './useNavigationStore';
 
 export type UserRole = 'super_admin' | 'directeur' | 'enseignant' | 'parent' | 'caissier';
 
@@ -32,5 +33,8 @@ export const useAuthStore = create<AuthState>((set) => ({
   setUser: (user) => set({ user }),
   setProfile: (profile) => set({ profile }),
   setLoading: (isLoading) => set({ isLoading }),
-  logout: () => set({ user: null, profile: null, isLoading: false }),
+  logout: () => {
+    useNavigationStore.getState().reset();
+    set({ user: null, profile: null, isLoading: false });
+  },
 }));
