@@ -23,21 +23,31 @@ interface NavigationState {
   /** Pile des écrans visités ; l'écran affiché est entries[index]. */
   entries: AppRoute[];
   index: number;
+  canGoBack: boolean;
+  canGoForward: boolean;
   navigate: (route: AppRoute) => void;
-  back: () => void;
-  forward: () => void;
+  goBack: () => void;
+  goForward: () => void;
   switchPortal: (portal: UserRole) => void;
   reset: () => void;
 }
 
-const initialState: Pick<NavigationState, 'portal' | 'entries' | 'index'> = {
-  portal: 'directeur',
-  entries: [PORTAL_HOME.directeur],
-  index: 0,
+// Position dans la pile, avec les booléens qui en découlent toujours à jour.
+const positionAt = (entries: AppRoute[], index: number) => ({
+  entries,
+  index,
+  canGoBack: index > 0,
+  canGoForward: index < entries.length - 1,
+});
+
+const initialState = {
+  portal: 'directeur' as UserRole,
+  ...positionAt([PORTAL_HOME.directeur], 0),
 };
 
 /**
- * Historique de navigation interne à l'application (boutons Précédent / Suivant).
+ * Historique de navigation interne à l'application (boutons Précédent / Suivant
+ * et swipe trackpad).
  *
  * Gardé en mémoire uniquement : jamais persisté, et réinitialisé au changement
  * de portail ou à la déconnexion.
@@ -51,22 +61,21 @@ export const useNavigationStore = create<NavigationState>((set) => ({
       if (state.entries[state.index] === route) return state;
       // Naviguer depuis le milieu de la pile efface l'historique « suivant ».
       const entries = [...state.entries.slice(0, state.index + 1), route].slice(-MAX_HISTORY_ENTRIES);
-      return { entries, index: entries.length - 1 };
+      return positionAt(entries, entries.length - 1);
     }),
 
-  back: () => set((state) => (state.index > 0 ? { index: state.index - 1 } : state)),
+  goBack: () =>
+    set((state) => (state.canGoBack ? positionAt(state.entries, state.index - 1) : state)),
 
-  forward: () =>
-    set((state) => (state.index < state.entries.length - 1 ? { index: state.index + 1 } : state)),
+  goForward: () =>
+    set((state) => (state.canGoForward ? positionAt(state.entries, state.index + 1) : state)),
 
   switchPortal: (portal) =>
     set((state) =>
-      state.portal === portal ? state : { portal, entries: [PORTAL_HOME[portal]], index: 0 }
+      state.portal === portal ? state : { portal, ...positionAt([PORTAL_HOME[portal]], 0) }
     ),
 
   reset: () => set(initialState),
 }));
 
 export const selectCurrentRoute = (s: NavigationState) => s.entries[s.index];
-export const selectCanGoBack = (s: NavigationState) => s.index > 0;
-export const selectCanGoForward = (s: NavigationState) => s.index < s.entries.length - 1;

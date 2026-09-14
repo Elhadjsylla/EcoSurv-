@@ -1,12 +1,8 @@
 import React from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import type { UserRole } from './Header';
-import {
-  useNavigationStore,
-  selectCanGoBack,
-  selectCanGoForward,
-} from '../../store/useNavigationStore';
+import { useNavigationStore } from '../../store/useNavigationStore';
 
 // Couleur d'accent du portail, appliquée uniquement au survol d'un bouton actif.
 const accentHover: Record<UserRole, string> = {
@@ -53,25 +49,25 @@ const NavButton: React.FC<NavButtonProps> = ({ label, icon, disabled, onClick, r
 );
 
 export const NavigationControls: React.FC<{ role: UserRole }> = ({ role }) => {
-  const canGoBack = useNavigationStore(selectCanGoBack);
-  const canGoForward = useNavigationStore(selectCanGoForward);
-  const back = useNavigationStore((s) => s.back);
-  const forward = useNavigationStore((s) => s.forward);
+  const canGoBack = useNavigationStore((s) => s.canGoBack);
+  const canGoForward = useNavigationStore((s) => s.canGoForward);
+  const goBack = useNavigationStore((s) => s.goBack);
+  const goForward = useNavigationStore((s) => s.goForward);
 
   return (
     <div className="flex items-center gap-1 shrink-0">
       <NavButton
         label="Précédent"
-        icon={<ChevronLeft className="h-4 w-4" />}
+        icon={<ArrowLeft className="h-4 w-4" />}
         disabled={!canGoBack}
-        onClick={back}
+        onClick={goBack}
         role={role}
       />
       <NavButton
         label="Suivant"
-        icon={<ChevronRight className="h-4 w-4" />}
+        icon={<ArrowRight className="h-4 w-4" />}
         disabled={!canGoForward}
-        onClick={forward}
+        onClick={goForward}
         role={role}
       />
     </div>
