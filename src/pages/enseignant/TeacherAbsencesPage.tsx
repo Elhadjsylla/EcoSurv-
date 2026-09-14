@@ -204,7 +204,7 @@ export const TeacherAbsencesPage: React.FC = () => {
         <KpiCard
           title="Élèves Présents"
           amount={countPresents}
-          unit=""
+          unit="count"
           subtitle={`Sur ${teacherStudents.length} convoqués`}
           icon={<CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />}
           variant="success"
@@ -213,7 +213,7 @@ export const TeacherAbsencesPage: React.FC = () => {
         <KpiCard
           title="Élèves Absents"
           amount={countAbsents}
-          unit=""
+          unit="count"
           subtitle="Signalés non-présents"
           icon={<XCircle className="w-5 h-5 text-rose-600 dark:text-rose-400" />}
           variant="danger"
@@ -222,7 +222,7 @@ export const TeacherAbsencesPage: React.FC = () => {
         <KpiCard
           title="Arrivées Tardives"
           amount={countRetards}
-          unit=""
+          unit="count"
           subtitle="Enregistrés en retard"
           icon={<Clock className="w-5 h-5 text-amber-600 dark:text-amber-400" />}
           variant="warning"

@@ -162,6 +162,7 @@ export const ParentPaiementsPage: React.FC<ParentPaiementsPageProps> = ({
         <KpiCard
           title="Montant Annuel Total"
           amount={enfantData.total_scolarite}
+          unit="MRU"
           subtitle={`Classe : ${enfantData.classe}`}
           icon={<CreditCard className="w-5 h-5 text-purple-600 dark:text-purple-400" />}
           variant="purple"
@@ -170,6 +171,7 @@ export const ParentPaiementsPage: React.FC<ParentPaiementsPageProps> = ({
         <KpiCard
           title="Total Déjà Réglé"
           amount={enfantData.total_regle}
+          unit="MRU"
           subtitle={`${Math.round((enfantData.total_regle / enfantData.total_scolarite) * 100)}% de la scolarité acquittée`}
           icon={<CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />}
           variant="success"
@@ -178,6 +180,7 @@ export const ParentPaiementsPage: React.FC<ParentPaiementsPageProps> = ({
         <KpiCard
           title="Reste à Régler"
           amount={enfantData.reste_a_payer}
+          unit="MRU"
           subtitle={
             enfantData.reste_a_payer > 0
               ? `Échéance limite : ${enfantData.prochaine_echeance_date}`

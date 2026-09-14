@@ -4,11 +4,22 @@ import { formatCompactMRU } from '../../lib/formatCompactMRU';
 import { ArrowUpRight } from 'lucide-react';
 import { useCountUp } from '../../hooks/useCountUp';
 
-interface KpiCardProps {
+/**
+ * Unité d'une valeur chiffrée :
+ * - 'MRU' : montant en Ouguiya, formaté en devise (compacté par défaut) ;
+ * - 'count' : nombre (élèves, absences, quittances…), sans devise.
+ */
+export type KpiUnit = 'MRU' | 'count';
+
+// `unit` est obligatoire dès qu'un `amount` est fourni : aucune unité par défaut,
+// pour qu'un comptage ne puisse plus s'afficher en MRU par oubli.
+type KpiValueProps =
+  | { amount: number; unit: KpiUnit; customValue?: never }
+  | { customValue: ReactNode; amount?: never; unit?: never }
+  | { amount?: never; unit?: never; customValue?: never };
+
+type KpiCardProps = KpiValueProps & {
   title: string;
-  amount?: number;
-  unit?: string;
-  customValue?: ReactNode;
   subtitle?: string;
   icon?: ReactNode;
   variant?: 'default' | 'primary' | 'success' | 'danger' | 'warning' | 'purple';
@@ -17,8 +28,9 @@ interface KpiCardProps {
   onClick?: () => void;
   active?: boolean;
   staggerIndex?: number;
+  /** Montants MRU uniquement : format abrégé (ex. 57,5k MRU). */
   compact?: boolean;
-}
+};
 
 export const KpiCard: React.FC<KpiCardProps> = ({
   title,
@@ -66,25 +78,15 @@ export const KpiCard: React.FC<KpiCardProps> = ({
     purple: 'hover:border-purple-400 dark:hover:border-purple-700 hover:shadow-purple-500/5',
   };
 
-  const fullAmountText =
-    amount !== undefined
-      ? unit !== undefined
-        ? unit
-          ? `${amount.toLocaleString('fr-FR')} ${unit}`.trim()
-          : amount.toLocaleString('fr-FR')
-        : formatMRU(amount)
-      : undefined;
+  const formatValue = (value: number, abbreviated: boolean) =>
+    unit === 'count'
+      ? value.toLocaleString('fr-FR')
+      : abbreviated
+      ? formatCompactMRU(value)
+      : formatMRU(value);
 
-  const displayAmount =
-    amount !== undefined
-      ? unit !== undefined
-        ? unit
-          ? `${animatedAmount.toLocaleString('fr-FR')} ${unit}`.trim()
-          : animatedAmount.toLocaleString('fr-FR')
-        : compact
-        ? formatCompactMRU(animatedAmount)
-        : formatMRU(animatedAmount)
-      : null;
+  const fullAmountText = amount !== undefined ? formatValue(amount, false) : undefined;
+  const displayAmount = amount !== undefined ? formatValue(animatedAmount, compact) : null;
 
   return (
     <div
