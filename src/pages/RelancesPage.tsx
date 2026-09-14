@@ -201,6 +201,7 @@ export const RelancesPage: React.FC = () => {
           staggerIndex={0}
           title="Relances Expédiées"
           amount={relancesHistory.length}
+          unit="count"
           subtitle="100% délivrées sans échec"
           icon={<MessageSquare className="h-5 w-5" />}
           variant="primary"
@@ -210,6 +211,7 @@ export const RelancesPage: React.FC = () => {
           staggerIndex={1}
           title="Élèves Cibles"
           amount={overdueEleves.length}
+          unit="count"
           subtitle="Familles en retard de paiement"
           icon={<AlertTriangle className="h-5 w-5" />}
           variant="danger"
@@ -219,6 +221,7 @@ export const RelancesPage: React.FC = () => {
           staggerIndex={2}
           title="Volume Impayé Cible"
           amount={totalImpayesCibles}
+          unit="MRU"
           subtitle="À recouvrer en urgence"
           icon={<Send className="h-5 w-5" />}
           variant="warning"

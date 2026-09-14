@@ -137,6 +137,7 @@ export const ParentDashboardPage: React.FC<ParentDashboardPageProps> = ({
         <KpiCard
           title="Frais de Scolarité"
           amount={enfant.reste_a_payer}
+          unit="MRU"
           subtitle={
             enfant.reste_a_payer === 0
               ? `Compte à jour (${formatMRU(enfant.total_regle)} réglés)`

@@ -437,6 +437,7 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
           staggerIndex={0}
           title="Effectif Total"
           amount={kpis.nombreEleves}
+          unit="count"
           subtitle="Afficher tous les élèves"
           icon={<Users className="h-5 w-5" />}
           variant="primary"
@@ -448,6 +449,7 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
           staggerIndex={1}
           title="Élèves En Règle"
           amount={kpis.nombrePaye + kpis.nombreAJour}
+          unit="count"
           subtitle="Filtrer les élèves réglés"
           icon={<CheckCircle2 className="h-5 w-5" />}
           variant="success"
@@ -459,6 +461,7 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
           staggerIndex={2}
           title="Échéances en Retard"
           amount={kpis.nombreEnRetard}
+          unit="count"
           subtitle={`Total impayés : ${formatCompactMRU(kpis.totalImpayes)}`}
           icon={<AlertTriangle className="h-5 w-5" />}
           variant="danger"

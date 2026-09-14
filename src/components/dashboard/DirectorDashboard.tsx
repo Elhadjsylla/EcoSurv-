@@ -375,6 +375,7 @@ export const DirectorDashboard: React.FC<DirectorDashboardProps> = ({
           staggerIndex={0}
           title="Total Scolarités Attendues"
           amount={kpis.totalAttendu}
+          unit="MRU"
           subtitle={`Pour les ${kpis.nombreEleves} élèves inscrits`}
           icon={<TrendingUp className="h-5 w-5" />}
           variant="primary"
@@ -389,6 +390,7 @@ export const DirectorDashboard: React.FC<DirectorDashboardProps> = ({
           staggerIndex={1}
           title="Total Encaissé"
           amount={kpis.totalEncaisse}
+          unit="MRU"
           subtitle={`${kpis.nombrePaye} élèves réglés intégralement`}
           icon={<CheckCircle2 className="h-5 w-5" />}
           variant="success"
@@ -404,6 +406,7 @@ export const DirectorDashboard: React.FC<DirectorDashboardProps> = ({
           staggerIndex={2}
           title="Reste à Recouvrer (Impayés)"
           amount={kpis.totalImpayes}
+          unit="MRU"
           subtitle={`${kpis.nombreEnRetard} élèves actuellement en retard`}
           icon={<AlertCircle className="h-5 w-5" />}
           variant="danger"

@@ -121,6 +121,7 @@ export const RapportsPage: React.FC = () => {
           staggerIndex={0}
           title="Total Attendu Cumulé"
           amount={totalAttenduAnnee}
+          unit="MRU"
           subtitle="7 mois d'exercice comptabilisés"
           icon={<TrendingUp className="h-5 w-5" />}
           variant="primary"
@@ -130,6 +131,7 @@ export const RapportsPage: React.FC = () => {
           staggerIndex={1}
           title="Total Encaissé Cumulé"
           amount={totalEncaisseAnnee}
+          unit="MRU"
           progress={tauxGlobalAnnee}
           subtitle="Recouvrés sur l'exercice"
           icon={<CheckCircle className="h-5 w-5" />}
@@ -140,6 +142,7 @@ export const RapportsPage: React.FC = () => {
           staggerIndex={2}
           title="Reste à Recouvrer"
           amount={totalImpayesAnnee}
+          unit="MRU"
           subtitle="Total des relances en cours"
           icon={<FileText className="h-5 w-5" />}
           variant="danger"
