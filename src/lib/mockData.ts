@@ -3,7 +3,7 @@
 export type RoleUtilisateur = 'super_admin' | 'directeur' | 'enseignant' | 'parent' | 'caissier';
 export type StatutEcheance = 'a_jour' | 'en_retard' | 'partiel' | 'paye';
 export type StatutPaiement = 'en_attente' | 'confirme' | 'echoue' | 'rembourse' | 'annule';
-export type MethodePaiement = 'especes' | 'bankily' | 'masrvi' | 'sedad' | 'virement' | 'cheque';
+export type MethodePaiement = 'especes' | 'bankily' | 'masrvi' | 'cheque';
 export type LienParente = 'pere' | 'mere' | 'tuteur' | 'autre';
 export type FrequenceEcheance = 'mensuel' | 'trimestriel' | 'annuel';
 
@@ -243,9 +243,9 @@ export const MOCK_ELEVES: EleveWithStats[] = [
         libelle: 'Mensualité Janvier 2026 (Acompte)',
         montant: 10000,
         date: '02/02/2026',
-        methode: 'sedad',
+        methode: 'masrvi',
         statut: 'regle',
-        recu_ref: 'SDD-4412',
+        recu_ref: 'MAS-4412',
       },
       {
         id: 'pay-006',
@@ -288,9 +288,9 @@ export const MOCK_ELEVES: EleveWithStats[] = [
         libelle: 'Trimestre 2 complet',
         montant: 20000,
         date: '10/02/2026',
-        methode: 'virement',
+        methode: 'cheque',
         statut: 'regle',
-        recu_ref: 'VIR-9981',
+        recu_ref: 'CHQ-9981',
       },
       {
         id: 'pay-008',
@@ -432,6 +432,106 @@ export const MOCK_ELEVES: EleveWithStats[] = [
         recu_ref: 'BKY-4488',
       },
     ],
+  },
+  {
+    id: 'el-009',
+    ecole_id: 'ecole-demo-001',
+    matricule: 'DEMO-2025-009',
+    nom: 'TALL',
+    prenom: 'Hamady',
+    date_naissance: '2012-07-14',
+    lieu_naissance: 'Boghé',
+    sexe: 'M',
+    classe: '6ème A',
+    nom_tuteur: 'Amadou Tall',
+    telephone_tuteur: '+222 41 22 33 44',
+    adresse_tuteur: 'El Mina, Nouakchott',
+    lien_parente: 'pere',
+    actif: true,
+    total_due: 35000,
+    total_paid: 35000,
+    remaining: 0,
+    statut: 'paye',
+    derniere_echeance_date: '2026-02-15',
+    prochaine_echeance_date: '2026-03-15',
+    prochaine_echeance_montant: 12500,
+    nb_absences: 1,
+    timeline_paiements: [],
+  },
+  {
+    id: 'el-010',
+    ecole_id: 'ecole-demo-001',
+    matricule: 'DEMO-2025-010',
+    nom: 'MINT CHEIKH',
+    prenom: 'Khadija',
+    date_naissance: '2012-09-03',
+    lieu_naissance: 'Nouakchott',
+    sexe: 'F',
+    classe: '6ème A',
+    nom_tuteur: 'Cheikh Ould Sidya',
+    telephone_tuteur: '+222 37 88 99 00',
+    adresse_tuteur: 'Tevragh-Zeina, Nouakchott',
+    lien_parente: 'pere',
+    actif: true,
+    total_due: 35000,
+    total_paid: 20000,
+    remaining: 15000,
+    statut: 'partiel',
+    derniere_echeance_date: '2026-02-01',
+    prochaine_echeance_date: '2026-03-01',
+    prochaine_echeance_montant: 12500,
+    nb_absences: 0,
+    timeline_paiements: [],
+  },
+  {
+    id: 'el-011',
+    ecole_id: 'ecole-demo-001',
+    matricule: 'DEMO-2025-011',
+    nom: 'SYLLA',
+    prenom: 'Bilal',
+    date_naissance: '2014-02-18',
+    lieu_naissance: 'Nouakchott',
+    sexe: 'M',
+    classe: 'CM2 A',
+    nom_tuteur: 'Yacoub Sylla',
+    telephone_tuteur: '+222 29 11 22 33',
+    adresse_tuteur: 'Socogim PS, Nouakchott',
+    lien_parente: 'pere',
+    actif: true,
+    total_due: 30000,
+    total_paid: 30000,
+    remaining: 0,
+    statut: 'paye',
+    derniere_echeance_date: '2026-02-10',
+    prochaine_echeance_date: '2026-03-10',
+    prochaine_echeance_montant: 10000,
+    nb_absences: 3,
+    timeline_paiements: [],
+  },
+  {
+    id: 'el-012',
+    ecole_id: 'ecole-demo-001',
+    matricule: 'DEMO-2025-012',
+    nom: 'WANE',
+    prenom: 'Mariam',
+    date_naissance: '2014-06-25',
+    lieu_naissance: 'Nouakchott',
+    sexe: 'F',
+    classe: 'CM2 A',
+    nom_tuteur: 'Ibrahima Wane',
+    telephone_tuteur: '+222 48 55 66 77',
+    adresse_tuteur: 'Ksar, Nouakchott',
+    lien_parente: 'pere',
+    actif: true,
+    total_due: 30000,
+    total_paid: 10000,
+    remaining: 20000,
+    statut: 'en_retard',
+    derniere_echeance_date: '2026-01-20',
+    prochaine_echeance_date: '2026-01-20',
+    prochaine_echeance_montant: 10000,
+    nb_absences: 1,
+    timeline_paiements: [],
   },
 ];
 
@@ -608,3 +708,558 @@ export function getDashboardKpis(eleves: EleveWithStats[]) {
     nombreAJour,
   };
 }
+
+// ---------------------------------------------------------------------------
+// PORTAIL ENSEIGNANT (ESPACE PÉDAGOGIQUE — AUCUNE DONNÉE FINANCIÈRE)
+// ---------------------------------------------------------------------------
+
+export interface EnseignantMock {
+  id: string;
+  ecole_id: string;
+  nom: string;
+  prenom: string;
+  email: string;
+  telephone: string;
+  role: 'enseignant';
+  classes_assignees: string[];
+  matieres: string[];
+}
+
+export const CURRENT_ENSEIGNANT: EnseignantMock = {
+  id: 'prof-salma-001',
+  ecole_id: 'ecole-demo-001',
+  nom: 'MINT AHMED',
+  prenom: 'Salma',
+  email: 'enseignant.demo@ecosurv.test',
+  telephone: '+222 46 00 00 03',
+  role: 'enseignant',
+  classes_assignees: ['6ème A', 'CM2 A'],
+  matieres: ['Mathématiques', 'Sciences de la Vie et de la Terre', 'Français'],
+};
+
+/**
+ * Vue élève pédagogique restreinte — AUCUN montant, AUCUN solde, AUCUN reçu.
+ * Conforme aux policies RLS de BACKEND_AGENT.md.
+ */
+export interface ElevePedagogique {
+  id: string;
+  matricule: string;
+  nom: string;
+  prenom: string;
+  date_naissance: string;
+  lieu_naissance: string;
+  sexe: 'M' | 'F';
+  classe: string;
+  nom_tuteur: string;
+  telephone_tuteur: string;
+  adresse_tuteur: string;
+  lien_parente: LienParente;
+  actif: boolean;
+  nb_absences: number;
+  nb_retards: number;
+  moyenne_generale: number;
+  statut_presence_jour?: 'present' | 'absent' | 'retard';
+}
+
+export interface AbsenceRecord {
+  id: string;
+  eleve_id: string;
+  eleve_nom: string;
+  eleve_prenom: string;
+  classe: string;
+  date_absence: string; // YYYY-MM-DD
+  creneau: 'matin' | 'apres_midi';
+  type: 'absence' | 'retard';
+  justifiee: boolean;
+  motif?: string;
+  minutes_retard?: number;
+}
+
+export interface EvaluationRecord {
+  id: string;
+  classe: string;
+  matiere: string;
+  titre: string;
+  date: string;
+  trimestre: 'Trimestre 1' | 'Trimestre 2' | 'Trimestre 3';
+  coefficient: number;
+  bareme: number; // ex: 20
+  notes: Record<string, number | null>; // eleve_id -> note (/20)
+}
+
+export const MOCK_ABSENCES_INITIAL: AbsenceRecord[] = [
+  {
+    id: 'abs-001',
+    eleve_id: 'el-003',
+    eleve_nom: 'SOW',
+    eleve_prenom: 'Cheikh Tidiane',
+    classe: '6ème A',
+    date_absence: '2026-03-08',
+    creneau: 'matin',
+    type: 'retard',
+    justifiee: true,
+    motif: 'Panne de transport scolaire',
+    minutes_retard: 20,
+  },
+  {
+    id: 'abs-002',
+    eleve_id: 'el-007',
+    eleve_nom: 'CAMARA',
+    eleve_prenom: 'Boubacar',
+    classe: '6ème A',
+    date_absence: '2026-03-05',
+    creneau: 'matin',
+    type: 'absence',
+    justifiee: false,
+    motif: 'Raison non communiquée',
+  },
+  {
+    id: 'abs-003',
+    eleve_id: 'el-004',
+    eleve_nom: 'MBOUP',
+    eleve_prenom: 'Fatou Binetou',
+    classe: 'CM2 A',
+    date_absence: '2026-03-06',
+    creneau: 'apres_midi',
+    type: 'absence',
+    justifiee: true,
+    motif: 'Rendez-vous médical dentaire',
+  },
+  {
+    id: 'abs-004',
+    eleve_id: 'el-011',
+    eleve_nom: 'SYLLA',
+    eleve_prenom: 'Bilal',
+    classe: 'CM2 A',
+    date_absence: '2026-03-08',
+    creneau: 'matin',
+    type: 'absence',
+    justifiee: false,
+    motif: 'Absence non justifiée',
+  },
+];
+
+export const MOCK_EVALUATIONS_INITIAL: EvaluationRecord[] = [
+  {
+    id: 'eval-001',
+    classe: '6ème A',
+    matiere: 'Mathématiques',
+    titre: 'Contrôle N°2 : Algèbre & Fractions',
+    date: '2026-02-25',
+    trimestre: 'Trimestre 2',
+    coefficient: 2,
+    bareme: 20,
+    notes: {
+      'el-003': 15.5,
+      'el-007': 12.0,
+      'el-009': 17.0,
+      'el-010': 14.5,
+    },
+  },
+  {
+    id: 'eval-002',
+    classe: '6ème A',
+    matiere: 'Sciences de la Vie et de la Terre',
+    titre: 'Devoir N°1 : Classification du Vivant',
+    date: '2026-02-18',
+    trimestre: 'Trimestre 2',
+    coefficient: 1,
+    bareme: 20,
+    notes: {
+      'el-003': 14.0,
+      'el-007': 11.5,
+      'el-009': 16.0,
+      'el-010': 15.0,
+    },
+  },
+  {
+    id: 'eval-003',
+    classe: 'CM2 A',
+    matiere: 'Mathématiques',
+    titre: 'Calcul Mental & Problèmes Géométriques',
+    date: '2026-02-27',
+    trimestre: 'Trimestre 2',
+    coefficient: 2,
+    bareme: 20,
+    notes: {
+      'el-004': 18.0,
+      'el-008': 14.0,
+      'el-011': 13.5,
+      'el-012': 11.0,
+    },
+  },
+  {
+    id: 'eval-004',
+    classe: 'CM2 A',
+    matiere: 'Français',
+    titre: 'Dictée & Compréhension de Texte',
+    date: '2026-02-20',
+    trimestre: 'Trimestre 2',
+    coefficient: 2,
+    bareme: 20,
+    notes: {
+      'el-004': 16.5,
+      'el-008': 13.0,
+      'el-011': 12.0,
+      'el-012': 10.5,
+    },
+  },
+];
+
+/**
+ * Filtre les élèves pour un enseignant :
+ * 1. Uniquement ses classes assignées (ex: 6ème A, CM2 A)
+ * 2. Purge totale de tout champ financier (montant, solde, impayé, timeline)
+ */
+export function getElevesForTeacher(
+  eleves: EleveWithStats[],
+  classesAssignees: string[]
+): ElevePedagogique[] {
+  const moyennesParEleve: Record<string, number> = {
+    'el-003': 14.8,
+    'el-004': 17.2,
+    'el-007': 11.8,
+    'el-008': 13.5,
+    'el-009': 16.5,
+    'el-010': 14.8,
+    'el-011': 12.8,
+    'el-012': 10.8,
+  };
+
+  return eleves
+    .filter((e) => classesAssignees.includes(e.classe))
+    .map((e) => ({
+      id: e.id,
+      matricule: e.matricule,
+      nom: e.nom,
+      prenom: e.prenom,
+      date_naissance: e.date_naissance,
+      lieu_naissance: e.lieu_naissance,
+      sexe: e.sexe,
+      classe: e.classe,
+      nom_tuteur: e.nom_tuteur,
+      telephone_tuteur: e.telephone_tuteur,
+      adresse_tuteur: e.adresse_tuteur,
+      lien_parente: e.lien_parente,
+      actif: e.actif,
+      nb_absences: e.nb_absences,
+      nb_retards: e.id === 'el-003' ? 1 : 0,
+      moyenne_generale: moyennesParEleve[e.id] || 13.0,
+      statut_presence_jour: 'present',
+    }));
+}
+
+// ---------------------------------------------------------------------------
+// PORTAIL CAISSIER (GUICHET FINANCIER — AUCUNE DONNÉE PÉDAGOGIQUE)
+// ---------------------------------------------------------------------------
+
+export interface CaissierMock {
+  id: string;
+  ecole_id: string;
+  nom: string;
+  prenom: string;
+  email: string;
+  telephone: string;
+  role: 'caissier';
+  guichet: string;
+}
+
+export const CURRENT_CAISSIER: CaissierMock = {
+  id: 'user-cais-001',
+  ecole_id: 'ecole-demo-001',
+  nom: 'OULD TALEB',
+  prenom: 'Ahmedou',
+  email: 'caissier.demo@ecosurv.test',
+  telephone: '+222 46 00 00 04',
+  role: 'caissier',
+  guichet: 'Guichet Central N°1',
+};
+
+export interface CaisseTransaction {
+  id: string;
+  eleve_id: string;
+  eleve_nom: string;
+  eleve_prenom: string;
+  matricule: string;
+  classe: string;
+  echeance_libelle: string;
+  montant: number;
+  date: string;
+  heure: string;
+  methode: MethodePaiement;
+  recu_ref: string;
+  encaisse_par: string;
+  statut: 'confirme' | 'en_attente';
+}
+
+export const MOCK_CAISSE_TRANSACTIONS_INITIAL: CaisseTransaction[] = [
+  {
+    id: 'cais-tx-001',
+    eleve_id: 'el-001',
+    eleve_nom: 'DIALLO',
+    eleve_prenom: 'Mamadou Oury',
+    matricule: 'DEMO-2025-001',
+    classe: 'Terminales C',
+    echeance_libelle: 'Mensualité Février 2026',
+    montant: 15000,
+    date: '2026-03-09',
+    heure: '09:15',
+    methode: 'bankily',
+    recu_ref: 'REC-NKTT-8812',
+    encaisse_par: 'Ahmedou Ould Taleb',
+    statut: 'confirme',
+  },
+  {
+    id: 'cais-tx-002',
+    eleve_id: 'el-004',
+    eleve_nom: 'MBOUP',
+    eleve_prenom: 'Fatou Binetou',
+    matricule: 'DEMO-2025-004',
+    classe: 'CM2 A',
+    echeance_libelle: 'Règlement Trimestre 2',
+    montant: 20000,
+    date: '2026-03-09',
+    heure: '10:30',
+    methode: 'especes',
+    recu_ref: 'REC-NKTT-8813',
+    encaisse_par: 'Ahmedou Ould Taleb',
+    statut: 'confirme',
+  },
+  {
+    id: 'cais-tx-003',
+    eleve_id: 'el-003',
+    eleve_nom: 'SOW',
+    eleve_prenom: 'Cheikh Tidiane',
+    matricule: 'DEMO-2025-003',
+    classe: '6ème A',
+    echeance_libelle: 'Acompte Janvier 2026',
+    montant: 10000,
+    date: '2026-03-09',
+    heure: '11:45',
+    methode: 'masrvi',
+    recu_ref: 'REC-NKTT-8814',
+    encaisse_par: 'Ahmedou Ould Taleb',
+    statut: 'confirme',
+  },
+  {
+    id: 'cais-tx-004',
+    eleve_id: 'el-009',
+    eleve_nom: 'TALL',
+    eleve_prenom: 'Hamady',
+    matricule: 'DEMO-2025-009',
+    classe: '6ème A',
+    echeance_libelle: 'Mensualité Février 2026',
+    montant: 12500,
+    date: '2026-03-08',
+    heure: '15:20',
+    methode: 'especes',
+    recu_ref: 'REC-NKTT-8809',
+    encaisse_par: 'Ahmedou Ould Taleb',
+    statut: 'confirme',
+  },
+];
+
+// ---------------------------------------------------------------------------
+// PORTAIL PARENT (VUE RESTREINTE AUX ENFANTS DE LA FAMILLE)
+// ---------------------------------------------------------------------------
+
+export interface ParentMock {
+  id: string;
+  ecole_id: string;
+  nom: string;
+  prenom: string;
+  telephone: string;
+  email: string;
+  role: 'parent';
+  enfants_ids: string[];
+}
+
+export const CURRENT_PARENT: ParentMock = {
+  id: 'user-parent-001',
+  ecole_id: 'ecole-demo-001',
+  nom: 'DIALLO',
+  prenom: 'Amadou',
+  telephone: '+222 22 11 33 44',
+  email: 'a.diallo@gmail.com',
+  role: 'parent',
+  enfants_ids: ['el-001', 'el-003'], // Mamadou Oury Diallo (Term C) et Cheikh Tidiane Sow (6ème A)
+};
+
+export interface ParentMatiereNote {
+  matiere: string;
+  moyenne: number;
+  coefficient: number;
+  professeur: string;
+  appreciation: string;
+  moyenne_classe: number;
+}
+
+export interface ParentEnfantDetail {
+  id: string;
+  matricule: string;
+  nom: string;
+  prenom: string;
+  classe: string;
+  photo_initiales: string;
+  date_naissance: string;
+  professeur_principal: string;
+  // Données financières familiales
+  total_scolarite: number;
+  total_regle: number;
+  reste_a_payer: number;
+  statut_paiement: StatutEcheance;
+  prochaine_echeance_date: string;
+  prochaine_echeance_montant: number;
+  // Données pédagogiques
+  moyenne_generale: number;
+  rang: string;
+  nb_absences_total: number;
+  nb_retards_total: number;
+  bulletin: ParentMatiereNote[];
+  emploi_du_temps_aujourdhui: Array<{
+    heure: string;
+    matiere: string;
+    salle: string;
+    professeur: string;
+  }>;
+}
+
+export const MOCK_PARENT_ENFANTS_DETAILS: Record<string, ParentEnfantDetail> = {
+  'el-001': {
+    id: 'el-001',
+    matricule: 'DEMO-2025-001',
+    nom: 'DIALLO',
+    prenom: 'Mamadou Oury',
+    classe: 'Terminales C',
+    photo_initiales: 'MD',
+    date_naissance: '2008-04-12',
+    professeur_principal: 'Prof. Kane (Physique)',
+    total_scolarite: 150000,
+    total_regle: 150000,
+    reste_a_payer: 0,
+    statut_paiement: 'paye',
+    prochaine_echeance_date: '2026-04-05',
+    prochaine_echeance_montant: 0,
+    moyenne_generale: 15.6,
+    rang: '3ème / 34',
+    nb_absences_total: 1,
+    nb_retards_total: 0,
+    bulletin: [
+      {
+        matiere: 'Mathématiques',
+        moyenne: 16.5,
+        coefficient: 6,
+        professeur: 'Prof. Sow',
+        appreciation: 'Excellent esprit d\'analyse et régularité remarquable.',
+        moyenne_classe: 12.1,
+      },
+      {
+        matiere: 'Physique-Chimie',
+        moyenne: 15.0,
+        coefficient: 5,
+        professeur: 'Prof. Kane',
+        appreciation: 'Très bon travail expérimental et théorique.',
+        moyenne_classe: 11.4,
+      },
+      {
+        matiere: 'Sciences Naturelles',
+        moyenne: 14.5,
+        coefficient: 3,
+        professeur: 'Mme Ba',
+        appreciation: 'Bonne participation et rigueur dans les schémas.',
+        moyenne_classe: 12.8,
+      },
+      {
+        matiere: 'Français & Philosophie',
+        moyenne: 14.0,
+        coefficient: 3,
+        professeur: 'Prof. Ndiaye',
+        appreciation: 'Réflexion argumentée et structurée.',
+        moyenne_classe: 10.9,
+      },
+      {
+        matiere: 'Anglais',
+        moyenne: 17.0,
+        coefficient: 2,
+        professeur: 'M. Ould Mohamed',
+        appreciation: 'Aisance remarquable à l\'écrit et à l\'oral.',
+        moyenne_classe: 13.0,
+      },
+    ],
+    emploi_du_temps_aujourdhui: [
+      { heure: '08:00 - 10:00', matiere: 'Mathématiques', salle: 'Salle 12', professeur: 'Prof. Sow' },
+      { heure: '10:15 - 12:15', matiere: 'Physique-Chimie', salle: 'Labo 2', professeur: 'Prof. Kane' },
+      { heure: '14:00 - 16:00', matiere: 'Philosophie', salle: 'Salle 12', professeur: 'Prof. Ndiaye' },
+    ],
+  },
+  'el-003': {
+    id: 'el-003',
+    matricule: 'DEMO-2025-003',
+    nom: 'SOW',
+    prenom: 'Cheikh Tidiane',
+    classe: '6ème A',
+    photo_initiales: 'CS',
+    date_naissance: '2013-09-24',
+    professeur_principal: 'M. Mohamed Ould Vall (Maths)',
+    total_scolarite: 90000,
+    total_regle: 40000,
+    reste_a_payer: 50000,
+    statut_paiement: 'en_retard',
+    prochaine_echeance_date: '2026-03-05',
+    prochaine_echeance_montant: 25000,
+    moyenne_generale: 14.8,
+    rang: '5ème / 32',
+    nb_absences_total: 2,
+    nb_retards_total: 1,
+    bulletin: [
+      {
+        matiere: 'Mathématiques',
+        moyenne: 15.5,
+        coefficient: 4,
+        professeur: 'M. Mohamed Ould Vall',
+        appreciation: 'Très bon trimestre, travail sérieux et appliqué.',
+        moyenne_classe: 13.2,
+      },
+      {
+        matiere: 'Français',
+        moyenne: 13.5,
+        coefficient: 4,
+        professeur: 'Mme Sy',
+        appreciation: 'Des progrès en grammaire, continue ainsi.',
+        moyenne_classe: 12.0,
+      },
+      {
+        matiere: 'Histoire-Géo',
+        moyenne: 14.0,
+        coefficient: 2,
+        professeur: 'M. Diallo',
+        appreciation: 'Bonne mémorisation des cours et esprit curieux.',
+        moyenne_classe: 11.5,
+      },
+      {
+        matiere: 'Sciences de la Vie et de la Terre',
+        moyenne: 16.0,
+        coefficient: 2,
+        professeur: 'M. Mohamed Ould Vall',
+        appreciation: 'Très attentif et curieux des démarches scientifiques.',
+        moyenne_classe: 12.9,
+      },
+      {
+        matiere: 'Arabe',
+        moyenne: 15.0,
+        coefficient: 3,
+        professeur: 'Cheikh Sidi',
+        appreciation: 'Bonne expression et récitation soignée.',
+        moyenne_classe: 13.8,
+      },
+    ],
+    emploi_du_temps_aujourdhui: [
+      { heure: '08:00 - 09:50', matiere: 'Français', salle: 'Salle 4', professeur: 'Mme Sy' },
+      { heure: '10:05 - 12:00', matiere: 'Mathématiques', salle: 'Salle 4', professeur: 'M. Ould Vall' },
+      { heure: '14:30 - 16:30', matiere: 'SVT', salle: 'Salle SVT', professeur: 'M. Ould Vall' },
+    ],
+  },
+};
+
+
+

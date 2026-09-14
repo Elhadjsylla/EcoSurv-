@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
+import { Select } from '../components/ui/Select';
+import { KpiCard } from '../components/ui/KpiCard';
 import {
   MOCK_ECHEANCIERS,
   EcheancierConfig,
@@ -17,12 +19,16 @@ import {
   CheckCircle,
   Layers,
   Clock,
+  MoreHorizontal,
+  FileText,
+  Settings2,
 } from 'lucide-react';
 
 export const EcheancesPage: React.FC = () => {
   const [echeanciers, setEcheanciers] = useState<EcheancierConfig[]>(MOCK_ECHEANCIERS);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [openMenuRowId, setOpenMenuRowId] = useState<string | null>(null);
 
   // Form state
   const [newLibelle, setNewLibelle] = useState('');
@@ -61,7 +67,7 @@ export const EcheancesPage: React.FC = () => {
   const totalElevesCouverts = echeanciers.reduce((sum, e) => sum + e.nb_eleves_concernes, 0);
 
   return (
-    <div className="p-6 max-w-[1600px] mx-auto space-y-6 relative">
+    <div className="p-6 sm:p-8 lg:p-10 max-w-[1600px] mx-auto space-y-8 sm:space-y-10 relative">
       {/* Toast Notification */}
       {toastMessage && (
         <div className="fixed top-20 right-6 z-50 flex items-center gap-3 bg-slate-900 text-white px-4 py-3 rounded-lg shadow-xl border border-slate-700 animate-in fade-in slide-in-from-top-4">
@@ -77,17 +83,17 @@ export const EcheancesPage: React.FC = () => {
       )}
 
       {/* Top Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-5 rounded-xl border border-slate-200 shadow-2xs">
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-2xs">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
               Échéances & Tarifs de Scolarité
             </h1>
-            <span className="rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-bold text-blue-700">
+            <span className="rounded-full bg-blue-100 dark:bg-blue-950/60 px-2.5 py-0.5 text-xs font-bold text-blue-700 dark:text-blue-300 border border-blue-200/50 dark:border-blue-800/60">
               Année 2025–2026
             </span>
           </div>
-          <p className="text-xs text-slate-500 font-medium mt-1">
+          <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">
             Configuration des frais de scolarité, des mensualités et des calendriers d'échéances par classe.
           </p>
         </div>
@@ -95,7 +101,7 @@ export const EcheancesPage: React.FC = () => {
         <Button
           variant="primary"
           size="sm"
-          className="gap-2"
+          className="gap-2 h-10 px-4"
           onClick={() => setIsModalOpen(true)}
         >
           <Plus className="h-4 w-4" />
@@ -103,146 +109,219 @@ export const EcheancesPage: React.FC = () => {
         </Button>
       </div>
 
-      {/* Metric Tiles */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="p-4 flex items-center justify-between">
+      {/* Metric Tiles (Pastel KpiCard Style) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <KpiCard
+          staggerIndex={0}
+          title="Échéanciers Actifs"
+          amount={echeanciers.length}
+          subtitle="Configurations par niveau"
+          icon={<CreditCard className="h-5 w-5" />}
+          variant="primary"
+        />
+
+        <KpiCard
+          staggerIndex={1}
+          title="Élèves Couverts"
+          amount={totalElevesCouverts}
+          subtitle="✓ Échéancier individuel actif"
+          icon={<Users className="h-5 w-5" />}
+          variant="success"
+        />
+
+        <Card className="p-5 sm:p-6 rounded-2xl border border-amber-200/70 dark:border-amber-900/50 bg-amber-50/75 dark:bg-amber-950/35 flex flex-col justify-between shadow-2xs hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 min-w-0">
           <div>
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-              Échéanciers Actifs
-            </span>
-            <div className="text-2xl font-extrabold text-slate-900 font-mono mt-1">
-              {echeanciers.length}
+            <div className="flex items-start justify-between gap-3">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 leading-snug">
+                Prochaine Échéance
+              </span>
+              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/90 dark:bg-slate-800/90 border border-white/80 dark:border-slate-700/60 text-amber-600 dark:text-amber-400 shrink-0 shadow-2xs">
+                <Clock className="h-5 w-5 stroke-[1.75]" />
+              </div>
             </div>
-            <span className="text-[11px] text-slate-500 font-medium mt-1 block">
-              Configurations par niveau
-            </span>
+            <div className="mt-3 sm:mt-4 text-2xl sm:text-3xl font-black tracking-tight text-slate-900 dark:text-white font-mono truncate">
+              05 Avril
+            </div>
           </div>
-          <div className="h-10 w-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-            <CreditCard className="h-5 w-5" />
+          <div className="mt-4">
+            <span className="text-xs font-semibold text-amber-700 dark:text-amber-400 block truncate">
+              Tranche 3 / Mensualité
+            </span>
           </div>
         </Card>
 
-        <Card className="p-4 flex items-center justify-between">
+        <Card className="p-5 sm:p-6 rounded-2xl border border-indigo-200/70 dark:border-indigo-900/50 bg-indigo-50/75 dark:bg-indigo-950/35 flex flex-col justify-between shadow-2xs hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 min-w-0">
           <div>
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-              Élèves Couverts
-            </span>
-            <div className="text-2xl font-extrabold text-emerald-700 font-mono mt-1">
-              {totalElevesCouverts}
+            <div className="flex items-start justify-between gap-3">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 leading-snug">
+                Modes de Règlement
+              </span>
+              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/90 dark:bg-slate-800/90 border border-white/80 dark:border-slate-700/60 text-indigo-600 dark:text-indigo-400 shrink-0 shadow-2xs">
+                <Layers className="h-5 w-5 stroke-[1.75]" />
+              </div>
             </div>
-            <span className="text-[11px] text-emerald-700 font-semibold mt-1 block">
-              ✓ Échéancier individuel actif
-            </span>
-          </div>
-          <div className="h-10 w-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-            <Users className="h-5 w-5" />
-          </div>
-        </Card>
-
-        <Card className="p-4 flex items-center justify-between">
-          <div>
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-              Fréquence Dominante
-            </span>
-            <div className="text-2xl font-extrabold text-indigo-700 font-mono mt-1">
-              Mensuel
+            <div className="mt-3 sm:mt-4 text-2xl sm:text-3xl font-black tracking-tight text-slate-900 dark:text-white font-mono truncate">
+              3 types
             </div>
-            <span className="text-[11px] text-slate-500 font-medium mt-1 block">
-              3 tranches principales
-            </span>
           </div>
-          <div className="h-10 w-10 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
-            <Clock className="h-5 w-5" />
-          </div>
-        </Card>
-
-        <Card className="p-4 flex items-center justify-between">
-          <div>
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-              Moyenne Mensuelle
+          <div className="mt-4">
+            <span className="text-xs font-medium text-slate-600 dark:text-slate-400 block truncate">
+              Mensuel, Trimestriel, Annuel
             </span>
-            <div className="text-2xl font-extrabold text-slate-900 font-mono mt-1">
-              {formatMRU(15000)}
-            </div>
-            <span className="text-[11px] text-slate-500 font-medium mt-1 block">
-              Par tranche élève
-            </span>
-          </div>
-          <div className="h-10 w-10 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
-            <Layers className="h-5 w-5" />
           </div>
         </Card>
       </div>
 
       {/* Table of Configured Schedules */}
-      <div className="rounded-xl border border-slate-200 bg-white shadow-2xs overflow-hidden">
-        <div className="p-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
-          <h3 className="text-sm font-bold text-slate-900">
-            Plans d'Échéances & Tarifs Configurés
-          </h3>
-          <span className="text-xs text-slate-500 font-medium">
-            Conforme au schéma backend Supabase (`echeances`)
+      <div className="rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xs overflow-hidden">
+        <div className="p-4 sm:p-5 bg-slate-50/80 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between text-xs text-slate-600 dark:text-slate-400">
+          <div className="flex items-center gap-2">
+            <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+              Plans d'Échéances & Tarifs Configurés ({echeanciers.length})
+            </h3>
+          </div>
+          <span className="text-xs text-slate-500 dark:text-slate-400 font-medium hidden sm:inline">
+            Conforme au schéma backend Supabase (<code className="font-mono text-[11px] text-blue-600 dark:text-blue-400">echeances</code>)
           </span>
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs border-collapse">
+          <table className="w-full text-left text-sm border-collapse">
             <thead>
-              <tr className="border-b border-slate-200 bg-slate-50/80 font-bold uppercase tracking-wider text-slate-500">
-                <th className="py-3.5 px-4">Libellé du Plan</th>
-                <th className="py-3.5 px-4">Classe Cible</th>
-                <th className="py-3.5 px-4 text-right">Montant Total</th>
-                <th className="py-3.5 px-4 text-center">Fréquence</th>
-                <th className="py-3.5 px-4 text-center">Nombre de Tranches</th>
-                <th className="py-3.5 px-4 text-right">Montant / Tranche</th>
-                <th className="py-3.5 px-4 text-center">Prochaine Limite</th>
-                <th className="py-3.5 px-4 text-center">Élèves Concernés</th>
+              <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/60 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                <th className="py-4 px-5">Libellé du Plan</th>
+                <th className="py-4 px-5">Classe Cible</th>
+                <th className="py-4 px-5 text-right">Montant Total</th>
+                <th className="py-4 px-5 text-center">Fréquence</th>
+                <th className="py-4 px-5 text-center">Tranches</th>
+                <th className="py-4 px-5 text-right">Montant / Tranche</th>
+                <th className="py-4 px-5 text-center">Prochaine Limite</th>
+                <th className="py-4 px-5 text-center">Élèves Concernés</th>
+                <th className="py-4 px-4 text-center w-14">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
-              {echeanciers.map((ech) => (
-                <tr key={ech.id} className="hover:bg-slate-50 transition-colors">
-                  <td className="py-3.5 px-4 font-bold text-slate-900">
-                    {ech.libelle}
-                  </td>
-                  <td className="py-3.5 px-4">
-                    <span className="inline-flex items-center rounded bg-blue-50 px-2 py-0.5 text-xs font-semibold text-blue-700 border border-blue-200/60">
-                      {ech.classe}
-                    </span>
-                  </td>
-                  <td className="py-3.5 px-4 text-right font-mono font-bold text-slate-900">
-                    {formatMRU(ech.montant_total)}
-                  </td>
-                  <td className="py-3.5 px-4 text-center">
-                    <span
-                      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold capitalize ${
-                        ech.frequence === 'mensuel'
-                          ? 'bg-sky-50 text-sky-800 border border-sky-200'
-                          : ech.frequence === 'trimestriel'
-                          ? 'bg-amber-50 text-amber-800 border border-amber-200'
-                          : 'bg-indigo-50 text-indigo-800 border border-indigo-200'
-                      }`}
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
+              {echeanciers.map((ech) => {
+                const isMenuOpen = openMenuRowId === ech.id;
+                return (
+                  <tr key={ech.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors">
+                    {/* Libellé sur 2 lignes */}
+                    <td className="py-4.5 px-5">
+                      <div className="font-bold text-slate-900 dark:text-white text-sm">
+                        {ech.libelle}
+                      </div>
+                      <div className="text-xs text-slate-400 dark:text-slate-500 font-mono mt-0.5">
+                        Concerne la classe {ech.classe}
+                      </div>
+                    </td>
+
+                    {/* Classe Cible Badge */}
+                    <td className="py-4.5 px-5">
+                      <span className="inline-flex items-center rounded-lg bg-blue-50 dark:bg-blue-950/40 px-2.5 py-1 text-xs font-semibold text-blue-700 dark:text-blue-300 border border-blue-200/60 dark:border-blue-800/60">
+                        {ech.classe}
+                      </span>
+                    </td>
+
+                    {/* Montant Total */}
+                    <td
+                      title={formatMRU(ech.montant_total)}
+                      className="py-4.5 px-5 text-right font-mono font-bold text-slate-900 dark:text-white whitespace-nowrap cursor-help text-xs"
                     >
-                      {ech.frequence}
-                    </span>
-                  </td>
-                  <td className="py-3.5 px-4 text-center font-mono font-semibold text-slate-700">
-                    {ech.nombre_tranches} tranche(s)
-                  </td>
-                  <td className="py-3.5 px-4 text-right font-mono font-bold text-emerald-700">
-                    {formatMRU(ech.montant_par_tranche)}
-                  </td>
-                  <td className="py-3.5 px-4 text-center font-mono text-slate-600">
-                    {ech.date_limite_prochaine}
-                  </td>
-                  <td className="py-3.5 px-4 text-center">
-                    <span className="inline-flex items-center gap-1 font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-full">
-                      <Users className="h-3 w-3 text-slate-500" />
-                      {ech.nb_eleves_concernes}
-                    </span>
-                  </td>
-                </tr>
-              ))}
+                      {formatMRU(ech.montant_total)}
+                    </td>
+
+                    {/* Fréquence */}
+                    <td className="py-4.5 px-5 text-center">
+                      <span
+                        className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold capitalize ${
+                          ech.frequence === 'mensuel'
+                            ? 'bg-sky-50 dark:bg-sky-950/40 text-sky-800 dark:text-sky-300 border border-sky-200 dark:border-sky-800'
+                            : ech.frequence === 'trimestriel'
+                            ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800'
+                            : 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-800 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800'
+                        }`}
+                      >
+                        {ech.frequence}
+                      </span>
+                    </td>
+
+                    {/* Tranches */}
+                    <td className="py-4.5 px-5 text-center font-mono font-semibold text-slate-700 dark:text-slate-300 text-xs">
+                      {ech.nombre_tranches} tranche(s)
+                    </td>
+
+                    {/* Montant / Tranche */}
+                    <td
+                      title={formatMRU(ech.montant_par_tranche)}
+                      className="py-4.5 px-5 text-right font-mono font-bold text-emerald-700 dark:text-emerald-400 whitespace-nowrap cursor-help text-xs"
+                    >
+                      {formatMRU(ech.montant_par_tranche)}
+                    </td>
+
+                    {/* Prochaine Limite */}
+                    <td className="py-4.5 px-5 text-center font-mono text-slate-600 dark:text-slate-400 text-xs">
+                      {ech.date_limite_prochaine}
+                    </td>
+
+                    {/* Élèves Concernés */}
+                    <td className="py-4.5 px-5 text-center">
+                      <span className="inline-flex items-center gap-1.5 font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-full text-xs">
+                        <Users className="h-3.5 w-3.5 text-slate-500 dark:text-slate-400" />
+                        {ech.nb_eleves_concernes}
+                      </span>
+                    </td>
+
+                    {/* Actions Context Menu "..." */}
+                    <td className="py-4.5 px-4 text-center relative">
+                      <button
+                        type="button"
+                        onClick={() => setOpenMenuRowId(isMenuOpen ? null : ech.id)}
+                        className="h-8 w-8 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 flex items-center justify-center transition-colors mx-auto"
+                        title="Options"
+                      >
+                        <MoreHorizontal className="h-4 w-4" />
+                      </button>
+
+                      {isMenuOpen && (
+                        <div className="absolute right-4 top-10 w-48 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xl z-30 py-1 text-xs text-left animate-in fade-in zoom-in-95">
+                          <button
+                            onClick={() => {
+                              setOpenMenuRowId(null);
+                              showToast(`Paramètres de l'échéance "${ech.libelle}" ouverts.`);
+                            }}
+                            className="w-full flex items-center gap-2.5 px-3 py-2 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/60 font-semibold"
+                          >
+                            <Settings2 className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+                            <span>Modifier le plan</span>
+                          </button>
+
+                          <button
+                            onClick={() => {
+                              setOpenMenuRowId(null);
+                              showToast(`Appels de fonds générés pour ${ech.nb_eleves_concernes} élèves (${ech.classe}).`);
+                            }}
+                            className="w-full flex items-center gap-2.5 px-3 py-2 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/60"
+                          >
+                            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                            <span>Émettre appels de fonds</span>
+                          </button>
+
+                          <button
+                            onClick={() => {
+                              setOpenMenuRowId(null);
+                              window.print();
+                            }}
+                            className="w-full flex items-center gap-2.5 px-3 py-2 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/60 border-t border-slate-100 dark:border-slate-700"
+                          >
+                            <FileText className="h-3.5 w-3.5 text-slate-500" />
+                            <span>Imprimer l'échéancier</span>
+                          </button>
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -250,16 +329,16 @@ export const EcheancesPage: React.FC = () => {
 
       {/* Modal Nouvelle Échéance */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 animate-in fade-in">
-          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl border border-slate-200 space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <PlusCircle className="h-5 w-5 text-blue-600" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 dark:bg-slate-950/75 backdrop-blur-xs p-4 animate-in fade-in">
+          <div className="w-full max-w-md rounded-2xl bg-white dark:bg-slate-900 p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+              <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <PlusCircle className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                 Nouvelle Échéance de Scolarité
               </h3>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600"
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -267,7 +346,7 @@ export const EcheancesPage: React.FC = () => {
 
             <form onSubmit={handleCreateEcheancier} className="space-y-4 text-xs">
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">
+                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
                   Libellé du Plan <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -276,29 +355,31 @@ export const EcheancesPage: React.FC = () => {
                   placeholder="Ex: Frais Année Scolaire Terminales"
                   value={newLibelle}
                   onChange={(e) => setNewLibelle(e.target.value)}
-                  className="w-full h-9 px-3 rounded-lg border border-slate-300 text-xs focus:ring-2 focus:ring-blue-600 focus:outline-none"
+                  className="w-full h-9 px-3 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 text-xs focus:ring-2 focus:ring-blue-600 focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">
+                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
                   Classe Cible <span className="text-red-500">*</span>
                 </label>
-                <select
+                <Select
                   value={newClasse}
-                  onChange={(e) => setNewClasse(e.target.value)}
-                  className="w-full h-9 px-3 rounded-lg border border-slate-300 text-xs font-semibold bg-white focus:ring-2 focus:ring-blue-600 focus:outline-none"
-                >
-                  <option value="Terminales C">Terminales C</option>
-                  <option value="6ème A">6ème A</option>
-                  <option value="CM2 A">CM2 A</option>
-                  <option value="3ème B">3ème B</option>
-                </select>
+                  onChange={setNewClasse}
+                  options={[
+                    { value: 'Terminales C', label: 'Terminales C' },
+                    { value: '6ème A', label: '6ème A' },
+                    { value: 'CM2 A', label: 'CM2 A' },
+                    { value: '3ème B', label: '3ème B' },
+                  ]}
+                  size="sm"
+                  triggerClassName="w-full h-9 rounded-lg font-semibold"
+                />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">
+                  <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
                     Montant Total (MRU) <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -306,28 +387,30 @@ export const EcheancesPage: React.FC = () => {
                     required
                     value={newMontantTotal}
                     onChange={(e) => setNewMontantTotal(Number(e.target.value))}
-                    className="w-full h-9 px-3 rounded-lg border border-slate-300 text-xs font-mono font-bold focus:ring-2 focus:ring-blue-600 focus:outline-none"
+                    className="w-full h-9 px-3 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-mono font-bold focus:ring-2 focus:ring-blue-600 focus:outline-none"
                   />
                 </div>
 
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">
+                  <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
                     Fréquence <span className="text-red-500">*</span>
                   </label>
-                  <select
+                  <Select<FrequenceEcheance>
                     value={newFrequence}
-                    onChange={(e) => setNewFrequence(e.target.value as FrequenceEcheance)}
-                    className="w-full h-9 px-3 rounded-lg border border-slate-300 text-xs bg-white focus:ring-2 focus:ring-blue-600 focus:outline-none"
-                  >
-                    <option value="mensuel">Mensuel</option>
-                    <option value="trimestriel">Trimestriel</option>
-                    <option value="annuel">Annuel</option>
-                  </select>
+                    onChange={setNewFrequence}
+                    options={[
+                      { value: 'mensuel', label: 'Mensuel' },
+                      { value: 'trimestriel', label: 'Trimestriel' },
+                      { value: 'annuel', label: 'Annuel' },
+                    ]}
+                    size="sm"
+                    triggerClassName="w-full h-9 rounded-lg"
+                  />
                 </div>
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">
+                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
                   Nombre de Tranches
                 </label>
                 <input
@@ -336,11 +419,11 @@ export const EcheancesPage: React.FC = () => {
                   max={12}
                   value={newNombreTranches}
                   onChange={(e) => setNewNombreTranches(Number(e.target.value))}
-                  className="w-full h-9 px-3 rounded-lg border border-slate-300 text-xs font-mono focus:ring-2 focus:ring-blue-600 focus:outline-none"
+                  className="w-full h-9 px-3 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-mono focus:ring-2 focus:ring-blue-600 focus:outline-none"
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
                 <Button
                   type="button"
                   variant="outline"

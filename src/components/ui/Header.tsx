@@ -1,74 +1,251 @@
-import React from 'react';
-import { CURRENT_ECOLE, CURRENT_DIRECTEUR } from '../../lib/mockData';
+import React, { useState, useRef, useEffect } from 'react';
+import {
+  CURRENT_DIRECTEUR,
+  CURRENT_ENSEIGNANT,
+  CURRENT_CAISSIER,
+  CURRENT_PARENT,
+} from '../../lib/mockData';
+import { useEcoleStore } from '../../store/useEcoleStore';
 import { StudentInitials } from './StudentInitials';
-import { Building2, Calendar, ShieldCheck, Bell } from 'lucide-react';
+import { Select } from './Select';
+import { UserProfileDropdown } from './UserProfileDropdown';
+import {
+  Building2,
+  Calendar,
+  Bell,
+  UserCheck,
+  GraduationCap,
+  CreditCard,
+  HeartHandshake,
+  Search,
+  ChevronDown,
+} from 'lucide-react';
+
+export type UserRole = 'directeur' | 'enseignant' | 'caissier' | 'parent';
 
 interface HeaderProps {
+  currentRole?: UserRole;
+  onRoleChange?: (role: UserRole) => void;
   className?: string;
+  onNavigateTab?: (tab: string) => void;
 }
 
-export const Header: React.FC<HeaderProps> = () => {
+export const Header: React.FC<HeaderProps> = ({
+  currentRole = 'directeur',
+  onRoleChange,
+  onNavigateTab,
+}) => {
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [globalSearch, setGlobalSearch] = useState('');
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Écoute du raccourci clavier "/" pour la recherche globale
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (
+        e.key === '/' &&
+        document.activeElement?.tagName !== 'INPUT' &&
+        document.activeElement?.tagName !== 'TEXTAREA' &&
+        document.activeElement?.tagName !== 'SELECT'
+      ) {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  const rolesConfig: Record<
+    UserRole,
+    {
+      label: string;
+      roleTitle: string;
+      icon: React.ReactNode;
+      colorTheme: string;
+      badgeColor: string;
+      badgeText: string;
+      badgeScope: string;
+      user: typeof CURRENT_DIRECTEUR;
+    }
+  > = {
+    directeur: {
+      label: 'Directeur',
+      roleTitle: 'Directeur d\'Établissement',
+      icon: <UserCheck className="h-4 w-4 text-blue-600" />,
+      colorTheme: 'text-blue-700 bg-blue-50 border-blue-200/60 dark:bg-blue-950/60 dark:text-blue-300 dark:border-blue-800',
+      badgeColor: 'bg-blue-50 text-blue-800 border-blue-200 dark:bg-blue-950/60 dark:text-blue-300 dark:border-blue-800',
+      badgeText: 'Portail Direction',
+      badgeScope: 'Accès complet école, élèves & trésorerie',
+      user: CURRENT_DIRECTEUR,
+    },
+    enseignant: {
+      label: 'Enseignant',
+      roleTitle: 'Enseignant • 6ème A & CM2',
+      icon: <GraduationCap className="h-4 w-4 text-emerald-600" />,
+      colorTheme: 'text-emerald-700 bg-emerald-50 border-emerald-200/60 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800',
+      badgeColor: 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800',
+      badgeText: 'Espace Enseignant',
+      badgeScope: 'Restreint aux classes assignées (zéro données financières)',
+      user: CURRENT_ENSEIGNANT as any,
+    },
+    caissier: {
+      label: 'Caissier',
+      roleTitle: `Caissier • ${CURRENT_CAISSIER.guichet}`,
+      icon: <CreditCard className="h-4 w-4 text-amber-600" />,
+      colorTheme: 'text-amber-700 bg-amber-50 border-amber-200/60 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800',
+      badgeColor: 'bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800',
+      badgeText: 'Guichet Caisse',
+      badgeScope: 'Encaissement & quittances (zéro données pédagogiques)',
+      user: CURRENT_CAISSIER as any,
+    },
+    parent: {
+      label: 'Parent',
+      roleTitle: 'Parent d\'élève (2 enfants)',
+      icon: <HeartHandshake className="h-4 w-4 text-purple-600 dark:text-purple-400" />,
+      colorTheme: 'text-purple-700 bg-purple-50 border-purple-200/60 dark:bg-purple-950/60 dark:text-purple-300 dark:border-purple-800',
+      badgeColor: 'bg-purple-50 text-purple-800 border-purple-200 dark:bg-purple-950/60 dark:text-purple-300 dark:border-purple-800',
+      badgeText: 'Espace Parent',
+      badgeScope: 'Restreint strictement aux enfants de la famille Diallo',
+      user: CURRENT_PARENT as any,
+    },
+  };
+
+  const currentConfig = rolesConfig[currentRole];
+  const ecole = useEcoleStore((s) => s.ecole);
+
   return (
-    <header className="sticky top-0 z-30 h-16 w-full border-b border-slate-200 bg-white/90 backdrop-blur-xs px-6 flex items-center justify-between shadow-2xs">
-      {/* Left: School Name & Academic Year */}
-      <div className="flex items-center gap-4">
-        <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-blue-50 text-blue-700 border border-blue-200/60">
-            <Building2 className="h-4 w-4" />
+    <header className="sticky top-0 z-30 h-16 w-full border-b border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xs px-4 sm:px-6 lg:px-8 flex items-center justify-between shadow-2xs transition-colors duration-200">
+      {/* Left: School Information & Global Search Bar */}
+      <div className="flex items-center gap-4 sm:gap-6 min-w-0 flex-1 max-w-2xl">
+        <div className="flex items-center gap-3 min-w-0 shrink-0">
+          <div
+            className={`flex h-9 w-9 items-center justify-center rounded-xl border shrink-0 ${currentConfig.colorTheme}`}
+          >
+            <Building2 className="h-4.5 w-4.5" />
           </div>
-          <div>
-            <h2 className="text-sm font-bold text-slate-900 leading-tight">
-              {CURRENT_ECOLE.nom}
+          <div className="min-w-0 hidden md:block">
+            <h2 title={ecole.nom} className="text-sm font-bold text-slate-900 dark:text-white leading-tight truncate">
+              {ecole.nom}
             </h2>
-            <p className="text-xs text-slate-500 flex items-center gap-1 font-medium">
-              <span>{CURRENT_ECOLE.ville}</span>
+            <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5 font-medium truncate mt-0.5">
+              <span>{ecole.ville}</span>
               <span>•</span>
-              <span className="text-blue-700 font-semibold">{CURRENT_ECOLE.code_ecole}</span>
+              <span className="font-semibold text-slate-700 dark:text-slate-300 font-mono">
+                {ecole.code_ecole}
+              </span>
             </p>
           </div>
         </div>
 
-        <div className="hidden md:flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700 border border-slate-200">
-          <Calendar className="h-3.5 w-3.5 text-slate-500" />
-          <span>Année Scolaire {CURRENT_ECOLE.annee_scolaire}</span>
+        {/* Global Search Bar (Nexoov style with "/" key hint) */}
+        <div className="relative flex-1 max-w-md hidden sm:block">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-slate-500" />
+          <input
+            ref={searchInputRef}
+            type="text"
+            value={globalSearch}
+            onChange={(e) => setGlobalSearch(e.target.value)}
+            onFocus={() => setIsSearchFocused(true)}
+            onBlur={() => setIsSearchFocused(false)}
+            placeholder="Rechercher quoi que ce soit..."
+            className={`w-full h-9 pl-9 pr-10 rounded-xl border text-xs bg-slate-50 dark:bg-slate-800/80 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 transition-all ${
+              isSearchFocused
+                ? 'border-blue-600 bg-white dark:bg-slate-900 ring-2 ring-blue-600/20'
+                : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
+            }`}
+          />
+          <kbd className="absolute right-2.5 top-1/2 -translate-y-1/2 px-1.5 py-0.5 text-[10px] font-mono font-semibold text-slate-400 dark:text-slate-400 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded shadow-2xs">
+            /
+          </kbd>
         </div>
       </div>
 
-      {/* Right: Security Badge & Profile Avatar */}
-      <div className="flex items-center gap-4">
-        <div className="hidden sm:flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-800 border border-emerald-200">
-          <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
-          <span>Isolation RLS Conforme</span>
+      {/* Right: Role Switcher, Notifications & User Avatar with Dropdown */}
+      <div className="flex items-center gap-2.5 sm:gap-3.5 shrink-0 relative">
+        {/* Academic Year pill (desktop) */}
+        <div className="hidden xl:flex items-center gap-1.5 rounded-full bg-slate-100 dark:bg-slate-800 px-3 py-1 text-xs font-semibold text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 shrink-0">
+          <Calendar className="h-3.5 w-3.5 text-slate-500 dark:text-slate-400" />
+          <span>{ecole.annee_scolaire}</span>
         </div>
 
+        {/* Role Selector (clean & discrete) */}
+        {onRoleChange && (
+          <Select<UserRole>
+            value={currentRole}
+            onChange={onRoleChange}
+            prefix="Vue :"
+            size="sm"
+            variant="subtle"
+            align="right"
+            menuClassName="w-56"
+            options={(Object.keys(rolesConfig) as UserRole[]).map((role) => ({
+              value: role,
+              label: rolesConfig[role].label,
+              icon: rolesConfig[role].icon,
+              description: rolesConfig[role].roleTitle,
+            }))}
+          />
+        )}
+
+        {/* Notifications Icon Button */}
         <button
           type="button"
-          className="relative p-2 text-slate-400 hover:text-slate-600 transition-colors rounded-lg hover:bg-slate-100"
+          className="relative p-2 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-white transition-colors rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800"
           title="Notifications"
+          onClick={() => {
+            if (onNavigateTab) onNavigateTab('relances');
+          }}
         >
-          <Bell className="h-5 w-5" />
-          <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-red-500" />
+          <Bell className="h-4.5 w-4.5" />
+          <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white dark:ring-slate-900" />
         </button>
 
-        <div className="h-6 w-px bg-slate-200" />
+        <div className="h-6 w-px bg-slate-200 dark:bg-slate-800 hidden sm:block" />
 
-        {/* User Info with Initials Avatar */}
-        <div className="flex items-center gap-2.5">
-          <StudentInitials
-            nom={CURRENT_DIRECTEUR.nom}
-            prenom={CURRENT_DIRECTEUR.prenom}
-            size="md"
+        {/* User Info with Avatar Trigger for UserProfileDropdown */}
+        <div className="relative">
+          <button
+            type="button"
+            onClick={() => setIsProfileOpen(!isProfileOpen)}
+            className="flex items-center gap-2 p-1 pl-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors focus:outline-none"
+          >
+            <StudentInitials
+              nom={currentConfig.user.nom}
+              prenom={currentConfig.user.prenom}
+              size="sm"
+            />
+            <div className="hidden lg:flex flex-col text-left min-w-0 max-w-[120px]">
+              <span
+                title={`${currentConfig.user.prenom} ${currentConfig.user.nom}`}
+                className="text-xs font-bold text-slate-900 dark:text-white leading-tight truncate"
+              >
+                {currentConfig.user.prenom}
+              </span>
+              <span
+                title={currentConfig.roleTitle}
+                className="text-[10px] font-medium text-slate-500 dark:text-slate-400 truncate"
+              >
+                {currentConfig.label}
+              </span>
+            </div>
+            <ChevronDown className={`h-3.5 w-3.5 text-slate-400 transition-transform ${isProfileOpen ? 'rotate-180' : ''}`} />
+          </button>
+
+          {/* Floating Profile Panel */}
+          <UserProfileDropdown
+            user={currentConfig.user}
+            roleTitle={currentConfig.roleTitle}
+            roleBadge={currentConfig.label}
+            isOpen={isProfileOpen}
+            onClose={() => setIsProfileOpen(false)}
+            onNavigateTab={onNavigateTab}
           />
-          <div className="hidden lg:flex flex-col text-left">
-            <span className="text-xs font-bold text-slate-900 leading-tight">
-              {CURRENT_DIRECTEUR.prenom} {CURRENT_DIRECTEUR.nom}
-            </span>
-            <span className="text-[11px] font-semibold text-blue-600 capitalize">
-              {CURRENT_DIRECTEUR.role}
-            </span>
-          </div>
         </div>
       </div>
     </header>
   );
 };
+
+
