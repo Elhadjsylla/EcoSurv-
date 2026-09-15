@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import type { UserRole } from './Header';
 import { Tooltip } from './Tooltip';
@@ -106,10 +106,11 @@ export const SidebarShell: React.FC<SidebarShellProps> = ({ role, logoIcon, subt
               colors.toggle
             )}
           >
+            {/* Deux icônes distinctes plutôt qu'une rotation : le chevron reste net pendant l'animation */}
             {isCollapsed ? (
-              <PanelLeftOpen className="h-4 w-4 shrink-0" />
+              <ChevronRight className="h-4 w-4 shrink-0" />
             ) : (
-              <PanelLeftClose className="h-4 w-4 shrink-0" />
+              <ChevronLeft className="h-4 w-4 shrink-0" />
             )}
           </button>
         </Tooltip>
