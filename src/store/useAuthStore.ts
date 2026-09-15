@@ -3,6 +3,7 @@ import type { User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { queryClient } from '../lib/queryClient';
 import { messageErreurConnexion } from '../lib/authErrors';
+import { portalForRole } from '../lib/portals';
 import type { ProfilRow } from '../types/database';
 import { useNavigationStore } from './useNavigationStore';
 
@@ -86,6 +87,11 @@ export const useAuthStore = create<AuthState>((set, get) => {
       await closeSession(refusal);
       return;
     }
+
+    // Le portail découle du rôle réel : la navigation s'ouvre sur son accueil, sans choix manuel.
+    const portal = portalForRole(data.role);
+    if (portal) useNavigationStore.getState().startSession(portal);
+    else useNavigationStore.getState().reset();
 
     set({ status: 'authenticated', profile: data, notice: null });
   };

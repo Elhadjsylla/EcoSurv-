@@ -5,7 +5,9 @@ import { supabaseConfigError } from './lib/supabase';
 import { useThemeStore } from './store/useThemeStore';
 import { useAuthStore } from './store/useAuthStore';
 import { LoginPage } from './pages/LoginPage';
+import { SuperAdminPage } from './pages/SuperAdminPage';
 import { ConfigErrorScreen, ProfileErrorScreen, SplashScreen } from './components/auth/AuthScreens';
+import { PORTAL_HOME, isRouteOfPortal, portalForRole, type Portal } from './lib/portals';
 import { Sidebar, NavTab } from './components/ui/Sidebar';
 import { TeacherSidebar, TeacherNavTab } from './components/enseignant/TeacherSidebar';
 import { CaissierSidebar, CaissierNavTab } from './components/caissier/CaissierSidebar';
@@ -31,15 +33,16 @@ import { ParentPaiementsPage } from './pages/parent/ParentPaiementsPage';
 import { ParentPedagogiePage } from './pages/parent/ParentPedagogiePage';
 import { ParentAssiduitePage } from './pages/parent/ParentAssiduitePage';
 
-export function AppContent() {
+export function AppContent({ portal }: { portal: Portal }) {
   useSwipeNavigation();
 
-  // Rôle actif (basculable dans le Header pour la démo) et écran courant,
-  // pilotés par l'historique de navigation (boutons Précédent / Suivant)
-  const currentRole = useNavigationStore((s) => s.portal);
-  const currentRoute = useNavigationStore(selectCurrentRoute);
+  // Le portail vient du rôle lu dans `profils`, jamais d'un choix dans l'interface.
+  // L'écran courant vient de l'historique ; un écran étranger au portail n'est
+  // jamais rendu, même si l'historique en contenait un.
+  const currentRole = portal;
+  const storedRoute = useNavigationStore(selectCurrentRoute);
+  const currentRoute = isRouteOfPortal(storedRoute, portal) ? storedRoute : PORTAL_HOME[portal];
   const navigate = useNavigationStore((s) => s.navigate);
-  const switchPortal = useNavigationStore((s) => s.switchPortal);
 
   // L'écran courant n'appartient qu'au portail actif : les switchs de rendu
   // ci-dessous ne sont évalués que pour ce portail.
@@ -209,7 +212,6 @@ export function AppContent() {
       <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
         <Header
           currentRole={currentRole}
-          onRoleChange={switchPortal}
           onNavigateTab={handleHeaderNavigate}
         />
         <main className="flex-1 overflow-y-auto overflow-x-hidden">
@@ -230,6 +232,7 @@ export function AppContent() {
 function AuthGate() {
   const initTheme = useThemeStore((s) => s.initTheme);
   const status = useAuthStore((s) => s.status);
+  const profile = useAuthStore((s) => s.profile);
   const reloadProfile = useAuthStore((s) => s.reloadProfile);
   const signOut = useAuthStore((s) => s.signOut);
 
@@ -249,8 +252,13 @@ function AuthGate() {
       return <LoginPage />;
     case 'profile_error':
       return <ProfileErrorScreen onRetry={reloadProfile} onSignOut={() => void signOut()} />;
-    case 'authenticated':
-      return <AppContent />;
+    case 'authenticated': {
+      if (!profile) return <SplashScreen />;
+      const portal = portalForRole(profile.role);
+      if (!portal) return <SuperAdminPage />;
+      // Clé par compte : aucun état local d'écran (filtres, sélection) ne passe d'un compte à l'autre.
+      return <AppContent key={profile.id} portal={portal} />;
+    }
     default:
       return <SplashScreen />;
   }
