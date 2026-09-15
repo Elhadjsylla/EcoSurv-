@@ -58,7 +58,8 @@ export function AppContent({ portal }: { portal: Portal }) {
   const [preselectedEleveForGuichet, setPreselectedEleveForGuichet] = useState<string | undefined>(undefined);
 
   // État propre au portail Parent
-  const [selectedParentChildId, setSelectedParentChildId] = useState<string>('el-003');
+  // Vide = premier enfant rattaché au compte (résolu par les écrans du portail Parent)
+  const [selectedParentChildId, setSelectedParentChildId] = useState<string>('');
 
   const handleNavigateToElevesWithFilter = (statut: string) => {
     setElevesStatutFilter(statut);

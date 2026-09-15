@@ -8,9 +8,9 @@ import {
   Users,
   HeartHandshake,
 } from 'lucide-react';
-import { CURRENT_PARENT, MOCK_PARENT_ENFANTS_DETAILS } from '../../lib/mockData';
 import { Tooltip, TooltipLabel } from '../ui/Tooltip';
 import { SidebarShell } from '../ui/SidebarShell';
+import { useMesEnfants } from '../../data/parent';
 
 export type ParentNavTab =
   | 'parent_dashboard'
@@ -33,6 +33,10 @@ export const ParentSidebar: React.FC<ParentSidebarProps> = ({
   onSelectChild,
   className,
 }) => {
+  const { data: enfants } = useMesEnfants();
+  const liste = enfants ?? [];
+  const enfantActif = liste.find((e) => e.id === selectedChildId) ?? liste[0];
+
   const navItems: Array<{
     id: ParentNavTab;
     label: string;
@@ -48,10 +52,7 @@ export const ParentSidebar: React.FC<ParentSidebarProps> = ({
       id: 'parent_paiements',
       label: 'Frais & Paiements',
       icon: <WalletCards className="h-4 w-4 shrink-0" />,
-      badge:
-        MOCK_PARENT_ENFANTS_DETAILS[selectedChildId]?.reste_a_payer > 0
-          ? 'À régler'
-          : undefined,
+      badge: enfantActif && enfantActif.remaining > 0 ? 'À régler' : undefined,
     },
     {
       id: 'parent_pedagogie',
@@ -74,25 +75,22 @@ export const ParentSidebar: React.FC<ParentSidebarProps> = ({
     >
       {(isCollapsed) => (
         <>
-          {/* Parent & Children Selector (expanded only) */}
-          {!isCollapsed && (
+          {/* Sélecteur d'enfant (sidebar dépliée) */}
+          {!isCollapsed && liste.length > 0 && (
             <div className="p-3 mx-3 mt-3 rounded-xl bg-purple-50/60 dark:bg-purple-950/30 border border-purple-100 dark:border-purple-900/50">
-              <div className="flex items-center justify-between text-xs font-bold text-slate-900 dark:text-white mb-2">
-                <div className="flex items-center gap-1.5">
-                  <Users className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
-                  <span>Enfants scolarisés ({CURRENT_PARENT.enfants_ids.length})</span>
-                </div>
+              <div className="flex items-center gap-1.5 text-xs font-bold text-slate-900 dark:text-white mb-2">
+                <Users className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
+                <span>Enfants scolarisés ({liste.length})</span>
               </div>
 
               <div className="space-y-1">
-                {CURRENT_PARENT.enfants_ids.map((id) => {
-                  const enf = MOCK_PARENT_ENFANTS_DETAILS[id];
-                  if (!enf) return null;
-                  const isChildSelected = selectedChildId === id;
+                {liste.map((enf) => {
+                  const isChildSelected = enfantActif?.id === enf.id;
                   return (
                     <button
-                      key={id}
-                      onClick={() => onSelectChild(id)}
+                      key={enf.id}
+                      onClick={() => onSelectChild(enf.id)}
+                      aria-pressed={isChildSelected}
                       className={cn(
                         'w-full text-left p-2 rounded-lg transition-all flex items-center justify-between',
                         isChildSelected
@@ -104,41 +102,23 @@ export const ParentSidebar: React.FC<ParentSidebarProps> = ({
                         <div className="text-xs truncate font-bold">
                           {enf.prenom} {enf.nom}
                         </div>
-                        <div
-                          className={cn(
-                            'text-[10px] truncate',
-                            isChildSelected
-                              ? 'text-purple-100'
-                              : 'text-slate-500 dark:text-slate-400'
-                          )}
-                        >
-                          {enf.classe}
+                        <div className={cn('text-[10px] truncate', isChildSelected ? 'text-purple-100' : 'text-slate-500 dark:text-slate-400')}>
+                          {enf.classe ?? '—'}
                         </div>
                       </div>
 
-                      {enf.reste_a_payer > 0 ? (
-                        <span
-                          className={cn(
-                            'px-1.5 py-0.5 rounded text-[9px] font-mono font-bold shrink-0',
-                            isChildSelected
-                              ? 'bg-white/20 text-white'
-                              : 'bg-rose-100 dark:bg-rose-950/80 text-rose-700 dark:text-rose-300'
-                          )}
-                        >
-                          Solde
-                        </span>
-                      ) : (
-                        <span
-                          className={cn(
-                            'px-1.5 py-0.5 rounded text-[9px] font-mono font-bold shrink-0',
-                            isChildSelected
-                              ? 'bg-white/20 text-white'
-                              : 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300'
-                          )}
-                        >
-                          À jour
-                        </span>
-                      )}
+                      <span
+                        className={cn(
+                          'px-1.5 py-0.5 rounded text-[9px] font-mono font-bold shrink-0',
+                          isChildSelected
+                            ? 'bg-white/20 text-white'
+                            : enf.remaining > 0
+                            ? 'bg-rose-100 dark:bg-rose-950/80 text-rose-700 dark:text-rose-300'
+                            : 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300'
+                        )}
+                      >
+                        {enf.remaining > 0 ? 'Solde' : 'À jour'}
+                      </span>
                     </button>
                   );
                 })}
@@ -179,9 +159,7 @@ export const ParentSidebar: React.FC<ParentSidebarProps> = ({
                       <span
                         className={cn(
                           'transition-colors shrink-0',
-                          isActive
-                            ? 'text-white'
-                            : 'text-slate-500 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white'
+                          isActive ? 'text-white' : 'text-slate-500 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white'
                         )}
                       >
                         {item.icon}
