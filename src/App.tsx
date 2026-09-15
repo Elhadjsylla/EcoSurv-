@@ -25,6 +25,7 @@ import { ParentDashboardPage } from './pages/parent/ParentDashboardPage';
 import { ParentPaiementsPage } from './pages/parent/ParentPaiementsPage';
 import { ParentPedagogiePage } from './pages/parent/ParentPedagogiePage';
 import { ParentAssiduitePage } from './pages/parent/ParentAssiduitePage';
+import { LandingPage } from './pages/LandingPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -43,6 +44,10 @@ export function AppContent() {
   }, [initTheme]);
 
   useSwipeNavigation();
+
+  // Mode d'affichage : Landing vitrine vs Application opérationnelle
+  const viewMode = useNavigationStore((s) => s.viewMode);
+  const setViewMode = useNavigationStore((s) => s.setViewMode);
 
   // Rôle actif (basculable dans le Header pour la démo) et écran courant,
   // pilotés par l'historique de navigation (boutons Précédent / Suivant)
@@ -185,8 +190,16 @@ export function AppContent() {
     }
   };
 
+  if (viewMode === 'landing') {
+    return (
+      <div key="landing-page" className="animate-page-enter">
+        <LandingPage />
+      </div>
+    );
+  }
+
   return (
-    <div className="flex h-screen overflow-hidden bg-slate-50 dark:bg-slate-950 font-['Plus_Jakarta_Sans',sans-serif] text-slate-900 dark:text-slate-100 antialiased">
+    <div key="app-view" className="flex h-screen overflow-hidden bg-slate-50 dark:bg-slate-950 font-['Plus_Jakarta_Sans',sans-serif] text-slate-900 dark:text-slate-100 antialiased animate-page-enter">
       {/* Dynamic Sidebar based on current role */}
       {currentRole === 'enseignant' && (
         <TeacherSidebar
@@ -221,6 +234,7 @@ export function AppContent() {
           currentRole={currentRole}
           onRoleChange={switchPortal}
           onNavigateTab={handleHeaderNavigate}
+          onReturnToLanding={() => setViewMode('landing')}
         />
         <main className="flex-1 overflow-y-auto overflow-x-hidden">
           {currentRole === 'enseignant' && renderTeacherContent()}

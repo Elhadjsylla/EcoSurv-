@@ -18,7 +18,10 @@ export const PORTAL_HOME: Record<UserRole, AppRoute> = {
 /** Au-delà, les entrées les plus anciennes sont oubliées, comme dans un navigateur. */
 export const MAX_HISTORY_ENTRIES = 50;
 
+export type ViewMode = 'landing' | 'app';
+
 interface NavigationState {
+  viewMode: ViewMode;
   portal: UserRole;
   /** Pile des écrans visités ; l'écran affiché est entries[index]. */
   entries: AppRoute[];
@@ -29,6 +32,8 @@ interface NavigationState {
   goBack: () => void;
   goForward: () => void;
   switchPortal: (portal: UserRole) => void;
+  setViewMode: (mode: ViewMode) => void;
+  launchAppWithPortal: (portal?: UserRole) => void;
   reset: () => void;
 }
 
@@ -41,19 +46,29 @@ const positionAt = (entries: AppRoute[], index: number) => ({
 });
 
 const initialState = {
+  viewMode: 'landing' as ViewMode,
   portal: 'directeur' as UserRole,
   ...positionAt([PORTAL_HOME.directeur], 0),
 };
 
 /**
  * Historique de navigation interne à l'application (boutons Précédent / Suivant
- * et swipe trackpad).
- *
- * Gardé en mémoire uniquement : jamais persisté, et réinitialisé au changement
- * de portail ou à la déconnexion.
+ * et swipe trackpad) et gestion du mode Vue (Landing vitrine vs Application opérationnelle).
  */
 export const useNavigationStore = create<NavigationState>((set) => ({
   ...initialState,
+
+  setViewMode: (mode) => set({ viewMode: mode }),
+
+  launchAppWithPortal: (portal) =>
+    set((state) => {
+      const targetPortal = portal || state.portal;
+      return {
+        viewMode: 'app',
+        portal: targetPortal,
+        ...positionAt([PORTAL_HOME[targetPortal]], 0),
+      };
+    }),
 
   navigate: (route) =>
     set((state) => {
