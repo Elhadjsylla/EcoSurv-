@@ -7,9 +7,10 @@ import {
   GraduationCap,
   Building2,
 } from 'lucide-react';
-import { CURRENT_CAISSIER } from '../../lib/mockData';
 import { Tooltip, TooltipLabel } from '../ui/Tooltip';
 import { SidebarShell } from '../ui/SidebarShell';
+import { useSession } from '../../data/useSession';
+import { useEcole } from '../../data/ecole';
 
 export type CaissierNavTab =
   | 'caissier_guichet'
@@ -27,6 +28,9 @@ export const CaissierSidebar: React.FC<CaissierSidebarProps> = ({
   onTabChange,
   className,
 }) => {
+  const { profile } = useSession();
+  const { data: ecole } = useEcole();
+
   const navItems: Array<{
     id: CaissierNavTab;
     label: string;
@@ -64,27 +68,22 @@ export const CaissierSidebar: React.FC<CaissierSidebarProps> = ({
             <div className="p-4 mx-3 mt-4 rounded-xl bg-amber-50/60 dark:bg-amber-950/30 border border-amber-100 dark:border-amber-900/50">
               <div className="flex items-center gap-2.5">
                 <div className="h-8 w-8 rounded-lg bg-amber-600 text-white flex items-center justify-center text-xs font-bold shrink-0">
-                  {CURRENT_CAISSIER.prenom[0]}
-                  {CURRENT_CAISSIER.nom[0]}
+                  {(profile.prenom ?? '').charAt(0)}
+                  {profile.nom.charAt(0)}
                 </div>
                 <div className="min-w-0">
                   <div className="text-xs font-bold text-slate-900 dark:text-white truncate">
-                    {CURRENT_CAISSIER.prenom} {CURRENT_CAISSIER.nom}
+                    {[profile.prenom, profile.nom].filter(Boolean).join(' ')}
                   </div>
-                  <div className="text-[11px] text-amber-700 dark:text-amber-400 font-medium truncate">
-                    {CURRENT_CAISSIER.role}
-                  </div>
+                  <div className="text-[11px] text-amber-700 dark:text-amber-400 font-medium truncate">Caissier</div>
                 </div>
               </div>
-              <div className="mt-2.5 pt-2 border-t border-amber-200/50 dark:border-amber-800/50 flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 font-medium">
-                <span className="flex items-center gap-1">
-                  <Building2 className="h-3 w-3 text-amber-600" />
-                  Poste :
-                </span>
-                <span className="font-bold text-slate-800 dark:text-slate-200">
-                  {CURRENT_CAISSIER.guichet}
-                </span>
-              </div>
+              {ecole && (
+                <div className="mt-2.5 pt-2 border-t border-amber-200/50 dark:border-amber-800/50 flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400 font-medium min-w-0">
+                  <Building2 className="h-3 w-3 text-amber-600 shrink-0" />
+                  <span className="font-bold text-slate-800 dark:text-slate-200 truncate">{ecole.nom}</span>
+                </div>
+              )}
             </div>
           )}
 
