@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useEcoleStore } from '../../store/useEcoleStore';
+import { useEcole } from '../../data/ecole';
 import { useAuthStore } from '../../store/useAuthStore';
 import type { Portal } from '../../lib/portals';
 import { StudentInitials } from './StudentInitials';
@@ -66,7 +66,8 @@ export const Header: React.FC<HeaderProps> = ({ currentRole, onNavigateTab }) =>
   }, []);
 
   const currentConfig = rolesConfig[currentRole];
-  const ecole = useEcoleStore((s) => s.ecole);
+  const { data: ecole } = useEcole();
+  const nomEcole = ecole?.nom ?? 'Chargement…';
   const user = {
     nom: profile?.nom ?? '',
     prenom: profile?.prenom ?? '',
@@ -91,18 +92,14 @@ export const Header: React.FC<HeaderProps> = ({ currentRole, onNavigateTab }) =>
             <Building2 className="h-4.5 w-4.5" />
           </div>
           <div className="min-w-0 hidden md:block">
-            <Tooltip content={ecole.nom} side="bottom" as="div" className="block min-w-0">
+            <Tooltip content={nomEcole} side="bottom" as="div" className="block min-w-0">
               <h2 className="text-sm font-bold text-slate-900 dark:text-white leading-tight truncate">
-                {ecole.nom}
+                {nomEcole}
               </h2>
             </Tooltip>
-            <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5 font-medium truncate mt-0.5">
-              <span>{ecole.ville}</span>
-              <span>•</span>
-              <span className="font-semibold text-slate-700 dark:text-slate-300 font-mono">
-                {ecole.code_ecole}
-              </span>
-            </p>
+            {ecole?.ville && (
+              <p className="text-xs text-slate-500 dark:text-slate-400 font-medium truncate mt-0.5">{ecole.ville}</p>
+            )}
           </div>
         </div>
 
@@ -132,10 +129,12 @@ export const Header: React.FC<HeaderProps> = ({ currentRole, onNavigateTab }) =>
       {/* Right: Notifications & User Avatar with Dropdown */}
       <div className="flex items-center gap-2.5 sm:gap-3.5 shrink-0 relative">
         {/* Academic Year pill (desktop) */}
-        <div className="hidden xl:flex items-center gap-1.5 rounded-full bg-slate-100 dark:bg-slate-800 px-3 py-1 text-xs font-semibold text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 shrink-0">
-          <Calendar className="h-3.5 w-3.5 text-slate-500 dark:text-slate-400" />
-          <span>{ecole.annee_scolaire}</span>
-        </div>
+        {ecole?.annee_scolaire && (
+          <div className="hidden xl:flex items-center gap-1.5 rounded-full bg-slate-100 dark:bg-slate-800 px-3 py-1 text-xs font-semibold text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 shrink-0">
+            <Calendar className="h-3.5 w-3.5 text-slate-500 dark:text-slate-400" />
+            <span>{ecole.annee_scolaire}</span>
+          </div>
+        )}
 
         {/* Notifications : raccourci vers les relances, réservé au portail Directeur */}
         {currentRole === 'directeur' && (
