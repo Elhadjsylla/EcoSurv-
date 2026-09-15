@@ -52,6 +52,27 @@
   }
 }
 
+@keyframes text-gradient-flow {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes cta-shimmer-sweep {
+  0% {
+    transform: translateX(-150%) skewX(-20deg);
+  }
+  35%, 100% {
+    transform: translateX(250%) skewX(-20deg);
+  }
+}
+
 @keyframes shimmer {
   0% {
     background-position: -200% 0;
@@ -140,6 +161,15 @@
   background: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.25) 50%, rgba(255, 255, 255, 0) 100%);
   background-size: 200% 100%;
   animation: shimmer 2.5s infinite;
+}
+
+.animate-text-gradient {
+  background-size: 200% auto;
+  animation: text-gradient-flow 4s ease-in-out infinite;
+}
+
+.animate-cta-sweep {
+  animation: cta-shimmer-sweep 3s ease-in-out infinite;
 }
 
 .animate-pulse-ring {

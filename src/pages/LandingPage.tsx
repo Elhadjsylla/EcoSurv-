@@ -238,97 +238,93 @@ export const LandingPage: React.FC = () => {
         <div className="absolute top-20 right-1/4 translate-x-1/2 w-[450px] h-[450px] bg-indigo-500/15 rounded-full blur-3xl pointer-events-none animate-aurora" />
 
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-10 items-center">
-            {/* Left Copy & Conversion (Centré optiquement) */}
-            <motion.div 
-              variants={staggerContainer}
-              initial="hidden"
-              animate="show"
-              className="lg:col-span-6 space-y-6 flex flex-col items-center text-center"
-            >
-              {/* Local Trust Pill with Beacon */}
-              <motion.div variants={fadeInUp} className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/90 dark:bg-slate-900/90 text-blue-700 dark:text-blue-300 border border-blue-200/80 dark:border-blue-800/80 text-xs font-bold shadow-xs backdrop-blur-md">
-                <span className="relative flex h-2.5 w-2.5">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-                </span>
-                <span>Spécial Établissements Privés • Mauritanie</span>
-              </motion.div>
+          {/* Centered Hero Copy & Conversion */}
+          <motion.div 
+            variants={staggerContainer}
+            initial="hidden"
+            animate="show"
+            className="max-w-4xl mx-auto space-y-7 flex flex-col items-center text-center mb-12 sm:mb-16"
+          >
+            {/* Local Trust Pill with Beacon */}
+            <motion.div variants={fadeInUp} className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/90 dark:bg-slate-900/90 text-blue-700 dark:text-blue-300 border border-blue-200/80 dark:border-blue-800/80 text-xs font-bold shadow-xs backdrop-blur-md hover:scale-105 transition-transform cursor-default">
+              <span className="relative flex h-2.5 w-2.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+              </span>
+              <span>Spécial Établissements Privés • Mauritanie</span>
+            </motion.div>
 
-              {/* Main Headline simplifié, percutant et animé */}
-              <motion.h1 
-                variants={fadeInUp} 
-                className="text-3xl sm:text-5xl lg:text-5xl xl:text-6xl font-black tracking-tight leading-[1.12] text-slate-950 dark:text-white"
+            {/* Main Headline avec animation de dégradé continu */}
+            <motion.h1 
+              variants={fadeInUp} 
+              className="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight leading-[1.08] text-slate-950 dark:text-white max-w-4xl"
+            >
+              <span>Zéro impayé. </span>
+              <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 via-indigo-500 via-emerald-500 to-blue-600 animate-text-gradient inline-block">
+                Trésorerie scolaire
+              </span>
+              <br className="hidden sm:inline" />
+              <span> en temps réel.</span>
+            </motion.h1>
+
+            {/* Sub-headline */}
+            <motion.p variants={fadeInUp} className="text-slate-600 dark:text-slate-300 text-base sm:text-lg lg:text-xl leading-relaxed max-w-2xl mx-auto font-normal">
+              Suivez qui a payé, qui est en retard et où en est la caisse sans approximations. Encaissement instantané via <strong className="font-bold text-blue-600 dark:text-blue-400">Bankily</strong>, <strong className="font-bold text-emerald-600 dark:text-emerald-400">Masrvi</strong> et <strong className="font-bold text-indigo-600 dark:text-indigo-400">Sedad</strong>, relances automatiques et quittances officielles DGI.
+            </motion.p>
+
+            {/* CTA Unique et percutant avec animation dynamique Sama Boutik */}
+            <motion.div variants={fadeInUp} className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-4 w-full sm:w-auto">
+              <button
+                type="button"
+                onClick={() => handleLaunchPortal('directeur')}
+                className="relative overflow-hidden w-full sm:w-auto px-9 py-4 rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-700 hover:to-indigo-800 text-white font-extrabold text-base transition-all shadow-xl shadow-blue-600/30 flex items-center justify-center gap-3 group hover:scale-[1.03] active:scale-[0.98] ring-4 ring-blue-500/10"
               >
-                <span>Zéro impayé. </span>
-                <motion.span 
-                  initial={{ opacity: 0.8, filter: 'blur(2px)' }}
-                  animate={{ opacity: 1, filter: 'blur(0px)' }}
-                  transition={{ duration: 0.8, delay: 0.2 }}
-                  className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 via-indigo-600 to-emerald-500 dark:from-blue-400 dark:via-indigo-300 dark:to-emerald-400 inline-block"
-                >
-                  Trésorerie scolaire
-                </motion.span>
-                <br className="hidden sm:inline" />
-                <span> en temps réel.</span>
-              </motion.h1>
-
-              {/* Sub-headline addressing specific local pain points */}
-              <motion.p variants={fadeInUp} className="text-slate-600 dark:text-slate-300 text-sm sm:text-base lg:text-lg leading-relaxed max-w-xl mx-auto">
-                Suivez qui a payé, qui est en retard et où en est la caisse sans approximations. Encaissement instantané via <span className="font-bold text-blue-600 dark:text-blue-400">Bankily</span>, <span className="font-bold text-emerald-600 dark:text-emerald-400">Masrvi</span> et <span className="font-bold text-indigo-600 dark:text-indigo-400">Sedad</span>, relances automatiques et quittances officielles DGI.
-              </motion.p>
-
-              {/* CTA Unique et percutant */}
-              <motion.div variants={fadeInUp} className="pt-2 flex items-center justify-center">
-                <button
-                  type="button"
-                  onClick={() => handleLaunchPortal('directeur')}
-                  className="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-700 hover:to-indigo-800 text-white font-extrabold text-sm transition-all shadow-xl shadow-blue-600/25 flex items-center justify-center gap-2.5 group hover:scale-[1.02] active:scale-[0.98]"
-                >
-                  <span>Tester la démo interactive</span>
-                  <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
-                </button>
-              </motion.div>
-
-              {/* Live proof metrics centrées */}
-              <motion.div variants={fadeInUp} className="pt-6 border-t border-slate-200/80 dark:border-slate-800/80 grid grid-cols-3 gap-4 sm:gap-8 max-w-lg mx-auto text-center w-full">
-                <div>
-                  <p className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white font-mono tracking-tight">
-                    98.4%
-                  </p>
-                  <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 font-semibold">
-                    Taux d'encaissement moyen
-                  </p>
-                </div>
-                <div>
-                  <p className="text-2xl sm:text-3xl font-black text-emerald-600 dark:text-emerald-400 font-mono tracking-tight">
-                    &lt; 30s
-                  </p>
-                  <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 font-semibold">
-                    Encaissement & reçu DGI
-                  </p>
-                </div>
-                <div>
-                  <p className="text-2xl sm:text-3xl font-black text-blue-600 dark:text-blue-400 font-mono tracking-tight">
-                    100%
-                  </p>
-                  <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 font-semibold">
-                    Conformité APDP & RLS
-                  </p>
-                </div>
-              </motion.div>
+                {/* Shimmer sweep animation across the CTA */}
+                <div className="absolute inset-0 w-1/2 h-full bg-gradient-to-r from-transparent via-white/30 to-transparent pointer-events-none animate-cta-sweep" />
+                
+                <span className="relative z-10">Tester la démo interactive</span>
+                <ArrowRight className="h-5 w-5 group-hover:translate-x-1.5 transition-transform relative z-10" />
+              </button>
             </motion.div>
 
-            {/* Right Interactive Mockup Showcase */}
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.95, rotate: -2 }}
-              animate={{ opacity: 1, scale: 1, rotate: 0 }}
-              transition={{ type: 'spring', stiffness: 50, damping: 20, delay: 0.4 }}
-              className="lg:col-span-6 relative z-10"
-            >
-              <LandingMockupPreview />
+            {/* Live proof metrics centrées */}
+            <motion.div variants={fadeInUp} className="pt-6 border-t border-slate-200/80 dark:border-slate-800/80 grid grid-cols-3 gap-6 sm:gap-12 max-w-xl mx-auto text-center w-full">
+              <div>
+                <p className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white font-mono tracking-tight">
+                  98.4%
+                </p>
+                <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 font-semibold">
+                  Taux d'encaissement moyen
+                </p>
+              </div>
+              <div>
+                <p className="text-2xl sm:text-3xl font-black text-emerald-600 dark:text-emerald-400 font-mono tracking-tight">
+                  &lt; 30s
+                </p>
+                <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 font-semibold">
+                  Encaissement & reçu DGI
+                </p>
+              </div>
+              <div>
+                <p className="text-2xl sm:text-3xl font-black text-blue-600 dark:text-blue-400 font-mono tracking-tight">
+                  100%
+                </p>
+                <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 font-semibold">
+                  Conformité APDP & RLS
+                </p>
+              </div>
             </motion.div>
-          </div>
+          </motion.div>
+
+          {/* Centered Interactive Mockup Showcase */}
+          <motion.div 
+            initial={{ opacity: 0, y: 30, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ type: 'spring', stiffness: 50, damping: 20, delay: 0.3 }}
+            className="max-w-5xl mx-auto relative z-10"
+          >
+            <LandingMockupPreview />
+          </motion.div>
         </div>
       </section>
 
