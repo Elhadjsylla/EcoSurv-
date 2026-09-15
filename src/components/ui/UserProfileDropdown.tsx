@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useThemeStore } from '../../store/useThemeStore';
 import { useEcoleStore } from '../../store/useEcoleStore';
+import { useAuthStore } from '../../store/useAuthStore';
 import { StudentInitials } from './StudentInitials';
 import {
   Building2,
@@ -40,6 +41,8 @@ export const UserProfileDropdown: React.FC<UserProfileDropdownProps> = ({
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { theme, toggleTheme } = useThemeStore();
   const ecole = useEcoleStore((s) => s.ecole);
+  const signOut = useAuthStore((s) => s.signOut);
+  const [isSigningOut, setIsSigningOut] = useState(false);
 
   // Sub-view navigation ('main' | 'language')
   const [currentView, setCurrentView] = useState<'main' | 'language'>('main');
@@ -221,14 +224,17 @@ export const UserProfileDropdown: React.FC<UserProfileDropdownProps> = ({
           {/* Log Out */}
           <div className="pt-2 border-t border-slate-100 dark:border-slate-800/80">
             <button
-              onClick={() => {
-                alert('Déconnexion de la session démo EcoSurv.');
-                onClose();
+              type="button"
+              disabled={isSigningOut}
+              onClick={async () => {
+                setIsSigningOut(true);
+                // Session Supabase fermée, cache et historique vidés : l'écran de connexion prend le relais.
+                await signOut();
               }}
-              className="w-full flex items-center gap-2.5 p-2 rounded-xl text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors text-xs font-bold"
+              className="w-full flex items-center gap-2.5 p-2 rounded-xl text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors text-xs font-bold disabled:opacity-60 disabled:cursor-wait"
             >
               <LogOut className="h-4 w-4" />
-              <span>Déconnexion</span>
+              <span>{isSigningOut ? 'Déconnexion…' : 'Déconnexion'}</span>
             </button>
           </div>
         </div>
