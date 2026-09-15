@@ -1,6 +1,11 @@
 import { useState, useEffect } from 'react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { queryClient } from './lib/queryClient';
+import { supabaseConfigError } from './lib/supabase';
 import { useThemeStore } from './store/useThemeStore';
+import { useAuthStore } from './store/useAuthStore';
+import { LoginPage } from './pages/LoginPage';
+import { ConfigErrorScreen, ProfileErrorScreen, SplashScreen } from './components/auth/AuthScreens';
 import { Sidebar, NavTab } from './components/ui/Sidebar';
 import { TeacherSidebar, TeacherNavTab } from './components/enseignant/TeacherSidebar';
 import { CaissierSidebar, CaissierNavTab } from './components/caissier/CaissierSidebar';
@@ -26,22 +31,7 @@ import { ParentPaiementsPage } from './pages/parent/ParentPaiementsPage';
 import { ParentPedagogiePage } from './pages/parent/ParentPedagogiePage';
 import { ParentAssiduitePage } from './pages/parent/ParentAssiduitePage';
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 1000 * 60 * 5,
-      refetchOnWindowFocus: false,
-    },
-  },
-});
-
 export function AppContent() {
-  const initTheme = useThemeStore((s) => s.initTheme);
-
-  useEffect(() => {
-    initTheme();
-  }, [initTheme]);
-
   useSwipeNavigation();
 
   // Rôle actif (basculable dans le Header pour la démo) et écran courant,
@@ -233,10 +223,43 @@ export function AppContent() {
   );
 }
 
+/**
+ * Aucun écran de l'application n'est rendu sans session valide ET profil
+ * actif lu dans `profils` : c'est la seule porte d'entrée vers les portails.
+ */
+function AuthGate() {
+  const initTheme = useThemeStore((s) => s.initTheme);
+  const status = useAuthStore((s) => s.status);
+  const reloadProfile = useAuthStore((s) => s.reloadProfile);
+  const signOut = useAuthStore((s) => s.signOut);
+
+  useEffect(() => {
+    initTheme();
+  }, [initTheme]);
+
+  useEffect(() => {
+    if (supabaseConfigError) return;
+    return useAuthStore.getState().initialize();
+  }, []);
+
+  if (supabaseConfigError) return <ConfigErrorScreen message={supabaseConfigError} />;
+
+  switch (status) {
+    case 'signed_out':
+      return <LoginPage />;
+    case 'profile_error':
+      return <ProfileErrorScreen onRetry={reloadProfile} onSignOut={() => void signOut()} />;
+    case 'authenticated':
+      return <AppContent />;
+    default:
+      return <SplashScreen />;
+  }
+}
+
 export function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <AppContent />
+      <AuthGate />
     </QueryClientProvider>
   );
 }
