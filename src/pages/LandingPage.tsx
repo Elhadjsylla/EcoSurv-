@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, useScroll, useSpring, type Variants } from 'framer-motion';
 import { useThemeStore } from '../store/useThemeStore';
 import { useNavigationStore } from '../store/useNavigationStore';
@@ -30,6 +30,14 @@ import {
   BookOpen,
 } from 'lucide-react';
 
+const ROTATING_PHRASES = [
+  'Trésorerie scolaire en temps réel.',
+  'Rapprochement Bankily & Masrvi direct.',
+  'Relances WhatsApp à J-3 automatiques.',
+  'Quittances certifiées DGI en 30s.',
+  'Sérénité totale pour votre établissement.',
+];
+
 const staggerContainer: Variants = {
   hidden: { opacity: 0 },
   show: {
@@ -54,6 +62,39 @@ export const LandingPage: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [pricingCycle, setPricingCycle] = useState<'monthly' | 'yearly'>('monthly');
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
+
+  // Animation machine à écrire : saisie fluide + pause + effacement progressif
+  const [phraseIndex, setPhraseIndex] = useState(0);
+  const [currentText, setCurrentText] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  useEffect(() => {
+    const currentPhrase = ROTATING_PHRASES[phraseIndex];
+    let timeoutId: number;
+
+    if (!isDeleting) {
+      if (currentText.length < currentPhrase.length) {
+        timeoutId = window.setTimeout(() => {
+          setCurrentText(currentPhrase.slice(0, currentText.length + 1));
+        }, 50); // Vitesse de frappe naturelle
+      } else {
+        timeoutId = window.setTimeout(() => {
+          setIsDeleting(true);
+        }, 2200); // Pause de lecture
+      }
+    } else {
+      if (currentText.length > 0) {
+        timeoutId = window.setTimeout(() => {
+          setCurrentText(currentPhrase.slice(0, currentText.length - 1));
+        }, 25); // Effacement progressif fluide
+      } else {
+        setIsDeleting(false);
+        setPhraseIndex((prev) => (prev + 1) % ROTATING_PHRASES.length);
+      }
+    }
+
+    return () => window.clearTimeout(timeoutId);
+  }, [currentText, isDeleting, phraseIndex]);
 
   // Framer Motion Scroll Progress
   const { scrollYProgress } = useScroll();
@@ -254,17 +295,20 @@ export const LandingPage: React.FC = () => {
               <span>Spécial Établissements Privés • Mauritanie</span>
             </motion.div>
 
-            {/* Main Headline avec animation de dégradé continu */}
+            {/* Main Headline avec 'Zéro impayé.' fixe et saisie / effacement progressif */}
             <motion.h1 
               variants={fadeInUp} 
-              className="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight leading-[1.08] text-slate-950 dark:text-white max-w-4xl"
+              className="text-3xl sm:text-5xl lg:text-6xl font-black tracking-tight leading-[1.15] text-slate-950 dark:text-white max-w-5xl mx-auto"
             >
-              <span>Zéro impayé. </span>
-              <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 via-indigo-500 via-emerald-500 to-blue-600 animate-text-gradient inline-block">
-                Trésorerie scolaire
+              <span className="block mb-2 sm:mb-3 text-slate-950 dark:text-white">
+                Zéro impayé.
               </span>
-              <br className="hidden sm:inline" />
-              <span> en temps réel.</span>
+              <div className="min-h-[2.6em] sm:min-h-[1.5em] flex items-center justify-center text-center px-2">
+                <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 via-indigo-600 to-emerald-500 dark:from-blue-400 dark:via-indigo-300 dark:to-emerald-400 inline">
+                  {currentText}
+                </span>
+                <span className="inline-block w-1 sm:w-1.5 h-[0.82em] bg-blue-600 dark:bg-blue-400 ml-1.5 align-middle rounded-full animate-pulse shrink-0" />
+              </div>
             </motion.h1>
 
             {/* Sub-headline */}
