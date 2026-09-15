@@ -8,9 +8,10 @@ import {
   GraduationCap,
   BookMarked,
 } from 'lucide-react';
-import { CURRENT_ENSEIGNANT } from '../../lib/mockData';
 import { Tooltip, TooltipLabel } from '../ui/Tooltip';
 import { SidebarShell } from '../ui/SidebarShell';
+import { useSession } from '../../data/useSession';
+import { useMesClasses } from '../../data/enseignant';
 
 export type TeacherNavTab =
   | 'teacher_dashboard'
@@ -29,6 +30,9 @@ export const TeacherSidebar: React.FC<TeacherSidebarProps> = ({
   onTabChange,
   className,
 }) => {
+  const { profile } = useSession();
+  const { data: classes } = useMesClasses();
+
   const navItems: Array<{
     id: TeacherNavTab;
     label: string;
@@ -44,7 +48,7 @@ export const TeacherSidebar: React.FC<TeacherSidebarProps> = ({
       id: 'teacher_classes',
       label: 'Mes Classes',
       icon: <UsersRound className="h-4 w-4 shrink-0" />,
-      badge: `${CURRENT_ENSEIGNANT.classes_assignees.length}`,
+      badge: classes && classes.length > 0 ? `${classes.length}` : undefined,
     },
     {
       id: 'teacher_absences',
@@ -72,25 +76,23 @@ export const TeacherSidebar: React.FC<TeacherSidebarProps> = ({
             <div className="p-4 mx-3 mt-4 rounded-xl bg-emerald-50/60 dark:bg-emerald-950/30 border border-emerald-100 dark:border-emerald-900/50">
               <div className="flex items-center gap-2.5">
                 <div className="h-8 w-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center text-xs font-bold shrink-0">
-                  {CURRENT_ENSEIGNANT.prenom[0]}
-                  {CURRENT_ENSEIGNANT.nom[0]}
+                  {(profile.prenom ?? '').charAt(0)}
+                  {profile.nom.charAt(0)}
                 </div>
                 <div className="min-w-0">
                   <div className="text-xs font-bold text-slate-900 dark:text-white truncate">
-                    {CURRENT_ENSEIGNANT.prenom} {CURRENT_ENSEIGNANT.nom}
+                    {[profile.prenom, profile.nom].filter(Boolean).join(' ')}
                   </div>
-                  <div className="text-[11px] text-emerald-700 dark:text-emerald-400 truncate font-medium">
-                    {CURRENT_ENSEIGNANT.matieres[0]}
-                  </div>
+                  <div className="text-[11px] text-emerald-700 dark:text-emerald-400 truncate font-medium">Enseignant</div>
                 </div>
               </div>
-              <div className="mt-2.5 pt-2 border-t border-emerald-200/50 dark:border-emerald-800/50 flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 font-medium">
-                <span className="flex items-center gap-1">
+              <div className="mt-2.5 pt-2 border-t border-emerald-200/50 dark:border-emerald-800/50 flex items-center justify-between gap-2 text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+                <span className="flex items-center gap-1 shrink-0">
                   <BookMarked className="h-3 w-3 text-emerald-600" />
                   Classes :
                 </span>
-                <span className="font-bold text-slate-800 dark:text-slate-200">
-                  {CURRENT_ENSEIGNANT.classes_assignees.join(', ')}
+                <span className="font-bold text-slate-800 dark:text-slate-200 truncate">
+                  {classes === undefined ? '…' : classes.length > 0 ? classes.join(', ') : 'Aucune'}
                 </span>
               </div>
             </div>

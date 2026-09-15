@@ -1,6 +1,6 @@
 import React from 'react';
 import { cn } from '../../lib/utils';
-import { StatutEcheance } from '../../lib/mockData';
+import type { StatutEcheance } from '../../types/domain';
 
 interface StatusBadgeProps {
   statut: StatutEcheance;

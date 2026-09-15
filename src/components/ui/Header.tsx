@@ -1,46 +1,52 @@
 import React, { useState, useRef, useEffect } from 'react';
-import {
-  CURRENT_DIRECTEUR,
-  CURRENT_ENSEIGNANT,
-  CURRENT_CAISSIER,
-  CURRENT_PARENT,
-} from '../../lib/mockData';
-import { useEcoleStore } from '../../store/useEcoleStore';
+import { useEcole } from '../../data/ecole';
+import { useAuthStore } from '../../store/useAuthStore';
+import type { Portal } from '../../lib/portals';
 import { StudentInitials } from './StudentInitials';
-import { Select } from './Select';
 import { UserProfileDropdown } from './UserProfileDropdown';
 import { NavigationControls } from './NavigationControls';
 import { Tooltip } from './Tooltip';
-import {
-  Building2,
-  Calendar,
-  Bell,
-  UserCheck,
-  GraduationCap,
-  CreditCard,
-  HeartHandshake,
-  Search,
-  ChevronDown,
-} from 'lucide-react';
+import { Building2, Calendar, Bell, Search, ChevronDown } from 'lucide-react';
 
-export type UserRole = 'directeur' | 'enseignant' | 'caissier' | 'parent';
+export type UserRole = Portal;
 
 interface HeaderProps {
-  currentRole?: UserRole;
-  onRoleChange?: (role: UserRole) => void;
+  /** Portail du rôle connecté : il n'est plus choisi dans l'interface. */
+  currentRole: UserRole;
   className?: string;
   onNavigateTab?: (tab: string) => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({
-  currentRole = 'directeur',
-  onRoleChange,
-  onNavigateTab,
-}) => {
+const rolesConfig: Record<UserRole, { label: string; roleTitle: string; colorTheme: string }> = {
+  directeur: {
+    label: 'Directeur',
+    roleTitle: "Directeur d'établissement",
+    colorTheme: 'text-blue-700 bg-blue-50 border-blue-200/60 dark:bg-blue-950/60 dark:text-blue-300 dark:border-blue-800',
+  },
+  enseignant: {
+    label: 'Enseignant',
+    roleTitle: 'Enseignant',
+    colorTheme: 'text-emerald-700 bg-emerald-50 border-emerald-200/60 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800',
+  },
+  caissier: {
+    label: 'Caissier',
+    roleTitle: 'Caissier',
+    colorTheme: 'text-amber-700 bg-amber-50 border-amber-200/60 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800',
+  },
+  parent: {
+    label: 'Parent',
+    roleTitle: "Parent d'élève",
+    colorTheme: 'text-purple-700 bg-purple-50 border-purple-200/60 dark:bg-purple-950/60 dark:text-purple-300 dark:border-purple-800',
+  },
+};
+
+export const Header: React.FC<HeaderProps> = ({ currentRole, onNavigateTab }) => {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [globalSearch, setGlobalSearch] = useState('');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const profile = useAuthStore((s) => s.profile);
+  const userEmail = useAuthStore((s) => s.user?.email);
 
   // Écoute du raccourci clavier "/" pour la recherche globale
   useEffect(() => {
@@ -59,63 +65,15 @@ export const Header: React.FC<HeaderProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  const rolesConfig: Record<
-    UserRole,
-    {
-      label: string;
-      roleTitle: string;
-      icon: React.ReactNode;
-      colorTheme: string;
-      badgeColor: string;
-      badgeText: string;
-      badgeScope: string;
-      user: typeof CURRENT_DIRECTEUR;
-    }
-  > = {
-    directeur: {
-      label: 'Directeur',
-      roleTitle: 'Directeur d\'Établissement',
-      icon: <UserCheck className="h-4 w-4 text-blue-600" />,
-      colorTheme: 'text-blue-700 bg-blue-50 border-blue-200/60 dark:bg-blue-950/60 dark:text-blue-300 dark:border-blue-800',
-      badgeColor: 'bg-blue-50 text-blue-800 border-blue-200 dark:bg-blue-950/60 dark:text-blue-300 dark:border-blue-800',
-      badgeText: 'Portail Direction',
-      badgeScope: 'Accès complet école, élèves & trésorerie',
-      user: CURRENT_DIRECTEUR,
-    },
-    enseignant: {
-      label: 'Enseignant',
-      roleTitle: 'Enseignant • 6ème A & CM2',
-      icon: <GraduationCap className="h-4 w-4 text-emerald-600" />,
-      colorTheme: 'text-emerald-700 bg-emerald-50 border-emerald-200/60 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800',
-      badgeColor: 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800',
-      badgeText: 'Espace Enseignant',
-      badgeScope: 'Restreint aux classes assignées (zéro données financières)',
-      user: CURRENT_ENSEIGNANT as any,
-    },
-    caissier: {
-      label: 'Caissier',
-      roleTitle: `Caissier • ${CURRENT_CAISSIER.guichet}`,
-      icon: <CreditCard className="h-4 w-4 text-amber-600" />,
-      colorTheme: 'text-amber-700 bg-amber-50 border-amber-200/60 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800',
-      badgeColor: 'bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800',
-      badgeText: 'Guichet Caisse',
-      badgeScope: 'Encaissement & quittances (zéro données pédagogiques)',
-      user: CURRENT_CAISSIER as any,
-    },
-    parent: {
-      label: 'Parent',
-      roleTitle: 'Parent d\'élève (2 enfants)',
-      icon: <HeartHandshake className="h-4 w-4 text-purple-600 dark:text-purple-400" />,
-      colorTheme: 'text-purple-700 bg-purple-50 border-purple-200/60 dark:bg-purple-950/60 dark:text-purple-300 dark:border-purple-800',
-      badgeColor: 'bg-purple-50 text-purple-800 border-purple-200 dark:bg-purple-950/60 dark:text-purple-300 dark:border-purple-800',
-      badgeText: 'Espace Parent',
-      badgeScope: 'Restreint strictement aux enfants de la famille Diallo',
-      user: CURRENT_PARENT as any,
-    },
-  };
-
   const currentConfig = rolesConfig[currentRole];
-  const ecole = useEcoleStore((s) => s.ecole);
+  const { data: ecole } = useEcole();
+  const nomEcole = ecole?.nom ?? 'Chargement…';
+  const user = {
+    nom: profile?.nom ?? '',
+    prenom: profile?.prenom ?? '',
+    email: profile?.email ?? userEmail,
+  };
+  const fullName = [user.prenom, user.nom].filter(Boolean).join(' ');
 
   return (
     <header className="sticky top-0 z-30 h-16 w-full border-b border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xs px-4 sm:px-6 lg:px-8 flex items-center justify-between shadow-2xs transition-colors duration-200">
@@ -134,18 +92,14 @@ export const Header: React.FC<HeaderProps> = ({
             <Building2 className="h-4.5 w-4.5" />
           </div>
           <div className="min-w-0 hidden md:block">
-            <Tooltip content={ecole.nom} side="bottom" as="div" className="block min-w-0">
+            <Tooltip content={nomEcole} side="bottom" as="div" className="block min-w-0">
               <h2 className="text-sm font-bold text-slate-900 dark:text-white leading-tight truncate">
-                {ecole.nom}
+                {nomEcole}
               </h2>
             </Tooltip>
-            <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5 font-medium truncate mt-0.5">
-              <span>{ecole.ville}</span>
-              <span>•</span>
-              <span className="font-semibold text-slate-700 dark:text-slate-300 font-mono">
-                {ecole.code_ecole}
-              </span>
-            </p>
+            {ecole?.ville && (
+              <p className="text-xs text-slate-500 dark:text-slate-400 font-medium truncate mt-0.5">{ecole.ville}</p>
+            )}
           </div>
         </div>
 
@@ -172,47 +126,31 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
       </div>
 
-      {/* Right: Role Switcher, Notifications & User Avatar with Dropdown */}
+      {/* Right: Notifications & User Avatar with Dropdown */}
       <div className="flex items-center gap-2.5 sm:gap-3.5 shrink-0 relative">
         {/* Academic Year pill (desktop) */}
-        <div className="hidden xl:flex items-center gap-1.5 rounded-full bg-slate-100 dark:bg-slate-800 px-3 py-1 text-xs font-semibold text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 shrink-0">
-          <Calendar className="h-3.5 w-3.5 text-slate-500 dark:text-slate-400" />
-          <span>{ecole.annee_scolaire}</span>
-        </div>
-
-        {/* Role Selector (clean & discrete) */}
-        {onRoleChange && (
-          <Select<UserRole>
-            value={currentRole}
-            onChange={onRoleChange}
-            prefix="Vue :"
-            size="sm"
-            variant="subtle"
-            align="right"
-            menuClassName="w-56"
-            options={(Object.keys(rolesConfig) as UserRole[]).map((role) => ({
-              value: role,
-              label: rolesConfig[role].label,
-              icon: rolesConfig[role].icon,
-              description: rolesConfig[role].roleTitle,
-            }))}
-          />
+        {ecole?.annee_scolaire && (
+          <div className="hidden xl:flex items-center gap-1.5 rounded-full bg-slate-100 dark:bg-slate-800 px-3 py-1 text-xs font-semibold text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 shrink-0">
+            <Calendar className="h-3.5 w-3.5 text-slate-500 dark:text-slate-400" />
+            <span>{ecole.annee_scolaire}</span>
+          </div>
         )}
 
-        {/* Notifications Icon Button */}
-        <Tooltip content="Notifications" side="bottom">
-          <button
-            type="button"
-            className="relative p-2 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-white transition-colors rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800"
-            aria-label="Notifications"
-            onClick={() => {
-              if (onNavigateTab) onNavigateTab('relances');
-            }}
-          >
-            <Bell className="h-4.5 w-4.5" />
-            <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white dark:ring-slate-900" />
-          </button>
-        </Tooltip>
+        {/* Notifications : raccourci vers les relances, réservé au portail Directeur */}
+        {currentRole === 'directeur' && (
+          <Tooltip content="Notifications" side="bottom">
+            <button
+              type="button"
+              className="relative p-2 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-white transition-colors rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800"
+              aria-label="Notifications"
+              onClick={() => {
+                if (onNavigateTab) onNavigateTab('relances');
+              }}
+            >
+              <Bell className="h-4.5 w-4.5" />
+            </button>
+          </Tooltip>
+        )}
 
         <div className="h-6 w-px bg-slate-200 dark:bg-slate-800 hidden sm:block" />
 
@@ -221,17 +159,15 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             type="button"
             onClick={() => setIsProfileOpen(!isProfileOpen)}
+            aria-label="Menu du profil"
+            aria-expanded={isProfileOpen}
             className="flex items-center gap-2 p-1 pl-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors focus:outline-none"
           >
-            <StudentInitials
-              nom={currentConfig.user.nom}
-              prenom={currentConfig.user.prenom}
-              size="sm"
-            />
+            <StudentInitials nom={user.nom} prenom={user.prenom} size="sm" />
             <div className="hidden lg:flex flex-col text-left min-w-0 max-w-[120px]">
-              <Tooltip content={`${currentConfig.user.prenom} ${currentConfig.user.nom}`} side="bottom" className="flex min-w-0">
+              <Tooltip content={fullName} side="bottom" className="flex min-w-0">
                 <span className="text-xs font-bold text-slate-900 dark:text-white leading-tight truncate">
-                  {currentConfig.user.prenom}
+                  {user.prenom || user.nom}
                 </span>
               </Tooltip>
               <Tooltip content={currentConfig.roleTitle} side="bottom" className="flex min-w-0">
@@ -245,7 +181,7 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* Floating Profile Panel */}
           <UserProfileDropdown
-            user={currentConfig.user}
+            user={user}
             roleTitle={currentConfig.roleTitle}
             roleBadge={currentConfig.label}
             isOpen={isProfileOpen}
@@ -257,5 +193,3 @@ export const Header: React.FC<HeaderProps> = ({
     </header>
   );
 };
-
-

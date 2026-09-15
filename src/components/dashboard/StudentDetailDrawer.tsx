@@ -1,39 +1,22 @@
-import React, { useState, useEffect } from 'react';
-import { EleveWithStats } from '../../lib/mockData';
+import React, { useEffect } from 'react';
+import type { EleveSituation } from '../../types/domain';
 import { StudentInitials } from '../ui/StudentInitials';
 import { StatusBadge } from '../ui/StatusBadge';
 import { Button } from '../ui/Button';
 import { Tooltip } from '../ui/Tooltip';
+import { ComingSoon } from '../ui/DataState';
 import { formatMRU } from '../../lib/utils';
-import {
-  X,
-  FolderOpen,
-  Star,
-  Printer,
-  Phone,
-  MapPin,
-  CheckCircle2,
-  User,
-  Zap,
-  Send,
-} from 'lucide-react';
+import { formatDate, libelleLien } from '../../lib/format';
+import { X, Phone, Mail, CheckCircle2, User, Zap, Send, CalendarDays } from 'lucide-react';
 
 interface StudentDetailDrawerProps {
-  eleve: EleveWithStats | null;
+  eleve: EleveSituation | null;
   onClose: () => void;
-  onQuickPay?: (eleve: EleveWithStats) => void;
-  onQuickRelance?: (eleve: EleveWithStats) => void;
+  /** Ouvre la saisie d'un paiement ; absent = pas d'action d'encaissement. */
+  onEncaisser?: (eleve: EleveSituation) => void;
 }
 
-export const StudentDetailDrawer: React.FC<StudentDetailDrawerProps> = ({
-  eleve,
-  onClose,
-  onQuickPay,
-  onQuickRelance,
-}) => {
-  const [isFavorite, setIsFavorite] = useState(false);
-  const [activeToast, setActiveToast] = useState<string | null>(null);
-
+export const StudentDetailDrawer: React.FC<StudentDetailDrawerProps> = ({ eleve, onClose, onEncaisser }) => {
   // Close on Escape
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -45,14 +28,16 @@ export const StudentDetailDrawer: React.FC<StudentDetailDrawerProps> = ({
 
   if (!eleve) return null;
 
-  const showActionToast = (msg: string) => {
-    setActiveToast(msg);
-    setTimeout(() => setActiveToast(null), 3000);
-  };
+  const sexe = eleve.sexe === 'M' ? 'Masculin' : eleve.sexe === 'F' ? 'Féminin' : '—';
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end bg-slate-900/40 dark:bg-slate-950/70 backdrop-blur-xs animate-in fade-in duration-200">
-      <div className="w-full max-w-md h-full bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 shadow-2xl flex flex-col justify-between overflow-y-auto animate-in slide-in-from-right duration-250">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={`Fiche de ${eleve.prenom} ${eleve.nom}`}
+        className="w-full max-w-md h-full bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 shadow-2xl flex flex-col justify-between overflow-y-auto animate-in slide-in-from-right duration-250"
+      >
         <div>
           {/* Header Bar */}
           <div className="flex items-center justify-between p-4 sm:p-5 border-b border-slate-100 dark:border-slate-800">
@@ -61,19 +46,12 @@ export const StudentDetailDrawer: React.FC<StudentDetailDrawerProps> = ({
             </span>
             <button
               onClick={onClose}
+              aria-label="Fermer la fiche"
               className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
             >
               <X className="h-5 w-5" />
             </button>
           </div>
-
-          {/* Toast inside drawer */}
-          {activeToast && (
-            <div className="mx-4 mt-3 p-2.5 rounded-xl bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 text-xs font-semibold flex items-center gap-2 animate-in fade-in slide-in-from-top-2">
-              <CheckCircle2 className="h-4 w-4 text-emerald-400 dark:text-emerald-600 shrink-0" />
-              <span>{activeToast}</span>
-            </div>
-          )}
 
           {/* Student Profile Centered Hero (Nexoov Style) */}
           <div className="p-6 text-center border-b border-slate-100 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/40">
@@ -93,65 +71,23 @@ export const StudentDetailDrawer: React.FC<StudentDetailDrawerProps> = ({
               {eleve.prenom} {eleve.nom}
             </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5">
-              Classe : <span className="font-bold text-slate-800 dark:text-slate-200">{eleve.classe}</span> • Matr :{' '}
-              <span className="font-mono text-slate-600 dark:text-slate-400">{eleve.matricule}</span>
+              Classe : <span className="font-bold text-slate-800 dark:text-slate-200">{eleve.classe ?? '—'}</span> • Matr :{' '}
+              <span className="font-mono text-slate-600 dark:text-slate-400">{eleve.matricule ?? '—'}</span>
             </p>
 
-            {/* Quick Action Icons Row */}
-            <div className="flex items-center justify-center gap-2.5 mt-4">
-              <Tooltip content="Dossier scolaire">
-                <button
-                  type="button"
-                  onClick={() => showActionToast('Dossier scolaire ouvert')}
-                  className="h-9 w-9 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-300 hover:bg-blue-50/50 flex items-center justify-center transition-all shadow-2xs"
-                  aria-label="Dossier scolaire"
-                >
-                  <FolderOpen className="h-4 w-4" />
-                </button>
-              </Tooltip>
-
-              <Tooltip content="Favori">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsFavorite(!isFavorite);
-                    showActionToast(isFavorite ? 'Retiré des favoris' : 'Ajouté aux favoris');
-                  }}
-                  className={`h-9 w-9 rounded-xl border flex items-center justify-center transition-all shadow-2xs ${
-                    isFavorite
-                      ? 'bg-amber-50 dark:bg-amber-950/50 border-amber-300 text-amber-500'
-                      : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-amber-500'
-                  }`}
-                  aria-label="Favori"
-                >
-                  <Star className={`h-4 w-4 ${isFavorite ? 'fill-amber-400' : ''}`} />
-                </button>
-              </Tooltip>
-
-              <Tooltip content="Imprimer attestation">
-                <button
-                  type="button"
-                  onClick={() => {
-                    showActionToast('Impression attestation / reçu');
-                    window.print();
-                  }}
-                  className="h-9 w-9 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-300 hover:bg-blue-50/50 flex items-center justify-center transition-all shadow-2xs"
-                  aria-label="Imprimer attestation"
-                >
-                  <Printer className="h-4 w-4" />
-                </button>
-              </Tooltip>
-
-              <Tooltip content="Appeler tuteur">
-                <a
-                  href={`tel:${eleve.telephone_tuteur}`}
-                  className="h-9 w-9 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-emerald-600 dark:hover:text-emerald-400 hover:border-emerald-300 hover:bg-emerald-50/50 flex items-center justify-center transition-all shadow-2xs"
-                  aria-label="Appeler tuteur"
-                >
-                  <Phone className="h-4 w-4" />
-                </a>
-              </Tooltip>
-            </div>
+            {eleve.tuteur?.telephone && (
+              <div className="flex items-center justify-center gap-2.5 mt-4">
+                <Tooltip content="Appeler le tuteur">
+                  <a
+                    href={`tel:${eleve.tuteur.telephone}`}
+                    className="h-9 w-9 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-emerald-600 dark:hover:text-emerald-400 hover:border-emerald-300 hover:bg-emerald-50/50 flex items-center justify-center transition-all shadow-2xs"
+                    aria-label="Appeler le tuteur"
+                  >
+                    <Phone className="h-4 w-4" />
+                  </a>
+                </Tooltip>
+              </div>
+            )}
           </div>
 
           {/* Financial Summary Cards */}
@@ -186,6 +122,40 @@ export const StudentDetailDrawer: React.FC<StudentDetailDrawerProps> = ({
             </div>
           </div>
 
+          {/* Échéancier */}
+          <div className="p-5 space-y-3 border-b border-slate-100 dark:border-slate-800">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+              Échéancier ({eleve.echeances.length})
+            </h4>
+            {eleve.echeances.length === 0 ? (
+              <p className="text-xs text-slate-500 dark:text-slate-400 italic">Aucune échéance établie pour cet élève.</p>
+            ) : (
+              <ul className="space-y-2">
+                {eleve.echeances.map((e) => (
+                  <li
+                    key={e.id}
+                    className="flex items-center justify-between gap-3 rounded-xl border border-slate-200/80 dark:border-slate-700/60 p-2.5 text-xs"
+                  >
+                    <div className="min-w-0">
+                      <div className="font-semibold text-slate-800 dark:text-slate-200 truncate">{e.libelle}</div>
+                      <div className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                        <CalendarDays className="h-3 w-3" /> {formatDate(e.date_echeance)} • {formatMRU(e.montant)}
+                      </div>
+                    </div>
+                    <div className="text-right shrink-0 space-y-1">
+                      <StatusBadge statut={e.statut} />
+                      {e.reste > 0 && (
+                        <div className="text-[10px] font-mono font-bold text-rose-600 dark:text-rose-400">
+                          reste {formatMRU(e.reste)}
+                        </div>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
           {/* Section "À propos de l'élève" */}
           <div className="p-5 space-y-3 border-b border-slate-100 dark:border-slate-800">
             <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
@@ -194,16 +164,22 @@ export const StudentDetailDrawer: React.FC<StudentDetailDrawerProps> = ({
             <div className="space-y-2 text-xs">
               <div className="flex items-center justify-between py-1 border-b border-slate-100 dark:border-slate-800/60">
                 <span className="text-slate-500 dark:text-slate-400">Date de naissance</span>
-                <span className="font-semibold text-slate-800 dark:text-slate-200">14 Juin 2008</span>
+                <span className="font-semibold text-slate-800 dark:text-slate-200">{formatDate(eleve.date_naissance)}</span>
+              </div>
+              <div className="flex items-center justify-between py-1 border-b border-slate-100 dark:border-slate-800/60">
+                <span className="text-slate-500 dark:text-slate-400">Lieu de naissance</span>
+                <span className="font-semibold text-slate-800 dark:text-slate-200">{eleve.lieu_naissance ?? '—'}</span>
               </div>
               <div className="flex items-center justify-between py-1 border-b border-slate-100 dark:border-slate-800/60">
                 <span className="text-slate-500 dark:text-slate-400">Sexe</span>
-                <span className="font-semibold text-slate-800 dark:text-slate-200">Masculin</span>
+                <span className="font-semibold text-slate-800 dark:text-slate-200">{sexe}</span>
               </div>
-              <div className="flex items-center justify-between py-1 border-b border-slate-100 dark:border-slate-800/60">
-                <span className="text-slate-500 dark:text-slate-400">Régime de scolarité</span>
-                <span className="font-semibold text-slate-800 dark:text-slate-200">Externe standard</span>
-              </div>
+              {eleve.nb_absences !== null && (
+                <div className="flex items-center justify-between py-1 border-b border-slate-100 dark:border-slate-800/60">
+                  <span className="text-slate-500 dark:text-slate-400">Absences</span>
+                  <span className="font-semibold text-slate-800 dark:text-slate-200">{eleve.nb_absences}</span>
+                </div>
+              )}
               <div className="flex items-center justify-between py-1">
                 <span className="text-slate-500 dark:text-slate-400">Statut recouvrement</span>
                 <StatusBadge statut={eleve.statut} />
@@ -216,23 +192,29 @@ export const StudentDetailDrawer: React.FC<StudentDetailDrawerProps> = ({
             <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
               Responsable Légal & Contact
             </h4>
-            <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700/60 space-y-2.5 text-xs">
-              <div className="flex items-center gap-2.5">
-                <User className="h-4 w-4 text-blue-600 dark:text-blue-400 shrink-0" />
-                <span className="font-bold text-slate-900 dark:text-white">{eleve.nom_tuteur}</span>
-                <span className="text-[11px] text-slate-400">(Tuteur légal)</span>
+            {eleve.tuteur ? (
+              <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700/60 space-y-2.5 text-xs">
+                <div className="flex items-center gap-2.5">
+                  <User className="h-4 w-4 text-blue-600 dark:text-blue-400 shrink-0" />
+                  <span className="font-bold text-slate-900 dark:text-white">{eleve.tuteur.nom}</span>
+                  <span className="text-[11px] text-slate-400">({libelleLien(eleve.tuteur.lien)})</span>
+                </div>
+                <div className="flex items-center gap-2.5 text-slate-600 dark:text-slate-300">
+                  <Phone className="h-4 w-4 text-slate-400 shrink-0" />
+                  <span className="font-mono">{eleve.tuteur.telephone ?? 'Non renseigné'}</span>
+                </div>
+                {eleve.tuteur.email && (
+                  <div className="flex items-center gap-2.5 text-slate-600 dark:text-slate-300">
+                    <Mail className="h-4 w-4 text-slate-400 shrink-0" />
+                    <span>{eleve.tuteur.email}</span>
+                  </div>
+                )}
               </div>
-
-              <div className="flex items-center gap-2.5 text-slate-600 dark:text-slate-300">
-                <Phone className="h-4 w-4 text-slate-400 shrink-0" />
-                <span className="font-mono">{eleve.telephone_tuteur}</span>
-              </div>
-
-              <div className="flex items-center gap-2.5 text-slate-600 dark:text-slate-300">
-                <MapPin className="h-4 w-4 text-slate-400 shrink-0" />
-                <span>Tevragh-Zeina, Nouakchott</span>
-              </div>
-            </div>
+            ) : (
+              <p className="text-xs text-slate-500 dark:text-slate-400 italic">
+                Aucun responsable légal rattaché à cet élève.
+              </p>
+            )}
           </div>
         </div>
 
@@ -240,36 +222,29 @@ export const StudentDetailDrawer: React.FC<StudentDetailDrawerProps> = ({
         <div className="p-4 sm:p-5 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/80 flex items-center gap-2.5">
           {eleve.remaining > 0 ? (
             <>
-              <Button
-                variant="outline"
-                size="sm"
-                className="flex-1 gap-1.5 h-10 text-xs font-bold text-emerald-700 border-emerald-300 dark:border-emerald-800 hover:bg-emerald-50 dark:hover:bg-emerald-950/40"
-                onClick={() => {
-                  if (onQuickPay) onQuickPay(eleve);
-                  onClose();
-                }}
-              >
-                <Zap className="h-3.5 w-3.5 text-emerald-600 fill-emerald-600" />
-                Encaisser le solde
-              </Button>
+              {onEncaisser && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-1 gap-1.5 h-10 text-xs font-bold text-emerald-700 border-emerald-300 dark:border-emerald-800 hover:bg-emerald-50 dark:hover:bg-emerald-950/40"
+                  onClick={() => onEncaisser(eleve)}
+                >
+                  <Zap className="h-3.5 w-3.5 text-emerald-600 fill-emerald-600" />
+                  Enregistrer un paiement
+                </Button>
+              )}
 
-              <Button
-                variant="danger"
-                size="sm"
-                className="flex-1 gap-1.5 h-10 text-xs font-bold"
-                onClick={() => {
-                  if (onQuickRelance) onQuickRelance(eleve);
-                  onClose();
-                }}
-              >
-                <Send className="h-3.5 w-3.5" />
-                Relancer SMS
-              </Button>
+              <ComingSoon detail="envoi SMS / WhatsApp" className="flex flex-1">
+                <Button variant="danger" size="sm" className="w-full gap-1.5 h-10 text-xs font-bold" disabled>
+                  <Send className="h-3.5 w-3.5" />
+                  Relancer SMS
+                </Button>
+              </ComingSoon>
             </>
           ) : (
             <div className="w-full text-center py-2 text-xs font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 rounded-xl border border-emerald-200 dark:border-emerald-800 flex items-center justify-center gap-2">
               <CheckCircle2 className="h-4 w-4" />
-              Scolarité soldée intégralement pour l'exercice en cours
+              {eleve.echeances.length > 0 ? 'Toutes les échéances sont soldées' : 'Aucune échéance établie'}
             </div>
           )}
         </div>

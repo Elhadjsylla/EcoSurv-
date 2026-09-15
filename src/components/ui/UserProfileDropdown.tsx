@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useThemeStore } from '../../store/useThemeStore';
-import { useEcoleStore } from '../../store/useEcoleStore';
+import { useAuthStore } from '../../store/useAuthStore';
+import { useEcole } from '../../data/ecole';
 import { StudentInitials } from './StudentInitials';
 import {
   Building2,
@@ -29,6 +30,14 @@ interface UserProfileDropdownProps {
   onNavigateTab?: (tab: string) => void;
 }
 
+const statutAbonnement: Record<string, { label: string; className: string }> = {
+  actif: { label: 'Actif', className: 'text-emerald-700 dark:text-emerald-400 bg-emerald-100/80 dark:bg-emerald-950/80' },
+  essai: { label: 'Essai', className: 'text-blue-700 dark:text-blue-400 bg-blue-100/80 dark:bg-blue-950/80' },
+  suspendu: { label: 'Suspendu', className: 'text-amber-700 dark:text-amber-400 bg-amber-100/80 dark:bg-amber-950/80' },
+  expire: { label: 'Expiré', className: 'text-rose-700 dark:text-rose-400 bg-rose-100/80 dark:bg-rose-950/80' },
+  annule: { label: 'Annulé', className: 'text-rose-700 dark:text-rose-400 bg-rose-100/80 dark:bg-rose-950/80' },
+};
+
 export const UserProfileDropdown: React.FC<UserProfileDropdownProps> = ({
   user,
   roleTitle,
@@ -39,7 +48,11 @@ export const UserProfileDropdown: React.FC<UserProfileDropdownProps> = ({
 }) => {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { theme, toggleTheme } = useThemeStore();
-  const ecole = useEcoleStore((s) => s.ecole);
+  const { data: ecole } = useEcole();
+  const role = useAuthStore((s) => s.profile?.role);
+  const signOut = useAuthStore((s) => s.signOut);
+  const [isSigningOut, setIsSigningOut] = useState(false);
+  const estDirecteur = role === 'directeur';
 
   // Sub-view navigation ('main' | 'language')
   const [currentView, setCurrentView] = useState<'main' | 'language'>('main');
@@ -80,6 +93,24 @@ export const UserProfileDropdown: React.FC<UserProfileDropdownProps> = ({
 
   if (!isOpen) return null;
 
+  const abonnement = ecole ? statutAbonnement[ecole.statut_abonnement] : null;
+
+  const lien = (tab: string, label: string, icon: React.ReactNode) => (
+    <button
+      onClick={() => {
+        onNavigateTab?.(tab);
+        onClose();
+      }}
+      className="w-full flex items-center justify-between p-2.5 rounded-xl text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-colors text-left font-semibold"
+    >
+      <div className="flex items-center gap-2.5">
+        {icon}
+        <span>{label}</span>
+      </div>
+      <ChevronRight className="h-4 w-4 text-slate-400" />
+    </button>
+  );
+
   return (
     <div
       ref={dropdownRef}
@@ -99,77 +130,41 @@ export const UserProfileDropdown: React.FC<UserProfileDropdownProps> = ({
                   {roleBadge}
                 </span>
               </div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">
-                {roleTitle}
-              </p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">{user.email ?? roleTitle}</p>
             </div>
           </div>
 
-          {/* School Card Switcher */}
-          <div className="rounded-xl p-3 bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2.5 min-w-0">
-              <div className="h-9 w-9 rounded-lg bg-blue-600 dark:bg-blue-500 text-white flex items-center justify-center shrink-0 shadow-xs">
-                <Building2 className="h-4.5 w-4.5" />
-              </div>
-              <div className="min-w-0">
-                <div className="text-xs font-bold text-slate-900 dark:text-white truncate">
-                  {ecole.nom}
+          {/* École du compte */}
+          {ecole && (
+            <div className="rounded-xl p-3 bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="h-9 w-9 rounded-lg bg-blue-600 dark:bg-blue-500 text-white flex items-center justify-center shrink-0 shadow-xs">
+                  <Building2 className="h-4.5 w-4.5" />
                 </div>
-                <div className="text-[11px] text-slate-500 dark:text-slate-400 font-mono truncate">
-                  {ecole.ville} • {ecole.code_ecole}
+                <div className="min-w-0">
+                  <div className="text-xs font-bold text-slate-900 dark:text-white truncate">{ecole.nom}</div>
+                  <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
+                    {[ecole.ville, ecole.annee_scolaire].filter(Boolean).join(' • ') || '—'}
+                  </div>
                 </div>
               </div>
+              {abonnement && (
+                <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md shrink-0 ${abonnement.className}`}>
+                  {abonnement.label}
+                </span>
+              )}
             </div>
-            <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 bg-emerald-100/80 dark:bg-emerald-950/80 px-2 py-0.5 rounded-md shrink-0">
-              Actif
-            </span>
-          </div>
+          )}
 
           {/* Action Links */}
           <div className="space-y-1 text-xs">
-            <button
-              onClick={() => {
-                if (onNavigateTab) onNavigateTab('config');
-                onClose();
-              }}
-              className="w-full flex items-center justify-between p-2.5 rounded-xl text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-colors text-left font-semibold"
-            >
-              <div className="flex items-center gap-2.5">
-                <Users className="h-4 w-4 text-slate-500 dark:text-slate-400" />
-                <span>Gérer les accès & Personnel</span>
-              </div>
-              <ChevronRight className="h-4 w-4 text-slate-400" />
-            </button>
-
-            <button
-              onClick={() => {
-                if (onNavigateTab) onNavigateTab('relances');
-                onClose();
-              }}
-              className="w-full flex items-center justify-between p-2.5 rounded-xl text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-colors text-left font-semibold"
-            >
-              <div className="flex items-center gap-2.5">
-                <Bell className="h-4 w-4 text-slate-500 dark:text-slate-400" />
-                <span>Notifications & Rappels</span>
-              </div>
-              <span className="rounded-full bg-red-100 dark:bg-red-950/80 text-red-700 dark:text-red-400 px-1.5 py-0.2 text-[10px] font-bold">
-                2
-              </span>
-            </button>
-
-            <button
-              onClick={() => {
-                if (onNavigateTab) onNavigateTab('config');
-                onClose();
-              }}
-              className="w-full flex items-center justify-between p-2.5 rounded-xl text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-colors text-left font-semibold"
-            >
-              <div className="flex items-center gap-2.5">
-                <Settings className="h-4 w-4 text-slate-500 dark:text-slate-400" />
-                <span>Paramètres système</span>
-              </div>
-              <ChevronRight className="h-4 w-4 text-slate-400" />
-            </button>
+            {estDirecteur && (
+              <>
+                {lien('config', 'Gérer les accès & Personnel', <Users className="h-4 w-4 text-slate-500 dark:text-slate-400" />)}
+                {lien('relances', 'Relances & Impayés', <Bell className="h-4 w-4 text-slate-500 dark:text-slate-400" />)}
+                {lien('config', 'Paramètres de l’établissement', <Settings className="h-4 w-4 text-slate-500 dark:text-slate-400" />)}
+              </>
+            )}
 
             {/* Language Selector trigger */}
             <button
@@ -181,9 +176,7 @@ export const UserProfileDropdown: React.FC<UserProfileDropdownProps> = ({
                 <span>Langue</span>
               </div>
               <div className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400">
-                <span className="text-[11px] font-medium">
-                  {languages.find((l) => l.id === selectedLanguage)?.name}
-                </span>
+                <span className="text-[11px] font-medium">{languages.find((l) => l.id === selectedLanguage)?.name}</span>
                 <ChevronRight className="h-4 w-4 text-slate-400" />
               </div>
             </button>
@@ -191,19 +184,14 @@ export const UserProfileDropdown: React.FC<UserProfileDropdownProps> = ({
             {/* Dark Mode Switch */}
             <div className="flex items-center justify-between p-2.5 rounded-xl text-slate-700 dark:text-slate-300">
               <div className="flex items-center gap-2.5 font-semibold">
-                {theme === 'dark' ? (
-                  <Moon className="h-4 w-4 text-indigo-400" />
-                ) : (
-                  <Sun className="h-4 w-4 text-amber-500" />
-                )}
+                {theme === 'dark' ? <Moon className="h-4 w-4 text-indigo-400" /> : <Sun className="h-4 w-4 text-amber-500" />}
                 <span>Mode Sombre</span>
               </div>
-
-              {/* Functional Toggle switch */}
               <button
                 type="button"
                 role="switch"
                 aria-checked={theme === 'dark'}
+                aria-label="Mode sombre"
                 onClick={toggleTheme}
                 className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 ${
                   theme === 'dark' ? 'bg-blue-600' : 'bg-slate-300 dark:bg-slate-700'
@@ -221,14 +209,17 @@ export const UserProfileDropdown: React.FC<UserProfileDropdownProps> = ({
           {/* Log Out */}
           <div className="pt-2 border-t border-slate-100 dark:border-slate-800/80">
             <button
-              onClick={() => {
-                alert('Déconnexion de la session démo EcoSurv.');
-                onClose();
+              type="button"
+              disabled={isSigningOut}
+              onClick={async () => {
+                setIsSigningOut(true);
+                // Session Supabase fermée, cache et historique vidés : l'écran de connexion prend le relais.
+                await signOut();
               }}
-              className="w-full flex items-center gap-2.5 p-2 rounded-xl text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors text-xs font-bold"
+              className="w-full flex items-center gap-2.5 p-2 rounded-xl text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors text-xs font-bold disabled:opacity-60 disabled:cursor-wait"
             >
               <LogOut className="h-4 w-4" />
-              <span>Déconnexion</span>
+              <span>{isSigningOut ? 'Déconnexion…' : 'Déconnexion'}</span>
             </button>
           </div>
         </div>
@@ -238,13 +229,12 @@ export const UserProfileDropdown: React.FC<UserProfileDropdownProps> = ({
           <div className="flex items-center gap-2 pb-3 border-b border-slate-100 dark:border-slate-800">
             <button
               onClick={() => setCurrentView('main')}
+              aria-label="Retour"
               className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 transition-colors"
             >
               <ChevronLeft className="h-5 w-5" />
             </button>
-            <h4 className="text-sm font-bold text-slate-900 dark:text-white">
-              Sélectionner la langue
-            </h4>
+            <h4 className="text-sm font-bold text-slate-900 dark:text-white">Sélectionner la langue</h4>
           </div>
 
           <div className="space-y-1.5 text-xs">

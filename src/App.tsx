@@ -1,6 +1,13 @@
 import { useState, useEffect } from 'react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { queryClient } from './lib/queryClient';
+import { supabaseConfigError } from './lib/supabase';
 import { useThemeStore } from './store/useThemeStore';
+import { useAuthStore } from './store/useAuthStore';
+import { LoginPage } from './pages/LoginPage';
+import { SuperAdminPage } from './pages/SuperAdminPage';
+import { ConfigErrorScreen, ProfileErrorScreen, SplashScreen } from './components/auth/AuthScreens';
+import { PORTAL_HOME, isRouteOfPortal, portalForRole, type Portal } from './lib/portals';
 import { Sidebar, NavTab } from './components/ui/Sidebar';
 import { TeacherSidebar, TeacherNavTab } from './components/enseignant/TeacherSidebar';
 import { CaissierSidebar, CaissierNavTab } from './components/caissier/CaissierSidebar';
@@ -26,30 +33,16 @@ import { ParentPaiementsPage } from './pages/parent/ParentPaiementsPage';
 import { ParentPedagogiePage } from './pages/parent/ParentPedagogiePage';
 import { ParentAssiduitePage } from './pages/parent/ParentAssiduitePage';
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 1000 * 60 * 5,
-      refetchOnWindowFocus: false,
-    },
-  },
-});
-
-export function AppContent() {
-  const initTheme = useThemeStore((s) => s.initTheme);
-
-  useEffect(() => {
-    initTheme();
-  }, [initTheme]);
-
+export function AppContent({ portal }: { portal: Portal }) {
   useSwipeNavigation();
 
-  // Rôle actif (basculable dans le Header pour la démo) et écran courant,
-  // pilotés par l'historique de navigation (boutons Précédent / Suivant)
-  const currentRole = useNavigationStore((s) => s.portal);
-  const currentRoute = useNavigationStore(selectCurrentRoute);
+  // Le portail vient du rôle lu dans `profils`, jamais d'un choix dans l'interface.
+  // L'écran courant vient de l'historique ; un écran étranger au portail n'est
+  // jamais rendu, même si l'historique en contenait un.
+  const currentRole = portal;
+  const storedRoute = useNavigationStore(selectCurrentRoute);
+  const currentRoute = isRouteOfPortal(storedRoute, portal) ? storedRoute : PORTAL_HOME[portal];
   const navigate = useNavigationStore((s) => s.navigate);
-  const switchPortal = useNavigationStore((s) => s.switchPortal);
 
   // L'écran courant n'appartient qu'au portail actif : les switchs de rendu
   // ci-dessous ne sont évalués que pour ce portail.
@@ -65,7 +58,8 @@ export function AppContent() {
   const [preselectedEleveForGuichet, setPreselectedEleveForGuichet] = useState<string | undefined>(undefined);
 
   // État propre au portail Parent
-  const [selectedParentChildId, setSelectedParentChildId] = useState<string>('el-003');
+  // Vide = premier enfant rattaché au compte (résolu par les écrans du portail Parent)
+  const [selectedParentChildId, setSelectedParentChildId] = useState<string>('');
 
   const handleNavigateToElevesWithFilter = (statut: string) => {
     setElevesStatutFilter(statut);
@@ -219,7 +213,6 @@ export function AppContent() {
       <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
         <Header
           currentRole={currentRole}
-          onRoleChange={switchPortal}
           onNavigateTab={handleHeaderNavigate}
         />
         <main className="flex-1 overflow-y-auto overflow-x-hidden">
@@ -233,10 +226,49 @@ export function AppContent() {
   );
 }
 
+/**
+ * Aucun écran de l'application n'est rendu sans session valide ET profil
+ * actif lu dans `profils` : c'est la seule porte d'entrée vers les portails.
+ */
+function AuthGate() {
+  const initTheme = useThemeStore((s) => s.initTheme);
+  const status = useAuthStore((s) => s.status);
+  const profile = useAuthStore((s) => s.profile);
+  const reloadProfile = useAuthStore((s) => s.reloadProfile);
+  const signOut = useAuthStore((s) => s.signOut);
+
+  useEffect(() => {
+    initTheme();
+  }, [initTheme]);
+
+  useEffect(() => {
+    if (supabaseConfigError) return;
+    return useAuthStore.getState().initialize();
+  }, []);
+
+  if (supabaseConfigError) return <ConfigErrorScreen message={supabaseConfigError} />;
+
+  switch (status) {
+    case 'signed_out':
+      return <LoginPage />;
+    case 'profile_error':
+      return <ProfileErrorScreen onRetry={reloadProfile} onSignOut={() => void signOut()} />;
+    case 'authenticated': {
+      if (!profile) return <SplashScreen />;
+      const portal = portalForRole(profile.role);
+      if (!portal) return <SuperAdminPage />;
+      // Clé par compte : aucun état local d'écran (filtres, sélection) ne passe d'un compte à l'autre.
+      return <AppContent key={profile.id} portal={portal} />;
+    }
+    default:
+      return <SplashScreen />;
+  }
+}
+
 export function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <AppContent />
+      <AuthGate />
     </QueryClientProvider>
   );
 }
