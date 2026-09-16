@@ -113,7 +113,7 @@ export const MauritaniaWilayasShowcase: React.FC = () => {
           {/* Left: Key Metrics */}
         <div className="lg:col-span-6 space-y-5">
           <div>
-            <span className="text-xs text-slate-500 font-medium">Zone couverte :</span>
+            <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">Zone couverte :</span>
             <h4 className="text-base font-bold text-slate-900 dark:text-white mt-0.5">
               {current.name}
             </h4>
@@ -121,26 +121,26 @@ export const MauritaniaWilayasShowcase: React.FC = () => {
 
           <div className="grid grid-cols-2 gap-4">
             <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800">
-              <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+              <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                 Taux de recouvrement moyen
               </span>
               <p className="text-3xl font-black text-emerald-600 dark:text-emerald-400 font-mono mt-1">
                 {current.tauxRecouvrement}
               </p>
-              <p className="text-[10px] text-slate-500 mt-1 flex items-center gap-1">
+              <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-1">
                 <TrendingUp className="h-3 w-3 text-emerald-500" />
                 <span>Exercice scolaire 2024-2025</span>
               </p>
             </div>
 
             <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800">
-              <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+              <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                 Établissements actifs
               </span>
               <p className="text-3xl font-black text-blue-600 dark:text-blue-400 font-mono mt-1">
                 {current.ecoles.split(' ')[0]}
               </p>
-              <p className="text-[10px] text-slate-500 mt-1 flex items-center gap-1">
+              <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-1">
                 <Award className="h-3 w-3 text-blue-500" />
                 <span>Primaires, collèges et lycées</span>
               </p>
@@ -175,19 +175,19 @@ export const MauritaniaWilayasShowcase: React.FC = () => {
 
         {/* Right: Testimonial Quote Card */}
         <div className="lg:col-span-6">
-          <div className="rounded-2xl bg-gradient-to-br from-blue-50/80 via-white to-indigo-50/50 dark:from-slate-800/90 dark:via-slate-850 dark:to-slate-800/70 p-6 sm:p-8 border border-blue-200/60 dark:border-blue-900/60 shadow-md space-y-4 relative">
-            <div className="flex items-center gap-1 text-amber-500 text-xs">
+          <div className="rounded-2xl bg-gradient-to-br from-blue-50/80 via-white to-indigo-50/50 dark:from-slate-800/90 dark:via-slate-800/60 dark:to-slate-900/80 p-6 sm:p-8 border border-blue-200/60 dark:border-slate-700/80 shadow-md space-y-4 relative">
+            <div className="flex items-center gap-1 text-amber-500 dark:text-amber-400 text-xs">
               {'★'.repeat(5)}
             </div>
             <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-200 italic leading-relaxed font-sans">
               {current.quote}
             </p>
-            <div className="pt-3 border-t border-slate-200/60 dark:border-slate-700 flex items-center justify-between">
+            <div className="pt-3 border-t border-slate-200/60 dark:border-slate-700/80 flex items-center justify-between">
               <div>
                 <p className="text-xs font-bold text-slate-900 dark:text-white">
                   {current.author}
                 </p>
-                <p className="text-[11px] text-slate-500">
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">
                   {current.name.split('(')[0].trim()}
                 </p>
               </div>

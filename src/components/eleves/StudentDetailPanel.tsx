@@ -94,7 +94,7 @@ export const StudentDetailPanel: React.FC<StudentDetailPanelProps> = ({
       </div>
 
       {/* Tuteur Légal & Coordonnées Box */}
-      <div className="rounded-xl bg-slate-50/80 dark:bg-slate-850 border border-slate-200/80 dark:border-slate-800 p-4.5 space-y-3 text-xs min-w-0">
+      <div className="rounded-xl bg-slate-50/80 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-800 p-4.5 space-y-3 text-xs min-w-0">
         <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider text-[11px]">
           <span>Tuteur Légal & Responsable</span>
           <span className="rounded bg-blue-100 dark:bg-blue-950/60 px-2 py-0.5 text-[10px] text-blue-700 dark:text-blue-400 font-bold">
@@ -134,7 +134,7 @@ export const StudentDetailPanel: React.FC<StudentDetailPanelProps> = ({
 
       {/* Bento Solde & Prochaine Échéance */}
       <div className="grid grid-cols-2 gap-3">
-        <div className="rounded-xl bg-slate-50/80 dark:bg-slate-850 border border-slate-200/80 dark:border-slate-800 p-3.5 flex flex-col justify-between hover:border-slate-300 dark:hover:border-slate-700 transition-colors min-w-0">
+        <div className="rounded-xl bg-slate-50/80 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-800 p-3.5 flex flex-col justify-between hover:border-slate-300 dark:hover:border-slate-700 transition-colors min-w-0">
           <span className="text-[11px] font-bold uppercase text-slate-500 dark:text-slate-400 tracking-wider truncate">
             Solde Actuel Dû
           </span>
@@ -161,7 +161,7 @@ export const StudentDetailPanel: React.FC<StudentDetailPanelProps> = ({
           </span>
         </div>
 
-        <div className="rounded-xl bg-slate-50 dark:bg-slate-850 border border-slate-200/80 dark:border-slate-800 p-3.5 flex flex-col justify-between hover:border-slate-300 dark:hover:border-slate-700 transition-colors min-w-0">
+        <div className="rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-800 p-3.5 flex flex-col justify-between hover:border-slate-300 dark:hover:border-slate-700 transition-colors min-w-0">
           <span className="text-[11px] font-bold uppercase text-slate-500 dark:text-slate-400 tracking-wider truncate">
             Prochaine Échéance
           </span>
@@ -256,7 +256,7 @@ export const StudentDetailPanel: React.FC<StudentDetailPanelProps> = ({
       </div>
 
       {/* Mini Audit Footer */}
-      <div className="flex items-center gap-2 rounded-lg bg-slate-50 dark:bg-slate-850 border border-slate-200/60 dark:border-slate-800 p-3 text-[11px] text-slate-600 dark:text-slate-400">
+      <div className="flex items-center gap-2 rounded-lg bg-slate-50 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-800 p-3 text-[11px] text-slate-600 dark:text-slate-400">
         <ShieldCheck className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
         <span>Dossier académique sécurisé par policy RLS (École & Enseignant).</span>
       </div>
