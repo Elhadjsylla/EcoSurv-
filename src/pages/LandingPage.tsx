@@ -28,6 +28,7 @@ import {
   Banknote,
   HeartHandshake,
   BookOpen,
+  Sparkles,
 } from 'lucide-react';
 
 const ROTATING_PHRASES = [
@@ -918,48 +919,77 @@ export const LandingPage: React.FC = () => {
         </div>
       </section>
 
-      {/* 11. Bannière CTA Pré-Footer avec relief, texture et lumière d'ambiance */}
-      <section className="relative overflow-hidden py-16 sm:py-24 bg-gradient-to-br from-blue-900 via-blue-700 to-indigo-950 text-white border-y border-white/10 shadow-2xl">
-        {/* Motif de texture en arrière-plan (grid pattern) */}
-        <div className="absolute inset-0 bg-grid-pattern opacity-15 pointer-events-none" />
+      {/* 11. Bannière CTA Pré-Footer Haute Fidélité SaaS */}
+      <section className="relative py-16 sm:py-24 overflow-hidden">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+          <div className="relative rounded-3xl overflow-hidden border border-slate-200/80 dark:border-slate-800 bg-gradient-to-b from-slate-900 via-slate-950 to-slate-950 text-white shadow-2xl shadow-blue-950/20 p-8 sm:p-14 lg:p-16 text-center">
+            {/* Lueur radiale d'ambiance bleue/indigo */}
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-3xl h-72 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-600/30 via-indigo-600/10 to-transparent blur-2xl pointer-events-none" />
 
-        {/* Orbes lumineux et halos dégradés pour briser la platitude */}
-        <div className="absolute -top-24 -right-24 w-96 h-96 rounded-full bg-blue-400/20 blur-3xl pointer-events-none animate-aurora" />
-        <div className="absolute -bottom-24 -left-24 w-96 h-96 rounded-full bg-indigo-500/25 blur-3xl pointer-events-none animate-aurora" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-4xl h-48 bg-emerald-500/10 blur-3xl pointer-events-none" />
+            {/* Motif de texture en arrière-plan */}
+            <div className="absolute inset-0 bg-grid-pattern opacity-10 pointer-events-none" />
 
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="flex flex-col lg:flex-row items-center justify-between gap-8 text-center lg:text-left">
-            <div className="max-w-2xl space-y-4">
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/15 backdrop-blur-md text-white text-xs font-bold border border-white/25 shadow-inner">
+            {/* Liseré lumineux supérieur subtil */}
+            <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-blue-500/50 to-transparent" />
+
+            <div className="relative z-10 max-w-3xl mx-auto space-y-6">
+              {/* Badge Rentrée */}
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-500/10 border border-blue-400/25 text-blue-300 text-xs font-bold tracking-wide shadow-inner backdrop-blur-md">
                 <span className="flex h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-                <span>Rentrée 2026-2027</span>
+                <span>Rentrée 2026–2027 • Inscriptions & Déploiements Ouverts</span>
               </div>
-              <h2 className="text-2xl sm:text-4xl lg:text-5xl font-black tracking-tight leading-tight">
+
+              {/* Titre Impactant et centré */}
+              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-white leading-tight">
                 Prêt à sécuriser les rentrées scolaires de votre établissement ?
               </h2>
-              <p className="text-blue-100/90 text-sm sm:text-base leading-relaxed max-w-xl">
-                Rejoignez les directions scolaires mauritaniennes qui ont éliminé les litiges de caisse et divisé leurs impayés par trois.
+
+              {/* Description claire */}
+              <p className="text-slate-300 text-sm sm:text-base lg:text-lg leading-relaxed max-w-2xl mx-auto">
+                Rejoignez les directions scolaires mauritaniennes qui ont éliminé les litiges de caisse, automatisé les quittances WhatsApp et divisé leurs impayés par trois.
               </p>
-            </div>
 
-            <div className="flex flex-col sm:flex-row items-center gap-3.5 w-full sm:w-auto shrink-0">
-              <button
-                type="button"
-                onClick={() => setIsDemoModalOpen(true)}
-                className="w-full sm:w-auto px-7 py-3.5 rounded-2xl bg-white text-blue-700 hover:bg-blue-50 font-extrabold text-sm shadow-xl shadow-black/20 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2"
-              >
-                <span>Réserver ma démo gratuite</span>
-              </button>
+              {/* Boutons d'Action SaaS */}
+              <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-4">
+                <button
+                  type="button"
+                  onClick={() => setIsDemoModalOpen(true)}
+                  className="w-full sm:w-auto relative group overflow-hidden px-8 py-4 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-sm sm:text-base shadow-xl shadow-blue-600/30 hover:shadow-blue-500/40 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2.5"
+                >
+                  <Sparkles className="h-4 w-4 text-blue-200" />
+                  <span>Réserver ma démo gratuite</span>
+                  <div className="absolute inset-0 w-1/2 h-full bg-gradient-to-r from-transparent via-white/25 to-transparent pointer-events-none animate-cta-sweep" />
+                </button>
 
-              <button
-                type="button"
-                onClick={() => handleLaunchPortal('directeur')}
-                className="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-white/10 hover:bg-white/15 backdrop-blur-md text-white font-bold text-sm border border-white/20 hover:border-white/30 transition-all flex items-center justify-center gap-2"
-              >
-                <span>Accéder à l'application démo</span>
-                <ArrowRight className="h-4 w-4" />
-              </button>
+                <button
+                  type="button"
+                  onClick={() => handleLaunchPortal('directeur')}
+                  className="w-full sm:w-auto px-7 py-4 rounded-2xl bg-white/5 hover:bg-white/10 text-white font-bold text-sm sm:text-base border border-white/15 hover:border-white/30 backdrop-blur-md hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2 group"
+                >
+                  <span>Tester l'application en direct</span>
+                  <ArrowRight className="h-4 w-4 text-slate-300 group-hover:translate-x-0.5 transition-transform" />
+                </button>
+              </div>
+
+              {/* Piliers de Confiance SaaS */}
+              <div className="pt-8 border-t border-white/10 flex flex-wrap items-center justify-center gap-y-3 gap-x-6 sm:gap-x-8 text-xs font-medium text-slate-400">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
+                  <span>Déploiement garanti en 24h</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
+                  <span>Intégré Bankily & Masrvi</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
+                  <span>Essai gratuit 14 jours sans engagement</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
+                  <span>Équipe support basée à Nouakchott</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
