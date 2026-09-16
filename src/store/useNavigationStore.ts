@@ -23,6 +23,9 @@ export type ViewMode = 'landing' | 'app';
 interface NavigationState {
   viewMode: ViewMode;
   portal: UserRole;
+  isMobileMenuOpen: boolean;
+  setMobileMenuOpen: (open: boolean) => void;
+  toggleMobileMenu: () => void;
   /** Pile des écrans visités ; l'écran affiché est entries[index]. */
   entries: AppRoute[];
   index: number;
@@ -48,6 +51,7 @@ const positionAt = (entries: AppRoute[], index: number) => ({
 const initialState = {
   viewMode: 'landing' as ViewMode,
   portal: 'directeur' as UserRole,
+  isMobileMenuOpen: false,
   ...positionAt([PORTAL_HOME.directeur], 0),
 };
 
@@ -58,7 +62,10 @@ const initialState = {
 export const useNavigationStore = create<NavigationState>((set) => ({
   ...initialState,
 
-  setViewMode: (mode) => set({ viewMode: mode }),
+  setMobileMenuOpen: (open) => set({ isMobileMenuOpen: open }),
+  toggleMobileMenu: () => set((state) => ({ isMobileMenuOpen: !state.isMobileMenuOpen })),
+
+  setViewMode: (mode) => set({ viewMode: mode, isMobileMenuOpen: false }),
 
   launchAppWithPortal: (portal) =>
     set((state) => {
@@ -66,6 +73,7 @@ export const useNavigationStore = create<NavigationState>((set) => ({
       return {
         viewMode: 'app',
         portal: targetPortal,
+        isMobileMenuOpen: false,
         ...positionAt([PORTAL_HOME[targetPortal]], 0),
       };
     }),
@@ -73,10 +81,10 @@ export const useNavigationStore = create<NavigationState>((set) => ({
   navigate: (route) =>
     set((state) => {
       // Rouvrir l'écran courant n'ajoute pas d'entrée.
-      if (state.entries[state.index] === route) return state;
+      if (state.entries[state.index] === route) return { isMobileMenuOpen: false };
       // Naviguer depuis le milieu de la pile efface l'historique « suivant ».
       const entries = [...state.entries.slice(0, state.index + 1), route].slice(-MAX_HISTORY_ENTRIES);
-      return positionAt(entries, entries.length - 1);
+      return { ...positionAt(entries, entries.length - 1), isMobileMenuOpen: false };
     }),
 
   goBack: () =>
@@ -87,7 +95,9 @@ export const useNavigationStore = create<NavigationState>((set) => ({
 
   switchPortal: (portal) =>
     set((state) =>
-      state.portal === portal ? state : { portal, ...positionAt([PORTAL_HOME[portal]], 0) }
+      state.portal === portal
+        ? { isMobileMenuOpen: false }
+        : { portal, isMobileMenuOpen: false, ...positionAt([PORTAL_HOME[portal]], 0) }
     ),
 
   reset: () => set(initialState),

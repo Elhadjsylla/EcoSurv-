@@ -612,7 +612,7 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
 
         {/* Tabular Roster with smooth internal scrollbar */}
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs border-collapse">
+          <table className="w-full text-left text-xs border-collapse min-w-[720px]">
             <thead>
               <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/60 font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                 <th className="py-4 px-4 w-10 text-center">
@@ -668,14 +668,14 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
                       </td>
 
                       {/* Élève (Nom en gras sur ligne 1 + matricule et classe en ligne 2) */}
-                      <td className="py-4 px-4">
+                      <td className="py-4 px-4 whitespace-nowrap">
                         <div className="flex items-center gap-3.5">
                           <StudentInitials nom={eleve.nom} prenom={eleve.prenom} />
                           <div>
                             <div className="font-bold text-slate-900 dark:text-white leading-snug text-sm">
                               {eleve.prenom} {eleve.nom}
                             </div>
-                            <div className="text-xs text-slate-400 dark:text-slate-500 font-mono mt-0.5 flex items-center gap-1.5">
+                            <div className="text-xs text-slate-400 dark:text-slate-500 font-mono mt-0.5 flex items-center gap-1.5 whitespace-nowrap">
                               <span>#{eleve.matricule}</span>
                               <span>•</span>
                               <span className="font-semibold text-slate-600 dark:text-slate-400">{eleve.classe}</span>

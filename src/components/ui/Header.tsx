@@ -22,7 +22,9 @@ import {
   Search,
   ChevronDown,
   Globe,
+  Menu,
 } from 'lucide-react';
+import { useNavigationStore } from '../../store/useNavigationStore';
 
 export type UserRole = 'directeur' | 'enseignant' | 'caissier' | 'parent';
 
@@ -44,6 +46,7 @@ export const Header: React.FC<HeaderProps> = ({
   const [globalSearch, setGlobalSearch] = useState('');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const toggleMobileMenu = useNavigationStore((s) => s.toggleMobileMenu);
 
   // Écoute du raccourci clavier "/" pour la recherche globale
   useEffect(() => {
@@ -123,9 +126,19 @@ export const Header: React.FC<HeaderProps> = ({
   return (
     <header className="sticky top-0 z-30 h-16 w-full border-b border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xs px-3.5 sm:px-5 lg:px-6 flex items-center justify-between gap-3 sm:gap-4 shadow-2xs transition-colors duration-200">
       {/* Left: School Information & Global Search Bar */}
-      <div className="flex items-center gap-2.5 sm:gap-3.5 lg:gap-4 min-w-0 flex-1 max-w-xl xl:max-w-2xl">
-        {/* Back / Forward navigation */}
-        <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
+      <div className="flex items-center gap-2 sm:gap-2.5 lg:gap-4 min-w-0 flex-1 max-w-xl xl:max-w-2xl">
+        {/* Mobile menu trigger button */}
+        <button
+          type="button"
+          onClick={toggleMobileMenu}
+          className="flex md:hidden h-9 w-9 items-center justify-center rounded-xl border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors shrink-0"
+          aria-label="Ouvrir le menu de navigation"
+        >
+          <Menu className="h-4.5 w-4.5" />
+        </button>
+
+        {/* Back / Forward navigation (hidden on mobile, visible from sm:) */}
+        <div className="hidden sm:flex items-center gap-2 sm:gap-2.5 shrink-0">
           <NavigationControls role={currentRole} />
           <div className="h-5 w-px bg-slate-200 dark:bg-slate-800" />
         </div>
