@@ -22,6 +22,14 @@
 
 begin;
 
+-- 0. Les clôtures de caisse de l'école de démo : elles référencent les
+--    caissiers en ON DELETE RESTRICT (la piste de caisse survit au
+--    compte), et elles verrouillent les paiements de leurs journées. Elles
+--    doivent donc partir avant les profils. Les notifications, elles,
+--    partent en cascade avec les profils.
+delete from public.clotures_caisse
+ where ecole_id = '11111111-1111-1111-1111-111111111111';
+
 -- 1. Les profils d'abord : ecoles.id est référencé par profils.ecole_id
 --    en ON DELETE RESTRICT, précisément pour qu'une école ne puisse pas
 --    être effacée tant que des comptes y sont rattachés.
