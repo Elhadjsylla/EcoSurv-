@@ -1,6 +1,12 @@
 -- =====================================================================
 --  ███  COMMANDE DESTRUCTRICE — À LIRE AVANT D'EXÉCUTER  ███
 --
+--  BASES DE TEST LOCALES UNIQUEMENT. Pour la base de PRODUCTION, utiliser
+--  supabase/ops/purge_demo/ (vérification préalable, simulation, contrôle
+--  que les autres écoles restent intactes). Ce fichier-ci n'a aucun de
+--  ces garde-fous : il supprimerait par exemple un vrai compte rattaché
+--  par erreur à l'école de démo.
+--
 --  Supprime UNIQUEMENT l'école de démonstration
 --  11111111-1111-1111-1111-111111111111 et, par cascade, ses 10 élèves,
 --  leurs échéances, leurs paiements, leurs absences et les liens
