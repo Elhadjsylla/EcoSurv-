@@ -36,7 +36,10 @@ temps, exports PDF/Excel, i18n arabe/RTL.
 | `supabase/migrations/20260918093000_clotures_caisse.sql` | Table `clotures_caisse`, 4 policies, totaux calculés, verrou des encaissements | **Oui**, après la précédente |
 | `supabase/seed/01_donnees_test.sql` | Jeu de démonstration fictif | Environnements de test uniquement |
 | `supabase/seed/02_rattacher_comptes_test.sql` | Rattache les 6 comptes de démo | Environnements de test uniquement |
-| `supabase/seed/99_purge_donnees_test.sql` | `DELETE` ciblé sur l'école de démo | Sur demande explicite seulement |
+| `supabase/seed/99_purge_donnees_test.sql` | `DELETE` ciblé sur l'école de démo, sans garde-fou | Bases de test locales seulement — **jamais en production** |
+| `supabase/ops/purge_demo/01_verification.sql` | Comptage en lecture seule de ce que la purge supprimerait, garde-fous | **Oui**, une fois, avant la purge (voir §8) |
+| `supabase/ops/purge_demo/02_purge_donnees_demo.sql` | Purge de l'école de démo, simulation par défaut | **Oui**, une fois, **après validation manuelle** |
+| `supabase/ops/purge_demo/03_purge_comptes_auth_demo.sql` | Suppression des 6 comptes Auth de démo | **Oui**, une fois, après le 02 (ou dashboard) |
 | `supabase/tests/00_prelude_supabase.sql` | Simule les rôles et le schéma `auth` d'un Postgres nu | **Non — jamais.** Bac à sable local uniquement |
 | `supabase/tests/01_test_schema_mvp.sql` | 13 cas de test du schéma | **Non.** Bac à sable local |
 | `supabase/tests/02_test_rls.sql` | 40+ vérifications RLS par rôle (sortie à relire) | **Non.** Bac à sable local |
@@ -713,6 +716,41 @@ peuvent correspondre à aucune boîte réelle.
 
 Toutes ces données sont fictives (`SECURITY_RULES.md` §5). Repères visuels :
 école préfixée `[DÉMO]`, matricules `DEMO-`, transactions `DEMO-TRX-`.
+
+> **Nom de l'école de démo.** En base, c'est **« [DÉMO] Groupe Scolaire Al
+> Anwar »**, identifiant `11111111-1111-1111-1111-111111111111`, 10 élèves au
+> seed. « Lycée Privé Al-Amel Nouakchott » est l'école **fictive** de
+> `src/lib/mockData.ts`, côté frontend : elle n'a jamais existé en base.
+
+### Retrait de la démo de la production
+
+Le passage en production supprime l'école de démo et ses 6 comptes, avec
+les scripts de `supabase/ops/purge_demo/`, **exécutés à la main par
+Elhadj** dans le SQL Editor, dans cet ordre :
+
+1. `01_verification.sql` : un seul `SELECT`, en lecture seule. Il liste
+   toutes les écoles, les lignes que la purge supprimerait table par
+   table, les garde-fous (bloquants) et les points à revoir, puis produit
+   la ligne `c_attendu`.
+2. `02_purge_donnees_demo.sql` : un seul bloc `DO`, atomique, en
+   **simulation par défaut** (il supprime puis annule tout, et affiche
+   le bilan sous la forme d'une erreur « SIMULATION RÉUSSIE »). En mode
+   réel (`c_executer = true`), il exige `c_attendu` et refuse si les
+   suppressions diffèrent des chiffres validés ; il compare aussi
+   l'empreinte md5 de toutes les lignes des autres écoles avant et
+   après. Aucun `DROP`/`TRUNCATE`, chaque `DELETE` porte sur
+   l'identifiant de la démo.
+3. `03_purge_comptes_auth_demo.sql` (ou le dashboard, Authentication →
+   Users) : les 6 comptes, désignés par leur email exact.
+
+Garde-fous qui font refuser le script 02 : nom d'école différent de celui
+validé, profil de démo référencé par une autre école, compte non-démo
+rattaché à l'école de démo, plus aucun super_admin actif après la purge,
+écriture concurrente (abandon après 5 s).
+
+Après la purge, les seeds `01` et `02` **refusent de tourner** sur une
+base qui contient une autre école que la démo, sous psql comme dans le
+SQL Editor. Ils restent utilisables sur une base de test locale vierge.
 
 ---
 
