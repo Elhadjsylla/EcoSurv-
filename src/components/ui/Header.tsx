@@ -9,6 +9,8 @@ import { useEcoleStore } from '../../store/useEcoleStore';
 import { StudentInitials } from './StudentInitials';
 import { Select } from './Select';
 import { UserProfileDropdown } from './UserProfileDropdown';
+import { NotificationsDropdown } from './NotificationsDropdown';
+import { useNotificationsStore } from '../../store/useNotificationsStore';
 import { NavigationControls } from './NavigationControls';
 import { Tooltip } from './Tooltip';
 import {
@@ -43,10 +45,15 @@ export const Header: React.FC<HeaderProps> = ({
   onReturnToLanding,
 }) => {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [globalSearch, setGlobalSearch] = useState('');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const toggleMobileMenu = useNavigationStore((s) => s.toggleMobileMenu);
+  const userRole = useNavigationStore((s) => s.userRole);
+
+  const unreadCount = useNotificationsStore((s) => s.unreadCount());
+  const loadNotificationsForUser = useNotificationsStore((s) => s.loadForUser);
 
   // Écoute du raccourci clavier "/" pour la recherche globale
   useEffect(() => {
@@ -122,6 +129,10 @@ export const Header: React.FC<HeaderProps> = ({
 
   const currentConfig = rolesConfig[currentRole];
   const ecole = useEcoleStore((s) => s.ecole);
+
+  useEffect(() => {
+    loadNotificationsForUser(currentConfig.user.id || 'usr-default', currentRole);
+  }, [currentRole, loadNotificationsForUser, currentConfig.user.id]);
 
   return (
     <header className="sticky top-0 z-30 h-16 w-full border-b border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xs px-3.5 sm:px-5 lg:px-6 flex items-center justify-between gap-3 sm:gap-4 shadow-2xs transition-colors duration-200">
@@ -211,8 +222,8 @@ export const Header: React.FC<HeaderProps> = ({
           <span>{ecole.annee_scolaire}</span>
         </div>
 
-        {/* Role Selector (clean & discrete) */}
-        {onRoleChange && (
+        {/* Role Selector (clean & discrete) - Visible UNIQUEMENT pour le Directeur */}
+        {onRoleChange && userRole === 'directeur' && (
           <Select<UserRole>
             value={currentRole}
             onChange={onRoleChange}
@@ -231,20 +242,34 @@ export const Header: React.FC<HeaderProps> = ({
           />
         )}
 
-        {/* Notifications Icon Button */}
-        <Tooltip content="Notifications" side="bottom">
-          <button
-            type="button"
-            className="relative flex h-9 w-9 items-center justify-center text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-white transition-colors rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 shrink-0"
-            aria-label="Notifications"
-            onClick={() => {
-              if (onNavigateTab) onNavigateTab('relances');
-            }}
-          >
-            <Bell className="h-4.5 w-4.5" />
-            <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white dark:ring-slate-900" />
-          </button>
-        </Tooltip>
+        {/* Notifications Icon Button with Dropdown */}
+        <div className="relative shrink-0">
+          <Tooltip content="Notifications" side="bottom">
+            <button
+              type="button"
+              className={`relative flex h-9 w-9 items-center justify-center transition-colors rounded-xl ${
+                isNotificationsOpen
+                  ? 'bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-400'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
+              }`}
+              aria-label="Notifications"
+              onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
+            >
+              <Bell className="h-4.5 w-4.5" />
+              {unreadCount > 0 && (
+                <span className="absolute top-1.5 right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-extrabold text-white ring-2 ring-white dark:ring-slate-900">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
+            </button>
+          </Tooltip>
+
+          <NotificationsDropdown
+            isOpen={isNotificationsOpen}
+            onClose={() => setIsNotificationsOpen(false)}
+            onNavigateTab={onNavigateTab}
+          />
+        </div>
 
         <div className="h-5 w-px bg-slate-200 dark:bg-slate-800 hidden sm:block" />
 
