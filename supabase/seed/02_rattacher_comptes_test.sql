@@ -40,6 +40,12 @@ declare
   v_manque text[] := '{}';
 begin
 
+  -- Garde-fou production : jamais de comptes de démo sur une base qui
+  -- contient une vraie école (voir 01_donnees_test.sql).
+  if exists (select 1 from public.ecoles where id <> v_ecole) then
+    raise exception 'REFUS : cette base contient une école réelle. Les comptes de démonstration ne se rattachent jamais en production.';
+  end if;
+
   if not exists (select 1 from public.ecoles where id = v_ecole) then
     raise exception
       'L''ecole de demonstration est absente : executez d''abord supabase/seed/01_donnees_test.sql';
