@@ -741,7 +741,11 @@ Elhadj** dans le SQL Editor, dans cet ordre :
    après. Aucun `DROP`/`TRUNCATE`, chaque `DELETE` porte sur
    l'identifiant de la démo.
 3. `03_purge_comptes_auth_demo.sql` (ou le dashboard, Authentication →
-   Users) : les 6 comptes, désignés par leur email exact.
+   Users) : les 6 comptes, désignés par leur email exact. Autonome, en
+   simulation par défaut : il refuse si l'un des comptes est encore
+   référencé par une clé étrangère hors du schéma `auth` (toutes tables
+   confondues, y compris créées hors dépôt) ou possède un fichier Storage.
+   Même en passant par le dashboard, faire tourner sa simulation avant.
 
 Garde-fous qui font refuser le script 02 : nom d'école différent de celui
 validé, profil de démo référencé par une autre école, compte non-démo
