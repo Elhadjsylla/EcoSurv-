@@ -4,6 +4,7 @@ import {
   ParentMatiereNote,
 } from '../../lib/mockData';
 import { Button } from '../../components/ui/Button';
+import { generateBulletinPdf } from '../../lib/pdf/generateBulletinPdf';
 import { ToastNotification } from '../../components/ui/ToastNotification';
 import { KpiCard } from '../../components/ui/KpiCard';
 import {
@@ -109,8 +110,20 @@ export const ParentPedagogiePage: React.FC<ParentPedagogiePageProps> = ({
           <Button
             size="sm"
             onClick={() => {
+              generateBulletinPdf({
+                enfantNom: enfant.nom,
+                enfantPrenom: enfant.prenom,
+                matricule: enfant.matricule,
+                classe: enfant.classe,
+                trimestre: selectedTrimestre,
+                rang: enfant.rang,
+                effectif: 32,
+                moyenneGenerale: moyenneCalculee,
+                moyenneClasse: 12.4,
+                matieres: enfant.bulletin,
+              });
               setActiveToast({
-                message: `Téléchargement du bulletin officiel du Trimestre 2 pour ${enfant.prenom} ${enfant.nom}...`,
+                message: `Bulletin officiel du ${selectedTrimestre === 'T1' ? '1er' : selectedTrimestre === 'T2' ? '2ème' : '3ème'} Trimestre téléchargé en PDF pour ${enfant.prenom} ${enfant.nom}.`,
                 type: 'success',
               });
             }}

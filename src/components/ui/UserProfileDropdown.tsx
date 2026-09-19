@@ -1,6 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useThemeStore } from '../../store/useThemeStore';
 import { useEcoleStore } from '../../store/useEcoleStore';
+import { supabase } from '../../lib/supabase';
+import { useAuthStore } from '../../store/useAuthStore';
+import { useNavigationStore } from '../../store/useNavigationStore';
 import { StudentInitials } from './StudentInitials';
 import {
   Building2,
@@ -46,9 +49,9 @@ export const UserProfileDropdown: React.FC<UserProfileDropdownProps> = ({
   const [selectedLanguage, setSelectedLanguage] = useState<string>('fr');
 
   const languages = [
-    { id: 'fr', name: 'Français', native: 'Français' },
-    { id: 'ar', name: 'Arabe', native: 'العربية' },
-    { id: 'en', name: 'Anglais', native: 'English' },
+    { id: 'fr', name: 'Français', native: 'Français', available: true },
+    { id: 'ar', name: 'Arabe', native: 'العربية', available: false },
+    { id: 'en', name: 'Anglais', native: 'English', available: false },
   ];
 
   // Close on Escape or click outside
@@ -221,11 +224,18 @@ export const UserProfileDropdown: React.FC<UserProfileDropdownProps> = ({
           {/* Log Out */}
           <div className="pt-2 border-t border-slate-100 dark:border-slate-800/80">
             <button
-              onClick={() => {
-                alert('Déconnexion de la session démo EcoSurv.');
+              onClick={async () => {
+                try {
+                  await supabase.auth.signOut();
+                } catch (err) {
+                  console.warn('[EcoSurv] Erreur déconnexion:', err);
+                }
+                useAuthStore.getState().logout();
+                useNavigationStore.getState().reset();
+                useNavigationStore.getState().setViewMode('landing');
                 onClose();
               }}
-              className="w-full flex items-center gap-2.5 p-2 rounded-xl text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors text-xs font-bold"
+              className="w-full flex items-center gap-2.5 p-2 rounded-xl text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors text-xs font-bold cursor-pointer"
             >
               <LogOut className="h-4 w-4" />
               <span>Déconnexion</span>
@@ -250,12 +260,16 @@ export const UserProfileDropdown: React.FC<UserProfileDropdownProps> = ({
           <div className="space-y-1.5 text-xs">
             {languages.map((lang) => {
               const isSelected = selectedLanguage === lang.id;
+              const isAvailable = lang.available;
               return (
                 <button
                   key={lang.id}
-                  onClick={() => setSelectedLanguage(lang.id)}
+                  disabled={!isAvailable}
+                  onClick={() => isAvailable && setSelectedLanguage(lang.id)}
                   className={`w-full flex items-center justify-between p-3 rounded-xl border transition-all ${
-                    isSelected
+                    !isAvailable
+                      ? 'opacity-50 cursor-not-allowed border-slate-200/60 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 text-slate-400'
+                      : isSelected
                       ? 'border-blue-600 bg-blue-50/60 dark:bg-blue-950/50 text-blue-900 dark:text-blue-200 font-bold'
                       : 'border-slate-200/80 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/60 text-slate-700 dark:text-slate-300 font-medium'
                   }`}
@@ -263,6 +277,11 @@ export const UserProfileDropdown: React.FC<UserProfileDropdownProps> = ({
                   <div className="flex items-center gap-3">
                     <span className="font-semibold">{lang.name}</span>
                     <span className="text-[11px] text-slate-400">({lang.native})</span>
+                    {!isAvailable && (
+                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-200/70 dark:bg-slate-800 text-slate-500 dark:text-slate-400">
+                        Bientôt disponible
+                      </span>
+                    )}
                   </div>
                   {isSelected && <Check className="h-4 w-4 text-blue-600 dark:text-blue-400" />}
                 </button>

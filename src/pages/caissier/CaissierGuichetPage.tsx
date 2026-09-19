@@ -13,6 +13,9 @@ import { StudentInitials } from '../../components/ui/StudentInitials';
 import { ToastNotification } from '../../components/ui/ToastNotification';
 import { Tooltip } from '../../components/ui/Tooltip';
 import { formatMRU } from '../../lib/utils';
+import { generateReceiptPdf } from '../../lib/pdf/generateReceiptPdf';
+import { useCaisseStore } from '../../store/useCaisseStore';
+import { supabase } from '../../lib/supabase';
 import {
   CreditCard,
   Search,
@@ -23,6 +26,7 @@ import {
   User,
   X,
   Zap,
+  Lock,
 } from 'lucide-react';
 
 interface CaissierGuichetPageProps {
@@ -50,6 +54,11 @@ export const CaissierGuichetPage: React.FC<CaissierGuichetPageProps> = ({
     message: string;
     type: 'success' | 'info' | 'warning';
   } | null>(null);
+
+  // État de clôture de caisse du jour
+  const isDateCloturee = useCaisseStore((s) => s.isDateCloturee);
+  const clotureInfo = useCaisseStore((s) => s.getClotureForDate());
+  const isCaisseCloturee = isDateCloturee();
 
   // Élève sélectionné
   const selectedEleve = useMemo(() => {
@@ -94,7 +103,14 @@ export const CaissierGuichetPage: React.FC<CaissierGuichetPageProps> = ({
     }
   };
 
-  const handleProcessPayment = () => {
+  const handleProcessPayment = async () => {
+    if (isCaisseCloturee) {
+      setActiveToast({
+        message: 'La caisse du jour est déjà clôturée. Tout nouvel encaissement est verrouillé.',
+        type: 'warning',
+      });
+      return;
+    }
     if (!selectedEleve) {
       setActiveToast({ message: 'Veuillez rechercher et sélectionner un élève.', type: 'warning' });
       return;
@@ -108,6 +124,29 @@ export const CaissierGuichetPage: React.FC<CaissierGuichetPageProps> = ({
     const now = new Date();
     const dateStr = now.toISOString().split('T')[0];
     const heureStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    const studentName = `${selectedEleve.prenom} ${selectedEleve.nom}`;
+    const studentMatricule = selectedEleve.matricule;
+    const studentClasse = selectedEleve.classe;
+
+    // 1. Écriture réelle dans la table `paiements`
+    try {
+      const { error: insertError } = await supabase.from('paiements').insert([
+        {
+          ecole_id: selectedEleve.ecole_id || 'ecole-demo-001',
+          montant: montant,
+          methode: methode,
+          statut: 'confirme',
+          reference_transaction: referenceOperateur || recuRef,
+          encaisse_par: CURRENT_CAISSIER.id || 'usr-cais-001',
+          note: `${libelle} - Quittance #${recuRef} (${studentName})`,
+        },
+      ]);
+      if (insertError) {
+        console.warn('[EcoSurv Paiement] Notice insert Supabase:', insertError.message);
+      }
+    } catch (err) {
+      console.warn('[EcoSurv Paiement] Mode démo / hors-ligne:', err);
+    }
 
     const newTx: CaisseTransaction = {
       id: `cais-tx-${Date.now()}`,
@@ -126,6 +165,7 @@ export const CaissierGuichetPage: React.FC<CaissierGuichetPageProps> = ({
       statut: 'confirme',
     };
 
+    // 2. Mise à jour de l'échéance et du statut de l'élève
     setElevesList((prev) =>
       prev.map((e) => {
         if (e.id === selectedEleve.id) {
@@ -161,12 +201,37 @@ export const CaissierGuichetPage: React.FC<CaissierGuichetPageProps> = ({
       })
     );
 
+    // 3. Déclenchement automatique du téléchargement du reçu PDF ticket de caisse
+    generateReceiptPdf(
+      {
+        recuRef,
+        datePaiement: `${dateStr} à ${heureStr}`,
+        eleveNom: selectedEleve.nom,
+        elevePrenom: selectedEleve.prenom,
+        matricule: studentMatricule,
+        classe: studentClasse,
+        libelleEcheance: libelle,
+        montant,
+        methodePaiement: methode,
+        caissierNom: `${CURRENT_CAISSIER.prenom} ${CURRENT_CAISSIER.nom}`,
+      },
+      'download'
+    );
+
     triggerConfetti();
     setPrintedReceipt(newTx);
     setActiveToast({
-      message: `Encaissement de ${formatMRU(montant)} validé pour ${selectedEleve.prenom} ${selectedEleve.nom} ! Reçu #${recuRef}`,
+      message: `Paiement enregistré dans paiements & Reçu ticket #${recuRef} téléchargé en PDF pour ${studentName}.`,
       type: 'success',
     });
+
+    // 4. Réinitialisation du formulaire pour le prochain encaissement
+    setSelectedEleveId('');
+    setSearchQuery('');
+    setReferenceOperateur('');
+    setLibelle('Mensualité Mars 2026');
+    setMontant(15000);
+    setMethode('especes');
   };
 
   return (
@@ -206,8 +271,32 @@ export const CaissierGuichetPage: React.FC<CaissierGuichetPageProps> = ({
         </div>
       </div>
 
+      {/* Bannière d'avertissement de caisse clôturée */}
+      {isCaisseCloturee && (
+        <div className="p-4 sm:p-5 rounded-2xl bg-amber-50/90 dark:bg-amber-950/60 border border-amber-300 dark:border-amber-800 flex items-center gap-4 text-amber-900 dark:text-amber-200 shadow-sm animate-in fade-in">
+          <div className="h-11 w-11 rounded-xl bg-amber-100 dark:bg-amber-900/80 text-amber-800 dark:text-amber-300 flex items-center justify-center shrink-0 shadow-2xs">
+            <Lock className="h-5 w-5" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <h4 className="text-sm font-extrabold uppercase tracking-wide">
+                Guichet de Caisse Clôturé pour Aujourd'hui
+              </h4>
+              <span className="text-[10px] uppercase font-bold bg-amber-200/80 dark:bg-amber-900 text-amber-900 dark:text-amber-200 px-2.5 py-0.5 rounded-full border border-amber-300/80 dark:border-amber-700">
+                Saisie Verrouillée
+              </span>
+            </div>
+            <p className="text-xs text-amber-800 dark:text-amber-300 mt-0.5">
+              La caisse journalière a été certifiée et enregistrée dans <span className="font-mono font-bold">clotures_caisse</span>
+              {clotureInfo ? ` (${clotureInfo.nb_transactions} opérations • Total ${formatMRU(clotureInfo.montant_total)})` : ''}.
+              Toute nouvelle opération d'encaissement est bloquée.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Main Grid: Search & Selection (Left) vs Payment Terminal (Right) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      <div className={`grid grid-cols-1 lg:grid-cols-12 gap-8 ${isCaisseCloturee ? 'opacity-70 pointer-events-none select-none' : ''}`}>
         {/* Left Col (5 cols): Student Search & Identification */}
         <div className="lg:col-span-5 space-y-6">
           <Card className="p-6 sm:p-7 rounded-2xl space-y-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xs">
@@ -440,12 +529,25 @@ export const CaissierGuichetPage: React.FC<CaissierGuichetPageProps> = ({
               <Button
                 variant="primary"
                 size="lg"
-                className="w-full justify-center gap-2 bg-amber-600 hover:bg-amber-700 text-white font-bold text-sm shadow-sm py-3"
-                disabled={!selectedEleve}
+                className={`w-full justify-center gap-2 font-bold text-sm shadow-sm py-3 ${
+                  isCaisseCloturee
+                    ? 'bg-slate-400 dark:bg-slate-700 text-slate-200 cursor-not-allowed'
+                    : 'bg-amber-600 hover:bg-amber-700 text-white'
+                }`}
+                disabled={isCaisseCloturee || !selectedEleve}
                 onClick={handleProcessPayment}
               >
-                <Zap className="h-4 w-4 fill-white" />
-                Valider l'Encaissement ({formatMRU(montant)}) & Générer Reçu
+                {isCaisseCloturee ? (
+                  <>
+                    <Lock className="h-4 w-4" />
+                    Caisse Clôturée — Saisie Verrouillée
+                  </>
+                ) : (
+                  <>
+                    <Zap className="h-4 w-4 fill-white" />
+                    Valider l'Encaissement ({formatMRU(montant)}) & Générer Reçu
+                  </>
+                )}
               </Button>
             </div>
           </Card>
@@ -543,11 +645,26 @@ export const CaissierGuichetPage: React.FC<CaissierGuichetPageProps> = ({
                 size="sm"
                 className="gap-2 bg-amber-600 hover:bg-amber-700 text-white"
                 onClick={() => {
-                  window.print();
+                  generateReceiptPdf({
+                    recuRef: printedReceipt.recu_ref,
+                    datePaiement: `${printedReceipt.date} à ${printedReceipt.heure}`,
+                    eleveNom: printedReceipt.eleve_nom,
+                    elevePrenom: printedReceipt.eleve_prenom,
+                    matricule: printedReceipt.matricule,
+                    classe: printedReceipt.classe,
+                    libelleEcheance: printedReceipt.echeance_libelle,
+                    montant: printedReceipt.montant,
+                    methodePaiement: printedReceipt.methode,
+                    caissierNom: printedReceipt.encaisse_par,
+                  }, 'download');
+                  setActiveToast({
+                    message: `Reçu ticket #${printedReceipt.recu_ref} téléchargé en PDF.`,
+                    type: 'success',
+                  });
                 }}
               >
                 <Printer className="h-4 w-4" />
-                Imprimer le Reçu (PDF)
+                Télécharger le Reçu (PDF)
               </Button>
             </div>
           </div>

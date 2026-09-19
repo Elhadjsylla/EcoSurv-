@@ -52,7 +52,7 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-bold tracking-wide transition-colors',
+        'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-bold tracking-wide transition-colors whitespace-nowrap shrink-0',
         config.bg,
         config.text,
         config.border,
@@ -60,7 +60,7 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
       )}
     >
       {showDot && <span className={cn('h-1.5 w-1.5 rounded-full shrink-0 animate-pulse-soft', config.dot)} />}
-      <span>{config.label}</span>
+      <span className="whitespace-nowrap">{config.label}</span>
     </span>
   );
 };

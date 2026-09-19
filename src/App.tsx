@@ -26,6 +26,7 @@ import { ParentPaiementsPage } from './pages/parent/ParentPaiementsPage';
 import { ParentPedagogiePage } from './pages/parent/ParentPedagogiePage';
 import { ParentAssiduitePage } from './pages/parent/ParentAssiduitePage';
 import { LandingPage } from './pages/LandingPage';
+import { LoginPage } from './pages/LoginPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -51,10 +52,19 @@ export function AppContent() {
 
   // Rôle actif (basculable dans le Header pour la démo) et écran courant,
   // pilotés par l'historique de navigation (boutons Précédent / Suivant)
+  const userRole = useNavigationStore((s) => s.userRole);
   const currentRole = useNavigationStore((s) => s.portal);
   const currentRoute = useNavigationStore(selectCurrentRoute);
   const navigate = useNavigationStore((s) => s.navigate);
   const switchPortal = useNavigationStore((s) => s.switchPortal);
+
+  // Sécurité et cloisonnement : si l'utilisateur connecté n'est pas directeur,
+  // son portail DOIT rester égal à son rôle d'origine.
+  useEffect(() => {
+    if (userRole !== 'directeur' && currentRole !== userRole) {
+      switchPortal(userRole);
+    }
+  }, [userRole, currentRole, switchPortal]);
 
   // L'écran courant n'appartient qu'au portail actif : les switchs de rendu
   // ci-dessous ne sont évalués que pour ce portail.
@@ -84,7 +94,9 @@ export function AppContent() {
 
   // Les raccourcis du Header (notifications, profil) ciblent des écrans Directeur
   const handleHeaderNavigate = (tab: string) => {
-    if (currentRole === 'directeur') navigate(tab as NavTab);
+    if (userRole === 'directeur' && currentRole === 'directeur') {
+      navigate(tab as NavTab);
+    }
   };
 
   const renderDirectorContent = () => {
@@ -194,6 +206,14 @@ export function AppContent() {
     return (
       <div key="landing-page" className="animate-page-enter">
         <LandingPage />
+      </div>
+    );
+  }
+
+  if (viewMode === 'login') {
+    return (
+      <div key="login-page" className="animate-page-enter">
+        <LoginPage onReturnToLanding={() => setViewMode('landing')} />
       </div>
     );
   }

@@ -18,10 +18,22 @@ export const PORTAL_HOME: Record<UserRole, AppRoute> = {
 /** Au-delà, les entrées les plus anciennes sont oubliées, comme dans un navigateur. */
 export const MAX_HISTORY_ENTRIES = 50;
 
-export type ViewMode = 'landing' | 'app';
+export type ViewMode = 'landing' | 'login' | 'app';
+
+export const PORTAL_ROUTES: Record<UserRole, AppRoute[]> = {
+  directeur: ['dashboard', 'eleves', 'echeances', 'relances', 'rapports', 'config'],
+  enseignant: ['teacher_dashboard', 'teacher_classes', 'teacher_absences', 'teacher_grades'],
+  caissier: ['caissier_guichet', 'caissier_journal', 'caissier_impayes'],
+  parent: ['parent_dashboard', 'parent_paiements', 'parent_pedagogie', 'parent_assiduite'],
+};
+
+export const isRouteAllowedForRole = (role: UserRole, route: AppRoute): boolean => {
+  return PORTAL_ROUTES[role]?.includes(route) ?? false;
+};
 
 interface NavigationState {
   viewMode: ViewMode;
+  userRole: UserRole;
   portal: UserRole;
   isMobileMenuOpen: boolean;
   setMobileMenuOpen: (open: boolean) => void;
@@ -36,7 +48,9 @@ interface NavigationState {
   goForward: () => void;
   switchPortal: (portal: UserRole) => void;
   setViewMode: (mode: ViewMode) => void;
+  navigateToLogin: () => void;
   launchAppWithPortal: (portal?: UserRole) => void;
+  setUserRole: (role: UserRole) => void;
   reset: () => void;
 }
 
@@ -50,6 +64,7 @@ const positionAt = (entries: AppRoute[], index: number) => ({
 
 const initialState = {
   viewMode: 'landing' as ViewMode,
+  userRole: 'directeur' as UserRole,
   portal: 'directeur' as UserRole,
   isMobileMenuOpen: false,
   ...positionAt([PORTAL_HOME.directeur], 0),
@@ -57,33 +72,47 @@ const initialState = {
 
 /**
  * Historique de navigation interne à l'application (boutons Précédent / Suivant
- * et swipe trackpad) et gestion du mode Vue (Landing vitrine vs Application opérationnelle).
+ * et swipe trackpad) et gestion du mode Vue (Landing vitrine vs Connexion vs Application opérationnelle).
  */
 export const useNavigationStore = create<NavigationState>((set) => ({
   ...initialState,
+
+  setUserRole: (role) => set({ userRole: role }),
 
   setMobileMenuOpen: (open) => set({ isMobileMenuOpen: open }),
   toggleMobileMenu: () => set((state) => ({ isMobileMenuOpen: !state.isMobileMenuOpen })),
 
   setViewMode: (mode) => set({ viewMode: mode, isMobileMenuOpen: false }),
 
+  navigateToLogin: () => set({ viewMode: 'login', isMobileMenuOpen: false }),
+
   launchAppWithPortal: (portal) =>
-    set((state) => {
-      const targetPortal = portal || state.portal;
+    set(() => {
+      const targetRole = portal || 'directeur';
       return {
         viewMode: 'app',
-        portal: targetPortal,
+        userRole: targetRole,
+        portal: targetRole,
         isMobileMenuOpen: false,
-        ...positionAt([PORTAL_HOME[targetPortal]], 0),
+        ...positionAt([PORTAL_HOME[targetRole]], 0),
       };
     }),
 
   navigate: (route) =>
     set((state) => {
+      // Cloisonnement strict pour les rôles non-directeur :
+      // Si l'utilisateur n'est pas directeur, il ne peut naviguer hors des routes autorisées pour son rôle
+      let targetRoute = route;
+      if (state.userRole !== 'directeur') {
+        if (!isRouteAllowedForRole(state.userRole, route)) {
+          targetRoute = PORTAL_HOME[state.userRole];
+        }
+      }
+
       // Rouvrir l'écran courant n'ajoute pas d'entrée.
-      if (state.entries[state.index] === route) return { isMobileMenuOpen: false };
+      if (state.entries[state.index] === targetRoute) return { isMobileMenuOpen: false };
       // Naviguer depuis le milieu de la pile efface l'historique « suivant ».
-      const entries = [...state.entries.slice(0, state.index + 1), route].slice(-MAX_HISTORY_ENTRIES);
+      const entries = [...state.entries.slice(0, state.index + 1), targetRoute].slice(-MAX_HISTORY_ENTRIES);
       return { ...positionAt(entries, entries.length - 1), isMobileMenuOpen: false };
     }),
 
@@ -94,11 +123,15 @@ export const useNavigationStore = create<NavigationState>((set) => ({
     set((state) => (state.canGoForward ? positionAt(state.entries, state.index + 1) : state)),
 
   switchPortal: (portal) =>
-    set((state) =>
-      state.portal === portal
+    set((state) => {
+      // Seul le DIRECTEUR peut basculer de portail ("voir en tant que")
+      if (state.userRole !== 'directeur') {
+        return { isMobileMenuOpen: false };
+      }
+      return state.portal === portal
         ? { isMobileMenuOpen: false }
-        : { portal, isMobileMenuOpen: false, ...positionAt([PORTAL_HOME[portal]], 0) }
-    ),
+        : { portal, isMobileMenuOpen: false, ...positionAt([PORTAL_HOME[portal]], 0) };
+    }),
 
   reset: () => set(initialState),
 }));

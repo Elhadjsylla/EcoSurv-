@@ -4,10 +4,8 @@ import { useThemeStore } from '../store/useThemeStore';
 import { useNavigationStore } from '../store/useNavigationStore';
 import { LandingMockupPreview } from '../components/landing/LandingMockupPreview';
 import { RoiCalculator } from '../components/landing/RoiCalculator';
-import { DemoRequestModal } from '../components/landing/DemoRequestModal';
 import { InteractiveJourneyTimeline } from '../components/landing/InteractiveJourneyTimeline';
 import { MauritaniaWilayasShowcase } from '../components/landing/MauritaniaWilayasShowcase';
-import type { UserRole } from '../components/ui/Header';
 import {
   ShieldCheck,
   CreditCard,
@@ -28,7 +26,7 @@ import {
   Banknote,
   HeartHandshake,
   BookOpen,
-  Sparkles,
+  LogIn,
 } from 'lucide-react';
 
 const ROTATING_PHRASES = [
@@ -57,9 +55,8 @@ const fadeInUp: Variants = {
 
 export const LandingPage: React.FC = () => {
   const { theme, toggleTheme } = useThemeStore();
-  const launchAppWithPortal = useNavigationStore((s) => s.launchAppWithPortal);
+  const navigateToLogin = useNavigationStore((s) => s.navigateToLogin);
 
-  const [isDemoModalOpen, setIsDemoModalOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [pricingCycle, setPricingCycle] = useState<'monthly' | 'yearly'>('monthly');
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
@@ -104,10 +101,6 @@ export const LandingPage: React.FC = () => {
     damping: 30,
     restDelta: 0.001
   });
-
-  const handleLaunchPortal = (role: UserRole) => {
-    launchAppWithPortal(role);
-  };
 
   const faqItems = [
     {
@@ -188,14 +181,14 @@ export const LandingPage: React.FC = () => {
               {theme === 'dark' ? <Sun className="h-4 w-4 text-amber-400" /> : <Moon className="h-4 w-4" />}
             </button>
 
-            {/* In-app Portal Quick Launch */}
+            {/* In-app Portal Quick Launch / Login */}
             <button
               type="button"
-              onClick={() => handleLaunchPortal('directeur')}
-              className="h-9 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all shadow-md shadow-blue-600/20 flex items-center gap-1.5 group"
+              onClick={navigateToLogin}
+              className="h-9 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all shadow-md shadow-blue-600/20 flex items-center gap-1.5 group cursor-pointer"
             >
-              <span>Accéder à la démo</span>
-              <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />
+              <LogIn className="h-3.5 w-3.5" />
+              <span>Se connecter</span>
             </button>
           </div>
 
@@ -247,7 +240,7 @@ export const LandingPage: React.FC = () => {
               onClick={() => setMobileMenuOpen(false)}
               className="block text-sm font-semibold text-slate-700 dark:text-slate-200 py-1.5"
             >
-              Les 4 Portails Démo
+              Les 4 Portails
             </a>
             <a
               href="#tarifs"
@@ -261,12 +254,12 @@ export const LandingPage: React.FC = () => {
                 type="button"
                 onClick={() => {
                   setMobileMenuOpen(false);
-                  handleLaunchPortal('directeur');
+                  navigateToLogin();
                 }}
-                className="w-full py-2.5 rounded-xl bg-blue-600 text-white text-xs font-bold text-center shadow-md flex items-center justify-center gap-1.5"
+                className="w-full py-2.5 rounded-xl bg-blue-600 text-white text-xs font-bold text-center shadow-md flex items-center justify-center gap-1.5 cursor-pointer"
               >
-                <span>Accéder à la démo interactive</span>
-                <ArrowRight className="h-3.5 w-3.5" />
+                <LogIn className="h-3.5 w-3.5" />
+                <span>Se connecter</span>
               </button>
             </div>
           </div>
@@ -317,17 +310,18 @@ export const LandingPage: React.FC = () => {
               Suivez qui a payé, qui est en retard et où en est la caisse sans approximations. Encaissement instantané via <strong className="font-bold text-blue-600 dark:text-blue-400">Bankily</strong>, <strong className="font-bold text-emerald-600 dark:text-emerald-400">Masrvi</strong> et <strong className="font-bold text-indigo-600 dark:text-indigo-400">Sedad</strong>, relances automatiques et quittances officielles DGI.
             </motion.p>
 
-            {/* CTA Unique et percutant avec animation dynamique Sama Boutik */}
+            {/* CTA Unique et percutant vers connexion */}
             <motion.div variants={fadeInUp} className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-4 w-full sm:w-auto">
               <button
                 type="button"
-                onClick={() => handleLaunchPortal('directeur')}
-                className="relative overflow-hidden w-full sm:w-auto px-9 py-4 rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-700 hover:to-indigo-800 text-white font-extrabold text-base transition-all shadow-xl shadow-blue-600/30 flex items-center justify-center gap-3 group hover:scale-[1.03] active:scale-[0.98] ring-4 ring-blue-500/10"
+                onClick={navigateToLogin}
+                className="relative overflow-hidden w-full sm:w-auto px-9 py-4 rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-700 hover:to-indigo-800 text-white font-extrabold text-base transition-all shadow-xl shadow-blue-600/30 flex items-center justify-center gap-3 group hover:scale-[1.03] active:scale-[0.98] ring-4 ring-blue-500/10 cursor-pointer"
               >
                 {/* Shimmer sweep animation across the CTA */}
                 <div className="absolute inset-0 w-1/2 h-full bg-gradient-to-r from-transparent via-white/30 to-transparent pointer-events-none animate-cta-sweep" />
                 
-                <span className="relative z-10">Tester la démo interactive</span>
+                <LogIn className="h-5 w-5 relative z-10" />
+                <span className="relative z-10">Accéder à mon espace</span>
                 <ArrowRight className="h-5 w-5 group-hover:translate-x-1.5 transition-transform relative z-10" />
               </button>
             </motion.div>
@@ -510,7 +504,7 @@ export const LandingPage: React.FC = () => {
       {/* 6. Simulateur ROI interactif */}
       <section className="py-16 sm:py-20" id="simulateur">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <RoiCalculator onOpenDemoModal={() => setIsDemoModalOpen(true)} />
+          <RoiCalculator onNavigateToLogin={navigateToLogin} />
         </div>
       </section>
 
@@ -531,7 +525,7 @@ export const LandingPage: React.FC = () => {
               Un espace pensé pour chaque acteur de votre établissement
             </motion.h2>
             <motion.p variants={fadeInUp} className="text-sm sm:text-base text-slate-600 dark:text-slate-300">
-              La sécurité RLS garantit que chaque utilisateur n'accède qu'aux données strictement autorisées. Testez chacun des 4 portails en direct dès maintenant.
+              La sécurité RLS garantit que chaque utilisateur n'accède qu'aux données strictement autorisées selon son rôle authentifié.
             </motion.p>
           </motion.div>
 
@@ -559,10 +553,11 @@ export const LandingPage: React.FC = () => {
               <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800">
                 <button
                   type="button"
-                  onClick={() => handleLaunchPortal('directeur')}
-                  className="w-full py-2.5 px-3 rounded-xl bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/60 dark:hover:bg-blue-900/60 text-blue-700 dark:text-blue-300 text-xs font-bold transition-colors flex items-center justify-center gap-1.5 shadow-2xs"
+                  onClick={navigateToLogin}
+                  className="w-full py-2.5 px-3 rounded-xl bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/60 dark:hover:bg-blue-900/60 text-blue-700 dark:text-blue-300 text-xs font-bold transition-colors flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer"
                 >
-                  <span>Tester vue Directeur</span>
+                  <LogIn className="h-3.5 w-3.5" />
+                  <span>Se connecter</span>
                   <ArrowRight className="h-3 w-3" />
                 </button>
               </div>
@@ -585,10 +580,11 @@ export const LandingPage: React.FC = () => {
               <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800">
                 <button
                   type="button"
-                  onClick={() => handleLaunchPortal('caissier')}
-                  className="w-full py-2.5 px-3 rounded-xl bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/60 dark:hover:bg-amber-900/60 text-amber-800 dark:text-amber-300 text-xs font-bold transition-colors flex items-center justify-center gap-1.5 shadow-2xs"
+                  onClick={navigateToLogin}
+                  className="w-full py-2.5 px-3 rounded-xl bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/60 dark:hover:bg-amber-900/60 text-amber-800 dark:text-amber-300 text-xs font-bold transition-colors flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer"
                 >
-                  <span>Tester vue Caissier</span>
+                  <LogIn className="h-3.5 w-3.5" />
+                  <span>Se connecter</span>
                   <ArrowRight className="h-3 w-3" />
                 </button>
               </div>
@@ -611,10 +607,11 @@ export const LandingPage: React.FC = () => {
               <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800">
                 <button
                   type="button"
-                  onClick={() => handleLaunchPortal('parent')}
-                  className="w-full py-2.5 px-3 rounded-xl bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/60 dark:hover:bg-purple-900/60 text-purple-700 dark:text-purple-300 text-xs font-bold transition-colors flex items-center justify-center gap-1.5 shadow-2xs"
+                  onClick={navigateToLogin}
+                  className="w-full py-2.5 px-3 rounded-xl bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/60 dark:hover:bg-purple-900/60 text-purple-700 dark:text-purple-300 text-xs font-bold transition-colors flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer"
                 >
-                  <span>Tester vue Parent</span>
+                  <LogIn className="h-3.5 w-3.5" />
+                  <span>Se connecter</span>
                   <ArrowRight className="h-3 w-3" />
                 </button>
               </div>
@@ -637,10 +634,11 @@ export const LandingPage: React.FC = () => {
               <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800">
                 <button
                   type="button"
-                  onClick={() => handleLaunchPortal('enseignant')}
-                  className="w-full py-2.5 px-3 rounded-xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:hover:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 text-xs font-bold transition-colors flex items-center justify-center gap-1.5 shadow-2xs"
+                  onClick={navigateToLogin}
+                  className="w-full py-2.5 px-3 rounded-xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:hover:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 text-xs font-bold transition-colors flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer"
                 >
-                  <span>Tester vue Enseignant</span>
+                  <LogIn className="h-3.5 w-3.5" />
+                  <span>Se connecter</span>
                   <ArrowRight className="h-3 w-3" />
                 </button>
               </div>
@@ -750,13 +748,15 @@ export const LandingPage: React.FC = () => {
               </div>
 
               <div className="mt-8">
-                <button
-                  type="button"
-                  onClick={() => setIsDemoModalOpen(true)}
-                  className="w-full py-3 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-900 dark:text-white text-xs font-bold transition-colors"
+                <a
+                  href="https://wa.me/22246000000?text=Bonjour,%20je%20souhaite%20souscrire%20au%20forfait%20Essentiel%20EcoSurv"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full py-3 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-900 dark:text-white text-xs font-bold transition-colors flex items-center justify-center gap-1.5"
                 >
-                  Choisir Essentiel
-                </button>
+                  <span>Souscrire Essentiel</span>
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </a>
               </div>
             </motion.div>
 
@@ -810,13 +810,15 @@ export const LandingPage: React.FC = () => {
               </div>
 
               <div className="mt-8">
-                <button
-                  type="button"
-                  onClick={() => setIsDemoModalOpen(true)}
-                  className="w-full py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all shadow-md shadow-blue-500/25"
+                <a
+                  href="https://wa.me/22246000000?text=Bonjour,%20je%20souhaite%20souscrire%20au%20forfait%20Pro%20EcoSurv"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all shadow-md shadow-blue-500/25 flex items-center justify-center gap-2"
                 >
-                  Démarrer l'essai Pro 14 jours
-                </button>
+                  <span>Souscrire au forfait Pro</span>
+                  <ArrowRight className="h-4 w-4" />
+                </a>
               </div>
             </motion.div>
 
@@ -953,22 +955,24 @@ export const LandingPage: React.FC = () => {
               <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-4">
                 <button
                   type="button"
-                  onClick={() => setIsDemoModalOpen(true)}
-                  className="w-full sm:w-auto relative group overflow-hidden px-8 py-4 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-sm sm:text-base shadow-xl shadow-blue-600/30 hover:shadow-blue-500/40 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2.5"
+                  onClick={navigateToLogin}
+                  className="w-full sm:w-auto relative group overflow-hidden px-8 py-4 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-sm sm:text-base shadow-xl shadow-blue-600/30 hover:shadow-blue-500/40 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2.5 cursor-pointer"
                 >
-                  <Sparkles className="h-4 w-4 text-blue-200" />
-                  <span>Réserver ma démo gratuite</span>
+                  <LogIn className="h-4 w-4 text-white" />
+                  <span>Se connecter à mon espace</span>
                   <div className="absolute inset-0 w-1/2 h-full bg-gradient-to-r from-transparent via-white/25 to-transparent pointer-events-none animate-cta-sweep" />
                 </button>
 
-                <button
-                  type="button"
-                  onClick={() => handleLaunchPortal('directeur')}
-                  className="w-full sm:w-auto px-7 py-4 rounded-2xl bg-white/5 hover:bg-white/10 text-white font-bold text-sm sm:text-base border border-white/15 hover:border-white/30 backdrop-blur-md hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2 group"
+                <a
+                  href="https://wa.me/22246000000?text=Bonjour,%20je%20souhaite%20des%20informations%20pour%20mon%20établissement%20sur%20EcoSurv"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full sm:w-auto px-7 py-4 rounded-2xl bg-white/5 hover:bg-white/10 text-white font-bold text-sm sm:text-base border border-white/15 hover:border-white/30 backdrop-blur-md hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2 group cursor-pointer"
                 >
-                  <span>Tester l'application en direct</span>
+                  <MessageCircle className="h-4 w-4 text-emerald-400" />
+                  <span>Contacter notre équipe</span>
                   <ArrowRight className="h-4 w-4 text-slate-300 group-hover:translate-x-0.5 transition-transform" />
-                </button>
+                </a>
               </div>
 
               {/* Piliers de Confiance SaaS */}
@@ -983,7 +987,7 @@ export const LandingPage: React.FC = () => {
                 </div>
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
-                  <span>Essai gratuit 14 jours sans engagement</span>
+                  <span>Formation sur site & support 6j/7</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
@@ -1076,13 +1080,14 @@ export const LandingPage: React.FC = () => {
               <h4 className="text-xs font-bold text-white uppercase tracking-wider">Assistance</h4>
               <ul className="space-y-2">
                 <li>
-                  <button
-                    type="button"
-                    onClick={() => setIsDemoModalOpen(true)}
+                  <a
+                    href="https://wa.me/22246000000"
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="hover:text-white transition-colors text-left"
                   >
-                    Demander une démo WhatsApp
-                  </button>
+                    Assistance WhatsApp 6j/7
+                  </a>
                 </li>
                 <li>
                   <a href="#faq" className="hover:text-white transition-colors">
@@ -1092,10 +1097,10 @@ export const LandingPage: React.FC = () => {
                 <li>
                   <button
                     type="button"
-                    onClick={() => handleLaunchPortal('directeur')}
-                    className="hover:text-white transition-colors text-left"
+                    onClick={navigateToLogin}
+                    className="hover:text-white transition-colors text-left cursor-pointer"
                   >
-                    Tester les 4 portails en direct
+                    Se connecter à l'espace
                   </button>
                 </li>
               </ul>
@@ -1112,13 +1117,6 @@ export const LandingPage: React.FC = () => {
           </div>
         </div>
       </footer>
-
-      {/* Modal de réservation de démo */}
-      <DemoRequestModal
-        isOpen={isDemoModalOpen}
-        onClose={() => setIsDemoModalOpen(false)}
-        onLaunchDemoApp={() => handleLaunchPortal('directeur')}
-      />
     </div>
   );
 };

@@ -12,6 +12,9 @@ import { KpiCard } from '../../components/ui/KpiCard';
 import { Tooltip } from '../../components/ui/Tooltip';
 import { StudentInitials } from '../../components/ui/StudentInitials';
 import { formatMRU } from '../../lib/utils';
+import { exportCaisseCsv } from '../../lib/csv/exportCaisseCsv';
+import { useCaisseStore } from '../../store/useCaisseStore';
+import { generateReceiptPdf } from '../../lib/pdf/generateReceiptPdf';
 import {
   Search,
   Printer,
@@ -36,7 +39,9 @@ export const CaissierJournalPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedMethod, setSelectedMethod] = useState<string>('all');
   const [selectedReceipt, setSelectedReceipt] = useState<CaisseTransaction | null>(null);
-  const [clotureDone, setClotureDone] = useState(false);
+  const isDateCloturee = useCaisseStore((s) => s.isDateCloturee);
+  const cloturerCaisseDuJour = useCaisseStore((s) => s.cloturerCaisseDuJour);
+  const clotureDone = isDateCloturee();
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
   const [activeToast, setActiveToast] = useState<{
     message: string;
@@ -98,10 +103,18 @@ export const CaissierJournalPage: React.FC = () => {
     currentPage * itemsPerPage
   );
 
-  const handleCloture = () => {
-    setClotureDone(true);
+  const handleCloture = async () => {
+    await cloturerCaisseDuJour(totalGeneral, transactions.length);
     setActiveToast({
-      message: `Clôture de caisse du ${new Date().toLocaleDateString('fr-FR')} effectuée avec succès (${formatMRU(totalGeneral)} certifiés).`,
+      message: `Clôture de caisse du ${new Date().toLocaleDateString('fr-FR')} effectuée avec succès (${formatMRU(totalGeneral)} certifiés). Enregistré dans clotures_caisse.`,
+      type: 'success',
+    });
+  };
+
+  const handleExportCsv = () => {
+    exportCaisseCsv(filteredTransactions);
+    setActiveToast({
+      message: `Export CSV de ${filteredTransactions.length} transaction(s) téléchargé avec succès.`,
       type: 'success',
     });
   };
@@ -185,12 +198,7 @@ export const CaissierJournalPage: React.FC = () => {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => {
-              setActiveToast({
-                message: 'Export CSV du journal de caisse généré avec succès.',
-                type: 'info',
-              });
-            }}
+            onClick={handleExportCsv}
             className="flex items-center gap-2"
           >
             <ArrowDownToLine className="h-4 w-4" />
@@ -552,13 +560,28 @@ export const CaissierJournalPage: React.FC = () => {
               <Button
                 size="sm"
                 onClick={() => {
-                  window.print();
+                  generateReceiptPdf({
+                    recuRef: selectedReceipt.recu_ref,
+                    datePaiement: `${selectedReceipt.date} à ${selectedReceipt.heure}`,
+                    eleveNom: selectedReceipt.eleve_nom,
+                    elevePrenom: selectedReceipt.eleve_prenom,
+                    matricule: selectedReceipt.matricule,
+                    classe: selectedReceipt.classe,
+                    libelleEcheance: selectedReceipt.echeance_libelle,
+                    montant: selectedReceipt.montant,
+                    methodePaiement: selectedReceipt.methode,
+                    caissierNom: selectedReceipt.encaisse_par,
+                  }, 'download');
+                  setActiveToast({
+                    message: `Reçu #${selectedReceipt.recu_ref} téléchargé en PDF.`,
+                    type: 'success',
+                  });
                   setSelectedReceipt(null);
                 }}
                 className="bg-amber-600 hover:bg-amber-700 text-white flex items-center gap-1.5"
               >
                 <Printer className="h-4 w-4" />
-                Imprimer
+                Télécharger le Reçu (PDF)
               </Button>
             </div>
           </div>
