@@ -1,6 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useThemeStore } from '../../store/useThemeStore';
 import { useEcoleStore } from '../../store/useEcoleStore';
+import { supabase } from '../../lib/supabase';
+import { useAuthStore } from '../../store/useAuthStore';
+import { useNavigationStore } from '../../store/useNavigationStore';
 import { StudentInitials } from './StudentInitials';
 import {
   Building2,
@@ -221,11 +224,18 @@ export const UserProfileDropdown: React.FC<UserProfileDropdownProps> = ({
           {/* Log Out */}
           <div className="pt-2 border-t border-slate-100 dark:border-slate-800/80">
             <button
-              onClick={() => {
-                alert('Déconnexion de la session démo EcoSurv.');
+              onClick={async () => {
+                try {
+                  await supabase.auth.signOut();
+                } catch (err) {
+                  console.warn('[EcoSurv] Erreur déconnexion:', err);
+                }
+                useAuthStore.getState().logout();
+                useNavigationStore.getState().reset();
+                useNavigationStore.getState().setViewMode('landing');
                 onClose();
               }}
-              className="w-full flex items-center gap-2.5 p-2 rounded-xl text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors text-xs font-bold"
+              className="w-full flex items-center gap-2.5 p-2 rounded-xl text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors text-xs font-bold cursor-pointer"
             >
               <LogOut className="h-4 w-4" />
               <span>Déconnexion</span>
