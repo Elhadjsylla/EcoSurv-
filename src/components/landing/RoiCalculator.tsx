@@ -3,10 +3,10 @@ import { motion } from 'framer-motion';
 import { Calculator, ArrowRight, CheckCircle2, Clock } from 'lucide-react';
 
 interface RoiCalculatorProps {
-  onOpenDemoModal: () => void;
+  onNavigateToLogin?: () => void;
 }
 
-export const RoiCalculator: React.FC<RoiCalculatorProps> = ({ onOpenDemoModal }) => {
+export const RoiCalculator: React.FC<RoiCalculatorProps> = ({ onNavigateToLogin }) => {
   const [elevesCount, setElevesCount] = useState<number>(450);
   const [fraisMensuel, setFraisMensuel] = useState<number>(4000);
   const [tauxActuel, setTauxActuel] = useState<number>(82);
@@ -197,10 +197,16 @@ export const RoiCalculator: React.FC<RoiCalculatorProps> = ({ onOpenDemoModal })
 
             <button
               type="button"
-              onClick={onOpenDemoModal}
-              className="w-full py-3.5 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold text-sm transition-all shadow-lg shadow-emerald-500/25 flex items-center justify-center gap-2"
+              onClick={() => {
+                if (onNavigateToLogin) {
+                  onNavigateToLogin();
+                } else {
+                  window.open('https://wa.me/22246000000?text=Bonjour,%20je%20souhaite%20une%20étude%20personnalisée%20EcoSurv', '_blank');
+                }
+              }}
+              className="w-full py-3.5 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold text-sm transition-all shadow-lg shadow-emerald-500/25 flex items-center justify-center gap-2 cursor-pointer"
             >
-              <span>Sécuriser ma trésorerie avec un expert</span>
+              <span>Sécuriser ma trésorerie avec EcoSurv</span>
               <ArrowRight className="h-4 w-4" />
             </button>
           </div>

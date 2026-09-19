@@ -26,6 +26,7 @@ import { ParentPaiementsPage } from './pages/parent/ParentPaiementsPage';
 import { ParentPedagogiePage } from './pages/parent/ParentPedagogiePage';
 import { ParentAssiduitePage } from './pages/parent/ParentAssiduitePage';
 import { LandingPage } from './pages/LandingPage';
+import { LoginPage } from './pages/LoginPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -205,6 +206,14 @@ export function AppContent() {
     return (
       <div key="landing-page" className="animate-page-enter">
         <LandingPage />
+      </div>
+    );
+  }
+
+  if (viewMode === 'login') {
+    return (
+      <div key="login-page" className="animate-page-enter">
+        <LoginPage onReturnToLanding={() => setViewMode('landing')} />
       </div>
     );
   }
