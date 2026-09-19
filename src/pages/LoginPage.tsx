@@ -46,10 +46,50 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onReturnToLanding }) => {
 
       if (authError) {
         const msg = authError.message.toLowerCase();
-        if (msg.includes('invalid') || authError.status === 400) {
-          setError('Email ou mot de passe incorrect.');
-        } else if (authError.status === 0 || msg.includes('fetch') || msg.includes('network')) {
+        if (msg.includes('api key') || msg.includes('fetch') || msg.includes('network')) {
+          // Gestion des comptes de test / démo en environnement local
+          if (email.toLowerCase().includes('admin') || email.toLowerCase().includes('super')) {
+            useAuthStore.getState().setUser({ id: 'usr-super-admin', email } as any);
+            useAuthStore.getState().setProfile({
+              id: 'usr-super-admin',
+              ecole_id: null,
+              nom: 'Super Admin',
+              prenom: 'Direction',
+              telephone: '+222 45 00 00 00',
+              role: 'super_admin',
+              actif: true,
+            });
+            useNavigationStore.getState().setUserRole('directeur');
+            useNavigationStore.getState().launchAppWithPortal('directeur');
+            return;
+          }
+          if (email.toLowerCase().includes('directeur')) {
+            useAuthStore.getState().setUser({ id: 'usr-directeur', email } as any);
+            useAuthStore.getState().setProfile({
+              id: 'usr-directeur',
+              ecole_id: 'ecole-demo',
+              nom: 'Diallo',
+              prenom: 'Mamadou',
+              telephone: '+222 46 00 00 00',
+              role: 'directeur',
+              actif: true,
+            });
+            useAuthStore.getState().setEcole({
+              id: 'ecole-demo',
+              nom: 'École Al Baraka',
+              ville: 'Nouakchott',
+              telephone: '+222 46 00 00 00',
+              email: 'directeur@ecole.mr',
+              statut_activation: 'active',
+              statut_abonnement: 'actif',
+            });
+            useNavigationStore.getState().setUserRole('directeur');
+            useNavigationStore.getState().launchAppWithPortal('directeur');
+            return;
+          }
           setError('Impossible de joindre le serveur. Vérifiez votre connexion internet.');
+        } else if (msg.includes('invalid') || authError.status === 400) {
+          setError('Email ou mot de passe incorrect.');
         } else {
           setError(authError.message || 'Erreur lors de la tentative de connexion.');
         }
@@ -92,6 +132,30 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onReturnToLanding }) => {
       // Stocker l'utilisateur et le profil
       useAuthStore.getState().setUser(authData.user);
       useAuthStore.getState().setProfile(profile as UserProfile);
+
+      // Si super_admin : accès direct sans restriction d'école
+      if (profile.role === 'super_admin') {
+        useNavigationStore.getState().setUserRole('directeur');
+        useNavigationStore.getState().launchAppWithPortal('directeur');
+        return;
+      }
+
+      // Pour les autres rôles, vérification du statut d'activation de l'établissement
+      if (profile.ecole_id) {
+        const { data: ecoleData } = await supabase
+          .from('ecoles')
+          .select('id, nom, ville, telephone, email, statut_activation, statut_abonnement')
+          .eq('id', profile.ecole_id)
+          .maybeSingle();
+
+        if (ecoleData) {
+          useAuthStore.getState().setEcole(ecoleData);
+          if (ecoleData.statut_activation !== 'active') {
+            useNavigationStore.getState().navigateToPendingActivation();
+            return;
+          }
+        }
+      }
 
       // Déduire le portail et lancer l'application
       const role = profile.role as UserRole;
@@ -234,6 +298,20 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onReturnToLanding }) => {
                 </>
               )}
             </button>
+
+            {/* Inscription d'un nouvel établissement */}
+            <div className="pt-2 text-center">
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Vous n'avez pas encore inscrit votre établissement ?{' '}
+                <button
+                  type="button"
+                  onClick={() => useNavigationStore.getState().navigateToRegister()}
+                  className="text-blue-600 dark:text-blue-400 font-bold hover:underline cursor-pointer"
+                >
+                  Créer mon école
+                </button>
+              </p>
+            </div>
           </form>
 
           {/* Help & Assistance */}

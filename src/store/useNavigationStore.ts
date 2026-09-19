@@ -18,7 +18,7 @@ export const PORTAL_HOME: Record<UserRole, AppRoute> = {
 /** Au-delà, les entrées les plus anciennes sont oubliées, comme dans un navigateur. */
 export const MAX_HISTORY_ENTRIES = 50;
 
-export type ViewMode = 'landing' | 'login' | 'app';
+export type ViewMode = 'landing' | 'login' | 'register' | 'pending_activation' | 'app';
 
 export const PORTAL_ROUTES: Record<UserRole, AppRoute[]> = {
   directeur: ['dashboard', 'eleves', 'echeances', 'relances', 'rapports', 'config'],
@@ -49,6 +49,8 @@ interface NavigationState {
   switchPortal: (portal: UserRole) => void;
   setViewMode: (mode: ViewMode) => void;
   navigateToLogin: () => void;
+  navigateToRegister: () => void;
+  navigateToPendingActivation: () => void;
   launchAppWithPortal: (portal?: UserRole) => void;
   setUserRole: (role: UserRole) => void;
   reset: () => void;
@@ -72,7 +74,7 @@ const initialState = {
 
 /**
  * Historique de navigation interne à l'application (boutons Précédent / Suivant
- * et swipe trackpad) et gestion du mode Vue (Landing vitrine vs Connexion vs Application opérationnelle).
+ * et swipe trackpad) et gestion du mode Vue (Landing vitrine vs Connexion vs Inscription vs Activation vs Application opérationnelle).
  */
 export const useNavigationStore = create<NavigationState>((set) => ({
   ...initialState,
@@ -85,6 +87,8 @@ export const useNavigationStore = create<NavigationState>((set) => ({
   setViewMode: (mode) => set({ viewMode: mode, isMobileMenuOpen: false }),
 
   navigateToLogin: () => set({ viewMode: 'login', isMobileMenuOpen: false }),
+  navigateToRegister: () => set({ viewMode: 'register', isMobileMenuOpen: false }),
+  navigateToPendingActivation: () => set({ viewMode: 'pending_activation', isMobileMenuOpen: false }),
 
   launchAppWithPortal: (portal) =>
     set(() => {

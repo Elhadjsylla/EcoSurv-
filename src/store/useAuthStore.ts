@@ -16,12 +16,24 @@ export interface UserProfile {
   updated_at?: string;
 }
 
+export interface EcoleInfo {
+  id: string;
+  nom: string;
+  ville?: string | null;
+  telephone?: string | null;
+  email?: string | null;
+  statut_activation: 'en_attente' | 'active' | 'suspendue';
+  statut_abonnement?: string;
+}
+
 interface AuthState {
   user: User | null;
   profile: UserProfile | null;
+  ecole: EcoleInfo | null;
   isLoading: boolean;
   setUser: (user: User | null) => void;
   setProfile: (profile: UserProfile | null) => void;
+  setEcole: (ecole: EcoleInfo | null) => void;
   setLoading: (isLoading: boolean) => void;
   logout: () => void;
 }
@@ -29,12 +41,15 @@ interface AuthState {
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   profile: null,
+  ecole: null,
   isLoading: true,
   setUser: (user) => set({ user }),
   setProfile: (profile) => set({ profile }),
+  setEcole: (ecole) => set({ ecole }),
   setLoading: (isLoading) => set({ isLoading }),
   logout: () => {
     useNavigationStore.getState().reset();
-    set({ user: null, profile: null, isLoading: false });
+    set({ user: null, profile: null, ecole: null, isLoading: false });
   },
 }));
+

@@ -56,6 +56,7 @@ const fadeInUp: Variants = {
 export const LandingPage: React.FC = () => {
   const { theme, toggleTheme } = useThemeStore();
   const navigateToLogin = useNavigationStore((s) => s.navigateToLogin);
+  const navigateToRegister = useNavigationStore((s) => s.navigateToRegister);
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [pricingCycle, setPricingCycle] = useState<'monthly' | 'yearly'>('monthly');
@@ -170,7 +171,7 @@ export const LandingPage: React.FC = () => {
           </nav>
 
           {/* Actions & Theme toggle */}
-          <div className="hidden sm:flex items-center gap-3">
+          <div className="hidden sm:flex items-center gap-2.5">
             {/* Theme Toggle */}
             <button
               type="button"
@@ -181,14 +182,24 @@ export const LandingPage: React.FC = () => {
               {theme === 'dark' ? <Sun className="h-4 w-4 text-amber-400" /> : <Moon className="h-4 w-4" />}
             </button>
 
-            {/* In-app Portal Quick Launch / Login */}
+            {/* Se connecter */}
             <button
               type="button"
               onClick={navigateToLogin}
-              className="h-9 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all shadow-md shadow-blue-600/20 flex items-center gap-1.5 group cursor-pointer"
+              className="h-9 px-3.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
             >
               <LogIn className="h-3.5 w-3.5" />
               <span>Se connecter</span>
+            </button>
+
+            {/* Créer mon école */}
+            <button
+              type="button"
+              onClick={navigateToRegister}
+              className="h-9 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all shadow-md shadow-blue-600/20 flex items-center gap-1.5 cursor-pointer hover:scale-[1.02] active:scale-[0.98]"
+            >
+              <span>Créer mon école</span>
+              <ArrowRight className="h-3.5 w-3.5" />
             </button>
           </div>
 
@@ -249,14 +260,25 @@ export const LandingPage: React.FC = () => {
             >
               Tarifs en MRU
             </a>
-            <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
+            <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex flex-col gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  navigateToRegister();
+                }}
+                className="w-full py-2.5 rounded-xl bg-blue-600 text-white text-xs font-bold text-center shadow-md flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                <span>Créer mon école</span>
+                <ArrowRight className="h-3.5 w-3.5" />
+              </button>
               <button
                 type="button"
                 onClick={() => {
                   setMobileMenuOpen(false);
                   navigateToLogin();
                 }}
-                className="w-full py-2.5 rounded-xl bg-blue-600 text-white text-xs font-bold text-center shadow-md flex items-center justify-center gap-1.5 cursor-pointer"
+                className="w-full py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold text-center flex items-center justify-center gap-1.5 cursor-pointer"
               >
                 <LogIn className="h-3.5 w-3.5" />
                 <span>Se connecter</span>
@@ -310,19 +332,27 @@ export const LandingPage: React.FC = () => {
               Suivez qui a payé, qui est en retard et où en est la caisse sans approximations. Encaissement instantané via <strong className="font-bold text-blue-600 dark:text-blue-400">Bankily</strong>, <strong className="font-bold text-emerald-600 dark:text-emerald-400">Masrvi</strong> et <strong className="font-bold text-indigo-600 dark:text-indigo-400">Sedad</strong>, relances automatiques et quittances officielles DGI.
             </motion.p>
 
-            {/* CTA Unique et percutant vers connexion */}
-            <motion.div variants={fadeInUp} className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-4 w-full sm:w-auto">
+            {/* CTAs Distincts : Créer mon école + Se connecter */}
+            <motion.div variants={fadeInUp} className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3.5 w-full sm:w-auto">
               <button
                 type="button"
-                onClick={navigateToLogin}
-                className="relative overflow-hidden w-full sm:w-auto px-9 py-4 rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-700 hover:to-indigo-800 text-white font-extrabold text-base transition-all shadow-xl shadow-blue-600/30 flex items-center justify-center gap-3 group hover:scale-[1.03] active:scale-[0.98] ring-4 ring-blue-500/10 cursor-pointer"
+                onClick={navigateToRegister}
+                className="relative overflow-hidden w-full sm:w-auto px-8 py-4 rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-700 hover:to-indigo-800 text-white font-extrabold text-base transition-all shadow-xl shadow-blue-600/30 flex items-center justify-center gap-3 group hover:scale-[1.03] active:scale-[0.98] ring-4 ring-blue-500/10 cursor-pointer"
               >
                 {/* Shimmer sweep animation across the CTA */}
                 <div className="absolute inset-0 w-1/2 h-full bg-gradient-to-r from-transparent via-white/30 to-transparent pointer-events-none animate-cta-sweep" />
                 
-                <LogIn className="h-5 w-5 relative z-10" />
-                <span className="relative z-10">Accéder à mon espace</span>
+                <span className="relative z-10">Créer mon école</span>
                 <ArrowRight className="h-5 w-5 group-hover:translate-x-1.5 transition-transform relative z-10" />
+              </button>
+
+              <button
+                type="button"
+                onClick={navigateToLogin}
+                className="w-full sm:w-auto px-7 py-4 rounded-2xl bg-white/90 dark:bg-slate-900/90 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-100 font-bold text-base border border-slate-200/90 dark:border-slate-800 shadow-sm transition-all flex items-center justify-center gap-2.5 cursor-pointer hover:scale-[1.02] active:scale-[0.98]"
+              >
+                <LogIn className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                <span>Se connecter</span>
               </button>
             </motion.div>
 
@@ -810,15 +840,14 @@ export const LandingPage: React.FC = () => {
               </div>
 
               <div className="mt-8">
-                <a
-                  href="https://wa.me/22246000000?text=Bonjour,%20je%20souhaite%20souscrire%20au%20forfait%20Pro%20EcoSurv"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all shadow-md shadow-blue-500/25 flex items-center justify-center gap-2"
+                <button
+                  type="button"
+                  onClick={navigateToRegister}
+                  className="w-full py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all shadow-md shadow-blue-500/25 flex items-center justify-center gap-2 cursor-pointer hover:scale-[1.01] active:scale-[0.99]"
                 >
-                  <span>Souscrire au forfait Pro</span>
+                  <span>Créer mon école — Forfait Pro</span>
                   <ArrowRight className="h-4 w-4" />
-                </a>
+                </button>
               </div>
             </motion.div>
 
@@ -952,26 +981,34 @@ export const LandingPage: React.FC = () => {
               </p>
 
               {/* Boutons d'Action SaaS */}
-              <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-4">
+              <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3.5">
+                <button
+                  type="button"
+                  onClick={navigateToRegister}
+                  className="w-full sm:w-auto relative group overflow-hidden px-8 py-4 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-sm sm:text-base shadow-xl shadow-blue-600/30 hover:shadow-blue-500/40 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2.5 cursor-pointer"
+                >
+                  <span>Créer mon école</span>
+                  <ArrowRight className="h-4 w-4 text-white group-hover:translate-x-1 transition-transform" />
+                  <div className="absolute inset-0 w-1/2 h-full bg-gradient-to-r from-transparent via-white/25 to-transparent pointer-events-none animate-cta-sweep" />
+                </button>
+
                 <button
                   type="button"
                   onClick={navigateToLogin}
-                  className="w-full sm:w-auto relative group overflow-hidden px-8 py-4 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-sm sm:text-base shadow-xl shadow-blue-600/30 hover:shadow-blue-500/40 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2.5 cursor-pointer"
+                  className="w-full sm:w-auto px-7 py-4 rounded-2xl bg-white/10 hover:bg-white/15 text-white font-bold text-sm sm:text-base border border-white/20 hover:border-white/30 backdrop-blur-md hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer"
                 >
-                  <LogIn className="h-4 w-4 text-white" />
-                  <span>Se connecter à mon espace</span>
-                  <div className="absolute inset-0 w-1/2 h-full bg-gradient-to-r from-transparent via-white/25 to-transparent pointer-events-none animate-cta-sweep" />
+                  <LogIn className="h-4 w-4 text-blue-300" />
+                  <span>Se connecter</span>
                 </button>
 
                 <a
                   href="https://wa.me/22246000000?text=Bonjour,%20je%20souhaite%20des%20informations%20pour%20mon%20établissement%20sur%20EcoSurv"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-full sm:w-auto px-7 py-4 rounded-2xl bg-white/5 hover:bg-white/10 text-white font-bold text-sm sm:text-base border border-white/15 hover:border-white/30 backdrop-blur-md hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2 group cursor-pointer"
+                  className="w-full sm:w-auto px-6 py-4 rounded-2xl bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white font-semibold text-sm sm:text-base border border-white/10 hover:border-white/20 backdrop-blur-md hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2 group cursor-pointer"
                 >
                   <MessageCircle className="h-4 w-4 text-emerald-400" />
-                  <span>Contacter notre équipe</span>
-                  <ArrowRight className="h-4 w-4 text-slate-300 group-hover:translate-x-0.5 transition-transform" />
+                  <span>Assistance</span>
                 </a>
               </div>
 
