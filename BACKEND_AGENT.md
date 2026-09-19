@@ -34,6 +34,8 @@ temps, exports PDF/Excel, i18n arabe/RTL.
 | `supabase/migrations/20260918091000_notifications_automatiques.sql` | Triggers : paiement confirmé et échéance en retard notifient les parents | **Oui** |
 | `supabase/migrations/20260918092000_ecritures_financieres_bornees.sql` | Grants d'INSERT par colonne (`echeances`, `paiements`), horodatage serveur, encaissements au guichet bornés | **Oui** |
 | `supabase/migrations/20260918093000_clotures_caisse.sql` | Table `clotures_caisse`, 4 policies, totaux calculés, verrou des encaissements | **Oui**, après la précédente |
+| `supabase/migrations/20260919090000_inscription_activation_ecoles.sql` | `ecoles.statut_activation`, accès conditionné à l'activation, trigger d'inscription sur `auth.users`, RPC d'activation — voir §6quater | **Oui** |
+| `supabase/ops/super_admin/creer_profil_super_admin.sql` | Donne le rôle super_admin à un compte Auth existant et vérifie son accès à toutes les écoles | **Oui**, à la main, une fois par fondateur |
 | `supabase/seed/01_donnees_test.sql` | Jeu de démonstration fictif | Environnements de test uniquement |
 | `supabase/seed/02_rattacher_comptes_test.sql` | Rattache les 6 comptes de démo | Environnements de test uniquement |
 | `supabase/seed/99_purge_donnees_test.sql` | `DELETE` ciblé sur l'école de démo, sans garde-fou | Bases de test locales seulement — **jamais en production** |
@@ -48,7 +50,8 @@ temps, exports PDF/Excel, i18n arabe/RTL.
 | `supabase/tests/05_test_notifications.sql` | 40 assertions : RLS et émission automatique des notifications | **Non.** Bac à sable local |
 | `supabase/tests/06_test_ecritures_financieres.sql` | 21 assertions : bornes d'INSERT sur échéances et paiements | **Non.** Bac à sable local |
 | `supabase/tests/07_test_clotures_caisse.sql` | 40 assertions : RLS, totaux et verrou des clôtures | **Non.** Bac à sable local |
-| `supabase/tests/08_test_concurrence_cloture.sql` | 5 assertions : course encaissement / clôture sur deux connexions (`dblink`) | **Non.** Bac à sable local, **en dernier** |
+| `supabase/tests/08_test_concurrence_cloture.sql` | 5 assertions : course encaissement / clôture sur deux connexions (`dblink`) | **Non.** Bac à sable local |
+| `supabase/tests/09_test_inscription_activation.sql` | 74 assertions : inscription atomique, école en attente, activation, suspension, super_admin multi-écoles | **Non.** Bac à sable local |
 
 Les migrations doivent être appliquées **dans l'ordre chronologique de leur
 préfixe** : chacune dépend des précédentes (la clôture s'appuie sur
@@ -61,15 +64,15 @@ Les tests tournent sur un Postgres jetable, sans toucher au projet Supabase :
 ```bash
 docker run -d --name ecosurv_sql_check -e POSTGRES_PASSWORD=postgres postgres:17-alpine
 # puis, dans l'ordre : 00_prelude, les migrations dans l'ordre de leur
-# préfixe, 01_test_schema_mvp, 02_test_rls, 03_harnais_assertions, 04 à 08
+# préfixe, 01_test_schema_mvp, 02_test_rls, 03_harnais_assertions, 04 à 09
 # (psql -v ON_ERROR_STOP=1 -f <fichier>)
 ```
 
-Les fichiers 03 à 08 sont des **assertions** : au premier écart, psql
+Les fichiers 03 à 09 sont des **assertions** : au premier écart, psql
 s'arrête sur un message `ECHEC <cas> — obtenu …, attendu …` et sort en
 erreur ; sinon chaque fichier se termine par
 `=== <fichier> : N assertions OK, aucun echec ===`. Les fichiers 04 à 07
-s'exécutent dans une transaction annulée et peuvent être relancés ; le 08
+et 09 s'exécutent dans une transaction annulée et peuvent être relancés ; le 08
 committe réellement (il en a besoin pour tester deux connexions) et nettoie
 ses lignes.
 
@@ -137,7 +140,7 @@ donc une **dépendance de sécurité**, pas une fonctionnalité.
 
 ## 3. Enums
 
-Huit enums Postgres. Tout champ de statut ou de rôle passe par un enum : une
+Neuf enums Postgres. Tout champ de statut ou de rôle passe par un enum : une
 valeur hors liste est rejetée par le moteur, pas par une validation
 applicative qu'on peut oublier.
 
@@ -151,6 +154,7 @@ applicative qu'on peut oublier.
 | `lien_parente` | `pere`, `mere`, `tuteur`, `autre` | Nature du lien dans `parents_eleves` |
 | `type_absence` | `absence`, `retard` | §5.4 parle bien d'« absences/retards » |
 | `type_notification` | `echeance_retard`, `nouvelle_note`, `paiement_confirme` | `nouvelle_note` est réservé à la V2 : aucune table de notes, rien ne l'émet encore |
+| `statut_activation_ecole` | `en_attente`, `active`, `suspendue` | **Porte d'accès** aux données d'une école (§6quater). Distinct de `statut_abonnement`, commercial et non bloquant |
 
 **Ajouter une valeur** à un enum en production se fait par
 `ALTER TYPE ... ADD VALUE`, opération non transactionnelle et **non
@@ -307,17 +311,20 @@ l'exécution est révoquée à `public` et `anon` :
 
 | Fonction | Retour | Usage |
 |---|---|---|
-| `mon_role()` | `role_utilisateur` | Rôle de l'appelant |
-| `mon_ecole_id()` | `uuid` | École de l'appelant |
-| `est_super_admin()` | `boolean` | Accès global |
-| `est_tuteur_de(eleve_id)` | `boolean` | Périmètre parent, via `parents_eleves` |
-| `est_tuteur_de_echeance(echeance_id)` | `boolean` | Périmètre parent sur les paiements |
+| `mon_role()` | `role_utilisateur` | Rôle de l'appelant — `NULL` si son école n'est pas `active` |
+| `mon_ecole_id()` | `uuid` | École de l'appelant — `NULL` si elle n'est pas `active` |
+| `est_super_admin()` | `boolean` | Accès global (pas d'école, donc pas concerné par l'activation) |
+| `est_tuteur_de(eleve_id)` | `boolean` | Périmètre parent, via `parents_eleves` — faux si l'école **de l'enfant** n'est pas `active` |
+| `est_tuteur_de_echeance(echeance_id)` | `boolean` | Périmètre parent sur les paiements — même règle |
 | `enseigne_classe(ecole_id, classe)` | `boolean` | Périmètre enseignant |
 | `enseigne_eleve(eleve_id)` | `boolean` | Périmètre enseignant, via la classe de l'élève |
+| `mon_ecole_rattachement()` | `uuid` | École de rattachement **quel que soit son statut** : sert uniquement à `ecoles_select_membre` (écran d'attente / de suspension) |
 
-**Toutes filtrent sur `profils.actif`.** Un profil désactivé fait renvoyer
-`NULL` / `false` : aucune policy ne matche plus, et le compte perd tout accès
-d'un seul coup, sans qu'il faille traiter les 83 policies une par une.
+**Toutes filtrent sur `profils.actif`, et (depuis `20260919090000`) sur le
+statut d'activation de l'école.** Un profil désactivé ou une école non
+active fait renvoyer `NULL` / `false` : aucune policy ne matche plus, et le
+compte perd tout accès aux données d'un seul coup, sans qu'il faille
+traiter les 83 policies une par une.
 
 Elles sont appelées sous la forme `(select public.mon_ecole_id())` dans les
 policies : PostgreSQL évalue alors l'expression une fois par requête plutôt
@@ -327,7 +334,7 @@ qu'une fois par ligne.
 
 | Table | SELECT | INSERT | UPDATE | DELETE |
 |---|---|---|---|---|
-| `ecoles` | super_admin, tout membre *(sa seule école)* | super_admin | super_admin, directeur *(coordonnées seules)* | super_admin |
+| `ecoles` | super_admin, tout membre *(sa seule école, quel que soit son statut d'activation)* | super_admin | super_admin, directeur *(coordonnées seules ; statut d'activation : RPC super_admin uniquement)* | super_admin |
 | `profils` | super_admin, directeur *(son école)*, soi-même | super_admin, directeur *(hors super_admin)* | super_admin, directeur, soi-même | super_admin, directeur |
 | `eleves` | super_admin, directeur, caissier, enseignant *(ses classes)*, parent *(ses enfants)* | super_admin, directeur | super_admin, directeur | super_admin |
 | `parents_eleves` | super_admin, directeur, parent *(ses liens)* | super_admin, directeur | super_admin, directeur | super_admin, directeur |
@@ -656,6 +663,167 @@ supprime pas, il se désactive (`actif = false`).
 
 ---
 
+## 6quater. Inscription des écoles et activation
+
+Migration `20260919090000_inscription_activation_ecoles.sql`.
+
+### Parcours
+
+1. Le directeur s'inscrit depuis l'application : `supabase.auth.signUp`
+   avec la métadonnée `type_inscription = 'ecole'`.
+2. **Dans la même transaction** que la création du compte Auth, le trigger
+   `inscrire_ecole_depuis_compte` (sur `auth.users`) crée une **école
+   neuve** en `statut_activation = 'en_attente'` (`statut_abonnement =
+   'essai'`) et le **profil `directeur`** rattaché à cette école. Si l'une
+   des insertions échoue, le compte n'est pas créé : tout ou rien.
+3. Tant que l'école n'est pas `active`, ses comptes se connectent mais ne
+   voient **aucune donnée d'école** : seulement leur profil et la fiche de
+   leur école.
+4. Le super_admin liste les écoles en attente et les active, par RPC.
+
+**Pourquoi un trigger et pas une RPC « qui crée le compte ».** Un compte
+Auth ne se crée proprement que par Supabase Auth (hachage du mot de passe,
+identités, email de confirmation). Une RPC ou une Edge Function qui
+créerait le compte puis l'école ferait deux opérations séparées : un échec
+entre les deux laisserait un compte sans école. Le trigger s'exécute dans
+la transaction de création du compte.
+
+**Les métadonnées viennent du client.** Elles ne fournissent que des
+libellés (`nom_ecole`, `nom`, `prenom`, `telephone`, `ville`). Le rôle,
+l'école de rattachement et le statut ne sont **jamais** lus dans les
+métadonnées : une inscription crée toujours une école neuve, en attente,
+dont l'inscrit est directeur. Un compte créé autrement (dashboard,
+invitation) n'a pas `type_inscription` et le trigger l'ignore.
+
+### Le statut d'activation
+
+| Colonne `ecoles` | Rôle |
+|---|---|
+| `statut_activation` | `en_attente` (défaut de toute nouvelle école), `active`, `suspendue` |
+| `statut_activation_modifie_le` / `_par` | Trace du dernier changement (quand, quel super_admin) |
+
+- Les écoles **déjà en service** au moment de la migration sont passées
+  `active`.
+- Le défaut est `en_attente` pour **toute** nouvelle école (fail-closed),
+  y compris créée par un super_admin, qui l'active ou l'insère
+  explicitement avec `statut_activation = 'active'`.
+- La colonne n'est **pas** ouverte aux grants d'UPDATE : le seul chemin est
+  la RPC `changer_statut_activation_ecole`, réservée au super_admin. Un
+  directeur ne peut donc pas activer sa propre école.
+- `statut_abonnement` reste une information commerciale, sans effet sur
+  l'accès. C'est `statut_activation` qui coupe l'accès.
+
+### Ce que voit un compte d'une école non active
+
+La règle est portée par les fonctions de contexte (§6), comme
+`profils.actif`, et s'applique donc à **toutes** les policies d'un coup.
+
+| | École `en_attente` ou `suspendue` | École `active` |
+|---|---|---|
+| Son profil (`profils`, ligne à soi) | lecture + correction nom / téléphone | idem |
+| Fiche de son école (`ecoles`) | lecture (nom, statut) | lecture, coordonnées modifiables par le directeur |
+| Élèves, échéances, paiements, absences, clôtures, notifications, liens parents, affectations, autres profils | **rien**, ni en lecture ni en écriture | selon le rôle (§6) |
+
+Un parent dont l'enfant est dans une école suspendue ne voit plus cet
+enfant, même si son école principale est active. Le super_admin voit
+toutes les écoles, quel que soit leur statut.
+
+### RPC
+
+| Fonction | Qui | Effet |
+|---|---|---|
+| `mon_statut_acces()` | tout compte connecté | Une ligne : `role`, `profil_actif`, `ecole_id`, `ecole_nom`, `statut_activation`, `acces_donnees`. Calculé avec les mêmes fonctions que la RLS. Aucune ligne = compte sans profil |
+| `ecoles_en_attente()` | super_admin (sinon erreur 42501) | Écoles `en_attente`, avec directeur inscrit et `email_confirme` |
+| `changer_statut_activation_ecole(p_ecole_id, p_statut)` | super_admin (sinon erreur 42501) | Passe l'école à `active`, `suspendue` ou `en_attente`, trace qui et quand. Erreur `P0002` si l'école n'existe pas |
+
+Le `service_role` sans utilisateur ne peut pas activer une école : la
+décision appartient à un compte super_admin identifié.
+
+### Pour le frontend
+
+**Inscription** :
+
+```ts
+await supabase.auth.signUp({
+  email, password,
+  options: {
+    data: { type_inscription: 'ecole', nom_ecole, nom, prenom, telephone, ville },
+    emailRedirectTo: `${window.location.origin}/`,
+  },
+});
+```
+
+- Obligatoires : `email`, `nom_ecole` (150 caractères au plus), `nom`
+  (100). Facultatifs : `prenom`, `ville` (100), `telephone` (30).
+- **Valider ces champs avant l'appel** : si le trigger refuse, Supabase Auth
+  ne renvoie qu'un message générique (« Database error saving new user »),
+  sans le détail.
+
+**Après chaque connexion**, avant d'afficher un portail :
+
+```ts
+const { data } = await supabase.rpc('mon_statut_acces').maybeSingle();
+```
+
+| Résultat | Écran |
+|---|---|
+| aucune ligne | « Compte non configuré » : compte Auth sans profil |
+| `profil_actif = false` | « Compte désactivé » |
+| `role = 'super_admin'` | console super_admin |
+| `statut_activation = 'en_attente'` | **écran d'attente** : « Votre école est en cours de validation », avec `ecole_nom` |
+| `statut_activation = 'suspendue'` | écran « École suspendue, contactez EcoSurv » |
+| `acces_donnees = true` | portail du rôle |
+
+- Tant que `acces_donnees` est faux, ne pas charger les écrans de données :
+  la RLS renverrait des listes **vides**, qu'il ne faut pas afficher comme
+  « aucun élève ».
+- `acces_donnees` est calculé par la base : c'est lui qui fait foi, pas une
+  déduction côté client.
+
+**Console super_admin** :
+`supabase.rpc('ecoles_en_attente')`, puis
+`supabase.rpc('changer_statut_activation_ecole', { p_ecole_id, p_statut: 'active' })`.
+
+### Réglages Supabase requis
+
+- Authentication → Providers → Email : **« Allow new users to sign up »
+  activé** (sinon `signUp` est refusé), **« Confirm email » activé**
+  recommandé. `ecoles_en_attente()` montre si l'email est confirmé.
+- Limites de débit et CAPTCHA d'Auth : à régler contre les inscriptions en
+  masse. Une école en attente n'a accès à rien, mais encombre la liste.
+
+### Créer un compte super_admin
+
+1. Dashboard → **Authentication → Users → Add user → Create new user** :
+   email, mot de passe, **« Auto Confirm User » coché**. Ne rien mettre dans
+   les métadonnées : le trigger d'inscription ignore ce compte.
+2. SQL Editor : `supabase/ops/super_admin/creer_profil_super_admin.sql`,
+   après avoir renseigné l'email, le nom et le prénom. Le script :
+   - vérifie que le compte existe et que son email est confirmé ;
+   - crée le profil `super_admin` avec `ecole_id` NULL (sans effet s'il
+     existe déjà) et refuse si le compte est déjà un compte d'école ;
+   - **se connecte en tant que ce compte** et compare ce que la RLS lui
+     laisse voir à la totalité : écoles (actives, en attente, suspendues),
+     élèves, paiements.
+
+   Il affiche une ligne par contrôle, et **annule tout** si le compte ne
+   voit pas toutes les données.
+3. Se connecter à l'application avec ce compte : `mon_statut_acces()`
+   renvoie `super_admin`.
+
+### Invariants
+
+1. Une inscription ne crée jamais qu'une école **neuve**, **en attente**,
+   dont l'inscrit est directeur. Rôle, école et statut ne viennent jamais
+   des métadonnées.
+2. Compte, école et profil sont créés ensemble ou pas du tout.
+3. Seul un super_admin change `statut_activation`, par RPC, avec trace.
+4. Un compte d'une école non active ne lit que son profil et la fiche de
+   son école.
+5. Toute nouvelle école naît `en_attente`.
+
+---
+
 ## 7. Variables d'environnement
 
 Aucune valeur réelle ne figure dans ce dépôt. Voir [`.env.example`](.env.example)
@@ -775,10 +943,13 @@ en démonstration en l'état.
    webhook vérifiant la signature avant de passer à `confirme`. C'est la
    pièce qui rend le §5.8 utilisable côté parent.
 4. **Création des profils à l'inscription** : aucune policy ne permet à un
-   utilisateur de créer son propre profil (il choisirait son rôle). Les
-   comptes sont donc créés par un directeur ou un super_admin. Si un parcours
-   d'auto-inscription est souhaité, il devra passer par un trigger
-   `SECURITY DEFINER` sur `auth.users` forçant `role = 'parent'`.
+   utilisateur de créer son propre profil (il choisirait son rôle). Fait
+   pour les **écoles** depuis `20260919090000` (§6quater) : trigger
+   `SECURITY DEFINER` sur `auth.users`, rôle forcé à `directeur` d'une école
+   neuve en attente. Le personnel et les parents restent créés par le
+   directeur ou le super_admin. Un éventuel parcours d'auto-inscription
+   parent suivra le même modèle (rôle forcé, rattachement jamais choisi par
+   l'utilisateur).
 5. **Vérifier les Security Advisors** du dashboard Supabase après chaque
    migration.
 6. **Tester avec de vrais comptes Supabase Auth** : le harnais local simule
@@ -812,6 +983,21 @@ Ajoutés par le lot `feat/backend-real-actions` (18/09/2026) :
     (§6) : année scolaire des affectations, grants de colonnes sur
     `profils`.
 
+Ajoutés par le lot `feat/inscription-activation-ecoles` (19/09/2026) :
+
+13. **Rejeter une inscription** : aucune RPC ne supprime une école en
+    attente (profil puis école, `profils.ecole_id` étant en RESTRICT). À
+    faire par le super_admin via le SQL Editor en attendant, ou à ajouter
+    si les inscriptions indésirables deviennent fréquentes.
+14. **Prévenir le directeur de l'activation** : aucun email ni
+    notification n'est émis quand l'école passe `active` (le type
+    `type_notification` n'a pas de valeur adaptée). L'écran d'attente peut
+    relancer `mon_statut_acces()` à chaque ouverture.
+15. **Tester le trigger d'inscription avec le vrai Supabase Auth** : le
+    harnais local simule `auth.users` (colonnes `raw_user_meta_data`,
+    `email_confirmed_at`) ; un premier `signUp` réel doit être fait sur le
+    projet après application de la migration.
+
 ---
 
 ## 10. Invariants backend à ne jamais casser
@@ -831,3 +1017,8 @@ Ajoutés par le lot `feat/backend-real-actions` (18/09/2026) :
    clôturée n'accepte plus aucun encaissement de ce poste.
 9. La date d'un encaissement vient de l'horloge du serveur, jamais du
    navigateur.
+10. Une auto-inscription ne crée qu'une école neuve en attente dont
+    l'inscrit est directeur ; rôle, école et statut ne viennent jamais des
+    métadonnées du client.
+11. Seul un super_admin change le statut d'activation d'une école, et un
+    compte d'une école non active n'accède à aucune donnée.

@@ -159,9 +159,9 @@ $$;
 --   Un super_admin.
 -- ---------------------------------------------------------------------
 
-insert into public.ecoles (id, nom, ville) values
-  ('c0000000-0000-0000-0000-00000000000c', 'Ecole Test C', 'Nouakchott'),
-  ('d0000000-0000-0000-0000-00000000000d', 'Ecole Test D', 'Rosso');
+insert into public.ecoles (id, nom, ville, statut_activation) values
+  ('c0000000-0000-0000-0000-00000000000c', 'Ecole Test C', 'Nouakchott', 'active'),
+  ('d0000000-0000-0000-0000-00000000000d', 'Ecole Test D', 'Rosso', 'active');
 
 insert into auth.users (id, email) values
   ('0000000c-0000-0000-0000-0000000000a0', 'adm@c.test'),

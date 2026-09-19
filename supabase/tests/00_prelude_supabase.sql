@@ -11,9 +11,14 @@ alter default privileges in schema public
 
 create schema if not exists auth;
 
+-- Sous-ensemble des colonnes de auth.users utilisées par le schéma :
+-- raw_user_meta_data (données d'inscription, trigger
+-- inscrire_ecole_depuis_compte) et email_confirmed_at (ecoles_en_attente).
 create table auth.users (
-  id    uuid primary key default gen_random_uuid(),
-  email text
+  id                  uuid primary key default gen_random_uuid(),
+  email               text,
+  raw_user_meta_data  jsonb,
+  email_confirmed_at  timestamptz
 );
 
 -- auth.uid() / auth.jwt() : versions de test renvoyant le claim du JWT

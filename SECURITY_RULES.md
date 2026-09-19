@@ -74,6 +74,17 @@ un dossier élève ni créer une échéance. Toute extension future d'un rôle
 au-delà de ce tableau doit être documentée ici avant d'être écrite en
 policy, jamais l'inverse.
 
+### École non activée
+
+Le tableau ci-dessus ne s'applique qu'aux écoles **activées par un
+super_admin** (`ecoles.statut_activation = 'active'`). Tant qu'une école est
+**en attente** d'activation ou **suspendue**, aucun de ses comptes, quel que
+soit son rôle, ne voit ni ne modifie de donnée de l'école. Chacun ne lit
+que son propre profil et la fiche de son école, le temps d'afficher l'état
+de son compte. Le même effet vaut pour un parent dont l'enfant est dans une
+école non active. Seul un `super_admin` change ce statut. Le `super_admin`,
+lui, voit toutes les écoles, quel que soit leur statut.
+
 ---
 
 ## 3. Gestion des clés et secrets
@@ -113,6 +124,12 @@ policy, jamais l'inverse.
 - Toute route ou fonction backend qui renvoie des données sensibles doit
   vérifier la session active, même si la RLS filtre déjà en théorie —
   défense en profondeur.
+- **Auto-inscription** : un utilisateur qui s'inscrit seul ne choisit jamais
+  son rôle, son école de rattachement ni le statut de son école. Ce qu'il
+  saisit ne sert que de libellés. L'inscription d'une école crée toujours
+  une école **neuve**, **en attente d'activation**, dont l'inscrit est
+  directeur. Tout autre compte (personnel, parents, super_admin) est créé
+  par un directeur ou un super_admin.
 
 ---
 

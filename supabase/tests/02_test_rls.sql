@@ -20,9 +20,9 @@
 \set echA1    '''20000000-0000-0000-0000-000000000001'''
 \set echA2    '''20000000-0000-0000-0000-000000000002'''
 
-insert into public.ecoles (id, nom, ville) values
-  ('e0000000-0000-0000-0000-00000000000a', 'Ecole Test A', 'Nouakchott'),
-  ('e0000000-0000-0000-0000-00000000000b', 'Ecole Test B', 'Nouadhibou');
+insert into public.ecoles (id, nom, ville, statut_activation) values
+  ('e0000000-0000-0000-0000-00000000000a', 'Ecole Test A', 'Nouakchott', 'active'),
+  ('e0000000-0000-0000-0000-00000000000b', 'Ecole Test B', 'Nouadhibou', 'active');
 
 insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-0000000000a0', 'admin@test.local'),
