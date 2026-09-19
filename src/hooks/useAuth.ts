@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuthStore, UserProfile } from '../store/useAuthStore';
+import { useNavigationStore } from '../store/useNavigationStore';
 
 export function useAuth() {
   const { user, profile, isLoading, setUser, setProfile, setLoading, logout } =
@@ -41,7 +42,24 @@ export function useAuth() {
         .single();
 
       if (error) throw error;
-      setProfile(data as UserProfile);
+      const userProfile = data as UserProfile;
+      setProfile(userProfile);
+
+      // Vérification du statut de l'école si rôle non super_admin
+      if (userProfile.role !== 'super_admin' && userProfile.ecole_id) {
+        const { data: ecoleData } = await supabase
+          .from('ecoles')
+          .select('id, nom, ville, telephone, email, statut_activation, statut_abonnement')
+          .eq('id', userProfile.ecole_id)
+          .maybeSingle();
+
+        if (ecoleData) {
+          useAuthStore.getState().setEcole(ecoleData);
+          if (ecoleData.statut_activation !== 'active') {
+            useNavigationStore.getState().navigateToPendingActivation();
+          }
+        }
+      }
     } catch (err) {
       console.error('Erreur lors du chargement du profil:', err);
     } finally {

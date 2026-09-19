@@ -27,6 +27,8 @@ import { ParentPedagogiePage } from './pages/parent/ParentPedagogiePage';
 import { ParentAssiduitePage } from './pages/parent/ParentAssiduitePage';
 import { LandingPage } from './pages/LandingPage';
 import { LoginPage } from './pages/LoginPage';
+import { RegisterPage } from './pages/RegisterPage';
+import { PendingActivationScreen } from './pages/PendingActivationScreen';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -214,6 +216,22 @@ export function AppContent() {
     return (
       <div key="login-page" className="animate-page-enter">
         <LoginPage onReturnToLanding={() => setViewMode('landing')} />
+      </div>
+    );
+  }
+
+  if (viewMode === 'register') {
+    return (
+      <div key="register-page" className="animate-page-enter">
+        <RegisterPage onReturnToLanding={() => setViewMode('landing')} />
+      </div>
+    );
+  }
+
+  if (viewMode === 'pending_activation') {
+    return (
+      <div key="pending-activation-page" className="animate-page-enter">
+        <PendingActivationScreen />
       </div>
     );
   }

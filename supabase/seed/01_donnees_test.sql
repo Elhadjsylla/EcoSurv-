@@ -26,12 +26,48 @@
 -- =====================================================================
 
 -- ---------------------------------------------------------------------
+-- Garde-fou production
+--
+-- Depuis la purge de la démo (supabase/ops/purge_demo/), la base de
+-- production contient les vraies écoles. Ce jeu ne se charge que sur une
+-- base qui ne contient AUCUNE autre école que celle de démonstration :
+-- sinon, aucune insertion ne passe.
+--
+-- Deux blocs, parce qu'une erreur n'arrête pas tous les clients :
+--   1. le premier passe la SESSION en lecture seule : psql sans
+--      ON_ERROR_STOP continue après une erreur, mais chaque INSERT suivant
+--      échoue alors (« cannot execute INSERT in a read-only transaction ») ;
+--   2. le second lève l'erreur : le SQL Editor Supabase, qui envoie le
+--      fichier d'un bloc, s'arrête là et annule tout.
+-- ---------------------------------------------------------------------
+
+do $$
+begin
+  if exists (select 1 from public.ecoles
+              where id <> '11111111-1111-1111-1111-111111111111') then
+    perform set_config('default_transaction_read_only', 'on', false);
+    raise warning 'REFUS : base de production — session passée en lecture seule, aucune donnée de démonstration ne sera insérée.';
+  end if;
+end
+$$;
+
+do $$
+begin
+  if exists (select 1 from public.ecoles
+              where id <> '11111111-1111-1111-1111-111111111111') then
+    raise exception 'REFUS : cette base contient une école réelle. Les données de démonstration ne se chargent jamais en production (SECURITY_RULES.md §5).';
+  end if;
+end
+$$;
+
+-- ---------------------------------------------------------------------
 -- L'école de démonstration
 -- ---------------------------------------------------------------------
 
 insert into public.ecoles
   (id, nom, ville, adresse, telephone, email,
-   statut_abonnement, abonnement_debut, abonnement_fin, annee_scolaire)
+   statut_abonnement, abonnement_debut, abonnement_fin, annee_scolaire,
+   statut_activation)
 values
   ('11111111-1111-1111-1111-111111111111',
    '[DÉMO] Groupe Scolaire Al Anwar',
@@ -42,7 +78,8 @@ values
    'actif',
    current_date - 90,
    current_date + 275,
-   '2025-2026')
+   '2025-2026',
+   'active')
 on conflict (id) do nothing;
 
 -- ---------------------------------------------------------------------
