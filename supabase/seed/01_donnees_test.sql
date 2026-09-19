@@ -31,7 +31,8 @@
 
 insert into public.ecoles
   (id, nom, ville, adresse, telephone, email,
-   statut_abonnement, abonnement_debut, abonnement_fin, annee_scolaire)
+   statut_abonnement, abonnement_debut, abonnement_fin, annee_scolaire,
+   statut_activation)
 values
   ('11111111-1111-1111-1111-111111111111',
    '[DÉMO] Groupe Scolaire Al Anwar',
@@ -42,7 +43,8 @@ values
    'actif',
    current_date - 90,
    current_date + 275,
-   '2025-2026')
+   '2025-2026',
+   'active')
 on conflict (id) do nothing;
 
 -- ---------------------------------------------------------------------
