@@ -5,6 +5,7 @@ import { StatusBadge } from '../ui/StatusBadge';
 import { Button } from '../ui/Button';
 import { Tooltip } from '../ui/Tooltip';
 import { formatMRU } from '../../lib/utils';
+import { generateStudentSheetPdf } from '../../lib/pdf/generateStudentSheetPdf';
 import {
   X,
   FolderOpen,
@@ -50,9 +51,39 @@ export const StudentDetailDrawer: React.FC<StudentDetailDrawerProps> = ({
     setTimeout(() => setActiveToast(null), 3000);
   };
 
+  const formatDateFrench = (dateStr?: string) => {
+    if (!dateStr) return '—';
+    const parts = dateStr.split('-');
+    if (parts.length === 3) {
+      const months = [
+        'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
+        'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'
+      ];
+      const day = parseInt(parts[2], 10);
+      const month = months[parseInt(parts[1], 10) - 1];
+      const year = parts[0];
+      if (month) return `${day} ${month} ${year}`;
+    }
+    return dateStr;
+  };
+
+  const getLienParenteLabel = (lien?: string) => {
+    if (!lien) return 'Tuteur légal';
+    if (lien === 'pere') return 'Père';
+    if (lien === 'mere') return 'Mère';
+    if (lien === 'tuteur') return 'Tuteur légal';
+    return 'Tuteur';
+  };
+
   return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-slate-900/40 dark:bg-slate-950/70 backdrop-blur-xs animate-in fade-in duration-200">
-      <div className="w-full max-w-md h-full bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 shadow-2xl flex flex-col justify-between overflow-y-auto animate-in slide-in-from-right duration-250">
+    <div
+      id="student-detail-drawer"
+      className="fixed inset-0 z-50 flex justify-end bg-slate-900/40 dark:bg-slate-950/70 backdrop-blur-xs animate-backdrop-fade-in print:static print:bg-transparent print:p-0 print:m-0 print:block print:inset-auto"
+    >
+      <div
+        id="student-detail-drawer-content"
+        className="w-full max-w-md h-full bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 shadow-2xl flex flex-col justify-between overflow-y-auto animate-drawer-slide-in ml-auto print:w-full print:max-w-xl print:mx-auto print:h-auto print:border print:border-slate-200 print:shadow-none print:rounded-2xl print:overflow-visible print:p-0"
+      >
         <div>
           {/* Header Bar */}
           <div className="flex items-center justify-between p-4 sm:p-5 border-b border-slate-100 dark:border-slate-800">
@@ -61,7 +92,7 @@ export const StudentDetailDrawer: React.FC<StudentDetailDrawerProps> = ({
             </span>
             <button
               onClick={onClose}
-              className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors print:hidden"
             >
               <X className="h-5 w-5" />
             </button>
@@ -69,23 +100,25 @@ export const StudentDetailDrawer: React.FC<StudentDetailDrawerProps> = ({
 
           {/* Toast inside drawer */}
           {activeToast && (
-            <div className="mx-4 mt-3 p-2.5 rounded-xl bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 text-xs font-semibold flex items-center gap-2 animate-in fade-in slide-in-from-top-2">
+            <div className="mx-4 mt-3 p-2.5 rounded-xl bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 text-xs font-semibold flex items-center gap-2 animate-in fade-in slide-in-from-top-2 print:hidden">
               <CheckCircle2 className="h-4 w-4 text-emerald-400 dark:text-emerald-600 shrink-0" />
               <span>{activeToast}</span>
             </div>
           )}
 
-          {/* Student Profile Centered Hero (Nexoov Style) */}
+          {/* Student Profile Centered Hero */}
           <div className="p-6 text-center border-b border-slate-100 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/40">
-            <div className="relative inline-block mb-3">
-              <StudentInitials
-                nom={eleve.nom}
-                prenom={eleve.prenom}
-                size="lg"
-                className="ring-4 ring-white dark:ring-slate-800 shadow-md text-base"
-              />
-              <div className="absolute -bottom-1 -right-1">
-                <StatusBadge statut={eleve.statut} showDot={false} className="shadow-xs text-[10px] py-0 px-2" />
+            <div className="relative inline-flex flex-col items-center mb-3">
+              <div className="relative">
+                <StudentInitials
+                  nom={eleve.nom}
+                  prenom={eleve.prenom}
+                  size="lg"
+                  className="h-14 w-14 text-base ring-4 ring-white dark:ring-slate-800 shadow-md"
+                />
+                <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 whitespace-nowrap z-10">
+                  <StatusBadge statut={eleve.statut} showDot={false} className="shadow-xs text-[10px] py-0 px-2 whitespace-nowrap" />
+                </div>
               </div>
             </div>
 
@@ -98,7 +131,7 @@ export const StudentDetailDrawer: React.FC<StudentDetailDrawerProps> = ({
             </p>
 
             {/* Quick Action Icons Row */}
-            <div className="flex items-center justify-center gap-2.5 mt-4">
+            <div className="flex items-center justify-center gap-2.5 mt-4 print:hidden">
               <Tooltip content="Dossier scolaire">
                 <button
                   type="button"
@@ -128,15 +161,15 @@ export const StudentDetailDrawer: React.FC<StudentDetailDrawerProps> = ({
                 </button>
               </Tooltip>
 
-              <Tooltip content="Imprimer attestation">
+              <Tooltip content="Télécharger fiche / attestation (PDF)">
                 <button
                   type="button"
                   onClick={() => {
-                    showActionToast('Impression attestation / reçu');
-                    window.print();
+                    generateStudentSheetPdf(eleve, 'download');
+                    showActionToast('Fiche officielle PDF téléchargée');
                   }}
                   className="h-9 w-9 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-300 hover:bg-blue-50/50 flex items-center justify-center transition-all shadow-2xs"
-                  aria-label="Imprimer attestation"
+                  aria-label="Télécharger attestation PDF"
                 >
                   <Printer className="h-4 w-4" />
                 </button>
@@ -194,11 +227,15 @@ export const StudentDetailDrawer: React.FC<StudentDetailDrawerProps> = ({
             <div className="space-y-2 text-xs">
               <div className="flex items-center justify-between py-1 border-b border-slate-100 dark:border-slate-800/60">
                 <span className="text-slate-500 dark:text-slate-400">Date de naissance</span>
-                <span className="font-semibold text-slate-800 dark:text-slate-200">14 Juin 2008</span>
+                <span className="font-semibold text-slate-800 dark:text-slate-200">
+                  {formatDateFrench(eleve.date_naissance)}
+                </span>
               </div>
               <div className="flex items-center justify-between py-1 border-b border-slate-100 dark:border-slate-800/60">
                 <span className="text-slate-500 dark:text-slate-400">Sexe</span>
-                <span className="font-semibold text-slate-800 dark:text-slate-200">Masculin</span>
+                <span className="font-semibold text-slate-800 dark:text-slate-200">
+                  {eleve.sexe === 'F' ? 'Féminin' : 'Masculin'}
+                </span>
               </div>
               <div className="flex items-center justify-between py-1 border-b border-slate-100 dark:border-slate-800/60">
                 <span className="text-slate-500 dark:text-slate-400">Régime de scolarité</span>
@@ -220,7 +257,7 @@ export const StudentDetailDrawer: React.FC<StudentDetailDrawerProps> = ({
               <div className="flex items-center gap-2.5">
                 <User className="h-4 w-4 text-blue-600 dark:text-blue-400 shrink-0" />
                 <span className="font-bold text-slate-900 dark:text-white">{eleve.nom_tuteur}</span>
-                <span className="text-[11px] text-slate-400">(Tuteur légal)</span>
+                <span className="text-[11px] text-slate-400">({getLienParenteLabel(eleve.lien_parente)})</span>
               </div>
 
               <div className="flex items-center gap-2.5 text-slate-600 dark:text-slate-300">
@@ -230,7 +267,7 @@ export const StudentDetailDrawer: React.FC<StudentDetailDrawerProps> = ({
 
               <div className="flex items-center gap-2.5 text-slate-600 dark:text-slate-300">
                 <MapPin className="h-4 w-4 text-slate-400 shrink-0" />
-                <span>Tevragh-Zeina, Nouakchott</span>
+                <span>{eleve.adresse_tuteur || 'Nouakchott'}</span>
               </div>
             </div>
           </div>
@@ -239,7 +276,7 @@ export const StudentDetailDrawer: React.FC<StudentDetailDrawerProps> = ({
         {/* Footer Actions */}
         <div className="p-4 sm:p-5 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/80 flex items-center gap-2.5">
           {eleve.remaining > 0 ? (
-            <>
+            <div className="flex items-center gap-2.5 w-full print:hidden">
               <Button
                 variant="outline"
                 size="sm"
@@ -265,7 +302,7 @@ export const StudentDetailDrawer: React.FC<StudentDetailDrawerProps> = ({
                 <Send className="h-3.5 w-3.5" />
                 Relancer SMS
               </Button>
-            </>
+            </div>
           ) : (
             <div className="w-full text-center py-2 text-xs font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 rounded-xl border border-emerald-200 dark:border-emerald-800 flex items-center justify-center gap-2">
               <CheckCircle2 className="h-4 w-4" />

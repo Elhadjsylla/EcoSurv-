@@ -7,6 +7,7 @@ import {
   MonthlyFinancialReport,
 } from '../lib/mockData';
 import { formatMRU } from '../lib/utils';
+import { exportFinancialReportsToExcel } from '../lib/excel/exportFinancialReports';
 import {
   FileText,
   FileSpreadsheet,
@@ -34,10 +35,15 @@ export const RapportsPage: React.FC = () => {
 
   const handleExportExcel = () => {
     setIsExportingExcel(true);
-    setTimeout(() => {
+    try {
+      exportFinancialReportsToExcel(reports);
+      showToast('✓ Rapport Financier annuel exporté au format Excel (.xlsx) avec succès.');
+    } catch (err) {
+      console.error(err);
+      showToast('Erreur lors de l\'exportation Excel');
+    } finally {
       setIsExportingExcel(false);
-      showToast('✓ Rapport Financier récapitulatif exporté au format Excel (.xlsx)');
-    }, 750);
+    }
   };
 
   const handlePrint = () => {
@@ -262,12 +268,13 @@ export const RapportsPage: React.FC = () => {
                           <button
                             onClick={() => {
                               setOpenMenuRowId(null);
-                              showToast(`Téléchargement de l'état financier de ${r.mois}...`);
+                              exportFinancialReportsToExcel([r], `Rapport_Financier_${r.mois.replace(/\s+/g, '_')}_2026.xlsx`);
+                              showToast(`État financier de ${r.mois} exporté en Excel (.xlsx) avec succès.`);
                             }}
                             className="w-full flex items-center gap-2.5 px-3 py-2 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/60 font-semibold"
                           >
                             <Download className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
-                            <span>Télécharger l'état</span>
+                            <span>Télécharger l'état (.xlsx)</span>
                           </button>
 
                           <button

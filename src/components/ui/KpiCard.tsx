@@ -2,6 +2,7 @@ import React, { ReactNode } from 'react';
 import { cn, formatMRU } from '../../lib/utils';
 import { formatCompactMRU } from '../../lib/formatCompactMRU';
 import { ArrowUpRight } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { useCountUp } from '../../hooks/useCountUp';
 import { Tooltip } from './Tooltip';
 
@@ -100,17 +101,25 @@ export const KpiCard: React.FC<KpiCardProps> = ({
   );
 
   return (
-    <div
+    <motion.div
+      initial={{ opacity: 0, y: 20, scale: 0.98 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{
+        type: 'spring',
+        stiffness: 70,
+        damping: 15,
+        delay: staggerIndex !== undefined ? staggerIndex * 0.08 : 0,
+      }}
+      whileHover={{ y: -2, transition: { duration: 0.2 } }}
+      whileTap={onClick ? { scale: 0.99 } : undefined}
       onClick={onClick}
-      style={staggerIndex !== undefined ? { animationDelay: `${staggerIndex * 75}ms` } : undefined}
       className={cn(
-        'rounded-2xl border p-5 sm:p-6 shadow-2xs transition-all duration-200 relative overflow-hidden flex flex-col justify-between min-w-0',
+        'rounded-2xl border p-5 sm:p-6 shadow-2xs transition-colors duration-200 relative overflow-hidden flex flex-col justify-between min-w-0',
         pastelStyles[variant],
-        staggerIndex !== undefined && 'animate-stagger-rise',
         active
           ? 'border-blue-600 dark:border-blue-500 ring-2 ring-blue-600/20 dark:ring-blue-500/20 shadow-sm'
-          : `hover:-translate-y-0.5 hover:shadow-md ${borderHoverGlow[variant]}`,
-        onClick && 'cursor-pointer group active:scale-[0.99]',
+          : borderHoverGlow[variant],
+        onClick && 'cursor-pointer group',
         className
       )}
     >
@@ -188,6 +197,6 @@ export const KpiCard: React.FC<KpiCardProps> = ({
           </p>
         )}
       </div>
-    </div>
+    </motion.div>
   );
 };
