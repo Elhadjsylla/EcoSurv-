@@ -99,6 +99,28 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
       return;
     }
 
+    // Validation des limites de taille (spécifications backend trigger inscrire_ecole_depuis_compte)
+    if (nomEcole.trim().length > 150) {
+      setError("Le nom de l'établissement ne peut pas dépasser 150 caractères.");
+      return;
+    }
+    if (nomResponsable.trim().length > 100) {
+      setError("Le nom du responsable ne peut pas dépasser 100 caractères.");
+      return;
+    }
+    if (prenomResponsable.trim().length > 100) {
+      setError("Le prénom du responsable ne peut pas dépasser 100 caractères.");
+      return;
+    }
+    if (ville.trim().length > 100) {
+      setError("La ville ou quartier ne peut pas dépasser 100 caractères.");
+      return;
+    }
+    if (telephone.trim().length > 30) {
+      setError("Le numéro de téléphone / WhatsApp ne peut pas dépasser 30 caractères.");
+      return;
+    }
+
     setError(null);
     setSubmitting(true);
 
@@ -117,58 +139,87 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
             ville: ville.trim(),
             effectif: effectifApprox || undefined,
           },
+          emailRedirectTo: `${window.location.origin}/`,
         },
       });
 
+      // Si Supabase Auth renvoie une erreur : arrêt immédiat, affichage de l'erreur, JAMAIS de redirection vers le succès
       if (signUpError) {
         const msg = signUpError.message.toLowerCase();
         if (msg.includes('already registered') || msg.includes('user already exists')) {
           setError('Un compte existe déjà avec cette adresse email. Veuillez vous connecter.');
-          setSubmitting(false);
-          return;
-        } else if (msg.includes('api key') || msg.includes('failed to fetch') || msg.includes('network')) {
-          console.warn('[EcoSurv Inscription] Clé Supabase locale ou hors-ligne, poursuite en mode résilient:', signUpError.message);
+        } else if (msg.includes('api key') || msg.includes('invalid api key')) {
+          setError("Erreur d'authentification Supabase : clé API anon invalide ou non configurée en local. Vérifiez VITE_SUPABASE_ANON_KEY.");
+        } else if (msg.includes('rate limit')) {
+          setError("Trop de tentatives d'inscription. Veuillez patienter quelques minutes avant de réessayer.");
+        } else if (msg.includes('database error saving new user')) {
+          setError("Erreur backend lors de l'enregistrement de l'école (vérifiez les informations renseignées).");
         } else {
           setError(signUpError.message || "Erreur lors de l'enregistrement de l'école.");
-          setSubmitting(false);
-          return;
         }
+        setSubmitting(false);
+        return;
       }
 
-      // 2. Connexion immédiate pour obtenir une session active
-      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+      if (!signUpData?.user) {
+        setError("Erreur : aucun compte utilisateur n'a été retourné par Supabase. Veuillez réessayer.");
+        setSubmitting(false);
+        return;
+      }
+
+      // 2. Connexion immédiate pour obtenir une session active si confirmation auto
+      const { data: signInData } = await supabase.auth.signInWithPassword({
         email: email.trim(),
         password,
       });
 
-      const activeUser = signInData?.user || signUpData?.user;
+      const activeUser = signInData?.user || signUpData.user;
 
-      if (!activeUser && signInError) {
-        // En cas de confirmation par email requise sur Supabase
-        console.warn('[EcoSurv Inscription] Session directe non obtenue:', signInError);
-      }
-
-      // 3. Récupération du statut d'accès calculé par la RPC backend ou fallback
-      let ecoleId = 'ecole-' + Date.now();
+      // 3. Récupération du statut d'accès calculé par la RPC backend ou via requête profil
+      let ecoleId: string | null = null;
       let statutActivation: 'en_attente' | 'active' | 'suspendue' = 'en_attente';
       let nomEnregistre = nomEcole.trim();
 
       try {
-        const { data: rpcData } = await supabase.rpc('mon_statut_acces');
-        if (rpcData && rpcData.length > 0) {
+        const { data: rpcData, error: rpcError } = await supabase.rpc('mon_statut_acces');
+        if (!rpcError && rpcData && rpcData.length > 0) {
           const row = rpcData[0];
           if (row.ecole_id) ecoleId = row.ecole_id;
           if (row.statut_activation) statutActivation = row.statut_activation;
           if (row.ecole_nom) nomEnregistre = row.ecole_nom;
         }
       } catch (rpcErr) {
-        console.warn('[EcoSurv Inscription] RPC mon_statut_acces non disponible:', rpcErr);
+        console.warn('[EcoSurv Inscription] RPC mon_statut_acces:', rpcErr);
       }
 
-      // 4. Initialisation du profil et de l'école dans le store
+      // Fallback consultation du profil créé par le trigger si la RPC n'était pas disponible
+      if (!ecoleId && activeUser.id) {
+        try {
+          const { data: profileRow } = await supabase
+            .from('profils')
+            .select('ecole_id, role, nom, prenom')
+            .eq('id', activeUser.id)
+            .maybeSingle();
+
+          if (profileRow?.ecole_id) {
+            ecoleId = profileRow.ecole_id;
+            const { data: ecoleRow } = await supabase
+              .from('ecoles')
+              .select('id, nom, statut_activation')
+              .eq('id', profileRow.ecole_id)
+              .maybeSingle();
+            if (ecoleRow?.nom) nomEnregistre = ecoleRow.nom;
+            if (ecoleRow?.statut_activation) statutActivation = ecoleRow.statut_activation;
+          }
+        } catch (fetchErr) {
+          console.warn('[EcoSurv Inscription] Consultation profil/école:', fetchErr);
+        }
+      }
+
+      // 4. Initialisation du profil et de l'école dans le store pour l'écran d'attente
       const profile: UserProfile = {
-        id: activeUser?.id || 'usr-' + Date.now(),
-        ecole_id: ecoleId,
+        id: activeUser.id,
+        ecole_id: ecoleId || `ecole-${activeUser.id.slice(0, 8)}`,
         nom: nomResponsable.trim(),
         prenom: prenomResponsable.trim(),
         telephone: telephone.trim(),
@@ -177,7 +228,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
       };
 
       const ecoleInfo: EcoleInfo = {
-        id: ecoleId,
+        id: ecoleId || `ecole-${activeUser.id.slice(0, 8)}`,
         nom: nomEnregistre,
         ville: ville.trim(),
         telephone: telephone.trim(),
@@ -186,15 +237,13 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
         statut_abonnement: 'essai',
       };
 
-      if (activeUser) {
-        useAuthStore.getState().setUser(activeUser);
-      }
+      useAuthStore.getState().setUser(activeUser);
       useAuthStore.getState().setProfile(profile);
       useAuthStore.getState().setEcole(ecoleInfo);
 
       useNavigationStore.getState().setUserRole('directeur');
 
-      // 5. Redirection vers l'écran "École en attente d'activation"
+      // 5. Redirection UNIQUEMENT après succès vérifié de la création du compte Auth Supabase
       useNavigationStore.getState().navigateToPendingActivation();
     } catch (err: any) {
       console.error('[EcoSurv Inscription] Erreur inattendue:', err);
