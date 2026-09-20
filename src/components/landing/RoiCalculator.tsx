@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Calculator, ArrowRight, CheckCircle2, Clock } from 'lucide-react';
+import { getWhatsAppUrl } from '../../config/contact';
 
 interface RoiCalculatorProps {
   onNavigateToLogin?: () => void;
@@ -201,7 +202,7 @@ export const RoiCalculator: React.FC<RoiCalculatorProps> = ({ onNavigateToLogin 
                 if (onNavigateToLogin) {
                   onNavigateToLogin();
                 } else {
-                  window.open('https://wa.me/22246000000?text=Bonjour,%20je%20souhaite%20une%20étude%20personnalisée%20EcoSurv', '_blank');
+                  window.open(getWhatsAppUrl('Bonjour, je souhaite une étude personnalisée EcoSurv'), '_blank');
                 }
               }}
               className="w-full py-3.5 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold text-sm transition-all shadow-lg shadow-emerald-500/25 flex items-center justify-center gap-2 cursor-pointer"

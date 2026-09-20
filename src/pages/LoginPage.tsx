@@ -3,6 +3,7 @@ import { Mail, Lock, Eye, EyeOff, LogIn, ArrowLeft, AlertCircle, ShieldCheck } f
 import { supabase } from '../lib/supabase';
 import { useAuthStore, UserProfile } from '../store/useAuthStore';
 import { useNavigationStore } from '../store/useNavigationStore';
+import { CONTACT_CONFIG, getWhatsAppUrl } from '../config/contact';
 import type { UserRole } from '../components/ui/Header';
 
 interface LoginPageProps {
@@ -321,8 +322,13 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onReturnToLanding }) => {
             </p>
             <p className="text-[11px] text-slate-400 dark:text-slate-500">
               Rapprochez-vous de la direction de votre établissement ou contactez notre assistance technique au{' '}
-              <a href="https://wa.me/22246000000" target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 font-semibold hover:underline">
-                support WhatsApp EcoSurv
+              <a
+                href={getWhatsAppUrl('Bonjour EcoSurv, j\'ai besoin d\'aide pour accéder à mon compte.')}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-600 dark:text-blue-400 font-semibold hover:underline"
+              >
+                support WhatsApp ({CONTACT_CONFIG.phone.display})
               </a>.
             </p>
           </div>

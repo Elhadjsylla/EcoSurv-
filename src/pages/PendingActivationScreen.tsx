@@ -15,6 +15,7 @@ import {
 import { supabase } from '../lib/supabase';
 import { useAuthStore } from '../store/useAuthStore';
 import { useNavigationStore } from '../store/useNavigationStore';
+import { CONTACT_CONFIG, getWhatsAppUrl } from '../config/contact';
 import type { UserRole } from '../components/ui/Header';
 
 export const PendingActivationScreen: React.FC = () => {
@@ -96,9 +97,8 @@ export const PendingActivationScreen: React.FC = () => {
   const telAffiche = ecole?.telephone || profile?.telephone || 'Non renseigné';
   const villeAffiche = ecole?.ville || 'Mauritanie';
 
-  const whatsappMessage = encodeURIComponent(
-    `Bonjour EcoSurv, je viens d'inscrire l'établissement "${nomEcoleAffiche}" (${villeAffiche}) et je souhaite demander l'activation de notre espace.`
-  );
+  const whatsappMessage = `Bonjour EcoSurv, je viens d'inscrire l'établissement "${nomEcoleAffiche}" (${villeAffiche}) et je souhaite demander l'activation de notre espace.`;
+  const whatsappUrl = getWhatsAppUrl(whatsappMessage);
 
   return (
     <div className="min-h-screen flex flex-col justify-between bg-slate-50 dark:bg-slate-950 px-4 py-8 font-['Plus_Jakarta_Sans',sans-serif] text-slate-900 dark:text-slate-100 antialiased selection:bg-blue-600 selection:text-white">
@@ -223,7 +223,7 @@ export const PendingActivationScreen: React.FC = () => {
             </button>
 
             <a
-              href={`https://wa.me/22246000000?text=${whatsappMessage}`}
+              href={whatsappUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="w-full h-12 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm transition-all shadow-md shadow-emerald-600/20 flex items-center justify-center gap-2 cursor-pointer"
@@ -237,7 +237,7 @@ export const PendingActivationScreen: React.FC = () => {
 
       {/* Footer */}
       <div className="text-center text-[11px] text-slate-400 dark:text-slate-500">
-        &copy; {new Date().getFullYear()} EcoSurv Mauritanie &bull; Support technique : +222 46 00 00 00
+        &copy; {new Date().getFullYear()} EcoSurv Mauritanie &bull; Support technique : {CONTACT_CONFIG.phone.display}
       </div>
     </div>
   );

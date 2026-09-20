@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, useScroll, useSpring, type Variants } from 'framer-motion';
 import { useThemeStore } from '../store/useThemeStore';
 import { useNavigationStore } from '../store/useNavigationStore';
+import { CONTACT_CONFIG, getWhatsAppUrl } from '../config/contact';
 import { LandingMockupPreview } from '../components/landing/LandingMockupPreview';
 import { RoiCalculator } from '../components/landing/RoiCalculator';
 import { InteractiveJourneyTimeline } from '../components/landing/InteractiveJourneyTimeline';
@@ -779,7 +780,7 @@ export const LandingPage: React.FC = () => {
 
               <div className="mt-8">
                 <a
-                  href="https://wa.me/22246000000?text=Bonjour,%20je%20souhaite%20souscrire%20au%20forfait%20Essentiel%20EcoSurv"
+                  href={getWhatsAppUrl('Bonjour, je souhaite souscrire au forfait Essentiel EcoSurv')}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="w-full py-3 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-900 dark:text-white text-xs font-bold transition-colors flex items-center justify-center gap-1.5"
@@ -1002,7 +1003,7 @@ export const LandingPage: React.FC = () => {
                 </button>
 
                 <a
-                  href="https://wa.me/22246000000?text=Bonjour,%20je%20souhaite%20des%20informations%20pour%20mon%20établissement%20sur%20EcoSurv"
+                  href={getWhatsAppUrl('Bonjour, je souhaite des informations pour mon établissement sur EcoSurv')}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="w-full sm:w-auto px-6 py-4 rounded-2xl bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white font-semibold text-sm sm:text-base border border-white/10 hover:border-white/20 backdrop-blur-md hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2 group cursor-pointer"
@@ -1052,9 +1053,9 @@ export const LandingPage: React.FC = () => {
                 Solution logicielle souveraine de pilotage des recouvrements scolaires et universitaires en République Islamique de Mauritanie.
               </p>
               <div className="space-y-1.5 text-slate-300 font-mono text-[11px]">
-                <p>📍 Ilot K, Avenue Charles de Gaulle, Tevragh-Zeina, Nouakchott</p>
-                <p>📞 +222 45 25 00 00 / +222 36 00 00 00</p>
-                <p>✉️ contact@ecosurv.mr</p>
+                <p>📍 {CONTACT_CONFIG.address.display}</p>
+                <p>📞 {CONTACT_CONFIG.phone.display}</p>
+                <p>✉️ {CONTACT_CONFIG.email.support}</p>
               </div>
             </div>
 
@@ -1118,7 +1119,7 @@ export const LandingPage: React.FC = () => {
               <ul className="space-y-2">
                 <li>
                   <a
-                    href="https://wa.me/22246000000"
+                    href={getWhatsAppUrl('Bonjour, je souhaite contacter l\'assistance EcoSurv')}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="hover:text-white transition-colors text-left"
