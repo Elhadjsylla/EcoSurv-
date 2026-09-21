@@ -167,6 +167,14 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
         return;
       }
 
+      // Détection Supabase: si un compte existe déjà, Supabase renvoie identities: [] sans erreur explicite.
+      // Dans ce cas, aucun compte ni école n'a été créé par le trigger.
+      if (signUpData.user.identities && signUpData.user.identities.length === 0) {
+        setError("Un compte existe déjà avec cette adresse email (" + email.trim() + "). Veuillez vous connecter ou utiliser une autre adresse.");
+        setSubmitting(false);
+        return;
+      }
+
       // 2. Connexion immédiate pour obtenir une session active si confirmation auto
       const { data: signInData } = await supabase.auth.signInWithPassword({
         email: email.trim(),
