@@ -10,6 +10,7 @@ export interface UserProfile {
   nom: string;
   prenom: string;
   telephone: string | null;
+  email?: string | null;
   role: UserRole;
   actif: boolean;
   created_at?: string;

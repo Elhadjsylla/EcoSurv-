@@ -30,10 +30,14 @@ import {
   ChevronRight,
   Eye,
   FileText,
+  School,
+  UserPlus,
 } from 'lucide-react';
 import { ConfirmBulkRelanceModal } from './ConfirmBulkRelanceModal';
 import { StudentDetailDrawer } from './StudentDetailDrawer';
 import { Tooltip } from '../ui/Tooltip';
+import { useAuthStore } from '../../store/useAuthStore';
+import { supabase } from '../../lib/supabase';
 
 interface DirectorDashboardProps {
   onNavigateToEleves?: (statutFilter: string) => void;
@@ -42,7 +46,35 @@ interface DirectorDashboardProps {
 export const DirectorDashboard: React.FC<DirectorDashboardProps> = ({
   onNavigateToEleves,
 }) => {
-  const [elevesList, setElevesList] = useState<EleveWithStats[]>(MOCK_ELEVES);
+  const authProfile = useAuthStore((s) => s.profile);
+  const authEcole = useAuthStore((s) => s.ecole);
+
+  const [elevesList, setElevesList] = useState<EleveWithStats[]>(() => {
+    // Si l'utilisateur est un vrai compte Supabase avec ecole_id, démarrer propre (0 élève tant que non chargé)
+    if (authProfile?.ecole_id) return [];
+    return MOCK_ELEVES;
+  });
+
+  // Charger les vrais élèves depuis Supabase si école connectée
+  useEffect(() => {
+    if (authProfile?.ecole_id) {
+      const fetchRealEleves = async () => {
+        try {
+          const { data, error } = await supabase
+            .from('eleves')
+            .select('*')
+            .eq('ecole_id', authProfile.ecole_id);
+
+          if (!error && data) {
+            setElevesList(data as any[]);
+          }
+        } catch (e) {
+          console.warn('[DirectorDashboard] Erreur chargement élèves réels:', e);
+        }
+      };
+      fetchRealEleves();
+    }
+  }, [authProfile?.ecole_id]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedClasse, setSelectedClasse] = useState<string>('all');
   const [selectedStatut, setSelectedStatut] = useState<string>('all');
@@ -432,6 +464,33 @@ export const DirectorDashboard: React.FC<DirectorDashboardProps> = ({
           }}
         />
       </div>
+
+      {/* Zero State Onboarding pour école neuve */}
+      {elevesList.length === 0 && (
+        <div className="bg-gradient-to-br from-blue-500/10 via-emerald-500/5 to-transparent border border-blue-200/80 dark:border-blue-900 rounded-3xl p-8 text-center space-y-4 shadow-xs">
+          <div className="h-14 w-14 rounded-2xl bg-blue-600 text-white flex items-center justify-center mx-auto shadow-lg shadow-blue-600/30">
+            <School className="h-7 w-7" />
+          </div>
+          <div className="max-w-xl mx-auto">
+            <h2 className="text-xl font-black text-slate-900 dark:text-white">
+              Bienvenue sur votre espace de direction {authEcole?.nom ? `« ${authEcole.nom} »` : ''}
+            </h2>
+            <p className="text-sm text-slate-600 dark:text-slate-300 mt-1">
+              Votre établissement est actif et prêt. Vous pouvez dès maintenant inscrire vos premiers élèves ou configurer vos classes et tarifs.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+            <Button
+              variant="primary"
+              onClick={() => onNavigateToEleves && onNavigateToEleves('all')}
+              className="gap-2"
+            >
+              <UserPlus className="h-4 w-4" />
+              Inscrire un premier élève
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Roster Controls: Search, Filters, Stats Summary */}
       <Card className="p-5 sm:p-6 space-y-4 border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xs rounded-2xl">

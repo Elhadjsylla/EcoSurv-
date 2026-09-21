@@ -29,6 +29,7 @@ import { LandingPage } from './pages/LandingPage';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { PendingActivationScreen } from './pages/PendingActivationScreen';
+import { SuperAdminConsole } from './pages/admin/SuperAdminConsole';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -232,6 +233,14 @@ export function AppContent() {
     return (
       <div key="pending-activation-page" className="animate-page-enter">
         <PendingActivationScreen />
+      </div>
+    );
+  }
+
+  if (viewMode === 'admin_console') {
+    return (
+      <div key="admin-console-page" className="animate-page-enter">
+        <SuperAdminConsole onReturnToLanding={() => setViewMode('landing')} />
       </div>
     );
   }

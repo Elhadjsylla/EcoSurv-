@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { Mail, Lock, Eye, EyeOff, LogIn, ArrowLeft, AlertCircle, ShieldCheck } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuthStore, UserProfile } from '../store/useAuthStore';
+import { useEcoleStore } from '../store/useEcoleStore';
 import { useNavigationStore } from '../store/useNavigationStore';
 import { CONTACT_CONFIG, getWhatsAppUrl } from '../config/contact';
 import type { UserRole } from '../components/ui/Header';
@@ -134,14 +135,13 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onReturnToLanding }) => {
       useAuthStore.getState().setUser(authData.user);
       useAuthStore.getState().setProfile(profile as UserProfile);
 
-      // Si super_admin : accès direct sans restriction d'école
+      // Si super_admin : accès direct à la Console Super Admin (style Sama Boutik)
       if (profile.role === 'super_admin') {
-        useNavigationStore.getState().setUserRole('directeur');
-        useNavigationStore.getState().launchAppWithPortal('directeur');
+        useNavigationStore.getState().navigateToAdminConsole();
         return;
       }
 
-      // Pour les autres rôles, vérification du statut d'activation de l'établissement
+      // Pour les autres rôles, vérification et synchronisation de l'établissement réel
       if (profile.ecole_id) {
         const { data: ecoleData } = await supabase
           .from('ecoles')
@@ -151,14 +151,24 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onReturnToLanding }) => {
 
         if (ecoleData) {
           useAuthStore.getState().setEcole(ecoleData);
-          if (ecoleData.statut_activation !== 'active') {
+          useEcoleStore.getState().updateEcole({
+            id: ecoleData.id,
+            nom: ecoleData.nom,
+            ville: ecoleData.ville || 'Mauritanie',
+            telephone: ecoleData.telephone || '',
+            email: ecoleData.email || '',
+            statut_activation: ecoleData.statut_activation,
+            code_ecole: ecoleData.nom.slice(0, 4).toUpperCase(),
+          });
+
+          if (ecoleData.statut_activation === 'suspendue') {
             useNavigationStore.getState().navigateToPendingActivation();
             return;
           }
         }
       }
 
-      // Déduire le portail et lancer l'application
+      // Déduire le portail et lancer l'application avec les données réelles
       const role = profile.role as UserRole;
       useNavigationStore.getState().setUserRole(role);
       useNavigationStore.getState().launchAppWithPortal(role);

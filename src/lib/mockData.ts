@@ -17,6 +17,7 @@ export interface EcoleMock {
   email: string;
   annee_scolaire: string;
   statut_abonnement: 'essai' | 'actif' | 'suspendu' | 'expire' | 'annule';
+  statut_activation?: string;
 }
 
 export interface PaymentTimelineItem {

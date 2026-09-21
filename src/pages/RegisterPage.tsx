@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuthStore, UserProfile, EcoleInfo } from '../store/useAuthStore';
+import { useEcoleStore } from '../store/useEcoleStore';
 import { useNavigationStore } from '../store/useNavigationStore';
 import type { UserRole } from '../components/ui/Header';
 
@@ -249,10 +250,21 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
       useAuthStore.getState().setProfile(profile);
       useAuthStore.getState().setEcole(ecoleInfo);
 
+      // Synchroniser useEcoleStore avec les vraies données de l'école créée
+      useEcoleStore.getState().updateEcole({
+        id: ecoleId || `ecole-${activeUser.id.slice(0, 8)}`,
+        nom: nomEnregistre,
+        ville: ville.trim(),
+        telephone: telephone.trim(),
+        email: email.trim(),
+        statut_activation: 'active',
+        code_ecole: nomEnregistre.slice(0, 4).toUpperCase(),
+      });
+
       useNavigationStore.getState().setUserRole('directeur');
 
-      // 5. Redirection UNIQUEMENT après succès vérifié de la création du compte Auth Supabase
-      useNavigationStore.getState().navigateToPendingActivation();
+      // 5. Entrée DIRECTE et automatique dans l'espace Directeur (vision 360°)
+      useNavigationStore.getState().launchAppWithPortal('directeur');
     } catch (err: any) {
       console.error('[EcoSurv Inscription] Erreur inattendue:', err);
       setError(err?.message || "Une erreur est survenue lors de l'inscription.");

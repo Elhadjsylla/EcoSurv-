@@ -6,6 +6,7 @@ import {
   CURRENT_PARENT,
 } from '../../lib/mockData';
 import { useEcoleStore } from '../../store/useEcoleStore';
+import { useAuthStore } from '../../store/useAuthStore';
 import { StudentInitials } from './StudentInitials';
 import { Select } from './Select';
 import { UserProfileDropdown } from './UserProfileDropdown';
@@ -128,11 +129,33 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   const currentConfig = rolesConfig[currentRole];
-  const ecole = useEcoleStore((s) => s.ecole);
+  const authProfile = useAuthStore((s) => s.profile);
+  const authEcole = useAuthStore((s) => s.ecole);
+  const storeEcole = useEcoleStore((s) => s.ecole);
+
+  // École réelle prioritaire sur le mock
+  const ecole = {
+    ...storeEcole,
+    nom: authEcole?.nom || storeEcole.nom,
+    ville: authEcole?.ville || storeEcole.ville,
+    code_ecole: authEcole?.nom ? authEcole.nom.slice(0, 4).toUpperCase() : storeEcole.code_ecole,
+  };
+
+  // Utilisateur réel prioritaire sur le mock
+  const activeUser = authProfile
+    ? {
+        ...currentConfig.user,
+        id: authProfile.id,
+        nom: authProfile.nom,
+        prenom: authProfile.prenom,
+        email: authProfile.email || currentConfig.user.email,
+        telephone: authProfile.telephone || currentConfig.user.telephone,
+      }
+    : currentConfig.user;
 
   useEffect(() => {
-    loadNotificationsForUser(currentConfig.user.id || 'usr-default', currentRole);
-  }, [currentRole, loadNotificationsForUser, currentConfig.user.id]);
+    loadNotificationsForUser(activeUser.id || 'usr-default', currentRole);
+  }, [currentRole, loadNotificationsForUser, activeUser.id]);
 
   return (
     <header className="sticky top-0 z-30 h-16 w-full border-b border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xs px-3.5 sm:px-5 lg:px-6 flex items-center justify-between gap-3 sm:gap-4 shadow-2xs transition-colors duration-200">
@@ -281,14 +304,14 @@ export const Header: React.FC<HeaderProps> = ({
             className="flex items-center gap-1.5 sm:gap-2 h-9 p-1 pl-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors focus:outline-none"
           >
             <StudentInitials
-              nom={currentConfig.user.nom}
-              prenom={currentConfig.user.prenom}
+              nom={activeUser.nom}
+              prenom={activeUser.prenom}
               size="sm"
             />
             <div className="hidden lg:flex flex-col text-left min-w-0 max-w-[90px] xl:max-w-[120px]">
-              <Tooltip content={`${currentConfig.user.prenom} ${currentConfig.user.nom}`} side="bottom" className="flex min-w-0">
+              <Tooltip content={`${activeUser.prenom} ${activeUser.nom}`} side="bottom" className="flex min-w-0">
                 <span className="text-xs font-bold text-slate-900 dark:text-white leading-tight truncate">
-                  {currentConfig.user.prenom}
+                  {activeUser.prenom}
                 </span>
               </Tooltip>
               <Tooltip content={currentConfig.roleTitle} side="bottom" className="flex min-w-0">
@@ -302,7 +325,7 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* Floating Profile Panel */}
           <UserProfileDropdown
-            user={currentConfig.user}
+            user={activeUser}
             roleTitle={currentConfig.roleTitle}
             roleBadge={currentConfig.label}
             isOpen={isProfileOpen}
