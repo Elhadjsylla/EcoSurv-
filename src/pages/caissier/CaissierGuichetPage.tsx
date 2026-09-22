@@ -28,6 +28,7 @@ import {
   Zap,
   Lock,
 } from 'lucide-react';
+import { useAuthStore } from '../../store/useAuthStore';
 
 interface CaissierGuichetPageProps {
   preselectedEleveId?: string;
@@ -36,7 +37,11 @@ interface CaissierGuichetPageProps {
 export const CaissierGuichetPage: React.FC<CaissierGuichetPageProps> = ({
   preselectedEleveId,
 }) => {
-  const [elevesList, setElevesList] = useState<EleveWithStats[]>(MOCK_ELEVES);
+  const authProfile = useAuthStore((s) => s.profile);
+  const [elevesList, setElevesList] = useState<EleveWithStats[]>(() => {
+    if (authProfile?.ecole_id) return [];
+    return MOCK_ELEVES;
+  });
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedEleveId, setSelectedEleveId] = useState<string>(
     preselectedEleveId || ''

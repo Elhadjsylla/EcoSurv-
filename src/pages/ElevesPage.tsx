@@ -3,8 +3,12 @@ import confetti from 'canvas-confetti';
 import {
   MOCK_ELEVES,
   EleveWithStats,
+  LienParente,
+  StatutEcheance,
   getDashboardKpis,
 } from '../lib/mockData';
+import { useAuthStore } from '../store/useAuthStore';
+import { supabase } from '../lib/supabase';
 import { StudentInitials } from '../components/ui/StudentInitials';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { Button } from '../components/ui/Button';
@@ -49,7 +53,61 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
   initialStatutFilter = 'all',
   onFilterChange,
 }) => {
-  const [elevesList, setElevesList] = useState<EleveWithStats[]>(MOCK_ELEVES);
+  const authProfile = useAuthStore((s) => s.profile);
+
+  const [elevesList, setElevesList] = useState<EleveWithStats[]>(() => {
+    // Si école authentifiée, démarrer STRICTEMENT à zéro (aucun mock)
+    if (authProfile?.ecole_id) return [];
+    return MOCK_ELEVES;
+  });
+
+  useEffect(() => {
+    if (authProfile?.ecole_id) {
+      const fetchRealEleves = async () => {
+        try {
+          const { data, error } = await supabase
+            .from('eleves')
+            .select('*')
+            .eq('ecole_id', authProfile.ecole_id)
+            .order('nom', { ascending: true });
+
+          if (!error && data) {
+            const mapped: EleveWithStats[] = data.map((d: any) => ({
+              id: d.id,
+              ecole_id: d.ecole_id,
+              matricule: d.matricule || `ECO-${d.id.slice(0, 4).toUpperCase()}`,
+              nom: d.nom,
+              prenom: d.prenom,
+              date_naissance: d.date_naissance || '',
+              lieu_naissance: d.lieu_naissance || '',
+              sexe: (d.sexe === 'F' ? 'F' : 'M') as 'M' | 'F',
+              classe: d.classe || 'Non assigné',
+              nom_tuteur: d.nom_tuteur || 'Tuteur',
+              telephone_tuteur: d.telephone_tuteur || '',
+              email_tuteur: d.email_tuteur || '',
+              adresse_tuteur: d.adresse_tuteur || '',
+              lien_parente: (d.lien_parente || 'pere') as LienParente,
+              total_due: Number(d.total_due || 0),
+              total_paid: Number(d.total_paid || 0),
+              remaining: Number(d.remaining || 0),
+              statut: (d.statut || (Number(d.remaining || 0) > 0 ? 'en_retard' : 'a_jour')) as StatutEcheance,
+              derniere_echeance_date: d.derniere_echeance_date || '',
+              nb_absences: Number(d.nb_absences || 0),
+              prochaine_echeance_date: d.prochaine_echeance_date || '',
+              prochaine_echeance_montant: Number(d.prochaine_echeance_montant || 0),
+              timeline_paiements: [],
+              actif: d.actif ?? true,
+            }));
+            setElevesList(mapped);
+          }
+        } catch (e) {
+          console.warn('[ElevesPage] Erreur chargement élèves réels:', e);
+        }
+      };
+      fetchRealEleves();
+    }
+  }, [authProfile?.ecole_id]);
+
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedClasse, setSelectedClasse] = useState<string>('all');
   const [selectedStatut, setSelectedStatut] = useState<string>(initialStatutFilter);
@@ -634,8 +692,32 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80 text-sm">
               {paginatedEleves.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-14 text-center text-slate-500 dark:text-slate-400 font-medium text-sm">
-                    Aucun élève ne correspond à votre recherche.
+                  <td colSpan={7} className="py-12 text-center">
+                    {elevesList.length === 0 ? (
+                      <div className="py-8 px-4 text-center space-y-3 max-w-md mx-auto">
+                        <div className="h-12 w-12 rounded-2xl bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 flex items-center justify-center mx-auto shadow-sm">
+                          <Users className="h-6 w-6" />
+                        </div>
+                        <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                          Aucun élève enregistré pour le moment
+                        </h3>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                          Votre registre est prêt. Inscrivez votre tout premier élève pour démarrer la gestion académique et financière de votre établissement.
+                        </p>
+                        <Button
+                          variant="primary"
+                          onClick={() => setIsEnrollModalOpen(true)}
+                          className="gap-2 mx-auto"
+                        >
+                          <UserPlus className="h-4 w-4" />
+                          Inscrire un premier élève
+                        </Button>
+                      </div>
+                    ) : (
+                      <p className="text-slate-500 dark:text-slate-400 font-medium text-sm">
+                        Aucun élève ne correspond à votre recherche.
+                      </p>
+                    )}
                   </td>
                 </tr>
               ) : (

@@ -1,9 +1,9 @@
-import React from 'react';
 import {
   MOCK_PARENT_ENFANTS_DETAILS,
   CURRENT_PARENT,
 } from '../../lib/mockData';
 import { useEcoleStore } from '../../store/useEcoleStore';
+import { useAuthStore } from '../../store/useAuthStore';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { KpiCard } from '../../components/ui/KpiCard';
@@ -18,6 +18,7 @@ import {
   Calendar,
   School,
   Phone,
+  Users,
 } from 'lucide-react';
 import { ParentNavTab } from '../../components/parent/ParentSidebar';
 
@@ -33,7 +34,16 @@ export const ParentDashboardPage: React.FC<ParentDashboardPageProps> = ({
   onNavigateTab,
 }) => {
   const ecole = useEcoleStore((s) => s.ecole);
-  const enfant = MOCK_PARENT_ENFANTS_DETAILS[selectedChildId] || MOCK_PARENT_ENFANTS_DETAILS['el-001'];
+  const authProfile = useAuthStore((s) => s.profile);
+  const isReal = Boolean(authProfile?.ecole_id);
+
+  const parentName = authProfile
+    ? `${authProfile.prenom} ${authProfile.nom}`
+    : `${CURRENT_PARENT.prenom} ${CURRENT_PARENT.nom}`;
+
+  const enfant = isReal
+    ? null
+    : (MOCK_PARENT_ENFANTS_DETAILS[selectedChildId] || MOCK_PARENT_ENFANTS_DETAILS['el-001']);
 
   return (
     <div className="p-6 sm:p-8 lg:p-10 max-w-6xl mx-auto space-y-8 sm:space-y-10 animate-stagger-rise relative">
@@ -47,7 +57,7 @@ export const ParentDashboardPage: React.FC<ParentDashboardPageProps> = ({
             <span className="text-xs text-slate-500 dark:text-slate-400">• {ecole.nom}</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
-            Bonjour, {CURRENT_PARENT.prenom} {CURRENT_PARENT.nom} 👋
+            Bonjour, {parentName} 👋
           </h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1.5 max-w-xl">
             Retrouvez la situation académique, l'assiduité en temps réel et le règlement des frais scolaires pour vos enfants inscrits.
@@ -56,7 +66,7 @@ export const ParentDashboardPage: React.FC<ParentDashboardPageProps> = ({
 
         {/* Sélecteur rapide d'enfant pour Mobile / Tablette */}
         <div className="flex flex-wrap gap-2.5 pt-2 md:pt-0 shrink-0">
-          {CURRENT_PARENT.enfants_ids.map((id) => {
+          {!isReal && CURRENT_PARENT.enfants_ids.map((id) => {
             const item = MOCK_PARENT_ENFANTS_DETAILS[id];
             const isSelected = selectedChildId === id;
             if (!item) return null;
@@ -87,20 +97,34 @@ export const ParentDashboardPage: React.FC<ParentDashboardPageProps> = ({
       </div>
 
       {/* Focus Enfant Sélectionné Card */}
-      <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-6">
-        <div className="flex items-center gap-4">
-          <div className="h-14 w-14 rounded-2xl bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300 font-extrabold text-xl flex items-center justify-center shrink-0 border border-purple-200 dark:border-purple-800">
-            {enfant.photo_initiales}
+      {!enfant ? (
+        <div className="bg-white dark:bg-slate-900 rounded-2xl p-8 border border-slate-200 dark:border-slate-800 shadow-2xs text-center space-y-4 max-w-xl mx-auto">
+          <div className="h-14 w-14 rounded-2xl bg-purple-100 dark:bg-purple-950 text-purple-600 dark:text-purple-400 flex items-center justify-center mx-auto shadow-sm">
+            <Users className="h-7 w-7" />
           </div>
-          <div>
-            <div className="flex items-center gap-2.5">
-              <h2 className="text-xl font-bold text-slate-900 dark:text-white">
-                {enfant.prenom} {enfant.nom}
-              </h2>
-              <span className="px-3 py-1 rounded-full text-xs font-bold bg-purple-50 dark:bg-purple-950/60 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-800/60">
-                {enfant.classe}
-              </span>
+          <h2 className="text-xl font-bold text-slate-900 dark:text-white">
+            Aucun élève rattaché pour le moment
+          </h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            Votre espace famille est actif. Les informations scolaires et le règlement des frais de vos enfants apparaîtront automatiquement dès que l'école aura finalisé votre rattachement.
+          </p>
+        </div>
+      ) : (
+        <>
+        <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+          <div className="flex items-center gap-4">
+            <div className="h-14 w-14 rounded-2xl bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300 font-extrabold text-xl flex items-center justify-center shrink-0 border border-purple-200 dark:border-purple-800">
+              {enfant.photo_initiales}
             </div>
+            <div>
+              <div className="flex items-center gap-2.5">
+                <h2 className="text-xl font-bold text-slate-900 dark:text-white">
+                  {enfant.prenom} {enfant.nom}
+                </h2>
+                <span className="px-3 py-1 rounded-full text-xs font-bold bg-purple-50 dark:bg-purple-950/60 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-800/60">
+                  {enfant.classe}
+                </span>
+              </div>
             <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-2 mt-1">
               <span>Matricule: #{enfant.matricule}</span>
               <span>•</span>
@@ -253,6 +277,8 @@ export const ParentDashboardPage: React.FC<ParentDashboardPageProps> = ({
           </div>
         </Card>
       </div>
+      </>
+      )}
 
       {/* Contacts de l'Établissement */}
       <Card className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xs flex flex-col sm:flex-row items-center justify-between gap-4">

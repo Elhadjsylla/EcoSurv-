@@ -5,6 +5,7 @@ import { useAuthStore, UserProfile } from '../store/useAuthStore';
 import { useEcoleStore } from '../store/useEcoleStore';
 import { useNavigationStore } from '../store/useNavigationStore';
 import { CONTACT_CONFIG, getWhatsAppUrl } from '../config/contact';
+import { LanguageSelector } from '../components/ui/LanguageSelector';
 import type { UserRole } from '../components/ui/Header';
 
 interface LoginPageProps {
@@ -161,7 +162,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onReturnToLanding }) => {
             code_ecole: ecoleData.nom.slice(0, 4).toUpperCase(),
           });
 
-          if (ecoleData.statut_activation === 'suspendue') {
+          if (ecoleData.statut_activation !== 'active') {
             useNavigationStore.getState().navigateToPendingActivation();
             return;
           }
@@ -192,13 +193,16 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onReturnToLanding }) => {
           <span>Retour au site</span>
         </button>
 
-        <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-600 text-white font-black text-xs shadow-md shadow-blue-600/20">
-            ES
+        <div className="flex items-center gap-2.5">
+          <LanguageSelector />
+          <div className="flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-600 text-white font-black text-xs shadow-md shadow-blue-600/20">
+              ES
+            </div>
+            <span className="font-extrabold text-sm tracking-tight text-slate-900 dark:text-white">
+              EcoSurv
+            </span>
           </div>
-          <span className="font-extrabold text-sm tracking-tight text-slate-900 dark:text-white">
-            EcoSurv
-          </span>
         </div>
       </div>
 

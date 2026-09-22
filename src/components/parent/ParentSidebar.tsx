@@ -9,6 +9,7 @@ import {
   HeartHandshake,
 } from 'lucide-react';
 import { CURRENT_PARENT, MOCK_PARENT_ENFANTS_DETAILS } from '../../lib/mockData';
+import { useAuthStore } from '../../store/useAuthStore';
 import { Tooltip, TooltipLabel } from '../ui/Tooltip';
 import { SidebarShell } from '../ui/SidebarShell';
 
@@ -33,6 +34,10 @@ export const ParentSidebar: React.FC<ParentSidebarProps> = ({
   onSelectChild,
   className,
 }) => {
+  const authProfile = useAuthStore((s) => s.profile);
+  const isReal = Boolean(authProfile?.ecole_id);
+  const enfantsIds = isReal ? [] : CURRENT_PARENT.enfants_ids;
+
   const navItems: Array<{
     id: ParentNavTab;
     label: string;
@@ -49,7 +54,7 @@ export const ParentSidebar: React.FC<ParentSidebarProps> = ({
       label: 'Frais & Paiements',
       icon: <WalletCards className="h-4 w-4 shrink-0" />,
       badge:
-        MOCK_PARENT_ENFANTS_DETAILS[selectedChildId]?.reste_a_payer > 0
+        !isReal && MOCK_PARENT_ENFANTS_DETAILS[selectedChildId]?.reste_a_payer > 0
           ? 'À régler'
           : undefined,
     },
@@ -80,69 +85,75 @@ export const ParentSidebar: React.FC<ParentSidebarProps> = ({
               <div className="flex items-center justify-between text-xs font-bold text-slate-900 dark:text-white mb-2">
                 <div className="flex items-center gap-1.5">
                   <Users className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
-                  <span>Enfants scolarisés ({CURRENT_PARENT.enfants_ids.length})</span>
+                  <span>Enfants scolarisés ({enfantsIds.length})</span>
                 </div>
               </div>
 
-              <div className="space-y-1">
-                {CURRENT_PARENT.enfants_ids.map((id) => {
-                  const enf = MOCK_PARENT_ENFANTS_DETAILS[id];
-                  if (!enf) return null;
-                  const isChildSelected = selectedChildId === id;
-                  return (
-                    <button
-                      key={id}
-                      onClick={() => onSelectChild(id)}
-                      className={cn(
-                        'w-full text-left p-2 rounded-lg transition-all flex items-center justify-between',
-                        isChildSelected
-                          ? 'bg-purple-600 text-white shadow-xs font-semibold'
-                          : 'hover:bg-purple-100/60 dark:hover:bg-purple-900/40 text-slate-700 dark:text-slate-300'
-                      )}
-                    >
-                      <div className="min-w-0">
-                        <div className="text-xs truncate font-bold">
-                          {enf.prenom} {enf.nom}
+              {enfantsIds.length === 0 ? (
+                <div className="p-2 text-center text-[11px] text-slate-400">
+                  Aucun élève rattaché
+                </div>
+              ) : (
+                <div className="space-y-1">
+                  {enfantsIds.map((id) => {
+                    const enf = MOCK_PARENT_ENFANTS_DETAILS[id];
+                    if (!enf) return null;
+                    const isChildSelected = selectedChildId === id;
+                    return (
+                      <button
+                        key={id}
+                        onClick={() => onSelectChild(id)}
+                        className={cn(
+                          'w-full text-left p-2 rounded-lg transition-all flex items-center justify-between',
+                          isChildSelected
+                            ? 'bg-purple-600 text-white shadow-xs font-semibold'
+                            : 'hover:bg-purple-100/60 dark:hover:bg-purple-900/40 text-slate-700 dark:text-slate-300'
+                        )}
+                      >
+                        <div className="min-w-0">
+                          <div className="text-xs truncate font-bold">
+                            {enf.prenom} {enf.nom}
+                          </div>
+                          <div
+                            className={cn(
+                              'text-[10px] truncate',
+                              isChildSelected
+                                ? 'text-purple-100'
+                                : 'text-slate-500 dark:text-slate-400'
+                            )}
+                          >
+                            {enf.classe}
+                          </div>
                         </div>
-                        <div
-                          className={cn(
-                            'text-[10px] truncate',
-                            isChildSelected
-                              ? 'text-purple-100'
-                              : 'text-slate-500 dark:text-slate-400'
-                          )}
-                        >
-                          {enf.classe}
-                        </div>
-                      </div>
 
-                      {enf.reste_a_payer > 0 ? (
-                        <span
-                          className={cn(
-                            'px-1.5 py-0.5 rounded text-[9px] font-mono font-bold shrink-0',
-                            isChildSelected
-                              ? 'bg-white/20 text-white'
-                              : 'bg-rose-100 dark:bg-rose-950/80 text-rose-700 dark:text-rose-300'
-                          )}
-                        >
-                          Solde
-                        </span>
-                      ) : (
-                        <span
-                          className={cn(
-                            'px-1.5 py-0.5 rounded text-[9px] font-mono font-bold shrink-0',
-                            isChildSelected
-                              ? 'bg-white/20 text-white'
-                              : 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300'
-                          )}
-                        >
-                          À jour
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
+                        {enf.reste_a_payer > 0 ? (
+                          <span
+                            className={cn(
+                              'px-1.5 py-0.5 rounded text-[9px] font-mono font-bold shrink-0',
+                              isChildSelected
+                                ? 'bg-white/20 text-white'
+                                : 'bg-rose-100 dark:bg-rose-950/80 text-rose-700 dark:text-rose-300'
+                            )}
+                          >
+                            Solde
+                          </span>
+                        ) : (
+                          <span
+                            className={cn(
+                              'px-1.5 py-0.5 rounded text-[9px] font-mono font-bold shrink-0',
+                              isChildSelected
+                                ? 'bg-white/20 text-white'
+                                : 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300'
+                            )}
+                          >
+                            À jour
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           )}
 

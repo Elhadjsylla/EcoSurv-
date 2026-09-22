@@ -10,6 +10,7 @@ import {
   FrequenceEcheance,
 } from '../lib/mockData';
 import { formatMRU } from '../lib/utils';
+import { useAuthStore } from '../store/useAuthStore';
 import {
   CreditCard,
   Plus,
@@ -26,7 +27,11 @@ import {
 } from 'lucide-react';
 
 export const EcheancesPage: React.FC = () => {
-  const [echeanciers, setEcheanciers] = useState<EcheancierConfig[]>(MOCK_ECHEANCIERS);
+  const authProfile = useAuthStore((s) => s.profile);
+  const [echeanciers, setEcheanciers] = useState<EcheancierConfig[]>(() => {
+    if (authProfile?.ecole_id) return [];
+    return MOCK_ECHEANCIERS;
+  });
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [openMenuRowId, setOpenMenuRowId] = useState<string | null>(null);
@@ -204,7 +209,32 @@ export const EcheancesPage: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
-              {echeanciers.map((ech) => {
+              {echeanciers.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="py-12 text-center">
+                    <div className="py-8 px-4 text-center space-y-3 max-w-md mx-auto">
+                      <div className="h-12 w-12 rounded-2xl bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mx-auto shadow-sm">
+                        <CreditCard className="h-6 w-6" />
+                      </div>
+                      <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                        Aucun barème d'échéances configuré
+                      </h3>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
+                        Définissez vos tarifs annuels et les mensualités par classe pour activer la facturation automatique de votre école.
+                      </p>
+                      <Button
+                        variant="primary"
+                        onClick={() => setIsModalOpen(true)}
+                        className="gap-2 mx-auto"
+                      >
+                        <Plus className="h-4 w-4" />
+                        Créer un premier barème
+                      </Button>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                echeanciers.map((ech) => {
                 const isMenuOpen = openMenuRowId === ech.id;
                 return (
                   <tr key={ech.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors">
@@ -320,7 +350,7 @@ export const EcheancesPage: React.FC = () => {
                     </td>
                   </tr>
                 );
-              })}
+              }))}
             </tbody>
           </table>
         </div>

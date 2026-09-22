@@ -29,6 +29,7 @@ import {
   BookOpen,
   LogIn,
 } from 'lucide-react';
+import { LanguageSelector } from '../components/ui/LanguageSelector';
 
 const ROTATING_PHRASES = [
   'Trésorerie scolaire en temps réel.',
@@ -173,11 +174,14 @@ export const LandingPage: React.FC = () => {
 
           {/* Actions & Theme toggle */}
           <div className="hidden sm:flex items-center gap-2.5">
+            {/* Language Selector */}
+            <LanguageSelector />
+
             {/* Theme Toggle */}
             <button
               type="button"
               onClick={toggleTheme}
-              className="h-9 w-9 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center justify-center"
+              className="h-9 w-9 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center justify-center cursor-pointer"
               aria-label="Basculer le thème"
             >
               {theme === 'dark' ? <Sun className="h-4 w-4 text-amber-400" /> : <Moon className="h-4 w-4" />}
@@ -206,6 +210,7 @@ export const LandingPage: React.FC = () => {
 
           {/* Mobile menu button */}
           <div className="flex sm:hidden items-center gap-2">
+            <LanguageSelector />
             <button
               type="button"
               onClick={toggleTheme}

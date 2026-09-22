@@ -20,9 +20,14 @@ import {
   Download,
 } from 'lucide-react';
 import { CollectionChart } from '../components/ui/CollectionChart';
+import { useAuthStore } from '../store/useAuthStore';
 
 export const RapportsPage: React.FC = () => {
-  const [reports] = useState<MonthlyFinancialReport[]>(MOCK_MONTHLY_REPORTS);
+  const authProfile = useAuthStore((s) => s.profile);
+  const [reports] = useState<MonthlyFinancialReport[]>(() => {
+    if (authProfile?.ecole_id) return [];
+    return MOCK_MONTHLY_REPORTS;
+  });
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [isExportingExcel, setIsExportingExcel] = useState(false);

@@ -8,6 +8,7 @@ import {
   Building2,
 } from 'lucide-react';
 import { CURRENT_CAISSIER } from '../../lib/mockData';
+import { useAuthStore } from '../../store/useAuthStore';
 import { Tooltip, TooltipLabel } from '../ui/Tooltip';
 import { SidebarShell } from '../ui/SidebarShell';
 
@@ -27,6 +28,12 @@ export const CaissierSidebar: React.FC<CaissierSidebarProps> = ({
   onTabChange,
   className,
 }) => {
+  const authProfile = useAuthStore((s) => s.profile);
+  const isReal = Boolean(authProfile?.ecole_id);
+  const caissierName = authProfile
+    ? `${authProfile.prenom} ${authProfile.nom}`
+    : `${CURRENT_CAISSIER.prenom} ${CURRENT_CAISSIER.nom}`;
+
   const navItems: Array<{
     id: CaissierNavTab;
     label: string;
@@ -64,15 +71,14 @@ export const CaissierSidebar: React.FC<CaissierSidebarProps> = ({
             <div className="p-4 mx-3 mt-4 rounded-xl bg-amber-50/60 dark:bg-amber-950/30 border border-amber-100 dark:border-amber-900/50">
               <div className="flex items-center gap-2.5">
                 <div className="h-8 w-8 rounded-lg bg-amber-600 text-white flex items-center justify-center text-xs font-bold shrink-0">
-                  {CURRENT_CAISSIER.prenom[0]}
-                  {CURRENT_CAISSIER.nom[0]}
+                  {caissierName[0] || 'C'}
                 </div>
                 <div className="min-w-0">
                   <div className="text-xs font-bold text-slate-900 dark:text-white truncate">
-                    {CURRENT_CAISSIER.prenom} {CURRENT_CAISSIER.nom}
+                    {caissierName}
                   </div>
                   <div className="text-[11px] text-amber-700 dark:text-amber-400 font-medium truncate">
-                    {CURRENT_CAISSIER.role}
+                    Agent Comptable
                   </div>
                 </div>
               </div>
@@ -82,7 +88,7 @@ export const CaissierSidebar: React.FC<CaissierSidebarProps> = ({
                   Poste :
                 </span>
                 <span className="font-bold text-slate-800 dark:text-slate-200">
-                  {CURRENT_CAISSIER.guichet}
+                  {isReal ? 'Guichet Principal' : CURRENT_CAISSIER.guichet}
                 </span>
               </div>
             </div>

@@ -18,6 +18,8 @@ import { supabase } from '../lib/supabase';
 import { useAuthStore, UserProfile, EcoleInfo } from '../store/useAuthStore';
 import { useEcoleStore } from '../store/useEcoleStore';
 import { useNavigationStore } from '../store/useNavigationStore';
+import { Select } from '../components/ui/Select';
+import { LanguageSelector } from '../components/ui/LanguageSelector';
 import type { UserRole } from '../components/ui/Header';
 
 interface RegisterPageProps {
@@ -257,20 +259,26 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
         ville: ville.trim(),
         telephone: telephone.trim(),
         email: email.trim(),
-        statut_activation: 'active',
+        statut_activation: 'en_attente',
         code_ecole: nomEnregistre.slice(0, 4).toUpperCase(),
       });
 
-      useNavigationStore.getState().setUserRole('directeur');
-
-      // 5. Entrée DIRECTE et automatique dans l'espace Directeur (vision 360°)
-      useNavigationStore.getState().launchAppWithPortal('directeur');
+      // 5. Redirection vers l'écran en attente d'activation : seul le Super Admin peut valider
+      useNavigationStore.getState().navigateToPendingActivation();
     } catch (err: any) {
       console.error('[EcoSurv Inscription] Erreur inattendue:', err);
       setError(err?.message || "Une erreur est survenue lors de l'inscription.");
       setSubmitting(false);
     }
   };
+
+  const TRANCHE_OPTIONS = [
+    { value: '', label: "Sélectionnez une tranche d'élèves" },
+    { value: 'moins_150', label: 'Moins de 150 élèves' },
+    { value: '150_350', label: '150 à 350 élèves' },
+    { value: '350_700', label: '350 à 700 élèves' },
+    { value: 'plus_700', label: 'Plus de 700 élèves' },
+  ];
 
   return (
     <div className="min-h-screen flex flex-col justify-between bg-slate-50 dark:bg-slate-950 px-4 py-8 font-['Plus_Jakarta_Sans',sans-serif] text-slate-900 dark:text-slate-100 antialiased selection:bg-blue-600 selection:text-white">
@@ -286,6 +294,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
         </button>
 
         <div className="flex items-center gap-3">
+          <LanguageSelector />
           <button
             type="button"
             onClick={handleGoToLogin}
@@ -381,28 +390,18 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
 
               {/* Effectif approximatif d'élèves (Optionnel) */}
               <div className="space-y-1.5">
-                <label
-                  htmlFor="reg-effectif"
-                  className="block text-xs font-bold text-slate-700 dark:text-slate-300"
-                >
-                  Effectif approximatif d'élèves <span className="text-slate-400 font-normal">(optionnel)</span>
-                </label>
-                <div className="relative">
-                  <Users className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                  <select
-                    id="reg-effectif"
-                    value={effectifApprox}
-                    disabled={submitting}
-                    onChange={(e) => setEffectifApprox(e.target.value)}
-                    className="w-full h-11 pl-10 pr-8 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-600/30 focus:border-blue-600 dark:focus:border-blue-500 transition-all appearance-none cursor-pointer"
-                  >
-                    <option value="">Sélectionnez une tranche d'élèves</option>
-                    <option value="moins_150">Moins de 150 élèves</option>
-                    <option value="150_350">150 à 350 élèves</option>
-                    <option value="350_700">350 à 700 élèves</option>
-                    <option value="plus_700">Plus de 700 élèves</option>
-                  </select>
-                </div>
+                <Select
+                  id="reg-effectif"
+                  label="Effectif approximatif d'élèves"
+                  options={TRANCHE_OPTIONS}
+                  value={effectifApprox}
+                  onChange={(val) => setEffectifApprox(val)}
+                  disabled={submitting}
+                  icon={<Users className="h-4 w-4" />}
+                  placeholder="Sélectionnez une tranche d'élèves"
+                  className="w-full"
+                  triggerClassName="w-full h-11 bg-slate-50/50 dark:bg-slate-950/50 border-slate-200 dark:border-slate-800 text-sm rounded-xl"
+                />
               </div>
             </div>
 

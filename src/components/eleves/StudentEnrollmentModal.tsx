@@ -4,6 +4,8 @@ import { Button } from '../ui/Button';
 import { Select } from '../ui/Select';
 import { DatePicker } from '../ui/DatePicker';
 import { EleveWithStats, LienParente } from '../../lib/mockData';
+import { useAuthStore } from '../../store/useAuthStore';
+import { supabase } from '../../lib/supabase';
 import { X, UserPlus, ShieldAlert, CheckCircle } from 'lucide-react';
 
 // Schéma Zod de validation stricte pour l'inscription d'un élève
@@ -61,7 +63,7 @@ export const StudentEnrollmentModal: React.FC<StudentEnrollmentModalProps> = ({
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({});
 
@@ -79,15 +81,18 @@ export const StudentEnrollmentModal: React.FC<StudentEnrollmentModalProps> = ({
     }
 
     const validData = result.data;
+    const authProfile = useAuthStore.getState().profile;
+    const authEcole = useAuthStore.getState().ecole;
 
-    // Génération du nouvel élève mocké
-    const newId = `el-${Date.now().toString().slice(-4)}`;
-    const randomMatricule = `DEMO-2025-${Math.floor(100 + Math.random() * 900)}`;
+    // Génération du matricule dynamique basé sur l'école
+    const newId = `el-${Date.now().toString().slice(-6)}`;
+    const code = authEcole?.nom ? authEcole.nom.slice(0, 4).toUpperCase().replace(/[^A-Z]/g, '') : 'ECO';
+    const realMatricule = `${code}-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
 
     const newEleve: EleveWithStats = {
       id: newId,
-      ecole_id: 'ecole-demo-001',
-      matricule: randomMatricule,
+      ecole_id: authProfile?.ecole_id || 'ecole-active',
+      matricule: realMatricule,
       nom: validData.nom.toUpperCase(),
       prenom: validData.prenom,
       date_naissance: validData.date_naissance,
@@ -110,6 +115,29 @@ export const StudentEnrollmentModal: React.FC<StudentEnrollmentModalProps> = ({
       nb_absences: 0,
       timeline_paiements: [],
     };
+
+    // Insertion directe en base Supabase si école connectée
+    if (authProfile?.ecole_id) {
+      try {
+        await supabase.from('eleves').insert({
+          ecole_id: authProfile.ecole_id,
+          matricule: realMatricule,
+          nom: validData.nom.toUpperCase(),
+          prenom: validData.prenom,
+          date_naissance: validData.date_naissance,
+          lieu_naissance: validData.lieu_naissance,
+          sexe: validData.sexe,
+          classe: validData.classe,
+          nom_tuteur: validData.nom_tuteur,
+          telephone_tuteur: validData.telephone_tuteur,
+          email_tuteur: validData.email_tuteur,
+          adresse_tuteur: validData.adresse_tuteur,
+          actif: true,
+        });
+      } catch (insertErr) {
+        console.warn('[StudentEnrollmentModal] Sauvegarde Supabase:', insertErr);
+      }
+    }
 
     setIsSuccess(true);
     setTimeout(() => {

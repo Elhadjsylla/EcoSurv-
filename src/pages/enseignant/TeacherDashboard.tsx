@@ -8,6 +8,7 @@ import {
 } from '../../lib/mockData';
 import { Button } from '../../components/ui/Button';
 import { KpiCard } from '../../components/ui/KpiCard';
+import { useAuthStore } from '../../store/useAuthStore';
 import {
   Users,
   CalendarCheck,
@@ -22,24 +23,33 @@ interface TeacherDashboardProps {
 }
 
 export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ onNavigateToTab }) => {
+  const authProfile = useAuthStore((s) => s.profile);
+  const isRealAccount = Boolean(authProfile?.ecole_id);
+
+  const teacherName = authProfile
+    ? `${authProfile.prenom} ${authProfile.nom}`
+    : `${CURRENT_ENSEIGNANT.prenom} ${CURRENT_ENSEIGNANT.nom}`;
+
   const teacherStudents = useMemo(() => {
+    if (isRealAccount) return [];
     return getElevesForTeacher(MOCK_ELEVES, CURRENT_ENSEIGNANT.classes_assignees);
-  }, []);
+  }, [isRealAccount]);
 
   const totalEleves = teacherStudents.length;
-  const unverifiedAbsences = MOCK_ABSENCES_INITIAL.filter((a) => !a.justifiee).length;
+  const unverifiedAbsences = isRealAccount ? 0 : MOCK_ABSENCES_INITIAL.filter((a) => !a.justifiee).length;
 
   const averageGrade = useMemo(() => {
+    if (isRealAccount) return 0;
     const allNotes: number[] = [];
     MOCK_EVALUATIONS_INITIAL.forEach((ev) => {
       Object.values(ev.notes).forEach((n) => {
         if (n !== null && n !== undefined) allNotes.push(n);
       });
     });
-    if (allNotes.length === 0) return 14.2;
+    if (allNotes.length === 0) return 0;
     const sum = allNotes.reduce((a, b) => a + b, 0);
     return Math.round((sum / allNotes.length) * 10) / 10;
-  }, []);
+  }, [isRealAccount]);
 
   return (
     <div className="p-6 sm:p-8 lg:p-10 max-w-[1600px] mx-auto space-y-8 sm:space-y-10 animate-stagger-rise">
@@ -56,12 +66,12 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ onNavigateTo
             </span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-            Bonjour, {CURRENT_ENSEIGNANT.prenom} {CURRENT_ENSEIGNANT.nom} 👋
+            Bonjour, {teacherName} 👋
           </h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">
             Classes assignées :{' '}
             <span className="font-bold text-slate-800 dark:text-slate-200">
-              {CURRENT_ENSEIGNANT.classes_assignees.join(', ')}
+              {isRealAccount ? 'Aucune classe pour le moment' : CURRENT_ENSEIGNANT.classes_assignees.join(', ')}
             </span>{' '}
             • Matières : {CURRENT_ENSEIGNANT.matieres.join(', ')}
           </p>
