@@ -162,13 +162,13 @@ export function Select<T extends string | number = string>({
   // Variants
   const variantStyles = {
     default:
-      'bg-white border border-slate-200 hover:border-slate-300 text-slate-800 shadow-2xs focus-visible:ring-2 focus-visible:ring-blue-500/20 focus-visible:border-blue-500',
+      'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 text-slate-800 dark:text-white shadow-2xs focus-visible:ring-2 focus-visible:ring-blue-500/20 focus-visible:border-blue-500',
     subtle:
-      'bg-slate-50 border border-slate-200/90 hover:bg-slate-100/80 text-slate-800 hover:border-slate-300 shadow-2xs focus-visible:ring-2 focus-visible:ring-blue-500/20 focus-visible:border-blue-500',
+      'bg-slate-50 dark:bg-slate-950/60 border border-slate-200/90 dark:border-slate-800 hover:bg-slate-100/80 dark:hover:bg-slate-900 text-slate-800 dark:text-white hover:border-slate-300 shadow-2xs focus-visible:ring-2 focus-visible:ring-blue-500/20 focus-visible:border-blue-500',
     outline:
-      'bg-transparent border border-slate-300 hover:bg-slate-50 text-slate-700 focus-visible:ring-2 focus-visible:ring-blue-500/20 focus-visible:border-blue-500',
+      'bg-transparent border border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 focus-visible:ring-2 focus-visible:ring-blue-500/20 focus-visible:border-blue-500',
     ghost:
-      'bg-transparent border-transparent hover:bg-slate-100 text-slate-700 shadow-none',
+      'bg-transparent border-transparent hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 shadow-none',
   };
 
   const isFullWidth =
@@ -187,7 +187,7 @@ export function Select<T extends string | number = string>({
       {label && (
         <label
           htmlFor={selectId}
-          className="mb-1.5 block text-xs font-bold text-slate-700"
+          className="mb-1.5 block text-xs font-bold text-slate-700 dark:text-slate-300"
         >
           {label}
         </label>
@@ -206,13 +206,13 @@ export function Select<T extends string | number = string>({
           sizeStyles[size],
           variantStyles[variant],
           disabled &&
-            'opacity-50 cursor-not-allowed pointer-events-none bg-slate-100 text-slate-400 border-slate-200',
+            'opacity-50 cursor-not-allowed pointer-events-none bg-slate-100 dark:bg-slate-800 text-slate-400 border-slate-200 dark:border-slate-800',
           isOpen && 'ring-2 ring-blue-500/20 border-blue-500',
           triggerClassName
         )}
       >
         <div className="flex items-center gap-2 min-w-0 pr-1 truncate">
-          {icon && <span className="shrink-0 text-slate-500">{icon}</span>}
+          {icon && <span className="shrink-0 text-slate-500 dark:text-slate-400">{icon}</span>}
           {prefix && (
             <span className="text-slate-400 font-normal shrink-0">
               {prefix}
@@ -223,7 +223,7 @@ export function Select<T extends string | number = string>({
               {selectedOption.icon && (
                 <span className="shrink-0">{selectedOption.icon}</span>
               )}
-              <span className="truncate font-semibold text-slate-900">
+              <span className="truncate font-semibold text-slate-900 dark:text-white">
                 {selectedOption.label}
               </span>
             </div>
@@ -235,7 +235,7 @@ export function Select<T extends string | number = string>({
         <ChevronDown
           className={cn(
             'h-4 w-4 text-slate-400 shrink-0 transition-transform duration-200 ease-out ml-2',
-            isOpen && 'rotate-180 text-slate-700'
+            isOpen && 'rotate-180 text-slate-700 dark:text-slate-200'
           )}
         />
       </button>
@@ -247,7 +247,7 @@ export function Select<T extends string | number = string>({
           role="listbox"
           tabIndex={-1}
           className={cn(
-            'absolute top-full mt-1.5 min-w-full w-max max-w-xs sm:max-w-sm rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl z-50 animate-in fade-in zoom-in-95 duration-150 max-h-64 overflow-y-auto focus:outline-none',
+            'absolute top-full mt-1.5 min-w-full w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-1.5 shadow-xl z-50 animate-in fade-in zoom-in-95 duration-150 max-h-64 overflow-y-auto focus:outline-none',
             align === 'right' ? 'right-0' : 'left-0',
             menuClassName
           )}
@@ -274,9 +274,9 @@ export function Select<T extends string | number = string>({
                 className={cn(
                   'flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg text-xs sm:text-sm font-medium transition-colors cursor-pointer select-none',
                   isSelected
-                    ? 'bg-blue-50 text-blue-900 font-bold'
-                    : 'text-slate-700 hover:bg-slate-50 hover:text-slate-900',
-                  isFocused && !isSelected && 'bg-slate-50 text-slate-900',
+                    ? 'bg-blue-50 dark:bg-blue-900/40 text-blue-900 dark:text-blue-300 font-bold'
+                    : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white',
+                  isFocused && !isSelected && 'bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white',
                   option.disabled &&
                     'opacity-40 cursor-not-allowed pointer-events-none'
                 )}

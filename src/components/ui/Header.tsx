@@ -28,6 +28,7 @@ import {
   Menu,
 } from 'lucide-react';
 import { useNavigationStore } from '../../store/useNavigationStore';
+import { LanguageSelector } from './LanguageSelector';
 
 export type UserRole = 'directeur' | 'enseignant' | 'caissier' | 'parent';
 
@@ -244,6 +245,9 @@ export const Header: React.FC<HeaderProps> = ({
           <Calendar className="h-3.5 w-3.5 text-slate-500 dark:text-slate-400 shrink-0" />
           <span>{ecole.annee_scolaire}</span>
         </div>
+
+        {/* Sélecteur de langue (FR / AR / EN) */}
+        <LanguageSelector />
 
         {/* Role Selector (clean & discrete) - Visible UNIQUEMENT pour le Directeur */}
         {onRoleChange && userRole === 'directeur' && (

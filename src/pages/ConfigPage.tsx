@@ -5,6 +5,8 @@ import { Select } from '../components/ui/Select';
 import { KpiCard } from '../components/ui/KpiCard';
 import { Tooltip } from '../components/ui/Tooltip';
 import { useEcoleStore } from '../store/useEcoleStore';
+import { useAuthStore } from '../store/useAuthStore';
+import { supabase } from '../lib/supabase';
 import {
   MOCK_STAFF,
   StaffMember,
@@ -30,9 +32,43 @@ import {
 
 export const ConfigPage: React.FC = () => {
   const { ecole, updateEcole } = useEcoleStore();
+  const authProfile = useAuthStore((s) => s.profile);
   const [formData, setFormData] = useState(ecole);
   const [isSaving, setIsSaving] = useState(false);
-  const [staffList, setStaffList] = useState<StaffMember[]>(MOCK_STAFF);
+  const [staffList, setStaffList] = useState<StaffMember[]>(() => {
+    if (authProfile?.ecole_id) return [];
+    return MOCK_STAFF;
+  });
+
+  useEffect(() => {
+    if (authProfile?.ecole_id) {
+      const fetchStaff = async () => {
+        try {
+          const { data, error } = await supabase
+            .from('profils')
+            .select('*')
+            .eq('ecole_id', authProfile.ecole_id);
+
+          if (!error && data) {
+            const mapped: StaffMember[] = data.map((p: any) => ({
+              id: p.id,
+              nom: p.nom,
+              prenom: p.prenom,
+              email: p.email || '',
+              telephone: p.telephone || '',
+              role: p.role as RoleUtilisateur,
+              actif: p.actif ?? true,
+              date_ajout: p.created_at ? new Date(p.created_at).toISOString().split('T')[0] : '2026-09-22',
+            }));
+            setStaffList(mapped);
+          }
+        } catch (e) {
+          console.warn('[ConfigPage] Erreur chargement staff:', e);
+        }
+      };
+      fetchStaff();
+    }
+  }, [authProfile?.ecole_id]);
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
