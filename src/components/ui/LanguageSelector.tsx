@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ChevronDown, Check } from 'lucide-react';
-import { useLanguageStore } from '../../i18n/useLanguageStore';
+import { useLanguageStore, I18N_PAUSED } from '../../i18n/useLanguageStore';
 import { Language } from '../../i18n/translations';
 
 interface LanguageOption {
@@ -16,6 +16,9 @@ const LANGUAGES: LanguageOption[] = [
 ];
 
 export const LanguageSelector: React.FC<{ variant?: 'light' | 'dark' | 'header' }> = () => {
+  // Masquer le sélecteur si le projet multilingue est en pause
+  if (I18N_PAUSED) return null;
+
   const { language, setLanguage } = useLanguageStore();
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
