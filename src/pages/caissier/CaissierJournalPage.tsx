@@ -34,8 +34,15 @@ import {
   FileCheck,
 } from 'lucide-react';
 
+import { useAuthStore } from '../../store/useAuthStore';
+
 export const CaissierJournalPage: React.FC = () => {
-  const [transactions] = useState<CaisseTransaction[]>(MOCK_CAISSE_TRANSACTIONS_INITIAL);
+  const authProfile = useAuthStore((s) => s.profile);
+  const isRealAccount = Boolean(authProfile?.ecole_id);
+  const [transactions] = useState<CaisseTransaction[]>(() => {
+    if (isRealAccount) return [];
+    return MOCK_CAISSE_TRANSACTIONS_INITIAL;
+  });
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedMethod, setSelectedMethod] = useState<string>('all');
   const [selectedReceipt, setSelectedReceipt] = useState<CaisseTransaction | null>(null);
@@ -186,9 +193,11 @@ export const CaissierJournalPage: React.FC = () => {
             Journal de Caisse
           </h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Historique complet des quittances émises au {CURRENT_CAISSIER.guichet} par{' '}
+            Historique complet des quittances émises au {isRealAccount ? 'Guichet Principal' : CURRENT_CAISSIER.guichet} par{' '}
             <span className="font-semibold text-slate-700 dark:text-slate-300">
-              {CURRENT_CAISSIER.prenom} {CURRENT_CAISSIER.nom}
+              {isRealAccount
+                ? (authProfile?.prenom ? `${authProfile.prenom} ${authProfile.nom}` : (authProfile?.nom || 'Agent Comptable'))
+                : `${CURRENT_CAISSIER.prenom} ${CURRENT_CAISSIER.nom}`}
             </span>
             .
           </p>
@@ -322,8 +331,18 @@ export const CaissierJournalPage: React.FC = () => {
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
               {paginatedTransactions.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-12 text-center text-slate-400 dark:text-slate-500 text-sm">
-                    Aucune transaction ne correspond à vos filtres.
+                  <td colSpan={7} className="py-16 text-center text-slate-400 dark:text-slate-500 text-sm">
+                    <Receipt className="h-10 w-10 mx-auto text-slate-300 dark:text-slate-600 mb-2" />
+                    <p className="font-semibold text-slate-600 dark:text-slate-300">
+                      {transactions.length === 0
+                        ? "Aucun encaissement enregistré aujourd'hui"
+                        : 'Aucune transaction ne correspond à vos filtres.'}
+                    </p>
+                    <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
+                      {transactions.length === 0
+                        ? "Les quittances et règlements validés au guichet s'afficheront automatiquement ici."
+                        : 'Essayez de modifier vos critères de recherche.'}
+                    </p>
                   </td>
                 </tr>
               ) : (

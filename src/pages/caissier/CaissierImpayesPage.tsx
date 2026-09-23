@@ -7,6 +7,7 @@ import { KpiCard } from '../../components/ui/KpiCard';
 import { formatMRU } from '../../lib/utils';
 import {
   AlertCircle,
+  CheckCircle2,
   Search,
   CreditCard,
   Phone,
@@ -17,6 +18,8 @@ import {
   ChevronRight,
 } from 'lucide-react';
 
+import { useAuthStore } from '../../store/useAuthStore';
+
 interface CaissierImpayesPageProps {
   onGoToGuichetWithEleve: (eleveId: string) => void;
 }
@@ -24,6 +27,8 @@ interface CaissierImpayesPageProps {
 export const CaissierImpayesPage: React.FC<CaissierImpayesPageProps> = ({
   onGoToGuichetWithEleve,
 }) => {
+  const authProfile = useAuthStore((s) => s.profile);
+  const isRealAccount = Boolean(authProfile?.ecole_id);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedClasse, setSelectedClasse] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | 'en_retard' | 'partiel'>('all');
@@ -34,13 +39,15 @@ export const CaissierImpayesPage: React.FC<CaissierImpayesPageProps> = ({
 
   // Filtrer uniquement les élèves qui ont un reste à payer
   const elevesAvecReste = useMemo(() => {
+    if (isRealAccount) return [];
     return MOCK_ELEVES.filter((e) => e.remaining > 0);
-  }, []);
+  }, [isRealAccount]);
 
   const classesList = useMemo(() => {
+    if (isRealAccount) return [];
     const set = new Set(MOCK_ELEVES.map((e) => e.classe));
     return Array.from(set).sort();
-  }, []);
+  }, [isRealAccount]);
 
   // Total des arriérés
   const totalArrieres = useMemo(() => {
@@ -196,8 +203,18 @@ export const CaissierImpayesPage: React.FC<CaissierImpayesPageProps> = ({
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
               {paginatedEleves.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-12 text-center text-slate-400 dark:text-slate-500 text-sm">
-                    Aucun élève trouvé avec des arriérés pour ces critères.
+                  <td colSpan={7} className="py-16 text-center text-slate-400 dark:text-slate-500 text-sm">
+                    <CheckCircle2 className="h-10 w-10 mx-auto text-emerald-500 mb-2" />
+                    <p className="font-semibold text-slate-700 dark:text-slate-200">
+                      {elevesAvecReste.length === 0
+                        ? 'Tous les comptes élèves sont à jour'
+                        : 'Aucun élève trouvé avec des arriérés pour ces critères.'}
+                    </p>
+                    <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
+                      {elevesAvecReste.length === 0
+                        ? 'Aucun impayé constaté dans votre établissement.'
+                        : 'Modifiez vos filtres de classe ou de recherche.'}
+                    </p>
                   </td>
                 </tr>
               ) : (

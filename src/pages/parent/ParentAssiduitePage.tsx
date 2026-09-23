@@ -22,6 +22,8 @@ import {
   Calendar,
 } from 'lucide-react';
 
+import { useAuthStore } from '../../store/useAuthStore';
+
 interface ParentAssiduitePageProps {
   selectedChildId: string;
 }
@@ -29,6 +31,28 @@ interface ParentAssiduitePageProps {
 export const ParentAssiduitePage: React.FC<ParentAssiduitePageProps> = ({
   selectedChildId,
 }) => {
+  const authProfile = useAuthStore((s) => s.profile);
+  const isRealAccount = Boolean(authProfile?.ecole_id);
+  const childExists = Boolean(selectedChildId && MOCK_PARENT_ENFANTS_DETAILS[selectedChildId]);
+
+  if (isRealAccount && !childExists) {
+    return (
+      <div className="p-6 sm:p-8 lg:p-10 max-w-5xl mx-auto space-y-8 animate-stagger-rise">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl p-8 border border-slate-200 dark:border-slate-800 shadow-2xs text-center space-y-4 max-w-xl mx-auto my-12">
+          <div className="h-14 w-14 rounded-2xl bg-purple-100 dark:bg-purple-950 text-purple-600 dark:text-purple-400 flex items-center justify-center mx-auto shadow-sm">
+            <CalendarCheck className="h-7 w-7" />
+          </div>
+          <h2 className="text-xl font-bold text-slate-900 dark:text-white">
+            Aucun élève rattaché pour le moment
+          </h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            Votre espace famille est actif. Le relevé d'assiduité, les absences et les déclarations de justificatifs d'absence de vos enfants apparaîtront ici.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   const enfant =
     MOCK_PARENT_ENFANTS_DETAILS[selectedChildId] ||
     MOCK_PARENT_ENFANTS_DETAILS['el-001'];

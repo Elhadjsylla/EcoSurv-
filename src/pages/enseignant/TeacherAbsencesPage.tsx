@@ -33,11 +33,18 @@ interface StudentAttendanceState {
   justifiee?: boolean;
 }
 
+import { useAuthStore } from '../../store/useAuthStore';
+
 export const TeacherAbsencesPage: React.FC = () => {
+  const authProfile = useAuthStore((s) => s.profile);
+  const isRealAccount = Boolean(authProfile?.ecole_id);
   const [selectedClasse, setSelectedClasse] = useState<string>('6ème A');
   const [selectedDate, setSelectedDate] = useState<string>('2026-03-09');
   const [selectedCreneau, setSelectedCreneau] = useState<'matin' | 'apres_midi'>('matin');
-  const [absencesHistory, setAbsencesHistory] = useState<AbsenceRecord[]>(MOCK_ABSENCES_INITIAL);
+  const [absencesHistory, setAbsencesHistory] = useState<AbsenceRecord[]>(() => {
+    if (isRealAccount) return [];
+    return MOCK_ABSENCES_INITIAL;
+  });
   const [activeToast, setActiveToast] = useState<{ message: string; type: 'success' | 'info' | 'warning' } | null>(null);
 
   // Pagination pour la table d'appel
@@ -48,10 +55,11 @@ export const TeacherAbsencesPage: React.FC = () => {
   const [attendanceMap, setAttendanceMap] = useState<Record<string, StudentAttendanceState>>({});
 
   const teacherStudents = useMemo(() => {
+    if (isRealAccount) return [];
     return getElevesForTeacher(MOCK_ELEVES, CURRENT_ENSEIGNANT.classes_assignees).filter(
       (e) => e.classe === selectedClasse
     );
-  }, [selectedClasse]);
+  }, [isRealAccount, selectedClasse]);
 
   const totalPages = Math.ceil(teacherStudents.length / itemsPerPage) || 1;
   const paginatedStudents = teacherStudents.slice(

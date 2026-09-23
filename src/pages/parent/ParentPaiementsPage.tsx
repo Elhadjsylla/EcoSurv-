@@ -19,6 +19,8 @@ import {
   CreditCard,
 } from 'lucide-react';
 
+import { useAuthStore } from '../../store/useAuthStore';
+
 interface ParentPaiementsPageProps {
   selectedChildId: string;
 }
@@ -26,20 +28,25 @@ interface ParentPaiementsPageProps {
 export const ParentPaiementsPage: React.FC<ParentPaiementsPageProps> = ({
   selectedChildId,
 }) => {
-  const [enfantData, setEnfantData] = useState(
-    MOCK_PARENT_ENFANTS_DETAILS[selectedChildId] || MOCK_PARENT_ENFANTS_DETAILS['el-003']
-  );
+  const authProfile = useAuthStore((s) => s.profile);
+  const isRealAccount = Boolean(authProfile?.ecole_id);
+  const childExists = Boolean(selectedChildId && MOCK_PARENT_ENFANTS_DETAILS[selectedChildId]);
+
+  const [enfantData, setEnfantData] = useState(() => {
+    if (childExists) return MOCK_PARENT_ENFANTS_DETAILS[selectedChildId];
+    return MOCK_PARENT_ENFANTS_DETAILS['el-003'];
+  });
 
   React.useEffect(() => {
-    if (MOCK_PARENT_ENFANTS_DETAILS[selectedChildId]) {
+    if (childExists && MOCK_PARENT_ENFANTS_DETAILS[selectedChildId]) {
       setEnfantData(MOCK_PARENT_ENFANTS_DETAILS[selectedChildId]);
     }
-  }, [selectedChildId]);
+  }, [selectedChildId, childExists]);
 
   // Formulaire de paiement mobile
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [paymentAmount, setPaymentAmount] = useState<number>(
-    enfantData.reste_a_payer > 0 ? Math.min(enfantData.reste_a_payer, 25000) : 0
+    enfantData?.reste_a_payer > 0 ? Math.min(enfantData.reste_a_payer, 25000) : 0
   );
   const [selectedMethod, setSelectedMethod] = useState<MethodePaiement>('bankily');
   const [phoneNumber, setPhoneNumber] = useState<string>(CURRENT_PARENT.telephone);
@@ -111,6 +118,24 @@ export const ParentPaiementsPage: React.FC<ParentPaiementsPageProps> = ({
       });
     }, 1000);
   };
+
+  if (isRealAccount && !childExists) {
+    return (
+      <div className="p-6 sm:p-8 lg:p-10 max-w-5xl mx-auto space-y-8 animate-stagger-rise">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl p-8 border border-slate-200 dark:border-slate-800 shadow-2xs text-center space-y-4 max-w-xl mx-auto my-12">
+          <div className="h-14 w-14 rounded-2xl bg-purple-100 dark:bg-purple-950 text-purple-600 dark:text-purple-400 flex items-center justify-center mx-auto shadow-sm">
+            <CreditCard className="h-7 w-7" />
+          </div>
+          <h2 className="text-xl font-bold text-slate-900 dark:text-white">
+            Aucun élève rattaché pour le moment
+          </h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            Votre espace famille est actif. Le relevé des frais de scolarité et les options de règlement en ligne (Bankily, Masrvi) apparaîtront automatiquement dès que l'école aura validé le rattachement de votre enfant.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 sm:p-8 lg:p-10 max-w-5xl mx-auto space-y-8 sm:space-y-10 animate-stagger-rise relative">

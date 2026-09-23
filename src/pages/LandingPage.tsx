@@ -30,14 +30,32 @@ import {
   LogIn,
 } from 'lucide-react';
 import { LanguageSelector } from '../components/ui/LanguageSelector';
+import { useLanguageStore } from '../i18n/useLanguageStore';
+import { Language } from '../i18n/translations';
 
-const ROTATING_PHRASES = [
-  'Trésorerie scolaire en temps réel.',
-  'Rapprochement Bankily & Masrvi direct.',
-  'Relances WhatsApp à J-3 automatiques.',
-  'Quittances certifiées DGI en 30s.',
-  'Sérénité totale pour votre établissement.',
-];
+const ROTATING_PHRASES: Record<Language, string[]> = {
+  fr: [
+    'Trésorerie scolaire en temps réel.',
+    'Rapprochement Bankily & Masrvi direct.',
+    'Relances WhatsApp à J-3 automatiques.',
+    'Quittances certifiées DGI en 30s.',
+    'Sérénité totale pour votre établissement.',
+  ],
+  ar: [
+    'متابعة الخزينة المدرسية في الوقت الفعلي.',
+    'تحصيل ومطابقة بنكيلي ومصرفي مباشرة.',
+    'إشعارات تذكير تلقائية عبر الواتساب.',
+    'إصدار سندات ووصولات دفع في ثوانٍ.',
+    'راحة بال واطمئنان تام لإدارة مدرستك.',
+  ],
+  en: [
+    'Real-time school cashflow tracking.',
+    'Direct Bankily & Masrvi reconciliation.',
+    'Automated WhatsApp payment reminders.',
+    'Instant official receipts in 30 seconds.',
+    'Complete peace of mind for your school.',
+  ],
+};
 
 const staggerContainer: Variants = {
   hidden: { opacity: 0 },
@@ -57,6 +75,7 @@ const fadeInUp: Variants = {
 
 export const LandingPage: React.FC = () => {
   const { theme, toggleTheme } = useThemeStore();
+  const { t, language } = useLanguageStore();
   const navigateToLogin = useNavigationStore((s) => s.navigateToLogin);
   const navigateToRegister = useNavigationStore((s) => s.navigateToRegister);
 
@@ -69,8 +88,10 @@ export const LandingPage: React.FC = () => {
   const [currentText, setCurrentText] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
 
+  const currentPhrases = ROTATING_PHRASES[language] || ROTATING_PHRASES.fr;
+
   useEffect(() => {
-    const currentPhrase = ROTATING_PHRASES[phraseIndex];
+    const currentPhrase = currentPhrases[phraseIndex % currentPhrases.length];
     let timeoutId: number;
 
     if (!isDeleting) {
@@ -90,12 +111,12 @@ export const LandingPage: React.FC = () => {
         }, 25); // Effacement progressif fluide
       } else {
         setIsDeleting(false);
-        setPhraseIndex((prev) => (prev + 1) % ROTATING_PHRASES.length);
+        setPhraseIndex((prev) => (prev + 1) % currentPhrases.length);
       }
     }
 
-    return () => window.clearTimeout(timeoutId);
-  }, [currentText, isDeleting, phraseIndex]);
+    return () => clearTimeout(timeoutId);
+  }, [currentText, isDeleting, phraseIndex, currentPhrases]);
 
   // Framer Motion Scroll Progress
   const { scrollYProgress } = useScroll();
@@ -194,7 +215,7 @@ export const LandingPage: React.FC = () => {
               className="h-9 px-3.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
             >
               <LogIn className="h-3.5 w-3.5" />
-              <span>Se connecter</span>
+              <span>{t.common.login}</span>
             </button>
 
             {/* Créer mon école */}
@@ -203,7 +224,7 @@ export const LandingPage: React.FC = () => {
               onClick={navigateToRegister}
               className="h-9 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all shadow-md shadow-blue-600/20 flex items-center gap-1.5 cursor-pointer hover:scale-[1.02] active:scale-[0.98]"
             >
-              <span>Créer mon école</span>
+              <span>{t.common.createSchool}</span>
               <ArrowRight className="h-3.5 w-3.5" />
             </button>
           </div>
@@ -314,7 +335,7 @@ export const LandingPage: React.FC = () => {
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
               </span>
-              <span>Spécial Établissements Privés • Mauritanie</span>
+              <span>{t.landing.heroBadge}</span>
             </motion.div>
 
             {/* Main Headline avec 'Zéro impayé.' fixe et saisie / effacement progressif */}
@@ -323,7 +344,7 @@ export const LandingPage: React.FC = () => {
               className="text-3xl sm:text-5xl lg:text-6xl font-black tracking-tight leading-[1.15] text-slate-950 dark:text-white max-w-5xl mx-auto"
             >
               <span className="block mb-2 sm:mb-3 text-slate-950 dark:text-white">
-                Zéro impayé.
+                {language === 'ar' ? 'صفر متأخرات.' : language === 'en' ? 'Zero Overdue.' : 'Zéro impayé.'}
               </span>
               <div className="min-h-[2.6em] sm:min-h-[1.5em] flex items-center justify-center text-center px-2">
                 <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 via-indigo-600 to-emerald-500 dark:from-blue-400 dark:via-indigo-300 dark:to-emerald-400 inline">
@@ -335,7 +356,7 @@ export const LandingPage: React.FC = () => {
 
             {/* Sub-headline */}
             <motion.p variants={fadeInUp} className="text-slate-600 dark:text-slate-300 text-base sm:text-lg lg:text-xl leading-relaxed max-w-2xl mx-auto font-normal">
-              Suivez qui a payé, qui est en retard et où en est la caisse sans approximations. Encaissement instantané via <strong className="font-bold text-blue-600 dark:text-blue-400">Bankily</strong>, <strong className="font-bold text-emerald-600 dark:text-emerald-400">Masrvi</strong> et <strong className="font-bold text-indigo-600 dark:text-indigo-400">Sedad</strong>, relances automatiques et quittances officielles DGI.
+              {t.landing.heroSubtitle}
             </motion.p>
 
             {/* CTAs Distincts : Créer mon école + Se connecter */}
@@ -348,7 +369,7 @@ export const LandingPage: React.FC = () => {
                 {/* Shimmer sweep animation across the CTA */}
                 <div className="absolute inset-0 w-1/2 h-full bg-gradient-to-r from-transparent via-white/30 to-transparent pointer-events-none animate-cta-sweep" />
                 
-                <span className="relative z-10">Créer mon école</span>
+                <span className="relative z-10">{t.common.createSchool}</span>
                 <ArrowRight className="h-5 w-5 group-hover:translate-x-1.5 transition-transform relative z-10" />
               </button>
 
@@ -358,7 +379,7 @@ export const LandingPage: React.FC = () => {
                 className="w-full sm:w-auto px-7 py-4 rounded-2xl bg-white/90 dark:bg-slate-900/90 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-100 font-bold text-base border border-slate-200/90 dark:border-slate-800 shadow-sm transition-all flex items-center justify-center gap-2.5 cursor-pointer hover:scale-[1.02] active:scale-[0.98]"
               >
                 <LogIn className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                <span>Se connecter</span>
+                <span>{t.common.login}</span>
               </button>
             </motion.div>
 
