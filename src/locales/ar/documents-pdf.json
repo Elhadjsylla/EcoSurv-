@@ -1,0 +1,37 @@
+{
+  "receipt": {
+    "title": "وصل استلام رسمي",
+    "schoolCode": "رمز المؤسسة",
+    "receiptNumber": "رقم الوصل",
+    "dateTime": "التاريخ والوقت",
+    "studentSection": "بيانات التلميذ",
+    "studentName": "الاسم",
+    "studentId": "رقم التسجيل",
+    "studentClass": "الفصل",
+    "paymentDetails": "تفاصيل الدفع",
+    "purpose": "البند / الشهر",
+    "paymentMethod": "طريقة الدفع",
+    "amountPaid": "المبلغ المقبوض",
+    "certifiedNotice": "وصل معتمد مطابق للأصل ومثبت في الدفاتر المحاسبية",
+    "cashier": "أمين الصندوق",
+    "_needs_human_review": true,
+    "_notes": "يتطلب مراجعة واعتماد الصيغة الرسمية لوصل الاستلام الضريبي والمحاسبي"
+  },
+  "bulletin": {
+    "countryHeader": "الجمهورية الإسلامية الموريتانية",
+    "ministryHeader": "وزارة التربية وإصلاح النظام التعليمي",
+    "title": "كشف درجات مدرسي",
+    "term1": "الفصل الأول",
+    "term2": "الفصل الثاني",
+    "term3": "الفصل الثالث",
+    "subject": "المادة",
+    "coefficient": "المعامل",
+    "grade": "الدرجة / 20",
+    "rank": "الرتبة",
+    "classAverage": "معدل الفصل",
+    "generalAverage": "المعدل العام",
+    "teacherAppreciation": "ملاحظات وتوجيهات الفريق التربوي",
+    "_needs_human_review": true,
+    "_notes": "ترجمة رسمية معتمدة وفق مناهج وزارة التربية الموريتانية"
+  }
+}

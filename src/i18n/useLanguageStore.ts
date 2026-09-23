@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import i18n, { applyDocumentDirection } from './i18n';
 import { Language, translations, Translations } from './translations';
+import { supabase } from '../lib/supabase';
 
 interface LanguageState {
   language: Language;
@@ -18,25 +20,43 @@ export const useLanguageStore = create<LanguageState>()(
 
       setLanguage: (lang: Language) => {
         const isRtl = lang === 'ar';
-        // Set document direction and lang attributes
-        if (typeof document !== 'undefined') {
-          document.documentElement.dir = isRtl ? 'rtl' : 'ltr';
-          document.documentElement.lang = lang;
-        }
+        
+        // 1. Appliquer le sens RTL / LTR sur le document
+        applyDocumentDirection(lang);
 
+        // 2. Notifier le moteur i18next
+        i18n.changeLanguage(lang);
+
+        // 3. Persister dans le store local
         set({
           language: lang,
           t: translations[lang] || translations.fr,
           isRtl,
         });
+
+        // 4. Synchroniser avec Supabase en arrière-plan si utilisateur connecté
+        (async () => {
+          try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+              const { error } = await supabase.rpc('mettre_a_jour_langue_profil', { p_langue: lang });
+              if (error) {
+                // Fallback direct sur update si RPC pas encore exécuté en remote
+                await supabase.from('profils').update({ langue_preferee: lang }).eq('id', user.id);
+              }
+            }
+          } catch {
+            // Ignorer si hors-ligne ou non connecté
+          }
+        })();
       },
     }),
     {
       name: 'ecosurv-language',
       onRehydrateStorage: () => (state) => {
-        if (state && typeof document !== 'undefined') {
-          document.documentElement.dir = state.language === 'ar' ? 'rtl' : 'ltr';
-          document.documentElement.lang = state.language;
+        if (state) {
+          applyDocumentDirection(state.language);
+          i18n.changeLanguage(state.language);
         }
       },
     }

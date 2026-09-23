@@ -1,0 +1,41 @@
+{
+  "dashboard": "Dashboard",
+  "students": "Student Management",
+  "schedule": "Tuition & Fees",
+  "reminders": "Overdue Reminders",
+  "reports": "Financial Reports",
+  "settings": "Settings",
+  "logout": "Log Out",
+  "login": "Log In",
+  "register": "Create School",
+  "createSchool": "Create School",
+  "search": "Search",
+  "searchPlaceholder": "Search by student, class, ID...",
+  "save": "Save",
+  "cancel": "Cancel",
+  "delete": "Delete",
+  "edit": "Edit",
+  "actions": "Actions",
+  "status": "Status",
+  "all": "All",
+  "active": "Active",
+  "pending": "Pending",
+  "suspended": "Suspended",
+  "viewSite": "Public Site",
+  "schoolYear": "2025–2026",
+  "viewAs": "View As",
+  "director": "Director",
+  "teacher": "Teacher",
+  "parent": "Parent",
+  "cashier": "Cashier",
+  "currency": "MRU",
+  "pagination": {
+    "showing": "Showing {{start}} to {{end}} of {{total}}",
+    "previous": "Previous",
+    "next": "Next"
+  },
+  "plurals": {
+    "student_one": "{{count}} student",
+    "student_other": "{{count}} students"
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "dashboard": "لوحة القيادة",
+  "students": "إدارة التلاميذ",
+  "schedule": "الأقساط والرسوم",
+  "reminders": "إشعارات المتأخرات",
+  "reports": "التقارير المالية",
+  "settings": "الإعدادات",
+  "classes": "فصولي الدراسية",
+  "attendance": "تسجيل الغياب",
+  "grades": "رصد الدرجات",
+  "pedagogicSpace": "الفضاء التربوي",
+  "counter": "شباك التحصيل",
+  "cashRegister": "دفتر الصندوق",
+  "unpaid": "كشف المتأخرات",
+  "financialManagement": "الإدارة المالية",
+  "familyHome": "الرئيسية العائلية",
+  "feesPayments": "الرسوم والمدفوعات",
+  "gradesReport": "الدرجات والشهادات",
+  "familySpace": "فضاء الأسرة"
+}

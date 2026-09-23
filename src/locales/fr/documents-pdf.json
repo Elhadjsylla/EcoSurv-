@@ -1,0 +1,35 @@
+{
+  "receipt": {
+    "title": "REÇU D'ENCAISSEMENT",
+    "schoolCode": "Code établissement",
+    "receiptNumber": "N° Quittance",
+    "dateTime": "Date & Heure",
+    "studentSection": "ÉLÈVE CONCERNÉ",
+    "studentName": "Nom",
+    "studentId": "Matricule",
+    "studentClass": "Classe",
+    "paymentDetails": "DÉTAIL DU RÈGLEMENT",
+    "purpose": "Motif",
+    "paymentMethod": "Mode",
+    "amountPaid": "Montant Encaissé",
+    "certifiedNotice": "Quittance officielle certifiée conforme",
+    "cashier": "Caissier",
+    "_needs_human_review": false
+  },
+  "bulletin": {
+    "countryHeader": "RÉPUBLIQUE ISLAMIQUE DE MAURITANIE",
+    "ministryHeader": "MINISTÈRE DE L'ÉDUCATION NATIONALE ET DE LA RÉFORME DU SYSTÈME ÉDUCATIF",
+    "title": "BULLETIN SCOLAIRE",
+    "term1": "1er TRIMESTRE",
+    "term2": "2ème TRIMESTRE",
+    "term3": "3ème TRIMESTRE",
+    "subject": "Matière",
+    "coefficient": "Coef",
+    "grade": "Note / 20",
+    "rank": "Rang",
+    "classAverage": "Moyenne de classe",
+    "generalAverage": "Moyenne générale",
+    "teacherAppreciation": "Appréciation du corps professoral",
+    "_needs_human_review": false
+  }
+}
