@@ -23,11 +23,14 @@ interface CaissierSidebarProps {
   className?: string;
 }
 
+import { useLanguageStore } from '../../i18n/useLanguageStore';
+
 export const CaissierSidebar: React.FC<CaissierSidebarProps> = ({
   activeTab,
   onTabChange,
   className,
 }) => {
+  const t = useLanguageStore((s) => s.t);
   const authProfile = useAuthStore((s) => s.profile);
   const isReal = Boolean(authProfile?.ecole_id);
   const caissierName = authProfile
@@ -42,17 +45,17 @@ export const CaissierSidebar: React.FC<CaissierSidebarProps> = ({
   }> = [
     {
       id: 'caissier_guichet',
-      label: "Guichet d'Encaissement",
+      label: t.nav.counter,
       icon: <WalletCards className="h-4 w-4 shrink-0" />,
     },
     {
       id: 'caissier_journal',
-      label: 'Journal de Caisse',
+      label: t.nav.cashRegister,
       icon: <ReceiptText className="h-4 w-4 shrink-0" />,
     },
     {
       id: 'caissier_impayes',
-      label: 'Relevé des Impayés',
+      label: t.nav.unpaid,
       icon: <BadgeAlert className="h-4 w-4 shrink-0" />,
     },
   ];
@@ -98,7 +101,7 @@ export const CaissierSidebar: React.FC<CaissierSidebarProps> = ({
           <div className="flex-1 px-3 py-4 space-y-1.5 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-800">
             {!isCollapsed && (
               <div className="px-3 pb-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                Gestion Financière
+                {t.nav.financialManagement}
               </div>
             )}
 

@@ -21,7 +21,11 @@ import {
   GraduationCap,
 } from 'lucide-react';
 
+import { useAuthStore } from '../../store/useAuthStore';
+
 export const TeacherClassesPage: React.FC = () => {
+  const authProfile = useAuthStore((s) => s.profile);
+  const isRealAccount = Boolean(authProfile?.ecole_id);
   const [selectedClasse, setSelectedClasse] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedEleve, setSelectedEleve] = useState<ElevePedagogique | null>(null);
@@ -50,8 +54,9 @@ export const TeacherClassesPage: React.FC = () => {
   }, []);
 
   const teacherStudents = useMemo(() => {
+    if (isRealAccount) return [];
     return getElevesForTeacher(MOCK_ELEVES, CURRENT_ENSEIGNANT.classes_assignees);
-  }, []);
+  }, [isRealAccount]);
 
   const filteredStudents = useMemo(() => {
     return teacherStudents.filter((e) => {
@@ -135,31 +140,42 @@ export const TeacherClassesPage: React.FC = () => {
       </div>
 
       {/* Class Overview Cards (Nexoov Pastel Style) */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {CURRENT_ENSEIGNANT.classes_assignees.map((cls) => {
-          const elevesClasse = teacherStudents.filter((e) => e.classe === cls);
-          const moy =
-            elevesClasse.reduce((sum, e) => sum + e.moyenne_generale, 0) / (elevesClasse.length || 1);
-          const isSelected = selectedClasse === cls;
+      {isRealAccount && teacherStudents.length === 0 ? (
+        <div className="p-8 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-center space-y-2">
+          <GraduationCap className="h-10 w-10 mx-auto text-emerald-500/70 mb-1" />
+          <p className="font-semibold text-slate-800 dark:text-slate-200 text-base">
+            Aucune classe assignée pour le moment
+          </p>
+          <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto">
+            Dès que la direction de votre école vous attribuera des classes et matières dans l'onglet Configuration, vos fiches de classes et élèves s'afficheront ici.
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {CURRENT_ENSEIGNANT.classes_assignees.map((cls) => {
+            const elevesClasse = teacherStudents.filter((e) => e.classe === cls);
+            const moy =
+              elevesClasse.reduce((sum, e) => sum + e.moyenne_generale, 0) / (elevesClasse.length || 1);
+            const isSelected = selectedClasse === cls;
 
-          return (
-            <div
-              key={cls}
-              onClick={() => {
-                setSelectedClasse(isSelected ? 'all' : cls);
-                setCurrentPage(1);
-              }}
-              className={`p-6 sm:p-7 rounded-2xl cursor-pointer transition-all duration-200 border bg-emerald-50/60 dark:bg-emerald-950/20 shadow-2xs ${
-                isSelected
-                  ? 'border-emerald-600 dark:border-emerald-500 ring-2 ring-emerald-500/20 shadow-md'
-                  : 'border-emerald-200/70 dark:border-emerald-900/50 hover:-translate-y-0.5 hover:shadow-md'
-              }`}
-            >
-              <div className="flex items-start justify-between">
-                <div>
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                    Niveau Académique
-                  </span>
+            return (
+              <div
+                key={cls}
+                onClick={() => {
+                  setSelectedClasse(isSelected ? 'all' : cls);
+                  setCurrentPage(1);
+                }}
+                className={`p-6 sm:p-7 rounded-2xl cursor-pointer transition-all duration-200 border bg-emerald-50/60 dark:bg-emerald-950/20 shadow-2xs ${
+                  isSelected
+                    ? 'border-emerald-600 dark:border-emerald-500 ring-2 ring-emerald-500/20 shadow-md'
+                    : 'border-emerald-200/70 dark:border-emerald-900/50 hover:-translate-y-0.5 hover:shadow-md'
+                }`}
+              >
+                <div className="flex items-start justify-between">
+                  <div>
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                      Niveau Académique
+                    </span>
                   <h3 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white mt-1">
                     Classe de {cls}
                   </h3>
@@ -187,6 +203,7 @@ export const TeacherClassesPage: React.FC = () => {
           );
         })}
       </div>
+      )}
 
       {/* Roster & Detail Panel Container */}
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">

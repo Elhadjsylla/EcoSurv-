@@ -29,6 +29,7 @@ import {
 } from 'lucide-react';
 import { useNavigationStore } from '../../store/useNavigationStore';
 import { LanguageSelector } from './LanguageSelector';
+import { useLanguageStore } from '../../i18n/useLanguageStore';
 
 export type UserRole = 'directeur' | 'enseignant' | 'caissier' | 'parent';
 
@@ -46,6 +47,7 @@ export const Header: React.FC<HeaderProps> = ({
   onNavigateTab,
   onReturnToLanding,
 }) => {
+  const t = useLanguageStore((s) => s.t);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [globalSearch, setGlobalSearch] = useState('');
@@ -88,8 +90,8 @@ export const Header: React.FC<HeaderProps> = ({
     }
   > = {
     directeur: {
-      label: 'Directeur',
-      roleTitle: 'Directeur d\'Établissement',
+      label: t.common.director,
+      roleTitle: t.common.director,
       icon: <UserCheck className="h-4 w-4 text-blue-600" />,
       colorTheme: 'text-blue-700 bg-blue-50 border-blue-200/60 dark:bg-blue-950/60 dark:text-blue-300 dark:border-blue-800',
       badgeColor: 'bg-blue-50 text-blue-800 border-blue-200 dark:bg-blue-950/60 dark:text-blue-300 dark:border-blue-800',
@@ -98,8 +100,8 @@ export const Header: React.FC<HeaderProps> = ({
       user: CURRENT_DIRECTEUR,
     },
     enseignant: {
-      label: 'Enseignant',
-      roleTitle: 'Enseignant • 6ème A & CM2',
+      label: t.common.teacher,
+      roleTitle: t.common.teacher,
       icon: <GraduationCap className="h-4 w-4 text-emerald-600" />,
       colorTheme: 'text-emerald-700 bg-emerald-50 border-emerald-200/60 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800',
       badgeColor: 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800',
@@ -108,8 +110,8 @@ export const Header: React.FC<HeaderProps> = ({
       user: CURRENT_ENSEIGNANT as any,
     },
     caissier: {
-      label: 'Caissier',
-      roleTitle: `Caissier • ${CURRENT_CAISSIER.guichet}`,
+      label: t.common.cashier,
+      roleTitle: t.common.cashier,
       icon: <CreditCard className="h-4 w-4 text-amber-600" />,
       colorTheme: 'text-amber-700 bg-amber-50 border-amber-200/60 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800',
       badgeColor: 'bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800',
@@ -118,13 +120,13 @@ export const Header: React.FC<HeaderProps> = ({
       user: CURRENT_CAISSIER as any,
     },
     parent: {
-      label: 'Parent',
-      roleTitle: 'Parent d\'élève (2 enfants)',
+      label: t.common.parent,
+      roleTitle: t.common.parent,
       icon: <HeartHandshake className="h-4 w-4 text-purple-600 dark:text-purple-400" />,
       colorTheme: 'text-purple-700 bg-purple-50 border-purple-200/60 dark:bg-purple-950/60 dark:text-purple-300 dark:border-purple-800',
       badgeColor: 'bg-purple-50 text-purple-800 border-purple-200 dark:bg-purple-950/60 dark:text-purple-300 dark:border-purple-800',
       badgeText: 'Espace Parent',
-      badgeScope: 'Restreint strictement aux enfants de la famille Diallo',
+      badgeScope: 'Restreint strictement aux enfants de la famille',
       user: CURRENT_PARENT as any,
     },
   };
@@ -211,7 +213,7 @@ export const Header: React.FC<HeaderProps> = ({
             onChange={(e) => setGlobalSearch(e.target.value)}
             onFocus={() => setIsSearchFocused(true)}
             onBlur={() => setIsSearchFocused(false)}
-            placeholder="Rechercher..."
+            placeholder={t.common.searchPlaceholder}
             className={`w-full h-9 pl-8.5 pr-7 rounded-xl border text-xs bg-slate-50 dark:bg-slate-800/80 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 transition-all ${
               isSearchFocused
                 ? 'border-blue-600 bg-white dark:bg-slate-900 ring-2 ring-blue-600/20'
@@ -235,7 +237,7 @@ export const Header: React.FC<HeaderProps> = ({
               className="flex items-center gap-1.5 h-9 px-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors shrink-0 shadow-2xs"
             >
               <Globe className="h-4 w-4 text-blue-600 dark:text-blue-400 shrink-0" />
-              <span className="hidden xl:inline">Site vitrine</span>
+              <span className="hidden xl:inline">{t.common.viewSite}</span>
             </button>
           </Tooltip>
         )}
@@ -254,7 +256,7 @@ export const Header: React.FC<HeaderProps> = ({
           <Select<UserRole>
             value={currentRole}
             onChange={onRoleChange}
-            prefix="Vue :"
+            prefix={`${t.common.viewAs} :`}
             size="sm"
             variant="subtle"
             align="right"

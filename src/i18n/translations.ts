@@ -34,6 +34,28 @@ export interface Translations {
     cashier: string;
   };
 
+  // Navigation
+  nav: {
+    dashboard: string;
+    students: string;
+    schedule: string;
+    reminders: string;
+    reports: string;
+    settings: string;
+    classes: string;
+    attendance: string;
+    grades: string;
+    pedagogicSpace: string;
+    counter: string;
+    cashRegister: string;
+    unpaid: string;
+    financialManagement: string;
+    familyHome: string;
+    feesPayments: string;
+    gradesReport: string;
+    familySpace: string;
+  };
+
   // Landing Page
   landing: {
     heroBadge: string;
@@ -128,6 +150,26 @@ export const translations: Record<Language, Translations> = {
       parent: 'Parent',
       cashier: 'Caissier',
     },
+    nav: {
+      dashboard: 'Tableau de bord',
+      students: 'Élèves',
+      schedule: 'Échéances',
+      reminders: 'Relances',
+      reports: 'Rapports',
+      settings: 'Configuration',
+      classes: 'Mes Classes',
+      attendance: 'Saisie des Absences',
+      grades: 'Saisie des Notes',
+      pedagogicSpace: 'Espace Pédagogique',
+      counter: "Guichet d'Encaissement",
+      cashRegister: 'Journal de Caisse',
+      unpaid: 'Relevé des Impayés',
+      financialManagement: 'Gestion Financière',
+      familyHome: 'Accueil Famille',
+      feesPayments: 'Frais & Paiements',
+      gradesReport: 'Notes & Bulletins',
+      familySpace: 'Espace Famille',
+    },
     landing: {
       heroBadge: 'SaaS Scolarité & Finance — Mauritanie',
       heroTitle: 'La gestion scolaire moderne pensée pour la Mauritanie',
@@ -216,6 +258,26 @@ export const translations: Record<Language, Translations> = {
       parent: 'ولي الأمر',
       cashier: 'أمين الصندوق',
     },
+    nav: {
+      dashboard: 'لوحة التحكم',
+      students: 'الطلاب',
+      schedule: 'الأقساط',
+      reminders: 'المتأخرات',
+      reports: 'التقارير',
+      settings: 'الإعدادات',
+      classes: 'فصولي',
+      attendance: 'تسجيل الغياب',
+      grades: 'رصد الدرجات',
+      pedagogicSpace: 'المجال التعليمي',
+      counter: 'شباك التحصيل',
+      cashRegister: 'سجل الصندوق',
+      unpaid: 'كشف المتأخرات',
+      financialManagement: 'الإدارة المالية',
+      familyHome: 'الرئيسية',
+      feesPayments: 'الرسوم والدفع',
+      gradesReport: 'الدرجات والشهادات',
+      familySpace: 'فضاء الأسرة',
+    },
     landing: {
       heroBadge: 'برنامج إدارة المدارس والمالية — موريتانيا',
       heroTitle: 'الإدارة المدرسية الحديثة المصممة خصيصاً لموريتانيا',
@@ -303,6 +365,26 @@ export const translations: Record<Language, Translations> = {
       teacher: 'Teacher',
       parent: 'Parent',
       cashier: 'Cashier',
+    },
+    nav: {
+      dashboard: 'Dashboard',
+      students: 'Students',
+      schedule: 'Due Dates',
+      reminders: 'Reminders',
+      reports: 'Reports',
+      settings: 'Settings',
+      classes: 'My Classes',
+      attendance: 'Attendance',
+      grades: 'Grades',
+      pedagogicSpace: 'Academic Space',
+      counter: 'Payment Desk',
+      cashRegister: 'Cash Register',
+      unpaid: 'Unpaid Dues',
+      financialManagement: 'Financial Management',
+      familyHome: 'Family Home',
+      feesPayments: 'Fees & Payments',
+      gradesReport: 'Grades & Reports',
+      familySpace: 'Family Space',
     },
     landing: {
       heroBadge: 'School Management & Finance SaaS — Mauritania',

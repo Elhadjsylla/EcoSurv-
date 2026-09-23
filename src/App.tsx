@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useThemeStore } from './store/useThemeStore';
+import { useAuthStore } from './store/useAuthStore';
 import { Sidebar, NavTab } from './components/ui/Sidebar';
 import { TeacherSidebar, TeacherNavTab } from './components/enseignant/TeacherSidebar';
 import { CaissierSidebar, CaissierNavTab } from './components/caissier/CaissierSidebar';
@@ -83,7 +84,10 @@ export function AppContent() {
   const [preselectedEleveForGuichet, setPreselectedEleveForGuichet] = useState<string | undefined>(undefined);
 
   // État propre au portail Parent
-  const [selectedParentChildId, setSelectedParentChildId] = useState<string>('el-003');
+  const isRealAccount = Boolean(useAuthStore.getState().profile?.ecole_id);
+  const [selectedParentChildId, setSelectedParentChildId] = useState<string>(() => {
+    return isRealAccount ? '' : 'el-003';
+  });
 
   const handleNavigateToElevesWithFilter = (statut: string) => {
     setElevesStatutFilter(statut);

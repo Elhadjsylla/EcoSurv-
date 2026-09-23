@@ -20,7 +20,7 @@ const applyThemeToDocument = (theme: Theme) => {
 };
 
 export const useThemeStore = create<ThemeStore>((set, get) => ({
-  theme: (typeof window !== 'undefined' && (localStorage.getItem('ecosurv_theme') as Theme)) || 'light',
+  theme: (typeof window !== 'undefined' && (localStorage.getItem('ecosurv_theme') as Theme)) || 'dark',
   toggleTheme: () => {
     const nextTheme: Theme = get().theme === 'light' ? 'dark' : 'light';
     if (typeof window !== 'undefined') {
@@ -38,7 +38,7 @@ export const useThemeStore = create<ThemeStore>((set, get) => ({
   },
   initTheme: () => {
     const saved = typeof window !== 'undefined' ? (localStorage.getItem('ecosurv_theme') as Theme) : null;
-    const initial = saved || 'light';
+    const initial = saved || 'dark';
     applyThemeToDocument(initial);
     set({ theme: initial });
   },

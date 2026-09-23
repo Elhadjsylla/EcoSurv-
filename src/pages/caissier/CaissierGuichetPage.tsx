@@ -42,6 +42,27 @@ export const CaissierGuichetPage: React.FC<CaissierGuichetPageProps> = ({
     if (authProfile?.ecole_id) return [];
     return MOCK_ELEVES;
   });
+
+  React.useEffect(() => {
+    if (authProfile?.ecole_id) {
+      const fetchReal = async () => {
+        try {
+          const { data, error } = await supabase
+            .from('eleves')
+            .select('*')
+            .eq('ecole_id', authProfile.ecole_id)
+            .order('nom', { ascending: true });
+          if (!error && data) {
+            setElevesList(data as any);
+          }
+        } catch (e) {
+          console.warn('[CaissierGuichetPage] fetch error:', e);
+        }
+      };
+      fetchReal();
+    }
+  }, [authProfile?.ecole_id]);
+
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedEleveId, setSelectedEleveId] = useState<string>(
     preselectedEleveId || ''

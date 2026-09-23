@@ -27,6 +27,8 @@ interface ParentSidebarProps {
   className?: string;
 }
 
+import { useLanguageStore } from '../../i18n/useLanguageStore';
+
 export const ParentSidebar: React.FC<ParentSidebarProps> = ({
   activeTab,
   onTabChange,
@@ -34,6 +36,7 @@ export const ParentSidebar: React.FC<ParentSidebarProps> = ({
   onSelectChild,
   className,
 }) => {
+  const t = useLanguageStore((s) => s.t);
   const authProfile = useAuthStore((s) => s.profile);
   const isReal = Boolean(authProfile?.ecole_id);
   const enfantsIds = isReal ? [] : CURRENT_PARENT.enfants_ids;
@@ -46,12 +49,12 @@ export const ParentSidebar: React.FC<ParentSidebarProps> = ({
   }> = [
     {
       id: 'parent_dashboard',
-      label: 'Accueil Famille',
+      label: t.nav.familyHome,
       icon: <LayoutGrid className="h-4 w-4 shrink-0" />,
     },
     {
       id: 'parent_paiements',
-      label: 'Frais & Paiements',
+      label: t.nav.feesPayments,
       icon: <WalletCards className="h-4 w-4 shrink-0" />,
       badge:
         !isReal && MOCK_PARENT_ENFANTS_DETAILS[selectedChildId]?.reste_a_payer > 0
@@ -60,12 +63,12 @@ export const ParentSidebar: React.FC<ParentSidebarProps> = ({
     },
     {
       id: 'parent_pedagogie',
-      label: 'Notes & Bulletins',
+      label: t.nav.gradesReport,
       icon: <GraduationCap className="h-4 w-4 shrink-0" />,
     },
     {
       id: 'parent_assiduite',
-      label: 'Assiduité & Absences',
+      label: t.nav.attendance,
       icon: <CalendarDays className="h-4 w-4 shrink-0" />,
     },
   ];
@@ -161,7 +164,7 @@ export const ParentSidebar: React.FC<ParentSidebarProps> = ({
           <div className="flex-1 px-3 py-4 space-y-1.5 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-800">
             {!isCollapsed && (
               <div className="px-3 pb-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                Espace Parent
+                {t.nav.familySpace}
               </div>
             )}
 
