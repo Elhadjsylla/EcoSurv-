@@ -1,0 +1,18 @@
+{
+  "reminder_unpaid": {
+    "text": "Rappel {{nom_ecole}} : Une échéance de {{montant}} MRU pour l'élève {{nom_eleve}} ({{classe}}) est en retard. Merci de régulariser auprès du secrétariat ou par Bankily/Masrvi.",
+    "_needs_human_review": false
+  },
+  "receipt_confirmation": {
+    "text": "Quittance {{nom_ecole}} : Le paiement de {{montant}} MRU pour {{nom_eleve}} a bien été encaissé (Réf: {{recu_ref}}). Téléchargez votre reçu officiel certifié : {{recu_url}}",
+    "_needs_human_review": false
+  },
+  "activation_support": {
+    "text": "Bonjour EcoSurv, je viens d'inscrire l'établissement \"{{nom_ecole}}\" ({{ville}}) et je souhaite demander l'activation de notre espace.",
+    "_needs_human_review": false
+  },
+  "login_help": {
+    "text": "Bonjour EcoSurv, j'ai besoin d'aide pour accéder à mon compte.",
+    "_needs_human_review": false
+  }
+}

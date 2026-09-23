@@ -1,0 +1,20 @@
+{
+  "dashboard": "Dashboard",
+  "students": "Student Management",
+  "schedule": "Tuition & Fees",
+  "reminders": "Overdue Reminders",
+  "reports": "Financial Reports",
+  "settings": "Settings",
+  "classes": "My Classes",
+  "attendance": "Attendance Entry",
+  "grades": "Grade Entry",
+  "pedagogicSpace": "Teaching Portal",
+  "counter": "Payment Counter",
+  "cashRegister": "Cash Register",
+  "unpaid": "Overdue Statement",
+  "financialManagement": "Financial Management",
+  "familyHome": "Family Home",
+  "feesPayments": "Fees & Payments",
+  "gradesReport": "Grades & Report Cards",
+  "familySpace": "Family Portal"
+}

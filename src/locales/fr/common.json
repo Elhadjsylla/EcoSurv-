@@ -1,0 +1,41 @@
+{
+  "dashboard": "Tableau de bord",
+  "students": "Gestion Élèves",
+  "schedule": "Échéances & Tarifs",
+  "reminders": "Relances Impayés",
+  "reports": "Rapports Financiers",
+  "settings": "Configuration",
+  "logout": "Déconnexion",
+  "login": "Se connecter",
+  "register": "Créer mon école",
+  "createSchool": "Créer mon école",
+  "search": "Rechercher",
+  "searchPlaceholder": "Rechercher un élève, classe, matricule...",
+  "save": "Enregistrer",
+  "cancel": "Annuler",
+  "delete": "Supprimer",
+  "edit": "Modifier",
+  "actions": "Actions",
+  "status": "Statut",
+  "all": "Tous",
+  "active": "Active",
+  "pending": "En attente",
+  "suspended": "Suspendue",
+  "viewSite": "Site vitrine",
+  "schoolYear": "2025–2026",
+  "viewAs": "Vue",
+  "director": "Directeur",
+  "teacher": "Enseignant",
+  "parent": "Parent",
+  "cashier": "Caissier",
+  "currency": "MRU",
+  "pagination": {
+    "showing": "Affichage de {{start}} à {{end}} sur {{total}}",
+    "previous": "Précédent",
+    "next": "Suivant"
+  },
+  "plurals": {
+    "student_one": "{{count}} élève",
+    "student_other": "{{count}} élèves"
+  }
+}
