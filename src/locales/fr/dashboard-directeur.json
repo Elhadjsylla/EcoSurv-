@@ -1,0 +1,49 @@
+{
+  "title": "Tableau de Bord de Direction",
+  "subtitle": "Suivi en temps réel du recouvrement et de la situation financière des élèves.",
+  "exportPdf": "Exporter Rapport PDF",
+  "remindAll": "Relancer tous les impayés ({{count}})",
+  "generatingPdf": "Génération PDF...",
+  "kpis": {
+    "expectedTotal": "Total Scolarités Attendues",
+    "expectedSubtitle": "Pour les {{count}} élèves inscrits",
+    "recoveredTotal": "Total Recouvré (Banques & Espèces)",
+    "recoveryRate": "Taux global de recouvrement",
+    "overdueTotal": "Reste à Recouvrer (Échéances Échues)",
+    "overdueFamilies": "Familles en retard de paiement",
+    "upToDateCount": "Élèves Totalement à Jour",
+    "upToDateSubtitle": "Scolarité soldée à 100%"
+  },
+  "searchPlaceholder": "Rechercher par élève, classe ou matricule...",
+  "filters": {
+    "allClasses": "Toutes les classes",
+    "allStatuses": "Tous les statuts",
+    "upToDate": "À jour",
+    "partial": "Partiel",
+    "overdue": "En retard"
+  },
+  "table": {
+    "studentMatricule": "Élève & Matricule",
+    "class": "Classe",
+    "guardian": "Tuteur & Contact",
+    "totalDue": "Total Dû",
+    "paid": "Déjà Réglé",
+    "remaining": "Reste",
+    "status": "Statut",
+    "actions": "Actions"
+  },
+  "actions": {
+    "viewDetails": "Voir la fiche",
+    "markAsPaid": "Marquer comme soldé",
+    "remind": "Relancer (WhatsApp)",
+    "deselect": "Désélectionner",
+    "remindSelection": "Relancer la sélection ({{count}})",
+    "exportSelection": "Exporter"
+  },
+  "toasts": {
+    "markedPaid": "✓ Solde de {{name}} marqué comme réglé intégralement ({{amount}})",
+    "pdfExportSuccess": "✓ Rapport de synthèse PDF généré et téléchargé avec succès !",
+    "bulkRemindSuccess": "⚡ Campagne de relance envoyée avec succès à {{count}} familles !",
+    "bulkExportSuccess": "✓ Export du rapport comptable pour {{count}} élève(s) généré avec succès."
+  }
+}

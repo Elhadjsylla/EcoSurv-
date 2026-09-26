@@ -1,0 +1,20 @@
+{
+  "reminder_unpaid": {
+    "text": "{{nom_ecole}} Reminder: An overdue tuition installment of {{montant}} MRU is pending for {{nom_eleve}} ({{classe}}). Please settle at the accounting office or via Bankily/Masrvi.",
+    "_needs_human_review": true,
+    "_notes": "Official reminder copy in English"
+  },
+  "receipt_confirmation": {
+    "text": "{{nom_ecole}} Receipt: Payment of {{montant}} MRU for {{nom_eleve}} has been received (Ref: {{recu_ref}}). Download your certified digital receipt: {{recu_url}}",
+    "_needs_human_review": true,
+    "_notes": "Official payment confirmation copy in English"
+  },
+  "activation_support": {
+    "text": "Hello EcoSurv, I have registered \"{{nom_ecole}}\" ({{ville}}) and would like to request school workspace activation.",
+    "_needs_human_review": false
+  },
+  "login_help": {
+    "text": "Hello EcoSurv, I need assistance logging into my account.",
+    "_needs_human_review": false
+  }
+}

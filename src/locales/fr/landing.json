@@ -1,0 +1,47 @@
+{
+  "heroBadge": "Plateforme Souveraine de Recouvrement Scolaire en Mauritanie",
+  "heroTitle": "Zéro impayé.",
+  "heroSubtitle": "Pilotez vos inscriptions, recouvrements Ouguiya (MRU), relances WhatsApp et scolarité en temps réel avec un outil conçu sur-mesure pour les établissements privés mauritaniens.",
+  "ctaStart": "Créer mon école",
+  "ctaLogin": "Se connecter",
+  "ctaAssistance": "Assistance WhatsApp 6j/7",
+  "metrics": {
+    "collectionRate": "98.4%",
+    "collectionRateLabel": "Taux d'encaissement moyen",
+    "speed": "< 30s",
+    "speedLabel": "Encaissement & reçu DGI",
+    "compliance": "100%",
+    "complianceLabel": "Conformité APDP & RLS"
+  },
+  "navLinks": {
+    "solutions": "Solutions",
+    "howItWorks": "Comment ça marche",
+    "roiSimulator": "Simulateur ROI",
+    "portals": "Portails",
+    "pricing": "Tarifs"
+  },
+  "partnersBar": {
+    "title": "Paiements & Réglementation",
+    "subtitle": "Intégration directe des canaux financiers mauritaniens"
+  },
+  "finalCta": {
+    "title": "Prêt à sécuriser les rentrées scolaires de votre établissement ?",
+    "subtitle": "Rejoignez les directions scolaires mauritaniennes qui ont éliminé les litiges de caisse, automatisé les quittances WhatsApp et divisé leurs impayés par trois.",
+    "badges": {
+      "deployment": "Déploiement garanti en 24h",
+      "mobileMoney": "Intégré Bankily & Masrvi",
+      "training": "Formation sur site & support 6j/7",
+      "team": "Équipe support basée à Nouakchott"
+    }
+  },
+  "footer": {
+    "brandTagline": "Solution logicielle souveraine de pilotage des recouvrements scolaires et universitaires en République Islamique de Mauritanie.",
+    "colPlatform": "Plateforme",
+    "colCompliance": "Conformité",
+    "colSupport": "Assistance",
+    "copyright": "© 2026-2027 EcoSurv SARL. Tous droits réservés. République Islamique de Mauritanie.",
+    "legal": "Mentions Légales",
+    "privacy": "Protection des Données (APDP)",
+    "terms": "Conditions Générales de Vente"
+  }
+}

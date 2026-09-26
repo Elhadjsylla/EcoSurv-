@@ -1,0 +1,49 @@
+{
+  "title": "لوحة قيادة الإدارة العامة",
+  "subtitle": "متابعة فورية ومباشرة للتحصيل المالي والوضعية المحاسبية للتلاميذ.",
+  "exportPdf": "تصدير التقرير PDF",
+  "remindAll": "إشعار جميع المتأخرات ({{count}})",
+  "generatingPdf": "جارٍ إنشاء ملف PDF...",
+  "kpis": {
+    "expectedTotal": "إجمالي الرسوم المدرسية المتوقعة",
+    "expectedSubtitle": "لصالح {{count}} تلميذاً مسجلاً",
+    "recoveredTotal": "إجمالي المبالغ المحصلة (المصارف والصندوق)",
+    "recoveryRate": "نسبة التحصيل الإجمالية",
+    "overdueTotal": "المتبقي للتحصيل (الأقساط المستحقة)",
+    "overdueFamilies": "أسر متأخرة عن السداد",
+    "upToDateCount": "تلاميذ مسددون بالكامل",
+    "upToDateSubtitle": "سددوا 100% من المصاريف"
+  },
+  "searchPlaceholder": "البحث بالاسم، الفصل، أو رقم التسجيل...",
+  "filters": {
+    "allClasses": "جميع الفصول",
+    "allStatuses": "جميع الحالات",
+    "upToDate": "مسدد",
+    "partial": "جزئي",
+    "overdue": "متأخر"
+  },
+  "table": {
+    "studentMatricule": "التلميذ ورقم التسجيل",
+    "class": "الفصل",
+    "guardian": "ولي الأمر والاتصال",
+    "totalDue": "المبلغ الإجمالي",
+    "paid": "المسدد",
+    "remaining": "المتبقي",
+    "status": "الحالة",
+    "actions": "إجراءات"
+  },
+  "actions": {
+    "viewDetails": "عرض الملف",
+    "markAsPaid": "تسجيل كمسدد بالكامل",
+    "remind": "إشعار (واتساب)",
+    "deselect": "إلغاء التحديد",
+    "remindSelection": "إشعار المحددين ({{count}})",
+    "exportSelection": "تصدير"
+  },
+  "toasts": {
+    "markedPaid": "✓ تم تسجيل سداد رصيد {{name}} بالكامل ({{amount}})",
+    "pdfExportSuccess": "✓ تم إنشاء وتحميل التقرير المحاسبي PDF بنجاح!",
+    "bulkRemindSuccess": "⚡ تم إرسال حملة التذكير بنجاح إلى {{count}} أسرة!",
+    "bulkExportSuccess": "✓ تم تصدير التقرير المحاسبي لـ {{count}} تلميذ(ة) بنجاح."
+  }
+}

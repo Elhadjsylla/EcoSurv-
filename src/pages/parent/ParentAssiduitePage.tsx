@@ -22,6 +22,8 @@ import {
   Calendar,
 } from 'lucide-react';
 
+import { useParentChildren } from '../../hooks/useParentChildren';
+
 interface ParentAssiduitePageProps {
   selectedChildId: string;
 }
@@ -29,32 +31,86 @@ interface ParentAssiduitePageProps {
 export const ParentAssiduitePage: React.FC<ParentAssiduitePageProps> = ({
   selectedChildId,
 }) => {
-  const enfant =
-    MOCK_PARENT_ENFANTS_DETAILS[selectedChildId] ||
-    MOCK_PARENT_ENFANTS_DETAILS['el-001'];
+  const { activeChild, errorMessage: childrenError } = useParentChildren(selectedChildId, () => {});
+
+  if (childrenError) {
+    return (
+      <div className="p-6 sm:p-8 lg:p-10 max-w-5xl mx-auto space-y-8 animate-stagger-rise">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl p-8 border border-rose-200 dark:border-rose-900/60 shadow-2xs text-center space-y-4 max-w-xl mx-auto my-12">
+          <div className="h-14 w-14 rounded-2xl bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center mx-auto shadow-sm">
+            <AlertCircle className="h-7 w-7" />
+          </div>
+          <h2 className="text-xl font-bold text-slate-900 dark:text-white">
+            Impossible de charger les données d'assiduité
+          </h2>
+          <p className="text-sm text-slate-600 dark:text-slate-400">
+            {childrenError}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!activeChild) {
+    return (
+      <div className="p-6 sm:p-8 lg:p-10 max-w-5xl mx-auto space-y-8 animate-stagger-rise">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl p-8 border border-slate-200 dark:border-slate-800 shadow-2xs text-center space-y-4 max-w-xl mx-auto my-12">
+          <div className="h-14 w-14 rounded-2xl bg-purple-100 dark:bg-purple-950 text-purple-600 dark:text-purple-400 flex items-center justify-center mx-auto shadow-sm">
+            <CalendarCheck className="h-7 w-7" />
+          </div>
+          <h2 className="text-xl font-bold text-slate-900 dark:text-white">
+            Aucun élève rattaché pour le moment
+          </h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            Votre espace famille est actif. Le relevé d'assiduité, les absences et les déclarations de justificatifs d'absence de vos enfants apparaîtront ici.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  const mockEnfant = MOCK_PARENT_ENFANTS_DETAILS[activeChild.id];
+  const enfant = mockEnfant || {
+    id: activeChild.id,
+    nom: activeChild.nom,
+    prenom: activeChild.prenom,
+    classe: activeChild.classe,
+    matricule: activeChild.matricule,
+    photo_initiales: activeChild.photo_initiales,
+    rang: 1,
+    moyenne_generale: 0,
+    reste_a_payer: activeChild.remaining,
+    statut_paiement: activeChild.remaining === 0 ? 'paye' : 'partiel',
+    total_regle: activeChild.total_paid,
+    bulletin: [],
+    emploi_du_temps_aujourdhui: [],
+    nb_absences_total: 0,
+    nb_retards_total: 0,
+  };
 
   // Récupération des absences de l'enfant
   const [absencesList, setAbsencesList] = useState<AbsenceRecord[]>(() => {
     const records = MOCK_ABSENCES_INITIAL.filter(
-      (a) => a.eleve_id === selectedChildId
+      (a) => a.eleve_id === activeChild.id
     );
     if (records.length > 0) return records;
-
-    // Donnée initiale réaliste par défaut si aucune absence dans mock
-    return [
-      {
-        id: `abs-sample-${selectedChildId}`,
-        eleve_id: selectedChildId,
-        eleve_nom: enfant.nom,
-        eleve_prenom: enfant.prenom,
-        classe: enfant.classe,
-        date_absence: '2026-02-14',
-        creneau: 'matin',
-        type: 'absence',
-        justifiee: true,
-        motif: 'Certificat médical fourni (grippe saisonnière)',
-      },
-    ];
+    if (mockEnfant) {
+      return [
+        {
+          id: 'abs-1',
+          eleve_id: activeChild.id,
+          eleve_nom: enfant.nom,
+          eleve_prenom: enfant.prenom,
+          classe: enfant.classe,
+          date_absence: '2026-02-14',
+          creneau: 'matin' as const,
+          type: 'absence',
+          justifiee: false,
+          motif: 'Non justifié',
+        },
+      ];
+    }
+    return [];
   });
 
   // Modal de déclaration
@@ -65,7 +121,7 @@ export const ParentAssiduitePage: React.FC<ParentAssiduitePageProps> = ({
   const [commentaire, setCommentaire] = useState('');
   const [activeToast, setActiveToast] = useState<{
     message: string;
-    type: 'success' | 'info' | 'warning';
+    type: 'success' | 'info' | 'warning' | 'error';
   } | null>(null);
 
   const totalAbsences = absencesList.filter((a) => a.type === 'absence').length;

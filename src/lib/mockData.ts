@@ -17,6 +17,7 @@ export interface EcoleMock {
   email: string;
   annee_scolaire: string;
   statut_abonnement: 'essai' | 'actif' | 'suspendu' | 'expire' | 'annule';
+  statut_activation?: string;
 }
 
 export interface PaymentTimelineItem {
@@ -102,12 +103,12 @@ export interface MonthlyFinancialReport {
 
 export const CURRENT_ECOLE: EcoleMock = {
   id: 'ecole-demo-001',
-  nom: 'Lycée Privé Al-Amel Nouakchott',
-  code_ecole: 'AMEL-NKTT',
+  nom: 'Établissement Scolaire',
+  code_ecole: 'ECO-SURV',
   ville: 'Nouakchott (Tevragh-Zeina)',
   adresse: 'Avenue Moktar Ould Daddah',
   telephone: '+222 45 25 12 34',
-  email: 'contact@alamel.edu.mr',
+  email: 'contact@ecosurv.mr',
   annee_scolaire: '2025-2026',
   statut_abonnement: 'actif',
 };
@@ -211,50 +212,6 @@ export const MOCK_ELEVES: EleveWithStats[] = [
         methode: 'especes',
         statut: 'regle',
         recu_ref: 'ESP-0891',
-      },
-    ],
-  },
-  {
-    id: 'el-003',
-    ecole_id: 'ecole-demo-001',
-    matricule: 'DEMO-2025-003',
-    nom: 'SOW',
-    prenom: 'Cheikh Tidiane',
-    date_naissance: '2012-05-11',
-    lieu_naissance: 'Rosso',
-    sexe: 'M',
-    classe: '6ème A',
-    nom_tuteur: 'Ousmane Sow',
-    telephone_tuteur: '+222 44 55 66 77',
-    adresse_tuteur: 'Arafat Poteau 11, Nouakchott',
-    lien_parente: 'tuteur',
-    actif: true,
-    total_due: 35000,
-    total_paid: 20000,
-    remaining: 15000,
-    statut: 'partiel',
-    derniere_echeance_date: '2026-02-01',
-    prochaine_echeance_date: '2026-03-01',
-    prochaine_echeance_montant: 15000,
-    nb_absences: 0,
-    timeline_paiements: [
-      {
-        id: 'pay-005',
-        libelle: 'Mensualité Janvier 2026 (Acompte)',
-        montant: 10000,
-        date: '02/02/2026',
-        methode: 'masrvi',
-        statut: 'regle',
-        recu_ref: 'MAS-4412',
-      },
-      {
-        id: 'pay-006',
-        libelle: 'Inscription',
-        montant: 10000,
-        date: '18/09/2025',
-        methode: 'especes',
-        statut: 'regle',
-        recu_ref: 'ESP-0512',
       },
     ],
   },
@@ -606,17 +563,6 @@ export const MOCK_HISTORIQUE_RELANCES: HistoriqueRelance[] = [
     message_snippet: 'Rappel EcoSurv: Échéance de 45 000 MRU en retard pour OULD MOHAMED Sidi. Contactez la caisse.',
   },
   {
-    id: 'rel-103',
-    eleve_id: 'el-003',
-    eleve_nom: 'SOW Cheikh Tidiane',
-    classe: '6ème A',
-    canal: 'WhatsApp',
-    telephone: '+222 44 55 66 77',
-    date: '2026-02-15 09:15',
-    statut: 'Delivré',
-    message_snippet: 'Rappel EcoSurv: Solde partiel restant de 15 000 MRU pour Cheikh Tidiane SOW.',
-  },
-  {
     id: 'rel-104',
     eleve_id: 'el-007',
     eleve_nom: 'CAMARA Boubacar',
@@ -789,19 +735,6 @@ export interface EvaluationRecord {
 
 export const MOCK_ABSENCES_INITIAL: AbsenceRecord[] = [
   {
-    id: 'abs-001',
-    eleve_id: 'el-003',
-    eleve_nom: 'SOW',
-    eleve_prenom: 'Cheikh Tidiane',
-    classe: '6ème A',
-    date_absence: '2026-03-08',
-    creneau: 'matin',
-    type: 'retard',
-    justifiee: true,
-    motif: 'Panne de transport scolaire',
-    minutes_retard: 20,
-  },
-  {
     id: 'abs-002',
     eleve_id: 'el-007',
     eleve_nom: 'CAMARA',
@@ -850,7 +783,6 @@ export const MOCK_EVALUATIONS_INITIAL: EvaluationRecord[] = [
     coefficient: 2,
     bareme: 20,
     notes: {
-      'el-003': 15.5,
       'el-007': 12.0,
       'el-009': 17.0,
       'el-010': 14.5,
@@ -866,7 +798,6 @@ export const MOCK_EVALUATIONS_INITIAL: EvaluationRecord[] = [
     coefficient: 1,
     bareme: 20,
     notes: {
-      'el-003': 14.0,
       'el-007': 11.5,
       'el-009': 16.0,
       'el-010': 15.0,
@@ -916,7 +847,6 @@ export function getElevesForTeacher(
   classesAssignees: string[]
 ): ElevePedagogique[] {
   const moyennesParEleve: Record<string, number> = {
-    'el-003': 14.8,
     'el-004': 17.2,
     'el-007': 11.8,
     'el-008': 13.5,
@@ -943,7 +873,7 @@ export function getElevesForTeacher(
       lien_parente: e.lien_parente,
       actif: e.actif,
       nb_absences: e.nb_absences,
-      nb_retards: e.id === 'el-003' ? 1 : 0,
+      nb_retards: 0,
       moyenne_generale: moyennesParEleve[e.id] || 13.0,
       statut_presence_jour: 'present',
     }));
@@ -989,7 +919,7 @@ export interface CaisseTransaction {
   methode: MethodePaiement;
   recu_ref: string;
   encaisse_par: string;
-  statut: 'confirme' | 'en_attente';
+  statut: 'confirme' | 'en_attente' | 'annule';
 }
 
 export const MOCK_CAISSE_TRANSACTIONS_INITIAL: CaisseTransaction[] = [
@@ -1022,22 +952,6 @@ export const MOCK_CAISSE_TRANSACTIONS_INITIAL: CaisseTransaction[] = [
     heure: '10:30',
     methode: 'especes',
     recu_ref: 'REC-NKTT-8813',
-    encaisse_par: 'Ahmedou Ould Taleb',
-    statut: 'confirme',
-  },
-  {
-    id: 'cais-tx-003',
-    eleve_id: 'el-003',
-    eleve_nom: 'SOW',
-    eleve_prenom: 'Cheikh Tidiane',
-    matricule: 'DEMO-2025-003',
-    classe: '6ème A',
-    echeance_libelle: 'Acompte Janvier 2026',
-    montant: 10000,
-    date: '2026-03-09',
-    heure: '11:45',
-    methode: 'masrvi',
-    recu_ref: 'REC-NKTT-8814',
     encaisse_par: 'Ahmedou Ould Taleb',
     statut: 'confirme',
   },
@@ -1082,7 +996,7 @@ export const CURRENT_PARENT: ParentMock = {
   telephone: '+222 22 11 33 44',
   email: 'a.diallo@gmail.com',
   role: 'parent',
-  enfants_ids: ['el-001', 'el-003'], // Mamadou Oury Diallo (Term C) et Cheikh Tidiane Sow (6ème A)
+  enfants_ids: [], // Aucun élève fictif rattaché par défaut
 };
 
 export interface ParentMatiereNote {
@@ -1190,73 +1104,6 @@ export const MOCK_PARENT_ENFANTS_DETAILS: Record<string, ParentEnfantDetail> = {
       { heure: '08:00 - 10:00', matiere: 'Mathématiques', salle: 'Salle 12', professeur: 'Prof. Sow' },
       { heure: '10:15 - 12:15', matiere: 'Physique-Chimie', salle: 'Labo 2', professeur: 'Prof. Kane' },
       { heure: '14:00 - 16:00', matiere: 'Philosophie', salle: 'Salle 12', professeur: 'Prof. Ndiaye' },
-    ],
-  },
-  'el-003': {
-    id: 'el-003',
-    matricule: 'DEMO-2025-003',
-    nom: 'SOW',
-    prenom: 'Cheikh Tidiane',
-    classe: '6ème A',
-    photo_initiales: 'CS',
-    date_naissance: '2013-09-24',
-    professeur_principal: 'M. Mohamed Ould Vall (Maths)',
-    total_scolarite: 90000,
-    total_regle: 40000,
-    reste_a_payer: 50000,
-    statut_paiement: 'en_retard',
-    prochaine_echeance_date: '2026-03-05',
-    prochaine_echeance_montant: 25000,
-    moyenne_generale: 14.8,
-    rang: '5ème / 32',
-    nb_absences_total: 2,
-    nb_retards_total: 1,
-    bulletin: [
-      {
-        matiere: 'Mathématiques',
-        moyenne: 15.5,
-        coefficient: 4,
-        professeur: 'M. Mohamed Ould Vall',
-        appreciation: 'Très bon trimestre, travail sérieux et appliqué.',
-        moyenne_classe: 13.2,
-      },
-      {
-        matiere: 'Français',
-        moyenne: 13.5,
-        coefficient: 4,
-        professeur: 'Mme Sy',
-        appreciation: 'Des progrès en grammaire, continue ainsi.',
-        moyenne_classe: 12.0,
-      },
-      {
-        matiere: 'Histoire-Géo',
-        moyenne: 14.0,
-        coefficient: 2,
-        professeur: 'M. Diallo',
-        appreciation: 'Bonne mémorisation des cours et esprit curieux.',
-        moyenne_classe: 11.5,
-      },
-      {
-        matiere: 'Sciences de la Vie et de la Terre',
-        moyenne: 16.0,
-        coefficient: 2,
-        professeur: 'M. Mohamed Ould Vall',
-        appreciation: 'Très attentif et curieux des démarches scientifiques.',
-        moyenne_classe: 12.9,
-      },
-      {
-        matiere: 'Arabe',
-        moyenne: 15.0,
-        coefficient: 3,
-        professeur: 'Cheikh Sidi',
-        appreciation: 'Bonne expression et récitation soignée.',
-        moyenne_classe: 13.8,
-      },
-    ],
-    emploi_du_temps_aujourdhui: [
-      { heure: '08:00 - 09:50', matiere: 'Français', salle: 'Salle 4', professeur: 'Mme Sy' },
-      { heure: '10:05 - 12:00', matiere: 'Mathématiques', salle: 'Salle 4', professeur: 'M. Ould Vall' },
-      { heure: '14:30 - 16:30', matiere: 'SVT', salle: 'Salle SVT', professeur: 'M. Ould Vall' },
     ],
   },
 };

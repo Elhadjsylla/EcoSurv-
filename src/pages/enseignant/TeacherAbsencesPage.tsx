@@ -1,5 +1,4 @@
 import React, { useState, useMemo } from 'react';
-import confetti from 'canvas-confetti';
 import {
   CURRENT_ENSEIGNANT,
   MOCK_ELEVES,
@@ -18,7 +17,7 @@ import {
   CheckCircle2,
   XCircle,
   Clock,
-  Sparkles,
+  CheckCheck,
   FileCheck,
   Users,
   ChevronLeft,
@@ -33,12 +32,19 @@ interface StudentAttendanceState {
   justifiee?: boolean;
 }
 
+import { useAuthStore } from '../../store/useAuthStore';
+
 export const TeacherAbsencesPage: React.FC = () => {
+  const authProfile = useAuthStore((s) => s.profile);
+  const isRealAccount = Boolean(authProfile?.ecole_id);
   const [selectedClasse, setSelectedClasse] = useState<string>('6ème A');
   const [selectedDate, setSelectedDate] = useState<string>('2026-03-09');
   const [selectedCreneau, setSelectedCreneau] = useState<'matin' | 'apres_midi'>('matin');
-  const [absencesHistory, setAbsencesHistory] = useState<AbsenceRecord[]>(MOCK_ABSENCES_INITIAL);
-  const [activeToast, setActiveToast] = useState<{ message: string; type: 'success' | 'info' | 'warning' } | null>(null);
+  const [absencesHistory, setAbsencesHistory] = useState<AbsenceRecord[]>(() => {
+    if (isRealAccount) return [];
+    return MOCK_ABSENCES_INITIAL;
+  });
+  const [activeToast, setActiveToast] = useState<{ message: string; type: 'success' | 'info' | 'warning' | 'error' } | null>(null);
 
   // Pagination pour la table d'appel
   const [currentPage, setCurrentPage] = useState(1);
@@ -48,10 +54,11 @@ export const TeacherAbsencesPage: React.FC = () => {
   const [attendanceMap, setAttendanceMap] = useState<Record<string, StudentAttendanceState>>({});
 
   const teacherStudents = useMemo(() => {
+    if (isRealAccount) return [];
     return getElevesForTeacher(MOCK_ELEVES, CURRENT_ENSEIGNANT.classes_assignees).filter(
       (e) => e.classe === selectedClasse
     );
-  }, [selectedClasse]);
+  }, [isRealAccount, selectedClasse]);
 
   const totalPages = Math.ceil(teacherStudents.length / itemsPerPage) || 1;
   const paginatedStudents = teacherStudents.slice(
@@ -99,22 +106,6 @@ export const TeacherAbsencesPage: React.FC = () => {
     });
   };
 
-  const triggerConfettiCelebration = () => {
-    try {
-      confetti({
-        particleCount: 30,
-        spread: 50,
-        origin: { y: 0.75 },
-        colors: ['#10b981', '#3b82f6', '#059669'],
-        disableForReducedMotion: true,
-        ticks: 120,
-        scalar: 0.85,
-      });
-    } catch {
-      // Ignorer
-    }
-  };
-
   const handleSaveAttendance = () => {
     const newRecords: AbsenceRecord[] = [];
     teacherStudents.forEach((el) => {
@@ -136,7 +127,6 @@ export const TeacherAbsencesPage: React.FC = () => {
     });
 
     setAbsencesHistory((prev) => [...newRecords, ...prev]);
-    triggerConfettiCelebration();
     setActiveToast({
       message: `Feuille d'appel de ${selectedClasse} (${selectedCreneau}) enregistrée avec succès !`,
       type: 'success',
@@ -183,8 +173,8 @@ export const TeacherAbsencesPage: React.FC = () => {
             className="gap-2 border-emerald-300 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/40"
             onClick={handleMarkAllPresent}
           >
-            <Sparkles className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-            Tous Présents (1 clic)
+            <CheckCheck className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+            Tous Présents
           </Button>
 
           <Button

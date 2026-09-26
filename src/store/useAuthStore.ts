@@ -4,12 +4,16 @@ import { useNavigationStore } from './useNavigationStore';
 
 export type UserRole = 'super_admin' | 'directeur' | 'enseignant' | 'parent' | 'caissier';
 
+/** Le super admin n'a pas de portail metier : il ne dispose que de sa console. */
+export type PortalRole = Exclude<UserRole, 'super_admin'>;
+
 export interface UserProfile {
   id: string;
   ecole_id: string | null;
   nom: string;
   prenom: string;
   telephone: string | null;
+  email?: string | null;
   role: UserRole;
   actif: boolean;
   created_at?: string;

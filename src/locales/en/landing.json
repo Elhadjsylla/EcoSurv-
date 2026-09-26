@@ -1,0 +1,47 @@
+{
+  "heroBadge": "Sovereign School Fee Recovery Platform in Mauritania",
+  "heroTitle": "Zero Overdue.",
+  "heroSubtitle": "Manage student enrollment, Ouguiya (MRU) collection, automated WhatsApp notifications, and finances in real time with an all-in-one software built for Mauritanian schools.",
+  "ctaStart": "Create School",
+  "ctaLogin": "Log In",
+  "ctaAssistance": "WhatsApp Support 6d/7",
+  "metrics": {
+    "collectionRate": "98.4%",
+    "collectionRateLabel": "Average collection rate",
+    "speed": "< 30s",
+    "speedLabel": "Payment entry & DGI receipt",
+    "compliance": "100%",
+    "complianceLabel": "APDP & RLS data privacy"
+  },
+  "navLinks": {
+    "solutions": "Solutions",
+    "howItWorks": "How it Works",
+    "roiSimulator": "ROI Simulator",
+    "portals": "Portals",
+    "pricing": "Pricing"
+  },
+  "partnersBar": {
+    "title": "Payments & Compliance",
+    "subtitle": "Direct integration with Mauritanian mobile banking"
+  },
+  "finalCta": {
+    "title": "Ready to secure your school's annual revenue?",
+    "subtitle": "Join Mauritanian school leaders who eliminated cash discrepancies, automated WhatsApp receipts, and divided defaults by three.",
+    "badges": {
+      "deployment": "Guaranteed deployment in 24h",
+      "mobileMoney": "Integrated Bankily & Masrvi",
+      "training": "Onsite training & 6d/7 support",
+      "team": "Local support team in Nouakchott"
+    }
+  },
+  "footer": {
+    "brandTagline": "Sovereign software platform for school and university tuition management in the Islamic Republic of Mauritania.",
+    "colPlatform": "Platform",
+    "colCompliance": "Compliance",
+    "colSupport": "Support",
+    "copyright": "© 2026-2027 EcoSurv SARL. All rights reserved. Islamic Republic of Mauritania.",
+    "legal": "Legal Notice",
+    "privacy": "Data Protection (APDP)",
+    "terms": "Terms of Service"
+  }
+}

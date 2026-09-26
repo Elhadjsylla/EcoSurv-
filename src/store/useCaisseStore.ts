@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { supabase } from '../lib/supabase';
-import { CURRENT_CAISSIER } from '../lib/mockData';
+import { CURRENT_CAISSIER, CaisseTransaction, MOCK_CAISSE_TRANSACTIONS_INITIAL } from '../lib/mockData';
 
 export interface ClotureCaisseData {
   id?: string;
@@ -17,6 +17,12 @@ export interface ClotureCaisseData {
 
 interface CaisseStoreState {
   clotures: Record<string, ClotureCaisseData>; // indexées par date YYYY-MM-DD
+  transactions: CaisseTransaction[];
+  refreshKey: number;
+  elevePaymentDeductions: Record<string, number>;
+  addTransaction: (tx: CaisseTransaction) => void;
+  triggerRefresh: () => void;
+  deductEleveBalance: (eleveId: string, amount: number) => void;
   isDateCloturee: (dateStr?: string) => boolean;
   getClotureForDate: (dateStr?: string) => ClotureCaisseData | null;
   cloturerCaisseDuJour: (montantTotal: number, nbTransactions: number) => Promise<boolean>;
@@ -29,6 +35,30 @@ export const useCaisseStore = create<CaisseStoreState>()(
   persist(
     (set, get) => ({
       clotures: {},
+      transactions: MOCK_CAISSE_TRANSACTIONS_INITIAL,
+      refreshKey: 1,
+      elevePaymentDeductions: {},
+
+      addTransaction: (tx: CaisseTransaction) => {
+        set((state) => ({
+          transactions: [tx, ...state.transactions],
+          refreshKey: state.refreshKey + 1,
+        }));
+      },
+
+      triggerRefresh: () => {
+        set((state) => ({ refreshKey: state.refreshKey + 1 }));
+      },
+
+      deductEleveBalance: (eleveId: string, amount: number) => {
+        set((state) => ({
+          elevePaymentDeductions: {
+            ...state.elevePaymentDeductions,
+            [eleveId]: (state.elevePaymentDeductions[eleveId] || 0) + amount,
+          },
+          refreshKey: state.refreshKey + 1,
+        }));
+      },
 
       isDateCloturee: (dateStr) => {
         const d = dateStr || getTodayDateStr();

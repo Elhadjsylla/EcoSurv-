@@ -8,7 +8,8 @@ import {
   Users,
   HeartHandshake,
 } from 'lucide-react';
-import { CURRENT_PARENT, MOCK_PARENT_ENFANTS_DETAILS } from '../../lib/mockData';
+import { MOCK_PARENT_ENFANTS_DETAILS } from '../../lib/mockData';
+import { useParentChildren } from '../../hooks/useParentChildren';
 import { Tooltip, TooltipLabel } from '../ui/Tooltip';
 import { SidebarShell } from '../ui/SidebarShell';
 
@@ -26,6 +27,9 @@ interface ParentSidebarProps {
   className?: string;
 }
 
+import { useLanguageStore } from '../../i18n/useLanguageStore';
+import { translations } from '../../i18n/translations';
+
 export const ParentSidebar: React.FC<ParentSidebarProps> = ({
   activeTab,
   onTabChange,
@@ -33,6 +37,10 @@ export const ParentSidebar: React.FC<ParentSidebarProps> = ({
   onSelectChild,
   className,
 }) => {
+  const storeT = useLanguageStore((s) => s.t);
+  const t = storeT?.nav ? storeT : translations.fr;
+  const { children: parentChildren } = useParentChildren(selectedChildId, onSelectChild);
+
   const navItems: Array<{
     id: ParentNavTab;
     label: string;
@@ -41,26 +49,26 @@ export const ParentSidebar: React.FC<ParentSidebarProps> = ({
   }> = [
     {
       id: 'parent_dashboard',
-      label: 'Accueil Famille',
+      label: t.nav?.familyHome || 'Accueil Famille',
       icon: <LayoutGrid className="h-4 w-4 shrink-0" />,
     },
     {
       id: 'parent_paiements',
-      label: 'Frais & Paiements',
+      label: t.nav?.feesPayments || 'Frais & Paiements',
       icon: <WalletCards className="h-4 w-4 shrink-0" />,
       badge:
-        MOCK_PARENT_ENFANTS_DETAILS[selectedChildId]?.reste_a_payer > 0
+        selectedChildId && MOCK_PARENT_ENFANTS_DETAILS[selectedChildId]?.reste_a_payer > 0
           ? 'À régler'
           : undefined,
     },
     {
       id: 'parent_pedagogie',
-      label: 'Notes & Bulletins',
+      label: t.nav?.gradesReport || 'Notes & Bulletins',
       icon: <GraduationCap className="h-4 w-4 shrink-0" />,
     },
     {
       id: 'parent_assiduite',
-      label: 'Assiduité & Absences',
+      label: t.nav?.attendance || 'Assiduité',
       icon: <CalendarDays className="h-4 w-4 shrink-0" />,
     },
   ];
@@ -80,69 +88,62 @@ export const ParentSidebar: React.FC<ParentSidebarProps> = ({
               <div className="flex items-center justify-between text-xs font-bold text-slate-900 dark:text-white mb-2">
                 <div className="flex items-center gap-1.5">
                   <Users className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
-                  <span>Enfants scolarisés ({CURRENT_PARENT.enfants_ids.length})</span>
+                  <span>Enfants scolarisés ({parentChildren.length})</span>
                 </div>
               </div>
 
-              <div className="space-y-1">
-                {CURRENT_PARENT.enfants_ids.map((id) => {
-                  const enf = MOCK_PARENT_ENFANTS_DETAILS[id];
-                  if (!enf) return null;
-                  const isChildSelected = selectedChildId === id;
-                  return (
-                    <button
-                      key={id}
-                      onClick={() => onSelectChild(id)}
-                      className={cn(
-                        'w-full text-left p-2 rounded-lg transition-all flex items-center justify-between',
-                        isChildSelected
-                          ? 'bg-purple-600 text-white shadow-xs font-semibold'
-                          : 'hover:bg-purple-100/60 dark:hover:bg-purple-900/40 text-slate-700 dark:text-slate-300'
-                      )}
-                    >
-                      <div className="min-w-0">
-                        <div className="text-xs truncate font-bold">
-                          {enf.prenom} {enf.nom}
+              {parentChildren.length === 0 ? (
+                <div className="p-2 text-center text-[11px] text-slate-400">
+                  Aucun élève rattaché
+                </div>
+              ) : (
+                <div className="space-y-1">
+                  {parentChildren.map((enf) => {
+                    const isChildSelected = selectedChildId === enf.id;
+                    return (
+                      <button
+                        key={enf.id}
+                        onClick={() => onSelectChild(enf.id)}
+                        className={cn(
+                          'w-full text-left p-2 rounded-lg transition-all flex items-center justify-between',
+                          isChildSelected
+                            ? 'bg-purple-600 text-white shadow-xs font-semibold'
+                            : 'hover:bg-purple-100/60 dark:hover:bg-purple-900/40 text-slate-700 dark:text-slate-300'
+                        )}
+                      >
+                        <div className="min-w-0">
+                          <div className="text-xs truncate font-bold">
+                            {enf.prenom} {enf.nom}
+                          </div>
+                          <div
+                            className={cn(
+                              'text-[10px] truncate',
+                              isChildSelected
+                                ? 'text-purple-100'
+                                : 'text-slate-500 dark:text-slate-400'
+                            )}
+                          >
+                            {enf.classe}
+                          </div>
                         </div>
-                        <div
-                          className={cn(
-                            'text-[10px] truncate',
-                            isChildSelected
-                              ? 'text-purple-100'
-                              : 'text-slate-500 dark:text-slate-400'
-                          )}
-                        >
-                          {enf.classe}
-                        </div>
-                      </div>
 
-                      {enf.reste_a_payer > 0 ? (
-                        <span
-                          className={cn(
-                            'px-1.5 py-0.5 rounded text-[9px] font-mono font-bold shrink-0',
-                            isChildSelected
-                              ? 'bg-white/20 text-white'
-                              : 'bg-rose-100 dark:bg-rose-950/80 text-rose-700 dark:text-rose-300'
-                          )}
-                        >
-                          Solde
-                        </span>
-                      ) : (
-                        <span
-                          className={cn(
-                            'px-1.5 py-0.5 rounded text-[9px] font-mono font-bold shrink-0',
-                            isChildSelected
-                              ? 'bg-white/20 text-white'
-                              : 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300'
-                          )}
-                        >
-                          À jour
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
+                        {enf.remaining > 0 ? (
+                          <span
+                            className={cn(
+                              'px-1.5 py-0.5 rounded text-[9px] font-mono font-bold shrink-0',
+                              isChildSelected
+                                ? 'bg-white/20 text-white'
+                                : 'bg-rose-100 dark:bg-rose-950/80 text-rose-700 dark:text-rose-300'
+                            )}
+                          >
+                            Solde
+                          </span>
+                        ) : null}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           )}
 
@@ -150,7 +151,7 @@ export const ParentSidebar: React.FC<ParentSidebarProps> = ({
           <div className="flex-1 px-3 py-4 space-y-1.5 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-800">
             {!isCollapsed && (
               <div className="px-3 pb-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                Espace Parent
+                {t.nav?.familySpace || 'Espace Famille'}
               </div>
             )}
 

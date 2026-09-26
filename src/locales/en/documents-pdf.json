@@ -1,0 +1,37 @@
+{
+  "receipt": {
+    "title": "OFFICIAL PAYMENT RECEIPT",
+    "schoolCode": "School Code",
+    "receiptNumber": "Receipt No.",
+    "dateTime": "Date & Time",
+    "studentSection": "STUDENT INFORMATION",
+    "studentName": "Full Name",
+    "studentId": "Student ID",
+    "studentClass": "Grade / Class",
+    "paymentDetails": "PAYMENT DETAILS",
+    "purpose": "Purpose / Period",
+    "paymentMethod": "Payment Method",
+    "amountPaid": "Amount Collected",
+    "certifiedNotice": "Official certified payment voucher",
+    "cashier": "Cashier",
+    "_needs_human_review": true,
+    "_notes": "Official English receipt voucher labels"
+  },
+  "bulletin": {
+    "countryHeader": "ISLAMIC REPUBLIC OF MAURITANIA",
+    "ministryHeader": "MINISTRY OF NATIONAL EDUCATION AND EDUCATIONAL REFORM",
+    "title": "ACADEMIC REPORT CARD",
+    "term1": "1st TERM",
+    "term2": "2nd TERM",
+    "term3": "3rd TERM",
+    "subject": "Subject",
+    "coefficient": "Coef.",
+    "grade": "Grade / 20",
+    "rank": "Rank",
+    "classAverage": "Class Average",
+    "generalAverage": "Overall Average",
+    "teacherAppreciation": "Teacher Remarks",
+    "_needs_human_review": true,
+    "_notes": "Official English report card labels"
+  }
+}

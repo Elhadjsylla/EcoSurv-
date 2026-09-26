@@ -1,4 +1,5 @@
 import { CaisseTransaction } from '../mockData';
+import { downloadFile } from '../downloadFile';
 
 export function exportCaisseCsv(transactions: CaisseTransaction[], filename?: string) {
   const headers = [
@@ -33,14 +34,12 @@ export function exportCaisseCsv(transactions: CaisseTransaction[], filename?: st
     '\uFEFF' + // UTF-8 BOM pour bon affichage des accents sous Excel
     [headers.join(';'), ...rows.map((r) => r.join(';'))].join('\r\n');
 
-  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
   const now = new Date().toISOString().split('T')[0];
-  link.setAttribute('href', url);
-  link.setAttribute('download', filename || `journal_caisse_${now}.csv`);
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
+  const finalFilename = filename || `Journal_Caisse_${now}.csv`;
+
+  downloadFile({
+    filename: finalFilename,
+    blobOrData: csvContent,
+    mimeType: 'text/csv;charset=utf-8;',
+  });
 }

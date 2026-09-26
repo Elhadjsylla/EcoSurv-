@@ -1,0 +1,49 @@
+{
+  "title": "Director Dashboard",
+  "subtitle": "Real-time fee collection tracking and student financial status overview.",
+  "exportPdf": "Export PDF Report",
+  "remindAll": "Remind All Overdue ({{count}})",
+  "generatingPdf": "Generating PDF...",
+  "kpis": {
+    "expectedTotal": "Total Expected Tuition",
+    "expectedSubtitle": "For {{count}} enrolled students",
+    "recoveredTotal": "Total Collected (Banks & Cash)",
+    "recoveryRate": "Overall collection rate",
+    "overdueTotal": "Outstanding Balance (Due Terms)",
+    "overdueFamilies": "Families overdue",
+    "upToDateCount": "Fully Paid Students",
+    "upToDateSubtitle": "Tuition 100% cleared"
+  },
+  "searchPlaceholder": "Search by student, class or ID...",
+  "filters": {
+    "allClasses": "All classes",
+    "allStatuses": "All statuses",
+    "upToDate": "Paid",
+    "partial": "Partial",
+    "overdue": "Overdue"
+  },
+  "table": {
+    "studentMatricule": "Student & ID",
+    "class": "Class",
+    "guardian": "Guardian & Contact",
+    "totalDue": "Total Due",
+    "paid": "Paid",
+    "remaining": "Remaining",
+    "status": "Status",
+    "actions": "Actions"
+  },
+  "actions": {
+    "viewDetails": "View file",
+    "markAsPaid": "Mark as paid in full",
+    "remind": "Remind (WhatsApp)",
+    "deselect": "Deselect",
+    "remindSelection": "Remind selected ({{count}})",
+    "exportSelection": "Export"
+  },
+  "toasts": {
+    "markedPaid": "✓ Balance for {{name}} marked as fully paid ({{amount}})",
+    "pdfExportSuccess": "✓ Summary PDF report generated and downloaded successfully!",
+    "bulkRemindSuccess": "⚡ Reminder campaign successfully sent to {{count}} families!",
+    "bulkExportSuccess": "✓ Financial report export for {{count}} student(s) generated successfully."
+  }
+}

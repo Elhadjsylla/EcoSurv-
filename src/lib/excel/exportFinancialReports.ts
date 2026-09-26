@@ -1,5 +1,6 @@
 import * as XLSX from 'xlsx';
 import { MonthlyFinancialReport } from '../mockData';
+import { downloadFile } from '../downloadFile';
 
 export function exportFinancialReportsToExcel(
   reports: MonthlyFinancialReport[],
@@ -69,5 +70,11 @@ export function exportFinancialReportsToExcel(
   // Déclencher le téléchargement du fichier binaire .xlsx
   const outputFileName =
     filename || `Rapport_Financier_EcoSurv_${new Date().toISOString().split('T')[0]}.xlsx`;
-  XLSX.writeFile(wb, outputFileName);
+
+  const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+  downloadFile({
+    filename: outputFileName,
+    blobOrData: excelBuffer,
+    mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  });
 }

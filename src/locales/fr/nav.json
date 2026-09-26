@@ -1,0 +1,20 @@
+{
+  "dashboard": "Tableau de bord",
+  "students": "Gestion Élèves",
+  "schedule": "Échéances & Tarifs",
+  "reminders": "Relances Impayés",
+  "reports": "Rapports Financiers",
+  "settings": "Configuration",
+  "classes": "Mes Classes",
+  "attendance": "Saisie des Absences",
+  "grades": "Saisie des Notes",
+  "pedagogicSpace": "Espace Pédagogique",
+  "counter": "Guichet d'Encaissement",
+  "cashRegister": "Journal de Caisse",
+  "unpaid": "Relevé des Impayés",
+  "financialManagement": "Gestion Financière",
+  "familyHome": "Accueil Famille",
+  "feesPayments": "Frais & Paiements",
+  "gradesReport": "Notes & Bulletins",
+  "familySpace": "Espace Famille"
+}

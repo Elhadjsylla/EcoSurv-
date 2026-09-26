@@ -2,7 +2,11 @@ import React, { useState, useRef } from 'react';
 import { Mail, Lock, Eye, EyeOff, LogIn, ArrowLeft, AlertCircle, ShieldCheck } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuthStore, UserProfile } from '../store/useAuthStore';
+import { useEcoleStore } from '../store/useEcoleStore';
 import { useNavigationStore } from '../store/useNavigationStore';
+import { CONTACT_CONFIG, getWhatsAppUrl } from '../config/contact';
+import { LanguageSelector } from '../components/ui/LanguageSelector';
+import { logLoginSuccess } from '../lib/auditLogger';
 import type { UserRole } from '../components/ui/Header';
 
 interface LoginPageProps {
@@ -133,14 +137,16 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onReturnToLanding }) => {
       useAuthStore.getState().setUser(authData.user);
       useAuthStore.getState().setProfile(profile as UserProfile);
 
-      // Si super_admin : accès direct sans restriction d'école
+      // Si super_admin : accès direct à la Console Super Admin (style Sama Boutik)
       if (profile.role === 'super_admin') {
-        useNavigationStore.getState().setUserRole('directeur');
-        useNavigationStore.getState().launchAppWithPortal('directeur');
+        logLoginSuccess(profile.email || authData.user.email || 'superadmin@ecosurv.mr', 'super_admin', {
+          nom: `${profile.prenom} ${profile.nom}`,
+        });
+        useNavigationStore.getState().navigateToAdminConsole();
         return;
       }
 
-      // Pour les autres rôles, vérification du statut d'activation de l'établissement
+      // Pour les autres rôles, vérification et synchronisation de l'établissement réel
       if (profile.ecole_id) {
         const { data: ecoleData } = await supabase
           .from('ecoles')
@@ -150,6 +156,16 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onReturnToLanding }) => {
 
         if (ecoleData) {
           useAuthStore.getState().setEcole(ecoleData);
+          useEcoleStore.getState().updateEcole({
+            id: ecoleData.id,
+            nom: ecoleData.nom,
+            ville: ecoleData.ville || 'Mauritanie',
+            telephone: ecoleData.telephone || '',
+            email: ecoleData.email || '',
+            statut_activation: ecoleData.statut_activation,
+            code_ecole: ecoleData.nom.slice(0, 4).toUpperCase(),
+          });
+
           if (ecoleData.statut_activation !== 'active') {
             useNavigationStore.getState().navigateToPendingActivation();
             return;
@@ -157,7 +173,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onReturnToLanding }) => {
         }
       }
 
-      // Déduire le portail et lancer l'application
+      // Déduire le portail et lancer l'application avec les données réelles
       const role = profile.role as UserRole;
       useNavigationStore.getState().setUserRole(role);
       useNavigationStore.getState().launchAppWithPortal(role);
@@ -181,13 +197,16 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onReturnToLanding }) => {
           <span>Retour au site</span>
         </button>
 
-        <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-600 text-white font-black text-xs shadow-md shadow-blue-600/20">
-            ES
+        <div className="flex items-center gap-2.5">
+          <LanguageSelector />
+          <div className="flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-600 text-white font-black text-xs shadow-md shadow-blue-600/20">
+              ES
+            </div>
+            <span className="font-extrabold text-sm tracking-tight text-slate-900 dark:text-white">
+              EcoSurv
+            </span>
           </div>
-          <span className="font-extrabold text-sm tracking-tight text-slate-900 dark:text-white">
-            EcoSurv
-          </span>
         </div>
       </div>
 
@@ -321,8 +340,13 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onReturnToLanding }) => {
             </p>
             <p className="text-[11px] text-slate-400 dark:text-slate-500">
               Rapprochez-vous de la direction de votre établissement ou contactez notre assistance technique au{' '}
-              <a href="https://wa.me/22246000000" target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 font-semibold hover:underline">
-                support WhatsApp EcoSurv
+              <a
+                href={getWhatsAppUrl('Bonjour EcoSurv, j\'ai besoin d\'aide pour accéder à mon compte.')}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-600 dark:text-blue-400 font-semibold hover:underline"
+              >
+                support WhatsApp ({CONTACT_CONFIG.phone.display})
               </a>.
             </p>
           </div>

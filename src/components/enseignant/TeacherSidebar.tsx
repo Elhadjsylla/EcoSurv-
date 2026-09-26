@@ -9,6 +9,7 @@ import {
   BookMarked,
 } from 'lucide-react';
 import { CURRENT_ENSEIGNANT } from '../../lib/mockData';
+import { useAuthStore } from '../../store/useAuthStore';
 import { Tooltip, TooltipLabel } from '../ui/Tooltip';
 import { SidebarShell } from '../ui/SidebarShell';
 
@@ -24,11 +25,23 @@ interface TeacherSidebarProps {
   className?: string;
 }
 
+import { useLanguageStore } from '../../i18n/useLanguageStore';
+import { translations } from '../../i18n/translations';
+
 export const TeacherSidebar: React.FC<TeacherSidebarProps> = ({
   activeTab,
   onTabChange,
   className,
 }) => {
+  const storeT = useLanguageStore((s) => s.t);
+  const t = storeT?.nav ? storeT : translations.fr;
+  const authProfile = useAuthStore((s) => s.profile);
+  const isReal = Boolean(authProfile?.ecole_id);
+
+  const teacherName = authProfile
+    ? `${authProfile.prenom} ${authProfile.nom}`
+    : `${CURRENT_ENSEIGNANT.prenom} ${CURRENT_ENSEIGNANT.nom}`;
+
   const navItems: Array<{
     id: TeacherNavTab;
     label: string;
@@ -37,23 +50,23 @@ export const TeacherSidebar: React.FC<TeacherSidebarProps> = ({
   }> = [
     {
       id: 'teacher_dashboard',
-      label: 'Tableau de Bord',
+      label: t.nav?.dashboard || 'Tableau de bord',
       icon: <LayoutGrid className="h-4 w-4 shrink-0" />,
     },
     {
       id: 'teacher_classes',
-      label: 'Mes Classes',
+      label: t.nav?.classes || 'Mes Classes',
       icon: <UsersRound className="h-4 w-4 shrink-0" />,
-      badge: `${CURRENT_ENSEIGNANT.classes_assignees.length}`,
+      badge: isReal ? undefined : `${CURRENT_ENSEIGNANT.classes_assignees.length}`,
     },
     {
       id: 'teacher_absences',
-      label: 'Saisie des Absences',
+      label: t.nav?.attendance || 'Saisie des Absences',
       icon: <CalendarCheck2 className="h-4 w-4 shrink-0" />,
     },
     {
       id: 'teacher_grades',
-      label: 'Saisie des Notes',
+      label: t.nav?.grades || 'Saisie des Notes',
       icon: <BookOpenCheck className="h-4 w-4 shrink-0" />,
     },
   ];
@@ -72,15 +85,14 @@ export const TeacherSidebar: React.FC<TeacherSidebarProps> = ({
             <div className="p-4 mx-3 mt-4 rounded-xl bg-emerald-50/60 dark:bg-emerald-950/30 border border-emerald-100 dark:border-emerald-900/50">
               <div className="flex items-center gap-2.5">
                 <div className="h-8 w-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center text-xs font-bold shrink-0">
-                  {CURRENT_ENSEIGNANT.prenom[0]}
-                  {CURRENT_ENSEIGNANT.nom[0]}
+                  {teacherName[0] || 'E'}
                 </div>
                 <div className="min-w-0">
                   <div className="text-xs font-bold text-slate-900 dark:text-white truncate">
-                    {CURRENT_ENSEIGNANT.prenom} {CURRENT_ENSEIGNANT.nom}
+                    {teacherName}
                   </div>
                   <div className="text-[11px] text-emerald-700 dark:text-emerald-400 truncate font-medium">
-                    {CURRENT_ENSEIGNANT.matieres[0]}
+                    {isReal ? 'Corps Enseignant' : CURRENT_ENSEIGNANT.matieres[0]}
                   </div>
                 </div>
               </div>
@@ -90,7 +102,7 @@ export const TeacherSidebar: React.FC<TeacherSidebarProps> = ({
                   Classes :
                 </span>
                 <span className="font-bold text-slate-800 dark:text-slate-200">
-                  {CURRENT_ENSEIGNANT.classes_assignees.join(', ')}
+                  {isReal ? '0 classe' : CURRENT_ENSEIGNANT.classes_assignees.join(', ')}
                 </span>
               </div>
             </div>
@@ -100,7 +112,7 @@ export const TeacherSidebar: React.FC<TeacherSidebarProps> = ({
           <div className="flex-1 px-3 py-4 space-y-1.5 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-800">
             {!isCollapsed && (
               <div className="px-3 pb-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                Espace Pédagogique
+                {t.nav?.pedagogicSpace || 'Espace Pédagogique'}
               </div>
             )}
 

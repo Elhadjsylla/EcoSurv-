@@ -12,8 +12,7 @@ import {
   QrCode,
   ShieldCheck,
   Printer,
-  Sparkles,
-  Zap,
+  Clock,
 } from 'lucide-react';
 
 type MockupTab = 'directeur' | 'guichet' | 'whatsapp' | 'recu';
@@ -24,53 +23,16 @@ export const LandingMockupPreview: React.FC = () => {
 
   return (
     <div className="relative w-full">
-      {/* Decorative Aurora Glow behind mockup */}
-      <div className="absolute -inset-1.5 rounded-3xl bg-gradient-to-r from-blue-600/30 via-indigo-500/20 to-emerald-500/30 blur-xl opacity-75 animate-aurora pointer-events-none" />
-
-      {/* Floating Badge 1: Top Right Live Transaction */}
-      <motion.div 
-        animate={{ y: [0, -10, 0] }}
-        transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-        className="hidden sm:flex absolute -top-4 -right-4 z-20 items-center gap-2 px-3.5 py-2 rounded-2xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200/80 dark:border-slate-700 shadow-xl"
-      >
-        <div className="h-7 w-7 rounded-xl bg-emerald-100 text-emerald-600 dark:bg-emerald-950/80 dark:text-emerald-400 flex items-center justify-center">
-          <Zap className="h-4 w-4" />
-        </div>
-        <div>
-          <div className="flex items-center gap-1.5">
-            <span className="text-[11px] font-bold text-slate-900 dark:text-white">Bankily Direct</span>
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-ping" />
-          </div>
-          <p className="text-[10px] font-mono font-semibold text-emerald-600 dark:text-emerald-400">
-            +45 000 MRU validé
-          </p>
-        </div>
-      </motion.div>
-
-      {/* Floating Badge 2: Bottom Left Automated Reminder */}
-      <motion.div 
-        animate={{ y: [0, 10, 0] }}
-        transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-        className="hidden sm:flex absolute -bottom-5 -left-4 z-20 items-center gap-2.5 px-3.5 py-2 rounded-2xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200/80 dark:border-slate-700 shadow-xl"
-      >
-        <div className="h-7 w-7 rounded-xl bg-blue-100 text-blue-600 dark:bg-blue-950/80 dark:text-blue-400 flex items-center justify-center">
-          <MessageCircle className="h-4 w-4" />
-        </div>
-        <div>
-          <p className="text-[11px] font-bold text-slate-900 dark:text-white">Relance WhatsApp J-3</p>
-          <p className="text-[10px] text-slate-500 dark:text-slate-400">Taux de réponse : 98.4%</p>
-        </div>
-      </motion.div>
-
       {/* Main Mockup Card Container */}
-      <div className="relative rounded-3xl bg-white dark:bg-slate-900/90 border border-slate-200/80 dark:border-slate-800 shadow-2xl overflow-hidden backdrop-blur-xl transition-all duration-300">
+      <div className="relative rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden transition-all duration-300">
         {/* Top Window Chrome & Tab Switcher */}
-        <div className="border-b border-slate-200/80 dark:border-slate-800 bg-slate-50/90 dark:bg-slate-950/90 px-4 py-3 backdrop-blur-md flex flex-wrap items-center justify-between gap-2">
-          {/* macOS window dots */}
-          <div className="flex items-center gap-1.5">
-            <span className="h-3 w-3 rounded-full bg-rose-500/80 inline-block" />
-            <span className="h-3 w-3 rounded-full bg-amber-500/80 inline-block" />
-            <span className="h-3 w-3 rounded-full bg-emerald-500/80 inline-block" />
+        <div className="border-b border-slate-200/80 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+          {/* Header indicator */}
+          <div className="flex items-center gap-2">
+            <span className="h-2 w-2 rounded-full bg-blue-600" />
+            <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
+              Démonstration de l'interface en situation réelle
+            </span>
           </div>
 
           {/* Interactive Navigation Pills */}
@@ -437,8 +399,8 @@ export const LandingMockupPreview: React.FC = () => {
                 </h4>
               </div>
               <span className="px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-[11px] font-bold flex items-center gap-1">
-                <Sparkles className="h-3 w-3" />
-                Envoi automatique à J-3
+                <Clock className="h-3 w-3" />
+                Modèle de message préparé à J-3
               </span>
             </div>
 

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Calculator, ArrowRight, CheckCircle2, Clock } from 'lucide-react';
+import { getWhatsAppUrl } from '../../config/contact';
 
 interface RoiCalculatorProps {
   onNavigateToLogin?: () => void;
@@ -32,9 +33,6 @@ export const RoiCalculator: React.FC<RoiCalculatorProps> = ({ onNavigateToLogin 
 
   return (
     <div className="relative overflow-hidden rounded-3xl bg-slate-900 text-white p-6 sm:p-10 shadow-2xl border border-slate-800">
-      {/* Background glow effects */}
-      <div className="absolute -top-24 -right-24 w-96 h-96 rounded-full bg-blue-600/20 blur-3xl pointer-events-none" />
-      <div className="absolute -bottom-24 -left-24 w-96 h-96 rounded-full bg-emerald-600/15 blur-3xl pointer-events-none" />
 
       <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
         {/* Left column: Sliders */}
@@ -201,7 +199,7 @@ export const RoiCalculator: React.FC<RoiCalculatorProps> = ({ onNavigateToLogin 
                 if (onNavigateToLogin) {
                   onNavigateToLogin();
                 } else {
-                  window.open('https://wa.me/22246000000?text=Bonjour,%20je%20souhaite%20une%20étude%20personnalisée%20EcoSurv', '_blank');
+                  window.open(getWhatsAppUrl('Bonjour, je souhaite une étude personnalisée EcoSurv'), '_blank');
                 }
               }}
               className="w-full py-3.5 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold text-sm transition-all shadow-lg shadow-emerald-500/25 flex items-center justify-center gap-2 cursor-pointer"

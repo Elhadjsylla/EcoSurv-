@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { EleveWithStats } from '../../lib/mockData';
 import { StudentInitials } from '../ui/StudentInitials';
 import { StatusBadge } from '../ui/StatusBadge';
@@ -17,6 +18,9 @@ import {
   User,
   Zap,
   Send,
+  Mail,
+  HeartHandshake,
+  Edit3,
 } from 'lucide-react';
 
 interface StudentDetailDrawerProps {
@@ -24,6 +28,7 @@ interface StudentDetailDrawerProps {
   onClose: () => void;
   onQuickPay?: (eleve: EleveWithStats) => void;
   onQuickRelance?: (eleve: EleveWithStats) => void;
+  onEdit?: (eleve: EleveWithStats) => void;
 }
 
 export const StudentDetailDrawer: React.FC<StudentDetailDrawerProps> = ({
@@ -31,18 +36,27 @@ export const StudentDetailDrawer: React.FC<StudentDetailDrawerProps> = ({
   onClose,
   onQuickPay,
   onQuickRelance,
+  onEdit,
 }) => {
   const [isFavorite, setIsFavorite] = useState(false);
   const [activeToast, setActiveToast] = useState<string | null>(null);
 
-  // Close on Escape
+  // Close on Escape & Lock body overflow
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onClose]);
+    if (eleve) {
+      document.body.style.overflow = 'hidden';
+      const handleKeyDown = (e: KeyboardEvent) => {
+        if (e.key === 'Escape') onClose();
+      };
+      window.addEventListener('keydown', handleKeyDown);
+      return () => {
+        document.body.style.overflow = '';
+        window.removeEventListener('keydown', handleKeyDown);
+      };
+    } else {
+      document.body.style.overflow = '';
+    }
+  }, [eleve, onClose]);
 
   if (!eleve) return null;
 
@@ -75,7 +89,7 @@ export const StudentDetailDrawer: React.FC<StudentDetailDrawerProps> = ({
     return 'Tuteur';
   };
 
-  return (
+  return createPortal(
     <div
       id="student-detail-drawer"
       className="fixed inset-0 z-50 flex justify-end bg-slate-900/40 dark:bg-slate-950/70 backdrop-blur-xs animate-backdrop-fade-in print:static print:bg-transparent print:p-0 print:m-0 print:block print:inset-auto"
@@ -132,6 +146,20 @@ export const StudentDetailDrawer: React.FC<StudentDetailDrawerProps> = ({
 
             {/* Quick Action Icons Row */}
             <div className="flex items-center justify-center gap-2.5 mt-4 print:hidden">
+              <Tooltip content="Modifier la fiche">
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    if (onEdit) onEdit(eleve);
+                  }}
+                  className="h-9 w-9 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-300 hover:bg-blue-50/50 flex items-center justify-center transition-all shadow-2xs"
+                  aria-label="Modifier la fiche"
+                >
+                  <Edit3 className="h-4 w-4" />
+                </button>
+              </Tooltip>
+
               <Tooltip content="Dossier scolaire">
                 <button
                   type="button"
@@ -265,9 +293,30 @@ export const StudentDetailDrawer: React.FC<StudentDetailDrawerProps> = ({
                 <span className="font-mono">{eleve.telephone_tuteur}</span>
               </div>
 
+              {eleve.email_tuteur ? (
+                <div className="flex items-center gap-2.5 text-slate-600 dark:text-slate-300">
+                  <Mail className="h-4 w-4 text-purple-600 dark:text-purple-400 shrink-0" />
+                  <span className="font-mono text-purple-700 dark:text-purple-300">{eleve.email_tuteur}</span>
+                </div>
+              ) : null}
+
               <div className="flex items-center gap-2.5 text-slate-600 dark:text-slate-300">
                 <MapPin className="h-4 w-4 text-slate-400 shrink-0" />
                 <span>{eleve.adresse_tuteur || 'Nouakchott'}</span>
+              </div>
+
+              <div className="pt-2 border-t border-slate-200/60 dark:border-slate-700/60 flex items-center justify-between">
+                <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Accès Espace Famille</span>
+                {eleve.email_tuteur ? (
+                  <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 dark:bg-purple-950/60 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-800/60">
+                    <HeartHandshake className="h-3 w-3" />
+                    Compte Famille Lié
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60">
+                    En attente d'un email
+                  </span>
+                )}
               </div>
             </div>
           </div>
@@ -311,6 +360,7 @@ export const StudentDetailDrawer: React.FC<StudentDetailDrawerProps> = ({
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
