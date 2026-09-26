@@ -11,6 +11,7 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import { logAuditEvent } from '../../lib/auditLogger';
 
 export interface AdminEcoleItem {
   id: string;
@@ -55,6 +56,14 @@ export const AdminEcolesPage: React.FC<AdminEcolesPageProps> = ({
         setToastMessage(`Erreur: ${error.message}`);
       } else {
         setToastMessage(`École passée au statut « ${newStatut} » avec succès.`);
+        await logAuditEvent({
+          actionType: 'school.status_changed',
+          targetId: ecoleId,
+          metadata: {
+            precedent_statut: currentStatut,
+            nouveau_statut: newStatut,
+          },
+        });
         onRefresh();
       }
     } catch (err: any) {

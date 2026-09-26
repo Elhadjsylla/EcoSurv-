@@ -38,7 +38,7 @@ export const TeacherGradesPage: React.FC = () => {
   const [selectedClasse, setSelectedClasse] = useState<string>('6ème A');
   const [selectedMatiere, setSelectedMatiere] = useState<string>('Mathématiques');
   const [selectedTrimestre, setSelectedTrimestre] = useState<string>('Trimestre 2');
-  const [activeToast, setActiveToast] = useState<{ message: string; type: 'success' | 'info' | 'warning' } | null>(null);
+  const [activeToast, setActiveToast] = useState<{ message: string; type: 'success' | 'info' | 'warning' | 'error' } | null>(null);
 
   // Pagination pour la table de saisie
   const [currentPage, setCurrentPage] = useState(1);

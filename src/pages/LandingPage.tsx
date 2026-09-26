@@ -6,7 +6,6 @@ import { CONTACT_CONFIG, getWhatsAppUrl } from '../config/contact';
 import { LandingMockupPreview } from '../components/landing/LandingMockupPreview';
 import { RoiCalculator } from '../components/landing/RoiCalculator';
 import { InteractiveJourneyTimeline } from '../components/landing/InteractiveJourneyTimeline';
-import { MauritaniaWilayasShowcase } from '../components/landing/MauritaniaWilayasShowcase';
 import {
   ShieldCheck,
   CreditCard,
@@ -28,6 +27,9 @@ import {
   HeartHandshake,
   BookOpen,
   LogIn,
+  MapPin,
+  Phone,
+  Mail,
 } from 'lucide-react';
 import { LanguageSelector } from '../components/ui/LanguageSelector';
 import { useLanguageStore } from '../i18n/useLanguageStore';
@@ -315,12 +317,8 @@ export const LandingPage: React.FC = () => {
         )}
       </header>
 
-      {/* 2. Hero Section (Inspiration Sama Boutik: Punchy, pain-point killer, metrics, live preview) */}
+      {/* 2. Hero Section */}
       <section className="relative overflow-hidden py-12 sm:py-20 lg:py-24 bg-grid-pattern">
-        {/* Atmosphere Glowing Meshes */}
-        <div className="absolute top-10 left-1/4 -translate-x-1/2 w-[500px] h-[500px] bg-blue-600/15 rounded-full blur-3xl pointer-events-none animate-aurora" />
-        <div className="absolute top-20 right-1/4 translate-x-1/2 w-[450px] h-[450px] bg-indigo-500/15 rounded-full blur-3xl pointer-events-none animate-aurora" />
-
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative z-10">
           {/* Centered Hero Copy & Conversion */}
           <motion.div 
@@ -364,11 +362,8 @@ export const LandingPage: React.FC = () => {
               <button
                 type="button"
                 onClick={navigateToRegister}
-                className="relative overflow-hidden w-full sm:w-auto px-8 py-4 rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-700 hover:to-indigo-800 text-white font-extrabold text-base transition-all shadow-xl shadow-blue-600/30 flex items-center justify-center gap-3 group hover:scale-[1.03] active:scale-[0.98] ring-4 ring-blue-500/10 cursor-pointer"
+                className="relative overflow-hidden w-full sm:w-auto px-8 py-4 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-base transition-all shadow-xl shadow-blue-600/25 flex items-center justify-center gap-3 group hover:scale-[1.02] active:scale-[0.98] ring-4 ring-blue-500/10 cursor-pointer"
               >
-                {/* Shimmer sweep animation across the CTA */}
-                <div className="absolute inset-0 w-1/2 h-full bg-gradient-to-r from-transparent via-white/30 to-transparent pointer-events-none animate-cta-sweep" />
-                
                 <span className="relative z-10">{t.common.createSchool}</span>
                 <ArrowRight className="h-5 w-5 group-hover:translate-x-1.5 transition-transform relative z-10" />
               </button>
@@ -383,30 +378,30 @@ export const LandingPage: React.FC = () => {
               </button>
             </motion.div>
 
-            {/* Live proof metrics centrées */}
-            <motion.div variants={fadeInUp} className="pt-6 border-t border-slate-200/80 dark:border-slate-800/80 grid grid-cols-3 gap-6 sm:gap-12 max-w-xl mx-auto text-center w-full">
-              <div>
-                <p className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white font-mono tracking-tight">
-                  98.4%
+            {/* Piliers du produit réels et mesurables */}
+            <motion.div variants={fadeInUp} className="pt-6 border-t border-slate-200/80 dark:border-slate-800/80 grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-8 max-w-2xl mx-auto text-center w-full">
+              <div className="p-3 rounded-2xl bg-white/60 dark:bg-slate-900/60 border border-slate-200/60 dark:border-slate-800/60">
+                <p className="text-base sm:text-lg font-extrabold text-slate-900 dark:text-white">
+                  4 Espaces Dédiés
                 </p>
-                <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 font-semibold">
-                  Taux d'encaissement moyen
-                </p>
-              </div>
-              <div>
-                <p className="text-2xl sm:text-3xl font-black text-emerald-600 dark:text-emerald-400 font-mono tracking-tight">
-                  &lt; 30s
-                </p>
-                <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 font-semibold">
-                  Encaissement & reçu DGI
+                <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5">
+                  Direction, Caisse, Pédagogie & Famille
                 </p>
               </div>
-              <div>
-                <p className="text-2xl sm:text-3xl font-black text-blue-600 dark:text-blue-400 font-mono tracking-tight">
-                  100%
+              <div className="p-3 rounded-2xl bg-white/60 dark:bg-slate-900/60 border border-slate-200/60 dark:border-slate-800/60">
+                <p className="text-base sm:text-lg font-extrabold text-emerald-600 dark:text-emerald-400">
+                  Devise & Opérateurs MRU
                 </p>
-                <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 font-semibold">
-                  Conformité APDP & RLS
+                <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5">
+                  Bankily, Masrvi, Sedad & Guichet
+                </p>
+              </div>
+              <div className="p-3 rounded-2xl bg-white/60 dark:bg-slate-900/60 border border-slate-200/60 dark:border-slate-800/60">
+                <p className="text-base sm:text-lg font-extrabold text-blue-600 dark:text-blue-400">
+                  Sécurité Souveraine
+                </p>
+                <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5">
+                  Isolation RLS & Reçus certifiés DGI
                 </p>
               </div>
             </motion.div>
@@ -704,12 +699,7 @@ export const LandingPage: React.FC = () => {
         </div>
       </section>
 
-      {/* 8. Mauritania Wilayas Interactive Showcase */}
-      <section className="py-16 sm:py-20" id="regions">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <MauritaniaWilayasShowcase />
-        </div>
-      </section>
+
 
       {/* 9. Grille Tarifaire Transparente en MRU */}
       <section className="py-16 sm:py-24 bg-slate-100/50 dark:bg-slate-900/30" id="tarifs">
@@ -980,21 +970,15 @@ export const LandingPage: React.FC = () => {
       {/* 11. Bannière CTA Pré-Footer Haute Fidélité SaaS */}
       <section className="relative py-16 sm:py-24 overflow-hidden">
         <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-          <div className="relative rounded-3xl overflow-hidden border border-slate-200/80 dark:border-slate-800 bg-gradient-to-b from-slate-900 via-slate-950 to-slate-950 text-white shadow-2xl shadow-blue-950/20 p-8 sm:p-14 lg:p-16 text-center">
-            {/* Lueur radiale d'ambiance bleue/indigo */}
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-3xl h-72 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-600/30 via-indigo-600/10 to-transparent blur-2xl pointer-events-none" />
-
-            {/* Motif de texture en arrière-plan */}
-            <div className="absolute inset-0 bg-grid-pattern opacity-10 pointer-events-none" />
-
+          <div className="relative rounded-3xl overflow-hidden border border-slate-200/80 dark:border-slate-800 bg-slate-900 dark:bg-slate-900 text-white shadow-2xl p-8 sm:p-14 lg:p-16 text-center">
             {/* Liseré lumineux supérieur subtil */}
-            <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-blue-500/50 to-transparent" />
+            <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-blue-500/30 to-transparent" />
 
             <div className="relative z-10 max-w-3xl mx-auto space-y-6">
               {/* Badge Rentrée */}
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-500/10 border border-blue-400/25 text-blue-300 text-xs font-bold tracking-wide shadow-inner backdrop-blur-md">
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-500/10 border border-blue-400/25 text-blue-300 text-xs font-bold tracking-wide shadow-inner">
                 <span className="flex h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-                <span>Rentrée 2026–2027 • Inscriptions & Déploiements Ouverts</span>
+                <span>Rentrée Scolaire • Inscriptions & Déploiements Ouverts</span>
               </div>
 
               {/* Titre Impactant et centré */}
@@ -1004,7 +988,7 @@ export const LandingPage: React.FC = () => {
 
               {/* Description claire */}
               <p className="text-slate-300 text-sm sm:text-base lg:text-lg leading-relaxed max-w-2xl mx-auto">
-                Rejoignez les directions scolaires mauritaniennes qui ont éliminé les litiges de caisse, automatisé les quittances WhatsApp et divisé leurs impayés par trois.
+                Rejoignez les directions scolaires qui ont éliminé les litiges de caisse, fiabilisé les quittances et maîtrisé leur trésorerie en temps réel.
               </p>
 
               {/* Boutons d'Action SaaS */}
@@ -1012,11 +996,10 @@ export const LandingPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={navigateToRegister}
-                  className="w-full sm:w-auto relative group overflow-hidden px-8 py-4 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-sm sm:text-base shadow-xl shadow-blue-600/30 hover:shadow-blue-500/40 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2.5 cursor-pointer"
+                  className="w-full sm:w-auto relative group px-8 py-4 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-sm sm:text-base shadow-xl shadow-blue-600/30 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2.5 cursor-pointer"
                 >
                   <span>Créer mon école</span>
                   <ArrowRight className="h-4 w-4 text-white group-hover:translate-x-1 transition-transform" />
-                  <div className="absolute inset-0 w-1/2 h-full bg-gradient-to-r from-transparent via-white/25 to-transparent pointer-events-none animate-cta-sweep" />
                 </button>
 
                 <button
@@ -1078,10 +1061,19 @@ export const LandingPage: React.FC = () => {
               <p className="text-slate-400 leading-relaxed max-w-sm">
                 Solution logicielle souveraine de pilotage des recouvrements scolaires et universitaires en République Islamique de Mauritanie.
               </p>
-              <div className="space-y-1.5 text-slate-300 font-mono text-[11px]">
-                <p>📍 {CONTACT_CONFIG.address.display}</p>
-                <p>📞 {CONTACT_CONFIG.phone.display}</p>
-                <p>✉️ {CONTACT_CONFIG.email.support}</p>
+              <div className="space-y-2 text-slate-300 font-mono text-[11px]">
+                <p className="flex items-center gap-2">
+                  <MapPin className="h-3.5 w-3.5 text-blue-400 shrink-0" />
+                  <span>{CONTACT_CONFIG.address.display}</span>
+                </p>
+                <p className="flex items-center gap-2">
+                  <Phone className="h-3.5 w-3.5 text-blue-400 shrink-0" />
+                  <span>{CONTACT_CONFIG.phone.display}</span>
+                </p>
+                <p className="flex items-center gap-2">
+                  <Mail className="h-3.5 w-3.5 text-blue-400 shrink-0" />
+                  <span>{CONTACT_CONFIG.email.support}</span>
+                </p>
               </div>
             </div>
 

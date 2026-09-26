@@ -7,8 +7,8 @@ import {
   FileSpreadsheet,
   ArrowRight,
   ShieldCheck,
-  Zap,
-  Sparkles,
+  CreditCard,
+  Clock,
   Receipt,
 } from 'lucide-react';
 
@@ -18,47 +18,47 @@ export const InteractiveJourneyTimeline: React.FC = () => {
   const steps = [
     {
       id: 0,
-      title: "1. Échéancier & Relance Préventive",
-      badge: "J-3 avant échéance",
+      title: "1. Échéancier & Suivi Préventif",
+      badge: "Suivi des échéances",
       icon: <CalendarClock className="h-5 w-5" />,
-      tagline: "Fini les appels embarrassants et les listes d'élèves griffonnées",
+      tagline: "Fini les listes manuscrites et les calculs manuels",
       description:
-        "EcoSurv calcule automatiquement les échéances mensuelles selon les classes et remises de fratrie. Les parents reçoivent un rappel bienveillant par WhatsApp avec le montant exact et le code marchand de l'établissement.",
-      statHighlight: "98.4% de réception effective sur WhatsApp & SMS",
+        "EcoSurv calcule automatiquement les échéances mensuelles selon les classes et les barèmes configurés. La direction dispose d'une visibilité claire sur chaque dossier élève.",
+      statHighlight: "Calcul automatisé et suivi individualisé par élève",
       demoPreview: (
         <div className="rounded-2xl bg-slate-900 text-white p-5 border border-slate-800 space-y-3 font-mono text-xs">
           <div className="flex items-center justify-between text-slate-400 border-b border-slate-800 pb-2">
             <span className="flex items-center gap-1.5 text-blue-400">
-              <Sparkles className="h-3.5 w-3.5" /> Automate de Relance EcoSurv
+              <Clock className="h-3.5 w-3.5" /> Planification des Échéances
             </span>
-            <span className="text-emerald-400">Prêt à l'envoi</span>
+            <span className="text-emerald-400">Échéancier Actif</span>
           </div>
           <p className="text-slate-300 font-sans leading-relaxed">
-            « Bonjour M. Kane, l'échéance de scolarité pour Oumar (Terminale D) arrive à échéance le 05/03 (45 000 MRU). Règlement sans frais via Bankily ou Masrvi. »
+            « Avis d'échéance : scolarité pour Oumar (Terminale D) exigible au 05 du mois (45 000 MRU). Règlement au guichet ou via Bankily / Masrvi. »
           </p>
           <div className="p-2.5 rounded-xl bg-slate-800/80 text-[11px] text-emerald-400 flex items-center justify-between">
-            <span>Déclenchement groupé : 142 familles</span>
-            <span className="font-bold">0 seconde de travail humain</span>
+            <span>Barème appliqué par classe</span>
+            <span className="font-bold">Calcul immédiat</span>
           </div>
         </div>
       ),
     },
     {
       id: 1,
-      title: "2. Règlement Instantané Mobile Money",
+      title: "2. Règlement Guichet & Mobile Money",
       badge: "Temps réel",
       icon: <Smartphone className="h-5 w-5" />,
-      tagline: "Le parent règle depuis son canapé en 30 secondes",
+      tagline: "Encaissement au guichet ou par transfert bancaire local",
       description:
-        "Plus besoin pour les parents de traverser les embouteillages de Nouakchott pour faire la queue devant la caisse de l'école. Ils effectuent leur virement Bankily (BPM), Masrvi (BMCI) ou Sedad (BCI) directement depuis leur téléphone.",
-      statHighlight: "< 4 secondes pour certifier la transaction",
+        "Les parents règlent directement au guichet ou via les applications mobiles mauritaniennes Bankily (BPM), Masrvi (BMCI) et Sedad (BCI). Le caissier saisit la référence en quelques clics.",
+      statHighlight: "Rapprochement direct avec le dossier de l'élève",
       demoPreview: (
         <div className="rounded-2xl bg-slate-900 text-white p-5 border border-slate-800 space-y-3 font-mono text-xs">
           <div className="flex items-center justify-between text-slate-400 border-b border-slate-800 pb-2">
             <span className="flex items-center gap-1.5 text-emerald-400">
-              <Zap className="h-3.5 w-3.5" /> Passerelle Bankily Direct
+              <CreditCard className="h-3.5 w-3.5" /> Enregistrement Encaissement
             </span>
-            <span className="text-emerald-400">Rapprochement OK</span>
+            <span className="text-emerald-400">Validé</span>
           </div>
           <div className="space-y-1 text-slate-200">
             <div className="flex justify-between">
@@ -83,25 +83,25 @@ export const InteractiveJourneyTimeline: React.FC = () => {
     },
     {
       id: 2,
-      title: "3. Reçu Inviolable & Quittance DGI QR",
+      title: "3. Reçu Conforme & Quittance Numérotée",
       badge: "Conformité Fiscale",
       icon: <Receipt className="h-5 w-5" />,
-      tagline: "Zéro falsification, zéro contestation de reçu",
+      tagline: "Traçabilité intégrale et quittance horodatée",
       description:
-        "Dès le paiement validé, la quittance officielle numérotée selon les exigences de la Direction Générale des Impôts (DGI) est générée avec un QR Code d'authenticité et transmise immédiatement sur le WhatsApp du tuteur.",
-      statHighlight: "100% conforme audits fiscaux & inspection académique",
+        "Dès le paiement validé, la quittance officielle numérotée selon les exigences de la Direction Générale des Impôts (DGI) est générée avec référence unique et archivée dans le dossier de l'élève.",
+      statHighlight: "Conformité avec les exigences de traçabilité comptable",
       demoPreview: (
         <div className="rounded-2xl bg-slate-900 text-white p-5 border border-slate-800 space-y-3 font-mono text-xs">
           <div className="flex items-center justify-between text-slate-400 border-b border-slate-800 pb-2">
-            <span className="text-blue-400 font-bold">REÇU OFFICIEL N° 2025-RC-0492</span>
+            <span className="text-blue-400 font-bold">REÇU OFFICIEL N° 2026-RC-0492</span>
             <span className="text-slate-400">Horodaté 11:32</span>
           </div>
           <div className="p-3 rounded-xl bg-slate-800/90 space-y-1.5 text-[11px]">
             <p className="text-slate-400 font-sans">
-              Établissement : <strong className="text-white">Lycée d'Excellence El-Amel</strong>
+              Établissement : <strong className="text-white">École Partenaire</strong>
             </p>
             <p className="text-slate-400 font-sans">
-              Bénéficiaire : <strong className="text-white">Oumar Kane — Terminale D</strong>
+              Bénéficiaire : <strong className="text-white">Oumar Kane, Terminale D</strong>
             </p>
             <p className="text-emerald-400 font-bold text-sm">
               Soldé : 45 000 MRU (Reste à payer : 0 MRU)
@@ -118,18 +118,18 @@ export const InteractiveJourneyTimeline: React.FC = () => {
     },
     {
       id: 3,
-      title: "4. Trésorerie Sécurisée & Clôture en 1 Clic",
-      badge: "Sérénité DAF",
+      title: "4. Trésorerie Sécurisée & Clôture de Caisse",
+      badge: "Pilotage Direction",
       icon: <FileSpreadsheet className="h-5 w-5" />,
-      tagline: "La direction pilote en toute transparence et anticipe les salaires",
+      tagline: "La direction pilote en toute transparence et anticipe les échéances",
       description:
-        "Le directeur et le DAF visualisent en temps réel la trésorerie disponible, le taux de recouvrement par niveau et la ventilation par canal de paiement. La paie des professeurs est garantie à la fin du mois sans angoisse.",
-      statHighlight: "+18.4% de trésorerie nette sécurisée chaque année",
+        "Le directeur et le comptable visualisent en temps réel la trésorerie disponible, le taux de recouvrement par niveau et la ventilation par canal de paiement. La clôture de caisse quotidienne est certifiée.",
+      statHighlight: "Pilotage en temps réel du recouvrement et de la trésorerie",
       demoPreview: (
         <div className="rounded-2xl bg-slate-900 text-white p-5 border border-slate-800 space-y-3 font-mono text-xs">
           <div className="flex items-center justify-between text-slate-400 border-b border-slate-800 pb-2">
             <span className="text-emerald-400 font-bold">Bilan Recouvrement du Mois</span>
-            <span className="text-blue-400 font-bold">96.8% atteint</span>
+            <span className="text-blue-400 font-bold">Suivi en direct</span>
           </div>
           <div className="grid grid-cols-2 gap-2 text-center">
             <div className="p-2.5 rounded-xl bg-slate-800/80">
@@ -152,14 +152,11 @@ export const InteractiveJourneyTimeline: React.FC = () => {
 
   return (
     <div className="rounded-3xl bg-slate-900 text-white p-6 sm:p-10 border border-slate-800 shadow-2xl relative overflow-hidden">
-      {/* Background radial highlight */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-blue-600/10 rounded-full blur-3xl pointer-events-none" />
-
       <div className="relative z-10 space-y-8">
         {/* Section Header */}
         <div className="text-center max-w-2xl mx-auto space-y-2">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30 text-xs font-bold">
-            <Zap className="h-3.5 w-3.5" />
+            <Clock className="h-3.5 w-3.5" />
             <span>Cycle Opérationnel Continu</span>
           </div>
           <h3 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">

@@ -6,6 +6,7 @@ import { useEcoleStore } from '../store/useEcoleStore';
 import { useNavigationStore } from '../store/useNavigationStore';
 import { CONTACT_CONFIG, getWhatsAppUrl } from '../config/contact';
 import { LanguageSelector } from '../components/ui/LanguageSelector';
+import { logLoginSuccess } from '../lib/auditLogger';
 import type { UserRole } from '../components/ui/Header';
 
 interface LoginPageProps {
@@ -138,6 +139,9 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onReturnToLanding }) => {
 
       // Si super_admin : accès direct à la Console Super Admin (style Sama Boutik)
       if (profile.role === 'super_admin') {
+        logLoginSuccess(profile.email || authData.user.email || 'superadmin@ecosurv.mr', 'super_admin', {
+          nom: `${profile.prenom} ${profile.nom}`,
+        });
         useNavigationStore.getState().navigateToAdminConsole();
         return;
       }

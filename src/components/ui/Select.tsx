@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useId } from 'react';
-import { ChevronDown, Check } from 'lucide-react';
+import { ChevronDown, Check, AlertCircle } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
 export interface SelectOption<T extends string | number = string> {
@@ -27,6 +27,7 @@ export interface SelectProps<T extends string | number = string> {
   disabled?: boolean;
   id?: string;
   name?: string;
+  emptyMessage?: React.ReactNode;
 }
 
 export function Select<T extends string | number = string>({
@@ -45,6 +46,7 @@ export function Select<T extends string | number = string>({
   menuClassName,
   disabled = false,
   id,
+  emptyMessage,
 }: SelectProps<T>) {
   const [isOpen, setIsOpen] = useState(false);
   const [focusedIndex, setFocusedIndex] = useState<number>(-1);
@@ -252,7 +254,13 @@ export function Select<T extends string | number = string>({
             menuClassName
           )}
         >
-          {options.map((option, index) => {
+          {options.length === 0 ? (
+            <div className="py-4 px-3 text-center text-xs text-slate-500 dark:text-slate-400 space-y-1">
+              <AlertCircle className="h-4 w-4 mx-auto text-amber-500/80 mb-1" />
+              <div>{emptyMessage || 'Aucune option disponible'}</div>
+            </div>
+          ) : (
+            options.map((option, index) => {
             const isSelected = option.value === value;
             const isFocused = index === focusedIndex;
 
@@ -300,7 +308,7 @@ export function Select<T extends string | number = string>({
                 )}
               </div>
             );
-          })}
+          }))}
         </div>
       )}
     </div>

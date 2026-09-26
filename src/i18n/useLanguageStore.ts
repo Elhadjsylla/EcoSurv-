@@ -63,17 +63,15 @@ export const useLanguageStore = create<LanguageState>()(
     }),
     {
       name: 'ecosurv-language',
+      partialize: (state) => ({ language: state.language }),
       onRehydrateStorage: () => (state) => {
         if (state) {
-          // Forcer le français au rechargement si en pause
-          const activeLang = I18N_PAUSED ? 'fr' : state.language;
+          const activeLang = I18N_PAUSED ? 'fr' : (state.language || 'fr');
           applyDocumentDirection(activeLang);
           i18n.changeLanguage(activeLang);
-          if (I18N_PAUSED && state.language !== 'fr') {
-            state.language = 'fr';
-            state.isRtl = false;
-            state.t = translations.fr;
-          }
+          state.language = activeLang;
+          state.isRtl = activeLang === 'ar';
+          state.t = translations[activeLang] || translations.fr;
         }
       },
     }

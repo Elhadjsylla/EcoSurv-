@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import {
   CaisseTransaction,
   MOCK_CAISSE_TRANSACTIONS_INITIAL,
@@ -15,6 +16,7 @@ import { formatMRU } from '../../lib/utils';
 import { exportCaisseCsv } from '../../lib/csv/exportCaisseCsv';
 import { useCaisseStore } from '../../store/useCaisseStore';
 import { generateReceiptPdf } from '../../lib/pdf/generateReceiptPdf';
+import { supabase } from '../../lib/supabase';
 import {
   Search,
   Printer,
@@ -32,32 +34,226 @@ import {
   ChevronRight,
   Eye,
   FileCheck,
+  RefreshCw,
 } from 'lucide-react';
 
 import { useAuthStore } from '../../store/useAuthStore';
 
 export const CaissierJournalPage: React.FC = () => {
   const authProfile = useAuthStore((s) => s.profile);
+  const authEcole = useAuthStore((s) => s.ecole);
   const isRealAccount = Boolean(authProfile?.ecole_id);
-  const [transactions] = useState<CaisseTransaction[]>(() => {
+
+  const [transactions, setTransactions] = useState<CaisseTransaction[]>(() => {
     if (isRealAccount) return [];
     return MOCK_CAISSE_TRANSACTIONS_INITIAL;
   });
+  const [isLoading, setIsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedMethod, setSelectedMethod] = useState<string>('all');
   const [selectedReceipt, setSelectedReceipt] = useState<CaisseTransaction | null>(null);
   const isDateCloturee = useCaisseStore((s) => s.isDateCloturee);
   const cloturerCaisseDuJour = useCaisseStore((s) => s.cloturerCaisseDuJour);
+  const refreshKey = useCaisseStore((s) => s.refreshKey);
   const clotureDone = isDateCloturee();
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
   const [activeToast, setActiveToast] = useState<{
     message: string;
-    type: 'success' | 'info' | 'warning';
+    type: 'success' | 'info' | 'warning' | 'error';
   } | null>(null);
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
+
+  // Chargement réel des transactions depuis Supabase (tables paiements et echeances)
+  const fetchJournalTransactions = async () => {
+    if (!authProfile?.ecole_id) {
+      setTransactions(useCaisseStore.getState().transactions);
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      // 1. Récupérer les paiements enregistrés pour l'école
+      const { data: paiementsData, error: payError } = await supabase
+        .from('paiements')
+        .select('*')
+        .eq('ecole_id', authProfile.ecole_id)
+        .order('created_at', { ascending: false });
+
+      if (payError) {
+        console.warn('[CaissierJournal] Notice lecture paiements:', payError.message);
+        setTransactions([]);
+        return;
+      }
+
+      if (paiementsData && paiementsData.length > 0) {
+        // 2. Récupérer les échéances associées
+        const echeanceIds = Array.from(
+          new Set(paiementsData.map((p) => p.echeance_id).filter(Boolean))
+        );
+
+        const echeancesMap = new Map<string, any>();
+        const elevesMap = new Map<string, any>();
+        const classesMap = new Map<string, string>();
+
+        if (echeanceIds.length > 0) {
+          const { data: echs } = await supabase
+            .from('echeances')
+            .select('*')
+            .in('id', echeanceIds);
+
+          if (echs) {
+            echs.forEach((e) => echeancesMap.set(e.id, e));
+
+            const eleveIds = Array.from(
+              new Set(echs.map((e) => e.eleve_id).filter(Boolean))
+            );
+
+            if (eleveIds.length > 0) {
+              const { data: els } = await supabase
+                .from('eleves')
+                .select('*')
+                .in('id', eleveIds);
+
+              if (els) {
+                els.forEach((el) => elevesMap.set(el.id, el));
+
+                const classeIds = Array.from(
+                  new Set(els.map((el) => el.classe_id).filter(Boolean))
+                );
+
+                if (classeIds.length > 0) {
+                  const { data: cls } = await supabase
+                    .from('classes')
+                    .select('id, nom')
+                    .in('id', classeIds);
+
+                  if (cls) {
+                    cls.forEach((c) => classesMap.set(c.id, c.nom));
+                  }
+                }
+              }
+            }
+          }
+        }
+
+        // 3. Récupérer les profils des encaisseurs
+        const encaisseurIds = Array.from(
+          new Set(paiementsData.map((p) => p.encaisse_par).filter(Boolean))
+        );
+        const profilsMap = new Map<string, string>();
+        if (encaisseurIds.length > 0) {
+          const { data: profs } = await supabase
+            .from('profils')
+            .select('id, nom, prenom')
+            .in('id', encaisseurIds);
+
+          if (profs) {
+            profs.forEach((pr) =>
+              profilsMap.set(pr.id, `${pr.prenom || ''} ${pr.nom || ''}`.trim())
+            );
+          }
+        }
+
+        // 4. Mapper vers CaisseTransaction[]
+        const mapped: CaisseTransaction[] = paiementsData.map((p) => {
+          const ech = echeancesMap.get(p.echeance_id);
+          const eleve = ech ? elevesMap.get(ech.eleve_id) : null;
+          const classeNom = eleve?.classe_id
+            ? classesMap.get(eleve.classe_id) || 'Classe'
+            : 'Générale';
+
+          const d = new Date(p.paye_le || p.created_at);
+          const dateStr = d.toLocaleDateString('fr-FR');
+          const heureStr = d.toLocaleTimeString('fr-FR', {
+            hour: '2-digit',
+            minute: '2-digit',
+          });
+
+          const encaisseurNom =
+            (p.encaisse_par ? profilsMap.get(p.encaisse_par) : null) ||
+            (authProfile ? `${authProfile.prenom} ${authProfile.nom}` : 'Caissier');
+
+          return {
+            id: p.id,
+            eleve_id: eleve?.id || '-',
+            eleve_nom: eleve?.nom || 'Élève',
+            eleve_prenom: eleve?.prenom || '',
+            matricule: eleve?.matricule || '-',
+            classe: classeNom,
+            echeance_libelle: ech?.libelle || p.note || 'Scolarité',
+            montant: Number(p.montant),
+            date: dateStr,
+            heure: heureStr,
+            methode: p.methode as MethodePaiement,
+            recu_ref: p.reference_transaction || `REC-${p.id.slice(0, 6)}`,
+            encaisse_par: encaisseurNom,
+            statut:
+              p.statut === 'confirme'
+                ? 'confirme'
+                : p.statut === 'en_attente'
+                ? 'en_attente'
+                : 'annule',
+          };
+        });
+
+        setTransactions(mapped);
+      } else {
+        setTransactions([]);
+      }
+    } catch (err) {
+      console.warn('[CaissierJournal] Erreur globale chargement:', err);
+      setTransactions([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchJournalTransactions();
+
+    if (authProfile?.ecole_id) {
+      const channel = supabase
+        .channel(`journal-paiements-sync-${authProfile.ecole_id}`)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'paiements',
+            filter: `ecole_id=eq.${authProfile.ecole_id}`,
+          },
+          () => {
+            fetchJournalTransactions();
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
+  }, [authProfile?.ecole_id, refreshKey]);
+
+  // Verrouillage du scroll et touche Echap pour la modale duplicata
+  useEffect(() => {
+    if (selectedReceipt) {
+      document.body.style.overflow = 'hidden';
+      const handleKeyDown = (e: KeyboardEvent) => {
+        if (e.key === 'Escape') setSelectedReceipt(null);
+      };
+      window.addEventListener('keydown', handleKeyDown);
+      return () => {
+        document.body.style.overflow = '';
+        window.removeEventListener('keydown', handleKeyDown);
+      };
+    } else {
+      document.body.style.overflow = '';
+    }
+  }, [selectedReceipt]);
 
   // Fermer le menu contextuel si clic extérieur
   useEffect(() => {
@@ -207,7 +403,19 @@ export const CaissierJournalPage: React.FC = () => {
           <Button
             variant="outline"
             size="sm"
+            onClick={fetchJournalTransactions}
+            disabled={isLoading}
+            className="flex items-center gap-2"
+          >
+            <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin text-amber-600' : ''}`} />
+            Actualiser
+          </Button>
+
+          <Button
+            variant="outline"
+            size="sm"
             onClick={handleExportCsv}
+            disabled={filteredTransactions.length === 0}
             className="flex items-center gap-2"
           >
             <ArrowDownToLine className="h-4 w-4" />
@@ -480,132 +688,134 @@ export const CaissierJournalPage: React.FC = () => {
           </div>
         </div>
       </div>
-
-      {/* Modal Réimpression Reçu */}
-      {selectedReceipt && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-200 dark:border-slate-800 animate-scale-in">
-            {/* Modal Header */}
-            <div className="bg-slate-900 text-white p-4 flex items-center justify-between border-b border-slate-800">
-              <div className="flex items-center gap-2">
-                <Receipt className="h-5 w-5 text-amber-400" />
-                <span className="font-bold text-sm">Duplicata Quittance Officielle</span>
+         {/* Modal Réimpression Reçu (Portail centré) */}
+      {selectedReceipt &&
+        createPortal(
+          <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in">
+            <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-200 dark:border-slate-800 animate-scale-in">
+              {/* Modal Header */}
+              <div className="bg-slate-900 text-white p-4 flex items-center justify-between border-b border-slate-800">
+                <div className="flex items-center gap-2">
+                  <Receipt className="h-5 w-5 text-amber-400" />
+                  <span className="font-bold text-sm">Duplicata Quittance Officielle</span>
+                </div>
+                <button
+                  onClick={() => setSelectedReceipt(null)}
+                  className="text-slate-400 hover:text-white transition-colors"
+                >
+                  <X className="h-5 w-5" />
+                </button>
               </div>
-              <button
-                onClick={() => setSelectedReceipt(null)}
-                className="text-slate-400 hover:text-white transition-colors"
-              >
-                <X className="h-5 w-5" />
-              </button>
+
+              {/* Receipt Body */}
+              <div className="p-6 space-y-4 text-xs font-sans">
+                <div className="text-center border-b border-slate-100 dark:border-slate-800 pb-3">
+                  <div className="flex items-center justify-center gap-1.5 text-slate-900 dark:text-white font-extrabold text-base">
+                    <Building className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                    {authEcole?.nom || 'Établissement Scolaire'}
+                  </div>
+                  <div className="text-slate-500 dark:text-slate-400 text-[11px] mt-0.5">
+                    {authEcole?.ville || 'Nouakchott'}, Mauritanie
+                  </div>
+                  <div className="mt-2 inline-block px-3 py-1 bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 font-mono font-bold text-xs rounded-lg border border-amber-200 dark:border-amber-800/60">
+                    {selectedReceipt.recu_ref}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2.5 text-slate-600 dark:text-slate-300">
+                  <div>
+                    <span className="text-slate-400 dark:text-slate-500 block text-[10px] uppercase font-bold">ÉLÈVE</span>
+                    <span className="font-bold text-slate-900 dark:text-white">
+                      {selectedReceipt.eleve_nom} {selectedReceipt.eleve_prenom}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 dark:text-slate-500 block text-[10px] uppercase font-bold">MATRICULE</span>
+                    <span className="font-mono font-semibold text-slate-800 dark:text-slate-200">
+                      #{selectedReceipt.matricule}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 dark:text-slate-500 block text-[10px] uppercase font-bold">CLASSE</span>
+                    <span className="font-semibold text-slate-800 dark:text-slate-200">
+                      {selectedReceipt.classe}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 dark:text-slate-500 block text-[10px] uppercase font-bold">DATE & HEURE</span>
+                    <span className="font-semibold text-slate-800 dark:text-slate-200">
+                      {selectedReceipt.date} à {selectedReceipt.heure}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="bg-slate-50 dark:bg-slate-800/60 p-4 rounded-xl border border-slate-200 dark:border-slate-700 space-y-1.5">
+                  <div className="flex justify-between text-slate-700 dark:text-slate-300">
+                    <span>Objet :</span>
+                    <span className="font-semibold">{selectedReceipt.echeance_libelle}</span>
+                  </div>
+                  <div className="flex justify-between text-slate-700 dark:text-slate-300">
+                    <span>Mode de versement :</span>
+                    <span className="font-bold uppercase text-amber-700 dark:text-amber-400">
+                      {selectedReceipt.methode}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center pt-2.5 border-t border-slate-200 dark:border-slate-700">
+                    <span className="font-bold text-slate-900 dark:text-white text-xs">TOTAL ENCAISSÉ :</span>
+                    <span className="font-extrabold text-base text-amber-700 dark:text-amber-400 font-mono">
+                      {formatMRU(selectedReceipt.montant)}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="text-[10px] text-slate-400 dark:text-slate-500 text-center border-t border-slate-100 dark:border-slate-800 pt-2">
+                  Encaissé par {selectedReceipt.encaisse_par} • Guichet Central N°1
+                  <br />
+                  Ce document certifie la libération de l'échéance susmentionnée.
+                </div>
+              </div>
+
+              {/* Modal Actions */}
+              <div className="p-4 bg-slate-50 dark:bg-slate-800/60 border-t border-slate-200 dark:border-slate-800 flex justify-end gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setSelectedReceipt(null)}
+                >
+                  Fermer
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    generateReceiptPdf({
+                      recuRef: selectedReceipt.recu_ref,
+                      datePaiement: `${selectedReceipt.date} à ${selectedReceipt.heure}`,
+                      eleveNom: selectedReceipt.eleve_nom,
+                      elevePrenom: selectedReceipt.eleve_prenom,
+                      matricule: selectedReceipt.matricule,
+                      classe: selectedReceipt.classe,
+                      libelleEcheance: selectedReceipt.echeance_libelle,
+                      montant: selectedReceipt.montant,
+                      methodePaiement: selectedReceipt.methode,
+                      caissierNom: selectedReceipt.encaisse_par,
+                      ecoleNom: authEcole?.nom,
+                    }, 'download');
+                    setActiveToast({
+                      message: `Reçu #${selectedReceipt.recu_ref} téléchargé en PDF.`,
+                      type: 'success',
+                    });
+                    setSelectedReceipt(null);
+                  }}
+                  className="bg-amber-600 hover:bg-amber-700 text-white flex items-center gap-1.5"
+                >
+                  <Printer className="h-4 w-4" />
+                  Télécharger le Reçu (PDF)
+                </Button>
+              </div>
             </div>
-
-            {/* Receipt Body */}
-            <div className="p-6 space-y-4 text-xs font-sans">
-              <div className="text-center border-b border-slate-100 dark:border-slate-800 pb-3">
-                <div className="flex items-center justify-center gap-1.5 text-slate-900 dark:text-white font-extrabold text-base">
-                  <Building className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                  COMPLEXE SCOLAIRE EL MAARIFA
-                </div>
-                <div className="text-slate-500 dark:text-slate-400 text-[11px] mt-0.5">
-                  Tevragh-Zeina • Nouakchott, Mauritanie
-                </div>
-                <div className="mt-2 inline-block px-3 py-1 bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 font-mono font-bold text-xs rounded-lg border border-amber-200 dark:border-amber-800/60">
-                  {selectedReceipt.recu_ref}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2.5 text-slate-600 dark:text-slate-300">
-                <div>
-                  <span className="text-slate-400 dark:text-slate-500 block text-[10px] uppercase font-bold">ÉLÈVE</span>
-                  <span className="font-bold text-slate-900 dark:text-white">
-                    {selectedReceipt.eleve_nom} {selectedReceipt.eleve_prenom}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-slate-400 dark:text-slate-500 block text-[10px] uppercase font-bold">MATRICULE</span>
-                  <span className="font-mono font-semibold text-slate-800 dark:text-slate-200">
-                    #{selectedReceipt.matricule}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-slate-400 dark:text-slate-500 block text-[10px] uppercase font-bold">CLASSE</span>
-                  <span className="font-semibold text-slate-800 dark:text-slate-200">
-                    {selectedReceipt.classe}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-slate-400 dark:text-slate-500 block text-[10px] uppercase font-bold">DATE & HEURE</span>
-                  <span className="font-semibold text-slate-800 dark:text-slate-200">
-                    {selectedReceipt.date} à {selectedReceipt.heure}
-                  </span>
-                </div>
-              </div>
-
-              <div className="bg-slate-50 dark:bg-slate-800/60 p-4 rounded-xl border border-slate-200 dark:border-slate-700 space-y-1.5">
-                <div className="flex justify-between text-slate-700 dark:text-slate-300">
-                  <span>Objet :</span>
-                  <span className="font-semibold">{selectedReceipt.echeance_libelle}</span>
-                </div>
-                <div className="flex justify-between text-slate-700 dark:text-slate-300">
-                  <span>Mode de versement :</span>
-                  <span className="font-bold uppercase text-amber-700 dark:text-amber-400">
-                    {selectedReceipt.methode}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center pt-2.5 border-t border-slate-200 dark:border-slate-700">
-                  <span className="font-bold text-slate-900 dark:text-white text-xs">TOTAL ENCAISSÉ :</span>
-                  <span className="font-extrabold text-base text-amber-700 dark:text-amber-400 font-mono">
-                    {formatMRU(selectedReceipt.montant)}
-                  </span>
-                </div>
-              </div>
-
-              <div className="text-[10px] text-slate-400 dark:text-slate-500 text-center border-t border-slate-100 dark:border-slate-800 pt-2">
-                Encaissé par {selectedReceipt.encaisse_par} • Guichet Central N°1
-                <br />
-                Ce document certifie la libération de l'échéance susmentionnée.
-              </div>
-            </div>
-
-            {/* Modal Actions */}
-            <div className="p-4 bg-slate-50 dark:bg-slate-800/60 border-t border-slate-200 dark:border-slate-800 flex justify-end gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setSelectedReceipt(null)}
-              >
-                Fermer
-              </Button>
-              <Button
-                size="sm"
-                onClick={() => {
-                  generateReceiptPdf({
-                    recuRef: selectedReceipt.recu_ref,
-                    datePaiement: `${selectedReceipt.date} à ${selectedReceipt.heure}`,
-                    eleveNom: selectedReceipt.eleve_nom,
-                    elevePrenom: selectedReceipt.eleve_prenom,
-                    matricule: selectedReceipt.matricule,
-                    classe: selectedReceipt.classe,
-                    libelleEcheance: selectedReceipt.echeance_libelle,
-                    montant: selectedReceipt.montant,
-                    methodePaiement: selectedReceipt.methode,
-                    caissierNom: selectedReceipt.encaisse_par,
-                  }, 'download');
-                  setActiveToast({
-                    message: `Reçu #${selectedReceipt.recu_ref} téléchargé en PDF.`,
-                    type: 'success',
-                  });
-                  setSelectedReceipt(null);
-                }}
-                className="bg-amber-600 hover:bg-amber-700 text-white flex items-center gap-1.5"
-              >
-                <Printer className="h-4 w-4" />
-                Télécharger le Reçu (PDF)
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body
+        )}
     </div>
   );
 };

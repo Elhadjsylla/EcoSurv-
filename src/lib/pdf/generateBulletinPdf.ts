@@ -1,5 +1,6 @@
 import { jsPDF } from 'jspdf';
 import { ParentMatiereNote } from '../mockData';
+import { downloadFile } from '../downloadFile';
 
 export interface BulletinData {
   enfantNom: string;
@@ -271,7 +272,16 @@ export function generateBulletinPdf(data: BulletinData): jsPDF {
   doc.text('(Signature de visa)', tableX + 25, y, { align: 'center' });
   doc.text('(Sceau officiel certifiant conforme)', tableX + tableW - 35, y, { align: 'center' });
 
-  doc.save(`Bulletin_${data.trimestre}_${data.matricule}_${data.enfantNom}.pdf`);
+  const pdfBlob = doc.output('blob');
+  const cleanMatricule = data.matricule && !data.matricule.toUpperCase().startsWith('DEMO')
+    ? `_${data.matricule}`
+    : '';
+  const filename = `Bulletin_${data.trimestre}${cleanMatricule}_${data.enfantPrenom}_${data.enfantNom}.pdf`;
+  downloadFile({
+    filename,
+    blobOrData: pdfBlob,
+    mimeType: 'application/pdf',
+  });
 
   return doc;
 }

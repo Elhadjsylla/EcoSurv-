@@ -30,34 +30,37 @@ interface NavSection {
 }
 
 import { useLanguageStore } from '../../i18n/useLanguageStore';
+import { translations } from '../../i18n/translations';
 
 export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange, className }) => {
-  const t = useLanguageStore((s) => s.t);
+  const storeT = useLanguageStore((s) => s.t);
+  const t = storeT?.nav ? storeT : translations.fr;
+
   const sections: NavSection[] = [
     {
       label: 'GÉNÉRAL',
       items: [
-        { id: 'dashboard', label: t.nav.dashboard, icon: <LayoutGrid className="h-4 w-4 shrink-0" /> },
+        { id: 'dashboard', label: t.nav?.dashboard || 'Tableau de bord', icon: <LayoutGrid className="h-4 w-4 shrink-0" /> },
       ],
     },
     {
       label: 'ACADÉMIQUE',
       items: [
-        { id: 'eleves', label: t.nav.students, icon: <GraduationCap className="h-4 w-4 shrink-0" /> },
+        { id: 'eleves', label: t.nav?.students || 'Élèves', icon: <GraduationCap className="h-4 w-4 shrink-0" /> },
       ],
     },
     {
       label: 'FINANCES',
       items: [
-        { id: 'echeances', label: t.nav.schedule, icon: <CalendarDays className="h-4 w-4 shrink-0" /> },
-        { id: 'relances', label: t.nav.reminders, icon: <BellRing className="h-4 w-4 shrink-0" /> },
-        { id: 'rapports', label: t.nav.reports, icon: <BarChart3 className="h-4 w-4 shrink-0" /> },
+        { id: 'echeances', label: t.nav?.schedule || 'Échéances', icon: <CalendarDays className="h-4 w-4 shrink-0" /> },
+        { id: 'relances', label: t.nav?.reminders || 'Relances', icon: <BellRing className="h-4 w-4 shrink-0" /> },
+        { id: 'rapports', label: t.nav?.reports || 'Rapports', icon: <BarChart3 className="h-4 w-4 shrink-0" /> },
       ],
     },
     {
       label: 'SYSTÈME',
       items: [
-        { id: 'config', label: t.nav.settings, icon: <SlidersHorizontal className="h-4 w-4 shrink-0" /> },
+        { id: 'config', label: t.nav?.settings || 'Configuration', icon: <SlidersHorizontal className="h-4 w-4 shrink-0" /> },
       ],
     },
   ];

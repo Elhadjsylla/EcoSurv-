@@ -1,5 +1,6 @@
 import { jsPDF } from 'jspdf';
 import { formatMRU } from '../utils';
+import { downloadFile } from '../downloadFile';
 
 export interface ReceiptData {
   recuRef: string;
@@ -138,13 +139,22 @@ export function generateReceiptPdf(data: ReceiptData, action: 'download' | 'prin
   y += 3.5;
   doc.text('Conservez ce ticket comme justificatif de paiement', pageWidth / 2, y, { align: 'center' });
 
+  const cleanRef = data.recuRef.replace(/[^a-zA-Z0-9_-]/g, '_');
+  const eleveSlug = `${data.elevePrenom || ''}_${data.eleveNom || ''}`.trim().replace(/\s+/g, '_');
+  const filename = `Recu_${cleanRef}${eleveSlug ? '_' + eleveSlug : ''}.pdf`;
+  const blob = doc.output('blob');
+
   if (action === 'print') {
     doc.autoPrint();
-    const blob = doc.output('blob');
     const blobUrl = URL.createObjectURL(blob);
     window.open(blobUrl, '_blank');
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
   } else {
-    doc.save(`Recu_${data.recuRef.replace(/[^a-zA-Z0-9_-]/g, '_')}.pdf`);
+    downloadFile({
+      filename,
+      blobOrData: blob,
+      mimeType: 'application/pdf',
+    });
   }
 
   return doc;

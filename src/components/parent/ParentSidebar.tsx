@@ -8,8 +8,8 @@ import {
   Users,
   HeartHandshake,
 } from 'lucide-react';
-import { CURRENT_PARENT, MOCK_PARENT_ENFANTS_DETAILS } from '../../lib/mockData';
-import { useAuthStore } from '../../store/useAuthStore';
+import { MOCK_PARENT_ENFANTS_DETAILS } from '../../lib/mockData';
+import { useParentChildren } from '../../hooks/useParentChildren';
 import { Tooltip, TooltipLabel } from '../ui/Tooltip';
 import { SidebarShell } from '../ui/SidebarShell';
 
@@ -28,6 +28,7 @@ interface ParentSidebarProps {
 }
 
 import { useLanguageStore } from '../../i18n/useLanguageStore';
+import { translations } from '../../i18n/translations';
 
 export const ParentSidebar: React.FC<ParentSidebarProps> = ({
   activeTab,
@@ -36,10 +37,9 @@ export const ParentSidebar: React.FC<ParentSidebarProps> = ({
   onSelectChild,
   className,
 }) => {
-  const t = useLanguageStore((s) => s.t);
-  const authProfile = useAuthStore((s) => s.profile);
-  const isReal = Boolean(authProfile?.ecole_id);
-  const enfantsIds = isReal ? [] : CURRENT_PARENT.enfants_ids;
+  const storeT = useLanguageStore((s) => s.t);
+  const t = storeT?.nav ? storeT : translations.fr;
+  const { children: parentChildren } = useParentChildren(selectedChildId, onSelectChild);
 
   const navItems: Array<{
     id: ParentNavTab;
@@ -49,26 +49,26 @@ export const ParentSidebar: React.FC<ParentSidebarProps> = ({
   }> = [
     {
       id: 'parent_dashboard',
-      label: t.nav.familyHome,
+      label: t.nav?.familyHome || 'Accueil Famille',
       icon: <LayoutGrid className="h-4 w-4 shrink-0" />,
     },
     {
       id: 'parent_paiements',
-      label: t.nav.feesPayments,
+      label: t.nav?.feesPayments || 'Frais & Paiements',
       icon: <WalletCards className="h-4 w-4 shrink-0" />,
       badge:
-        !isReal && MOCK_PARENT_ENFANTS_DETAILS[selectedChildId]?.reste_a_payer > 0
+        selectedChildId && MOCK_PARENT_ENFANTS_DETAILS[selectedChildId]?.reste_a_payer > 0
           ? 'À régler'
           : undefined,
     },
     {
       id: 'parent_pedagogie',
-      label: t.nav.gradesReport,
+      label: t.nav?.gradesReport || 'Notes & Bulletins',
       icon: <GraduationCap className="h-4 w-4 shrink-0" />,
     },
     {
       id: 'parent_assiduite',
-      label: t.nav.attendance,
+      label: t.nav?.attendance || 'Assiduité',
       icon: <CalendarDays className="h-4 w-4 shrink-0" />,
     },
   ];
@@ -88,24 +88,22 @@ export const ParentSidebar: React.FC<ParentSidebarProps> = ({
               <div className="flex items-center justify-between text-xs font-bold text-slate-900 dark:text-white mb-2">
                 <div className="flex items-center gap-1.5">
                   <Users className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
-                  <span>Enfants scolarisés ({enfantsIds.length})</span>
+                  <span>Enfants scolarisés ({parentChildren.length})</span>
                 </div>
               </div>
 
-              {enfantsIds.length === 0 ? (
+              {parentChildren.length === 0 ? (
                 <div className="p-2 text-center text-[11px] text-slate-400">
                   Aucun élève rattaché
                 </div>
               ) : (
                 <div className="space-y-1">
-                  {enfantsIds.map((id) => {
-                    const enf = MOCK_PARENT_ENFANTS_DETAILS[id];
-                    if (!enf) return null;
-                    const isChildSelected = selectedChildId === id;
+                  {parentChildren.map((enf) => {
+                    const isChildSelected = selectedChildId === enf.id;
                     return (
                       <button
-                        key={id}
-                        onClick={() => onSelectChild(id)}
+                        key={enf.id}
+                        onClick={() => onSelectChild(enf.id)}
                         className={cn(
                           'w-full text-left p-2 rounded-lg transition-all flex items-center justify-between',
                           isChildSelected
@@ -129,7 +127,7 @@ export const ParentSidebar: React.FC<ParentSidebarProps> = ({
                           </div>
                         </div>
 
-                        {enf.reste_a_payer > 0 ? (
+                        {enf.remaining > 0 ? (
                           <span
                             className={cn(
                               'px-1.5 py-0.5 rounded text-[9px] font-mono font-bold shrink-0',
@@ -140,18 +138,7 @@ export const ParentSidebar: React.FC<ParentSidebarProps> = ({
                           >
                             Solde
                           </span>
-                        ) : (
-                          <span
-                            className={cn(
-                              'px-1.5 py-0.5 rounded text-[9px] font-mono font-bold shrink-0',
-                              isChildSelected
-                                ? 'bg-white/20 text-white'
-                                : 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300'
-                            )}
-                          >
-                            À jour
-                          </span>
-                        )}
+                        ) : null}
                       </button>
                     );
                   })}
@@ -164,7 +151,7 @@ export const ParentSidebar: React.FC<ParentSidebarProps> = ({
           <div className="flex-1 px-3 py-4 space-y-1.5 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-800">
             {!isCollapsed && (
               <div className="px-3 pb-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                {t.nav.familySpace}
+                {t.nav?.familySpace || 'Espace Famille'}
               </div>
             )}
 

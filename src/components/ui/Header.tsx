@@ -30,6 +30,7 @@ import {
 import { useNavigationStore } from '../../store/useNavigationStore';
 import { LanguageSelector } from './LanguageSelector';
 import { useLanguageStore } from '../../i18n/useLanguageStore';
+import { isRoleSimulatorAllowed } from '../../config/features';
 
 export type UserRole = 'directeur' | 'enseignant' | 'caissier' | 'parent';
 
@@ -131,10 +132,14 @@ export const Header: React.FC<HeaderProps> = ({
     },
   };
 
-  const currentConfig = rolesConfig[currentRole];
+  const currentConfig = (currentRole && rolesConfig[currentRole]) ? rolesConfig[currentRole] : rolesConfig.directeur;
   const authProfile = useAuthStore((s) => s.profile);
   const authEcole = useAuthStore((s) => s.ecole);
   const storeEcole = useEcoleStore((s) => s.ecole);
+
+  // Détection du mode simulation : interdit par défaut pour un compte réel en production
+  const isRealAccount = Boolean(authProfile?.ecole_id && authProfile.ecole_id !== 'ecole-demo');
+  const showRoleSimulator = isRoleSimulatorAllowed(isRealAccount);
 
   // École réelle prioritaire sur le mock
   const ecole = {
@@ -144,17 +149,19 @@ export const Header: React.FC<HeaderProps> = ({
     code_ecole: authEcole?.nom ? authEcole.nom.slice(0, 4).toUpperCase() : storeEcole.code_ecole,
   };
 
+  const defaultUser = currentConfig?.user || CURRENT_DIRECTEUR;
+
   // Utilisateur réel prioritaire sur le mock
   const activeUser = authProfile
     ? {
-        ...currentConfig.user,
+        ...defaultUser,
         id: authProfile.id,
         nom: authProfile.nom,
         prenom: authProfile.prenom,
-        email: authProfile.email || currentConfig.user.email,
-        telephone: authProfile.telephone || currentConfig.user.telephone,
+        email: authProfile.email || defaultUser.email,
+        telephone: authProfile.telephone || defaultUser.telephone,
       }
-    : currentConfig.user;
+    : defaultUser;
 
   useEffect(() => {
     loadNotificationsForUser(activeUser.id || 'usr-default', currentRole);
@@ -251,24 +258,29 @@ export const Header: React.FC<HeaderProps> = ({
         {/* Sélecteur de langue (FR / AR / EN) */}
         <LanguageSelector />
 
-        {/* Role Selector (clean & discrete) - Visible UNIQUEMENT pour le Directeur */}
-        {onRoleChange && userRole === 'directeur' && (
-          <Select<UserRole>
-            value={currentRole}
-            onChange={onRoleChange}
-            prefix={`${t.common.viewAs} :`}
-            size="sm"
-            variant="subtle"
-            align="right"
-            className="shrink-0"
-            menuClassName="w-56"
-            options={(Object.keys(rolesConfig) as UserRole[]).map((role) => ({
-              value: role,
-              label: rolesConfig[role].label,
-              icon: rolesConfig[role].icon,
-              description: rolesConfig[role].roleTitle,
-            }))}
-          />
+        {/* Role Selector (clean & discrete) - Jamais visible par défaut pour un compte réel en production */}
+        {showRoleSimulator && onRoleChange && userRole === 'directeur' && (
+          <div className="flex items-center gap-1.5">
+            <span className="hidden 2xl:inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60">
+              Simulation
+            </span>
+            <Select<UserRole>
+              value={currentRole}
+              onChange={onRoleChange}
+              prefix={`${t.common.viewAs} :`}
+              size="sm"
+              variant="subtle"
+              align="right"
+              className="shrink-0"
+              menuClassName="w-56"
+              options={(Object.keys(rolesConfig) as UserRole[]).map((role) => ({
+                value: role,
+                label: rolesConfig[role].label,
+                icon: rolesConfig[role].icon,
+                description: rolesConfig[role].roleTitle,
+              }))}
+            />
+          </div>
         )}
 
         {/* Notifications Icon Button with Dropdown */}
