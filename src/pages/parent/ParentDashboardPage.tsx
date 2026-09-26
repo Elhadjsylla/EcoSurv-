@@ -1,9 +1,10 @@
-import React from 'react';
 import {
   MOCK_PARENT_ENFANTS_DETAILS,
   CURRENT_PARENT,
 } from '../../lib/mockData';
 import { useEcoleStore } from '../../store/useEcoleStore';
+import { useAuthStore } from '../../store/useAuthStore';
+import { useParentChildren } from '../../hooks/useParentChildren';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { KpiCard } from '../../components/ui/KpiCard';
@@ -13,11 +14,13 @@ import {
   GraduationCap,
   CalendarCheck,
   Clock,
-  Sparkles,
   MapPin,
   Calendar,
   School,
   Phone,
+  Users,
+  AlertCircle,
+  RefreshCw,
 } from 'lucide-react';
 import { ParentNavTab } from '../../components/parent/ParentSidebar';
 
@@ -33,7 +36,25 @@ export const ParentDashboardPage: React.FC<ParentDashboardPageProps> = ({
   onNavigateTab,
 }) => {
   const ecole = useEcoleStore((s) => s.ecole);
-  const enfant = MOCK_PARENT_ENFANTS_DETAILS[selectedChildId] || MOCK_PARENT_ENFANTS_DETAILS['el-001'];
+  const authEcole = useAuthStore((s) => s.ecole);
+  const authProfile = useAuthStore((s) => s.profile);
+  const ecoleNom = authEcole?.nom || ecole.nom;
+
+  const parentName = authProfile
+    ? `${authProfile.prenom} ${authProfile.nom}`
+    : `${CURRENT_PARENT.prenom} ${CURRENT_PARENT.nom}`;
+
+  const {
+    children: parentChildren,
+    activeChild,
+    isLoading: isChildrenLoading,
+    errorMessage: childrenError,
+    refresh: refreshChildren,
+  } = useParentChildren(selectedChildId, onSelectChild);
+
+  const mockDetails = activeChild && MOCK_PARENT_ENFANTS_DETAILS[activeChild.id]
+    ? MOCK_PARENT_ENFANTS_DETAILS[activeChild.id]
+    : null;
 
   return (
     <div className="p-6 sm:p-8 lg:p-10 max-w-6xl mx-auto space-y-8 sm:space-y-10 animate-stagger-rise relative">
@@ -44,10 +65,10 @@ export const ParentDashboardPage: React.FC<ParentDashboardPageProps> = ({
             <span className="px-3 py-1 rounded-full text-xs font-bold bg-purple-100 dark:bg-purple-950/60 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-800/60">
               Espace Tuteur Légal
             </span>
-            <span className="text-xs text-slate-500 dark:text-slate-400">• {ecole.nom}</span>
+            <span className="text-xs text-slate-500 dark:text-slate-400">• {ecoleNom}</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
-            Bonjour, {CURRENT_PARENT.prenom} {CURRENT_PARENT.nom} 👋
+            Bonjour, {parentName}
           </h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1.5 max-w-xl">
             Retrouvez la situation académique, l'assiduité en temps réel et le règlement des frais scolaires pour vos enfants inscrits.
@@ -56,15 +77,13 @@ export const ParentDashboardPage: React.FC<ParentDashboardPageProps> = ({
 
         {/* Sélecteur rapide d'enfant pour Mobile / Tablette */}
         <div className="flex flex-wrap gap-2.5 pt-2 md:pt-0 shrink-0">
-          {CURRENT_PARENT.enfants_ids.map((id) => {
-            const item = MOCK_PARENT_ENFANTS_DETAILS[id];
-            const isSelected = selectedChildId === id;
-            if (!item) return null;
+          {parentChildren.map((item) => {
+            const isSelected = activeChild?.id === item.id;
 
             return (
               <button
-                key={id}
-                onClick={() => onSelectChild(id)}
+                key={item.id}
+                onClick={() => onSelectChild(item.id)}
                 className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all border ${
                   isSelected
                     ? 'bg-purple-600 text-white border-purple-600 shadow-xs'
@@ -86,25 +105,63 @@ export const ParentDashboardPage: React.FC<ParentDashboardPageProps> = ({
         </div>
       </div>
 
-      {/* Focus Enfant Sélectionné Card */}
-      <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-6">
-        <div className="flex items-center gap-4">
-          <div className="h-14 w-14 rounded-2xl bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300 font-extrabold text-xl flex items-center justify-center shrink-0 border border-purple-200 dark:border-purple-800">
-            {enfant.photo_initiales}
+      {/* État d'erreur SQL / RLS / Réseau vs État vide légitime (0 enfant) vs Enfant sélectionné */}
+      {childrenError ? (
+        <div className="bg-white dark:bg-slate-900 rounded-2xl p-8 border border-rose-200 dark:border-rose-900/60 shadow-2xs text-center space-y-4 max-w-xl mx-auto">
+          <div className="h-14 w-14 rounded-2xl bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center mx-auto shadow-sm">
+            <AlertCircle className="h-7 w-7" />
           </div>
-          <div>
-            <div className="flex items-center gap-2.5">
-              <h2 className="text-xl font-bold text-slate-900 dark:text-white">
-                {enfant.prenom} {enfant.nom}
-              </h2>
-              <span className="px-3 py-1 rounded-full text-xs font-bold bg-purple-50 dark:bg-purple-950/60 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-800/60">
-                {enfant.classe}
-              </span>
+          <h2 className="text-xl font-bold text-slate-900 dark:text-white">
+            Impossible de charger les données
+          </h2>
+          <p className="text-sm text-slate-600 dark:text-slate-400">
+            {childrenError}
+          </p>
+          <div className="pt-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={refreshChildren}
+              disabled={isChildrenLoading}
+              className="gap-2 border-slate-300 dark:border-slate-700"
+            >
+              <RefreshCw className={`h-4 w-4 ${isChildrenLoading ? 'animate-spin' : ''}`} />
+              <span>Réessayer</span>
+            </Button>
+          </div>
+        </div>
+      ) : !activeChild ? (
+        <div className="bg-white dark:bg-slate-900 rounded-2xl p-8 border border-slate-200 dark:border-slate-800 shadow-2xs text-center space-y-4 max-w-xl mx-auto">
+          <div className="h-14 w-14 rounded-2xl bg-purple-100 dark:bg-purple-950 text-purple-600 dark:text-purple-400 flex items-center justify-center mx-auto shadow-sm">
+            <Users className="h-7 w-7" />
+          </div>
+          <h2 className="text-xl font-bold text-slate-900 dark:text-white">
+            Aucun élève rattaché pour le moment
+          </h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            Votre espace famille est actif. Les informations scolaires et le règlement des frais de vos enfants apparaîtront automatiquement dès que l'école aura finalisé votre rattachement.
+          </p>
+        </div>
+      ) : (
+        <>
+        <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+          <div className="flex items-center gap-4">
+            <div className="h-14 w-14 rounded-2xl bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300 font-extrabold text-xl flex items-center justify-center shrink-0 border border-purple-200 dark:border-purple-800">
+              {activeChild.photo_initiales}
             </div>
+            <div>
+              <div className="flex items-center gap-2.5">
+                <h2 className="text-xl font-bold text-slate-900 dark:text-white">
+                  {activeChild.prenom} {activeChild.nom}
+                </h2>
+                <span className="px-3 py-1 rounded-full text-xs font-bold bg-purple-50 dark:bg-purple-950/60 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-800/60">
+                  {activeChild.classe}
+                </span>
+              </div>
             <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-2 mt-1">
-              <span>Matricule: #{enfant.matricule}</span>
+              <span>Matricule: #{activeChild.matricule}</span>
               <span>•</span>
-              <span>Prof. Principal: {enfant.professeur_principal}</span>
+              <span>Lien: {activeChild.lien}</span>
             </p>
           </div>
         </div>
@@ -119,14 +176,14 @@ export const ParentDashboardPage: React.FC<ParentDashboardPageProps> = ({
             <GraduationCap className="h-4 w-4 text-purple-600 dark:text-purple-400" />
             Voir le Bulletin
           </Button>
-          {enfant.reste_a_payer > 0 && (
+          {activeChild.remaining > 0 && (
             <Button
               size="sm"
               onClick={() => onNavigateTab('parent_paiements')}
               className="bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold gap-2 px-3.5 py-2 shadow-xs"
             >
               <CreditCard className="h-4 w-4" />
-              Régler ({formatMRU(enfant.reste_a_payer)})
+              Régler ({formatMRU(activeChild.remaining)})
             </Button>
           )}
         </div>
@@ -136,23 +193,23 @@ export const ParentDashboardPage: React.FC<ParentDashboardPageProps> = ({
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <KpiCard
           title="Frais de Scolarité"
-          amount={enfant.reste_a_payer}
+          amount={activeChild.remaining}
           unit="MRU"
           subtitle={
-            enfant.reste_a_payer === 0
-              ? `Compte à jour (${formatMRU(enfant.total_regle)} réglés)`
-              : `Échéance de ${formatMRU(enfant.prochaine_echeance_montant)} attendue`
+            activeChild.remaining === 0
+              ? `Compte à jour (${formatMRU(activeChild.total_paid)} réglés)`
+              : `Total scolarité : ${formatMRU(activeChild.total_due)}`
           }
           icon={<CreditCard className="w-5 h-5 text-purple-600 dark:text-purple-400" />}
-          variant={enfant.reste_a_payer === 0 ? 'success' : 'purple'}
+          variant={activeChild.remaining === 0 ? 'success' : 'purple'}
           onClick={() => onNavigateTab('parent_paiements')}
         />
 
         <KpiCard
           title="Résultats Trimestre 2"
-          customValue={`${enfant.moyenne_generale.toFixed(1)} / 20`}
-          subtitle={`Rang : ${enfant.rang} • Tableau d'Honneur`}
-          icon={<Sparkles className="w-5 h-5 text-purple-600 dark:text-purple-400" />}
+          customValue={mockDetails ? `${mockDetails.moyenne_generale.toFixed(1)} / 20` : 'En attente'}
+          subtitle={mockDetails ? `Rang : ${mockDetails.rang} • Tableau d'Honneur` : 'Bulletins en cours de saisie'}
+          icon={<GraduationCap className="w-5 h-5 text-purple-600 dark:text-purple-400" />}
           variant="purple"
           onClick={() => onNavigateTab('parent_pedagogie')}
         />
@@ -160,7 +217,7 @@ export const ParentDashboardPage: React.FC<ParentDashboardPageProps> = ({
         <KpiCard
           title="Assiduité & Présence"
           customValue="Présent aujourd'hui"
-          subtitle={`${enfant.nb_absences_total} absence(s), ${enfant.nb_retards_total} retard(s)`}
+          subtitle={mockDetails ? `${mockDetails.nb_absences_total} absence(s), ${mockDetails.nb_retards_total} retard(s)` : '0 absence signalée'}
           icon={<CalendarCheck className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />}
           variant="success"
           onClick={() => onNavigateTab('parent_assiduite')}
@@ -184,26 +241,30 @@ export const ParentDashboardPage: React.FC<ParentDashboardPageProps> = ({
           </div>
 
           <div className="space-y-2.5">
-            {enfant.emploi_du_temps_aujourdhui.map((cours, idx) => (
-              <div
-                key={idx}
-                className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 hover:bg-purple-50/40 dark:hover:bg-purple-950/20 transition-colors"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="px-2.5 py-1 rounded-lg bg-purple-100 dark:bg-purple-950 text-purple-800 dark:text-purple-300 text-xs font-bold font-mono">
-                    {cours.heure}
+            {(mockDetails?.emploi_du_temps_aujourdhui || []).length === 0 ? (
+              <p className="text-xs text-slate-400 italic py-4 text-center">Aucun cours programmé aujourd'hui</p>
+            ) : (
+              mockDetails?.emploi_du_temps_aujourdhui.map((cours, idx) => (
+                <div
+                  key={idx}
+                  className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 hover:bg-purple-50/40 dark:hover:bg-purple-950/20 transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="px-2.5 py-1 rounded-lg bg-purple-100 dark:bg-purple-950 text-purple-800 dark:text-purple-300 text-xs font-bold font-mono">
+                      {cours.heure}
+                    </div>
+                    <div>
+                      <div className="font-bold text-slate-900 dark:text-white text-sm">{cours.matiere}</div>
+                      <div className="text-xs text-slate-500 dark:text-slate-400">{cours.professeur}</div>
+                    </div>
                   </div>
-                  <div>
-                    <div className="font-bold text-slate-900 dark:text-white text-sm">{cours.matiere}</div>
-                    <div className="text-xs text-slate-500 dark:text-slate-400">{cours.professeur}</div>
+                  <div className="flex items-center gap-1 text-xs text-slate-600 dark:text-slate-300 font-semibold bg-white dark:bg-slate-900 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700">
+                    <MapPin className="h-3 w-3 text-slate-400" />
+                    {cours.salle}
                   </div>
                 </div>
-                <div className="flex items-center gap-1 text-xs text-slate-600 dark:text-slate-300 font-semibold bg-white dark:bg-slate-900 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700">
-                  <MapPin className="h-3 w-3 text-slate-400" />
-                  {cours.salle}
-                </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </Card>
 
@@ -225,34 +286,40 @@ export const ParentDashboardPage: React.FC<ParentDashboardPageProps> = ({
           </div>
 
           <div className="space-y-3">
-            {enfant.bulletin.slice(0, 4).map((item, idx) => (
-              <div
-                key={idx}
-                className="flex items-center justify-between p-3 rounded-xl bg-slate-50/70 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700/60 shadow-2xs"
-              >
-                <div>
-                  <div className="font-bold text-slate-900 dark:text-white text-sm">{item.matiere}</div>
-                  <div className="text-xs text-slate-400">
-                    Coef. {item.coefficient} • {item.professeur}
+            {(mockDetails?.bulletin || []).length === 0 ? (
+              <p className="text-xs text-slate-400 italic py-4 text-center">Aucune note enregistrée ce trimestre</p>
+            ) : (
+              mockDetails?.bulletin.slice(0, 4).map((item, idx) => (
+                <div
+                  key={idx}
+                  className="flex items-center justify-between p-3 rounded-xl bg-slate-50/70 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700/60 shadow-2xs"
+                >
+                  <div>
+                    <div className="font-bold text-slate-900 dark:text-white text-sm">{item.matiere}</div>
+                    <div className="text-xs text-slate-400">
+                      Coef. {item.coefficient} • {item.professeur}
+                    </div>
+                    <div className="text-[11px] text-slate-600 dark:text-slate-300 italic mt-0.5 line-clamp-1">
+                      « {item.appreciation} »
+                    </div>
                   </div>
-                  <div className="text-[11px] text-slate-600 dark:text-slate-300 italic mt-0.5 line-clamp-1">
-                    « {item.appreciation} »
-                  </div>
-                </div>
 
-                <div className="text-right shrink-0 pl-3">
-                  <div className="text-base font-black text-purple-600 dark:text-purple-400 font-mono">
-                    {item.moyenne.toFixed(1)} <span className="text-xs text-slate-400">/ 20</span>
-                  </div>
-                  <div className="text-[10px] text-slate-400">
-                    Classe: {item.moyenne_classe.toFixed(1)}
+                  <div className="text-right shrink-0 pl-3">
+                    <div className="text-base font-black text-purple-600 dark:text-purple-400 font-mono">
+                      {item.moyenne.toFixed(1)} <span className="text-xs text-slate-400">/ 20</span>
+                    </div>
+                    <div className="text-[10px] text-slate-400">
+                      Classe: {item.moyenne_classe.toFixed(1)}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </Card>
       </div>
+      </>
+      )}
 
       {/* Contacts de l'Établissement */}
       <Card className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xs flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -261,7 +328,7 @@ export const ParentDashboardPage: React.FC<ParentDashboardPageProps> = ({
             <School className="h-5 w-5 text-white" />
           </div>
           <div>
-            <h4 className="text-sm font-bold text-slate-900 dark:text-white">{ecole.nom} • Secrétariat</h4>
+            <h4 className="text-sm font-bold text-slate-900 dark:text-white">{ecoleNom} • Secrétariat</h4>
             <p className="text-xs text-slate-500 dark:text-slate-400">
               Ouvert du Lundi au Vendredi de 08:00 à 17:00 (Tevragh-Zeina)
             </p>

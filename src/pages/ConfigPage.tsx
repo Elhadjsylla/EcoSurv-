@@ -5,11 +5,15 @@ import { Select } from '../components/ui/Select';
 import { KpiCard } from '../components/ui/KpiCard';
 import { Tooltip } from '../components/ui/Tooltip';
 import { useEcoleStore } from '../store/useEcoleStore';
+import { useAuthStore } from '../store/useAuthStore';
+import { supabase } from '../lib/supabase';
+import { parseEdgeFunctionError } from '../lib/functionsHelper';
 import {
   MOCK_STAFF,
   StaffMember,
   RoleUtilisateur,
 } from '../lib/mockData';
+import { DEFAULT_CLASSES_MAURITANIE } from '../lib/constants/classes';
 import {
   Save,
   Building2,
@@ -23,16 +27,72 @@ import {
   KeyRound,
   UserCog,
   UserMinus,
+  UserCheck,
   School,
   ChevronLeft,
   ChevronRight,
+  AlertCircle,
+  Loader2,
 } from 'lucide-react';
 
 export const ConfigPage: React.FC = () => {
   const { ecole, updateEcole } = useEcoleStore();
+  const authProfile = useAuthStore((s) => s.profile);
   const [formData, setFormData] = useState(ecole);
   const [isSaving, setIsSaving] = useState(false);
-  const [staffList, setStaffList] = useState<StaffMember[]>(MOCK_STAFF);
+  const [staffList, setStaffList] = useState<StaffMember[]>(() => {
+    if (authProfile?.ecole_id) return [];
+    return MOCK_STAFF;
+  });
+
+  const [isInviting, setIsInviting] = useState(false);
+  const [inviteError, setInviteError] = useState<string | null>(null);
+
+  const fetchStaff = async () => {
+    if (!authProfile?.ecole_id) return;
+    try {
+      const { data: profilsData, error: profilsErr } = await supabase
+        .from('profils')
+        .select('*')
+        .eq('ecole_id', authProfile.ecole_id)
+        .order('created_at', { ascending: false });
+
+      if (!profilsErr && profilsData) {
+        // Récupérer les classes assignées pour les enseignants
+        const { data: affectations } = await supabase
+          .from('affectations_enseignants')
+          .select('enseignant_id, classe')
+          .eq('ecole_id', authProfile.ecole_id);
+
+        const affectationMap = new Map<string, string>();
+        if (affectations) {
+          for (const a of affectations) {
+            affectationMap.set(a.enseignant_id, a.classe);
+          }
+        }
+
+        const mapped: StaffMember[] = profilsData.map((p: any) => ({
+          id: p.id,
+          nom: p.nom,
+          prenom: p.prenom,
+          email: p.email || '',
+          telephone: p.telephone || '',
+          role: p.role as RoleUtilisateur,
+          classe_assignee: affectationMap.get(p.id),
+          actif: Boolean(p.actif),
+          date_ajout: p.created_at ? new Date(p.created_at).toISOString().split('T')[0] : '2026-09-22',
+        }));
+        setStaffList(mapped);
+      }
+    } catch (e) {
+      console.warn('[ConfigPage] Erreur chargement staff:', e);
+    }
+  };
+
+  useEffect(() => {
+    fetchStaff();
+  }, [authProfile?.ecole_id]);
+
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
@@ -83,28 +143,183 @@ export const ConfigPage: React.FC = () => {
     }, 600);
   };
 
-  const handleInviteStaff = (e: React.FormEvent) => {
+  const handleInviteStaff = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newNom.trim() || !newPrenom.trim() || !newEmail.trim()) return;
 
-    const newMember: StaffMember = {
-      id: `st-${Date.now()}`,
-      nom: newNom.toUpperCase(),
-      prenom: newPrenom,
-      email: newEmail,
-      telephone: newTelephone,
-      role: newRole,
-      classe_assignee: newRole === 'enseignant' ? newClasse : undefined,
-      actif: true,
-      date_ajout: new Date().toISOString().split('T')[0],
-    };
+    setIsInviting(true);
+    setInviteError(null);
 
-    setStaffList([...staffList, newMember]);
-    showToast(`Invitation transmise à ${newPrenom} ${newNom} (${newRole})`);
-    setIsInviteModalOpen(false);
-    setNewNom('');
-    setNewPrenom('');
-    setNewEmail('');
+    try {
+      const { data, error } = await supabase.functions.invoke('invite-staff-member', {
+        body: {
+          nom: newNom.trim(),
+          prenom: newPrenom.trim(),
+          email: newEmail.trim(),
+          telephone: newTelephone.trim(),
+          role: newRole,
+          classe_assignee: newRole === 'enseignant' ? newClasse : undefined,
+          redirect_to: window.location.origin,
+        },
+      });
+
+      if (error) {
+        const errorMsg = await parseEdgeFunctionError(error, "Erreur lors de l'envoi de l'invitation.");
+        setInviteError(errorMsg);
+        setIsInviting(false);
+        return;
+      }
+
+      if (data?.error && !data?.success) {
+        setInviteError(data.error);
+        setIsInviting(false);
+        return;
+      }
+
+      showToast(`✓ Invitation expédiée avec succès à ${newPrenom} ${newNom} (${newEmail}) !`);
+      setIsInviteModalOpen(false);
+      setNewNom('');
+      setNewPrenom('');
+      setNewEmail('');
+      setNewTelephone('+222 ');
+      setIsInviting(false);
+
+      if (authProfile?.ecole_id) {
+        await fetchStaff();
+      }
+    } catch (err: any) {
+      console.error('[ConfigPage] Erreur invitation personnel:', err);
+      setInviteError(err?.message || "Erreur inattendue lors de l'envoi de l'invitation.");
+      setIsInviting(false);
+    }
+  };
+
+  // State pour modification d'un membre existant
+  const [editingMember, setEditingMember] = useState<StaffMember | null>(null);
+  const [editNom, setEditNom] = useState('');
+  const [editPrenom, setEditPrenom] = useState('');
+  const [editTelephone, setEditTelephone] = useState('');
+  const [editRole, setEditRole] = useState<RoleUtilisateur>('enseignant');
+  const [editClasse, setEditClasse] = useState('Terminales C');
+  const [isUpdatingMember, setIsUpdatingMember] = useState(false);
+  const [updateMemberError, setUpdateMemberError] = useState<string | null>(null);
+
+  // État de chargement pour les actions individuelles
+  const [actionInProgressId, setActionInProgressId] = useState<string | null>(null);
+
+  const handleOpenEditModal = (member: StaffMember) => {
+    setEditingMember(member);
+    setEditNom(member.nom);
+    setEditPrenom(member.prenom);
+    setEditTelephone(member.telephone || '+222 ');
+    setEditRole(member.role);
+    setEditClasse(member.classe_assignee || 'Terminales C');
+    setUpdateMemberError(null);
+    setActiveMenuId(null);
+  };
+
+  const handleUpdateMemberSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingMember) return;
+    if (!editNom.trim() || !editPrenom.trim()) return;
+
+    setIsUpdatingMember(true);
+    setUpdateMemberError(null);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('manage-staff-member', {
+        body: {
+          action: 'update_member',
+          member_id: editingMember.id,
+          nom: editNom.trim(),
+          prenom: editPrenom.trim(),
+          telephone: editTelephone.trim(),
+          role: editRole,
+          classe_assignee: editRole === 'enseignant' ? editClasse : undefined,
+        },
+      });
+
+      if (error || (data && !data.success)) {
+        const errorMsg = error ? await parseEdgeFunctionError(error, 'Erreur lors de la mise à jour.') : (data?.error || 'Erreur lors de la mise à jour.');
+        setUpdateMemberError(errorMsg);
+        setIsUpdatingMember(false);
+        return;
+      }
+
+      showToast(`✓ Profil de ${editPrenom} ${editNom} mis à jour avec succès.`);
+      setEditingMember(null);
+      setIsUpdatingMember(false);
+      await fetchStaff();
+    } catch (err: any) {
+      console.error('[ConfigPage] Erreur modification profil:', err);
+      const errorMsg = await parseEdgeFunctionError(err, 'Erreur inattendue.');
+      setUpdateMemberError(errorMsg);
+      setIsUpdatingMember(false);
+    }
+  };
+
+  const handleResetPassword = async (member: StaffMember) => {
+    setActiveMenuId(null);
+    setActionInProgressId(member.id);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('manage-staff-member', {
+        body: {
+          action: 'reset_password',
+          member_id: member.id,
+          redirect_to: window.location.origin,
+        },
+      });
+
+      if (error || (data && !data.success)) {
+        const errorMsg = error ? await parseEdgeFunctionError(error, "Échec de l'envoi du lien.") : (data?.error || "Échec de l'envoi du lien.");
+        showToast(`Erreur: ${errorMsg}`);
+      } else {
+        showToast(`✓ Email de réinitialisation envoyé à ${member.email}.`);
+      }
+    } catch (err: any) {
+      console.error('[ConfigPage] Erreur reset password:', err);
+      const errorMsg = await parseEdgeFunctionError(err, 'Erreur lors de la requête.');
+      showToast(`Erreur: ${errorMsg}`);
+    } finally {
+      setActionInProgressId(null);
+    }
+  };
+
+  const handleToggleActive = async (member: StaffMember) => {
+    setActiveMenuId(null);
+
+    if (member.id === authProfile?.id) {
+      showToast('Action refusée : vous ne pouvez pas désactiver votre propre compte administrateur.');
+      return;
+    }
+
+    setActionInProgressId(member.id);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('manage-staff-member', {
+        body: {
+          action: 'toggle_active',
+          member_id: member.id,
+          actif: !member.actif,
+        },
+      });
+
+      if (error || (data && !data.success)) {
+        const errorMsg = error ? await parseEdgeFunctionError(error, 'Échec du changement de statut.') : (data?.error || 'Échec du changement de statut.');
+        showToast(`Erreur: ${errorMsg}`);
+      } else {
+        const actionLabel = member.actif ? 'désactivé (sessions coupées immédiatement)' : 'réactivé';
+        showToast(`✓ Compte de ${member.prenom} ${member.nom} ${actionLabel}.`);
+        await fetchStaff();
+      }
+    } catch (err: any) {
+      console.error('[ConfigPage] Erreur statut actif:', err);
+      const errorMsg = await parseEdgeFunctionError(err, 'Erreur lors du changement de statut.');
+      showToast(`Erreur: ${errorMsg}`);
+    } finally {
+      setActionInProgressId(null);
+    }
   };
 
   const roleLabels: Record<RoleUtilisateur, { label: string; badge: string }> = {
@@ -417,10 +632,17 @@ export const ConfigPage: React.FC = () => {
 
                     {/* Statut Compte: Pill with dot */}
                     <td className="py-4 px-6 text-center whitespace-nowrap">
-                      <span className="inline-flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 px-3 py-1 rounded-full font-bold text-xs">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                        Actif
-                      </span>
+                      {member.actif ? (
+                        <span className="inline-flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 px-3 py-1 rounded-full font-bold text-xs">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                          Actif
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1.5 bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60 px-3 py-1 rounded-full font-bold text-xs">
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                          En attente
+                        </span>
+                      )}
                     </td>
 
                     {/* Context menu "..." */}
@@ -438,38 +660,58 @@ export const ConfigPage: React.FC = () => {
                       </Tooltip>
 
                       {activeMenuId === member.id && (
-                        <div className="absolute right-6 top-12 z-30 w-52 bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-slate-200 dark:border-slate-800 py-1.5 text-left animate-in fade-in zoom-in-95">
+                        <div className="absolute right-6 top-12 z-30 w-56 bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-slate-200 dark:border-slate-800 py-1.5 text-left animate-in fade-in zoom-in-95">
                           <button
-                            onClick={() => {
-                              showToast(`Modification des droits de ${member.prenom} ${member.nom}`);
-                              setActiveMenuId(null);
-                            }}
-                            className="w-full px-4 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/60 flex items-center gap-2"
+                            onClick={() => handleOpenEditModal(member)}
+                            className="w-full px-4 py-2.5 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/60 flex items-center gap-2"
                           >
-                            <UserCog className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-                            Modifier les accès & rôle
+                            <UserCog className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
+                            <span>Modifier les accès & rôle</span>
                           </button>
                           <button
-                            onClick={() => {
-                              showToast(`Lien de réinitialisation envoyé à ${member.email}`);
-                              setActiveMenuId(null);
-                            }}
-                            className="w-full px-4 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/60 flex items-center gap-2"
+                            onClick={() => handleResetPassword(member)}
+                            disabled={actionInProgressId === member.id}
+                            className="w-full px-4 py-2.5 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/60 flex items-center gap-2 disabled:opacity-50"
                           >
-                            <KeyRound className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
-                            Réinitialiser mot de passe
+                            {actionInProgressId === member.id ? (
+                              <Loader2 className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 animate-spin shrink-0" />
+                            ) : (
+                              <KeyRound className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 shrink-0" />
+                            )}
+                            <span>Réinitialiser mot de passe</span>
                           </button>
                           <div className="my-1 border-t border-slate-100 dark:border-slate-800" />
-                          <button
-                            onClick={() => {
-                              showToast(`Accès révoqué pour ${member.prenom} ${member.nom}`);
-                              setActiveMenuId(null);
-                            }}
-                            className="w-full px-4 py-2 text-xs font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 flex items-center gap-2"
-                          >
-                            <UserMinus className="w-3.5 h-3.5 text-rose-500" />
-                            Désactiver le compte
-                          </button>
+                          {member.id === authProfile?.id ? (
+                            <div className="px-4 py-2 text-[11px] text-slate-400 dark:text-slate-500 italic">
+                              Compte connecté (non désactivable)
+                            </div>
+                          ) : member.actif ? (
+                            <button
+                              onClick={() => handleToggleActive(member)}
+                              disabled={actionInProgressId === member.id}
+                              className="w-full px-4 py-2.5 text-xs font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 flex items-center gap-2 disabled:opacity-50"
+                            >
+                              {actionInProgressId === member.id ? (
+                                <Loader2 className="w-3.5 h-3.5 text-rose-500 animate-spin shrink-0" />
+                              ) : (
+                                <UserMinus className="w-3.5 h-3.5 text-rose-500 shrink-0" />
+                              )}
+                              <span>Désactiver le compte</span>
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => handleToggleActive(member)}
+                              disabled={actionInProgressId === member.id}
+                              className="w-full px-4 py-2.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 flex items-center gap-2 disabled:opacity-50"
+                            >
+                              {actionInProgressId === member.id ? (
+                                <Loader2 className="w-3.5 h-3.5 text-emerald-500 animate-spin shrink-0" />
+                              ) : (
+                                <UserCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                              )}
+                              <span>Réactiver le compte</span>
+                            </button>
+                          )}
                         </div>
                       )}
                     </td>
@@ -551,6 +793,13 @@ export const ConfigPage: React.FC = () => {
               </button>
             </div>
 
+            {inviteError && (
+              <div className="flex items-start gap-2.5 p-3 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 text-red-700 dark:text-red-300 text-xs">
+                <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+                <span>{inviteError}</span>
+              </div>
+            )}
+
             <form onSubmit={handleInviteStaff} className="space-y-4 text-xs">
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -560,10 +809,11 @@ export const ConfigPage: React.FC = () => {
                   <input
                     type="text"
                     required
+                    disabled={isInviting}
                     placeholder="Ex: Fatimata"
                     value={newPrenom}
                     onChange={(e) => setNewPrenom(e.target.value)}
-                    className="w-full h-9 px-3 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-blue-600 focus:outline-none placeholder:text-slate-400 dark:placeholder:text-slate-500"
+                    className="w-full h-9 px-3 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-blue-600 focus:outline-none placeholder:text-slate-400 dark:placeholder:text-slate-500 disabled:opacity-50"
                   />
                 </div>
 
@@ -574,10 +824,11 @@ export const ConfigPage: React.FC = () => {
                   <input
                     type="text"
                     required
+                    disabled={isInviting}
                     placeholder="Ex: MINT SIDI"
                     value={newNom}
                     onChange={(e) => setNewNom(e.target.value)}
-                    className="w-full h-9 px-3 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-blue-600 focus:outline-none placeholder:text-slate-400 dark:placeholder:text-slate-500"
+                    className="w-full h-9 px-3 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-blue-600 focus:outline-none placeholder:text-slate-400 dark:placeholder:text-slate-500 disabled:opacity-50"
                   />
                 </div>
               </div>
@@ -589,10 +840,11 @@ export const ConfigPage: React.FC = () => {
                 <input
                   type="email"
                   required
+                  disabled={isInviting}
                   placeholder="nom@ecosurv.test"
                   value={newEmail}
                   onChange={(e) => setNewEmail(e.target.value)}
-                  className="w-full h-9 px-3 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-blue-600 focus:outline-none placeholder:text-slate-400 dark:placeholder:text-slate-500"
+                  className="w-full h-9 px-3 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-blue-600 focus:outline-none placeholder:text-slate-400 dark:placeholder:text-slate-500 disabled:opacity-50"
                 />
               </div>
 
@@ -603,9 +855,10 @@ export const ConfigPage: React.FC = () => {
                   </label>
                   <input
                     type="text"
+                    disabled={isInviting}
                     value={newTelephone}
                     onChange={(e) => setNewTelephone(e.target.value)}
-                    className="w-full h-9 px-3 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-mono focus:ring-2 focus:ring-blue-600 focus:outline-none"
+                    className="w-full h-9 px-3 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-mono focus:ring-2 focus:ring-blue-600 focus:outline-none disabled:opacity-50"
                   />
                 </div>
 
@@ -616,10 +869,10 @@ export const ConfigPage: React.FC = () => {
                   <Select<RoleUtilisateur>
                     value={newRole}
                     onChange={setNewRole}
+                    disabled={isInviting}
                     options={[
                       { value: 'enseignant', label: 'Enseignant' },
                       { value: 'caissier', label: 'Caissier' },
-                      { value: 'directeur', label: 'Directeur' },
                     ]}
                     size="sm"
                     triggerClassName="w-full h-9 rounded-lg font-semibold"
@@ -635,12 +888,8 @@ export const ConfigPage: React.FC = () => {
                   <Select
                     value={newClasse}
                     onChange={setNewClasse}
-                    options={[
-                      { value: 'Terminales C', label: 'Terminales C' },
-                      { value: '6ème A', label: '6ème A' },
-                      { value: 'CM2 A', label: 'CM2 A' },
-                      { value: '3ème B', label: '3ème B' },
-                    ]}
+                    disabled={isInviting}
+                    options={DEFAULT_CLASSES_MAURITANIE.map((c) => ({ value: c, label: c }))}
                     size="sm"
                     triggerClassName="w-full h-9 rounded-lg font-semibold"
                   />
@@ -652,13 +901,162 @@ export const ConfigPage: React.FC = () => {
                   type="button"
                   variant="outline"
                   size="sm"
+                  disabled={isInviting}
                   onClick={() => setIsInviteModalOpen(false)}
                 >
                   Annuler
                 </Button>
-                <Button type="submit" variant="primary" size="sm" className="gap-1.5">
-                  <UserPlus className="h-4 w-4" />
-                  Envoyer Invitation
+                <Button type="submit" variant="primary" size="sm" className="gap-1.5" disabled={isInviting}>
+                  {isInviting ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span>Expédition en cours...</span>
+                    </>
+                  ) : (
+                    <>
+                      <UserPlus className="h-4 w-4" />
+                      <span>Envoyer Invitation</span>
+                    </>
+                  )}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Modification Membre & Rôle */}
+      {editingMember && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-lg p-6 space-y-5 shadow-2xl relative">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+              <div className="flex items-center gap-2.5">
+                <UserCog className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                <div>
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                    Modifier les accès & rôle
+                  </h3>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                    {editingMember.prenom} {editingMember.nom} ({editingMember.email})
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setEditingMember(null)}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 p-1"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {updateMemberError && (
+              <div className="p-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/60 rounded-xl flex items-center gap-2 text-xs text-red-700 dark:text-red-300">
+                <AlertCircle className="h-4 w-4 shrink-0 text-red-500" />
+                <span>{updateMemberError}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleUpdateMemberSubmit} className="space-y-4 text-xs">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    Prénom <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    disabled={isUpdatingMember}
+                    value={editPrenom}
+                    onChange={(e) => setEditPrenom(e.target.value)}
+                    className="w-full h-9 px-3 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-blue-600 focus:outline-none disabled:opacity-50"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    Nom <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    disabled={isUpdatingMember}
+                    value={editNom}
+                    onChange={(e) => setEditNom(e.target.value)}
+                    className="w-full h-9 px-3 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-blue-600 focus:outline-none disabled:opacity-50"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    Téléphone
+                  </label>
+                  <input
+                    type="text"
+                    disabled={isUpdatingMember}
+                    value={editTelephone}
+                    onChange={(e) => setEditTelephone(e.target.value)}
+                    className="w-full h-9 px-3 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-mono focus:ring-2 focus:ring-blue-600 focus:outline-none disabled:opacity-50"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    Rôle Attribué <span className="text-red-500">*</span>
+                  </label>
+                  <Select<RoleUtilisateur>
+                    value={editRole}
+                    onChange={setEditRole}
+                    disabled={isUpdatingMember}
+                    options={[
+                      { value: 'enseignant', label: 'Enseignant' },
+                      { value: 'caissier', label: 'Caissier' },
+                    ]}
+                    size="sm"
+                    triggerClassName="w-full h-9 rounded-lg font-semibold"
+                  />
+                </div>
+              </div>
+
+              {editRole === 'enseignant' && (
+                <div>
+                  <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    Classe Assignée
+                  </label>
+                  <Select
+                    value={editClasse}
+                    onChange={setEditClasse}
+                    disabled={isUpdatingMember}
+                    options={DEFAULT_CLASSES_MAURITANIE.map((c) => ({ value: c, label: c }))}
+                    size="sm"
+                    triggerClassName="w-full h-9 rounded-lg font-semibold"
+                  />
+                </div>
+              )}
+
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={isUpdatingMember}
+                  onClick={() => setEditingMember(null)}
+                >
+                  Annuler
+                </Button>
+                <Button type="submit" variant="primary" size="sm" className="gap-1.5" disabled={isUpdatingMember}>
+                  {isUpdatingMember ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span>Mise à jour...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Save className="h-4 w-4" />
+                      <span>Enregistrer les modifications</span>
+                    </>
+                  )}
                 </Button>
               </div>
             </form>

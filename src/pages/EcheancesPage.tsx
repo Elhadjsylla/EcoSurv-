@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Select } from '../components/ui/Select';
@@ -10,6 +10,14 @@ import {
   FrequenceEcheance,
 } from '../lib/mockData';
 import { formatMRU } from '../lib/utils';
+import { useAuthStore } from '../store/useAuthStore';
+import { DEFAULT_CLASSES_MAURITANIE } from '../lib/constants/classes';
+import {
+  fetchBaremes,
+  createBaremeAndGenerateEcheances,
+  deleteBareme,
+} from '../lib/echeancesHelper';
+import { supabase } from '../lib/supabase';
 import {
   CreditCard,
   Plus,
@@ -23,13 +31,23 @@ import {
   MoreHorizontal,
   FileText,
   Settings2,
+  Trash2,
+  Loader2,
+  AlertCircle,
 } from 'lucide-react';
 
 export const EcheancesPage: React.FC = () => {
-  const [echeanciers, setEcheanciers] = useState<EcheancierConfig[]>(MOCK_ECHEANCIERS);
+  const authProfile = useAuthStore((s) => s.profile);
+  const [echeanciers, setEcheanciers] = useState<EcheancierConfig[]>(() => {
+    if (authProfile?.ecole_id) return [];
+    return MOCK_ECHEANCIERS;
+  });
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [openMenuRowId, setOpenMenuRowId] = useState<string | null>(null);
+  const [availableClasses, setAvailableClasses] = useState<string[]>(DEFAULT_CLASSES_MAURITANIE);
 
   // Form state
   const [newLibelle, setNewLibelle] = useState('');
@@ -37,38 +55,144 @@ export const EcheancesPage: React.FC = () => {
   const [newMontantTotal, setNewMontantTotal] = useState<number>(30000);
   const [newFrequence, setNewFrequence] = useState<FrequenceEcheance>('mensuel');
   const [newNombreTranches, setNewNombreTranches] = useState<number>(3);
+  const [newDateLimite, setNewDateLimite] = useState('2026-04-05');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 4000);
+    setTimeout(() => setToastMessage(null), 5000);
   };
 
-  const handleCreateEcheancier = (e: React.FormEvent) => {
+  // Chargement persistant des barèmes au montage
+  useEffect(() => {
+    if (authProfile?.ecole_id) {
+      const ecoleId = authProfile.ecole_id;
+      let isMounted = true;
+      const loadData = async () => {
+        setIsLoading(true);
+        setErrorMessage(null);
+        try {
+          const list = await fetchBaremes(ecoleId);
+          if (isMounted) {
+            setEcheanciers(list);
+          }
+
+          // Charger également les classes réelles existantes dans l'école
+          const { data: eleves } = await supabase
+            .from('eleves')
+            .select('classe')
+            .eq('ecole_id', authProfile.ecole_id);
+
+          if (isMounted && eleves) {
+            const schoolClasses = Array.from(new Set(eleves.map((e: any) => e.classe).filter(Boolean)));
+            const merged = Array.from(new Set([...schoolClasses, ...DEFAULT_CLASSES_MAURITANIE]));
+            setAvailableClasses(merged);
+            if (merged.length > 0 && !merged.includes(newClasse)) {
+              setNewClasse(merged[0]);
+            }
+          }
+        } catch (err: any) {
+          console.error('[EcheancesPage] Erreur chargement barèmes:', err);
+          if (isMounted) {
+            setErrorMessage(err.message || 'Erreur lors du chargement des barèmes');
+          }
+        } finally {
+          if (isMounted) setIsLoading(false);
+        }
+      };
+      loadData();
+      return () => {
+        isMounted = false;
+      };
+    }
+  }, [authProfile?.ecole_id]);
+
+  const handleCreateEcheancier = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newLibelle.trim()) return;
 
-    const newEcheancier: EcheancierConfig = {
-      id: `ech-${Date.now()}`,
-      libelle: newLibelle,
-      classe: newClasse,
-      montant_total: Number(newMontantTotal),
-      frequence: newFrequence,
-      nombre_tranches: Number(newNombreTranches),
-      montant_par_tranche: Math.round(Number(newMontantTotal) / Number(newNombreTranches)),
-      date_limite_prochaine: '2026-04-05',
-      nb_eleves_concernes: 30,
-    };
+    if (!authProfile?.ecole_id) {
+      const newEcheancier: EcheancierConfig = {
+        id: `ech-${Date.now()}`,
+        libelle: newLibelle,
+        classe: newClasse,
+        montant_total: Number(newMontantTotal),
+        frequence: newFrequence,
+        nombre_tranches: Number(newNombreTranches),
+        montant_par_tranche: Math.round(Number(newMontantTotal) / Number(newNombreTranches)),
+        date_limite_prochaine: newDateLimite,
+        nb_eleves_concernes: 30,
+      };
+      setEcheanciers([newEcheancier, ...echeanciers]);
+      showToast(`Échéancier "${newLibelle}" créé.`);
+      setIsModalOpen(false);
+      setNewLibelle('');
+      return;
+    }
 
-    setEcheanciers([newEcheancier, ...echeanciers]);
-    showToast(`Échéancier "${newLibelle}" créé et appliqué à la classe ${newClasse}`);
-    setIsModalOpen(false);
-    setNewLibelle('');
+    setIsSubmitting(true);
+    try {
+      const { bareme, generatedEcheancesCount } = await createBaremeAndGenerateEcheances(
+        authProfile.ecole_id,
+        {
+          libelle: newLibelle.trim(),
+          classe: newClasse,
+          montant_total: Number(newMontantTotal),
+          frequence: newFrequence,
+          nombre_tranches: Number(newNombreTranches),
+          date_limite_prochaine: newDateLimite,
+        }
+      );
+
+      setEcheanciers((prev) => [bareme, ...prev.filter((b) => b.id !== bareme.id)]);
+
+      if (generatedEcheancesCount > 0) {
+        showToast(
+          `Échéancier "${bareme.libelle}" créé : ${generatedEcheancesCount} échéances individuelles générées pour les élèves de ${bareme.classe}.`
+        );
+      } else {
+        showToast(
+          `Échéancier "${bareme.libelle}" créé pour la classe ${bareme.classe} (sera rattaché automatiquement à chaque nouvel élève).`
+        );
+      }
+
+      setIsModalOpen(false);
+      setNewLibelle('');
+    } catch (err: any) {
+      console.error('[EcheancesPage] Erreur création barème:', err);
+      const msg = err.message || 'Erreur inconnue';
+      setErrorMessage(msg);
+      showToast(`Erreur : ${msg}`);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteBareme = async (ech: EcheancierConfig) => {
+    setOpenMenuRowId(null);
+    if (!window.confirm(`Confirmez-vous la suppression du barème "${ech.libelle}" ?`)) {
+      return;
+    }
+
+    try {
+      if (authProfile?.ecole_id) {
+        await deleteBareme(authProfile.ecole_id, ech.id);
+        setEcheanciers((prev) => prev.filter((item) => item.id !== ech.id));
+        showToast(`Barème "${ech.libelle}" supprimé.`);
+      } else {
+        setEcheanciers((prev) => prev.filter((item) => item.id !== ech.id));
+        showToast(`Barème "${ech.libelle}" supprimé.`);
+      }
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Erreur suppression barème');
+      showToast(`Erreur : ${err.message}`);
+    }
   };
 
   const totalElevesCouverts = echeanciers.reduce((sum, e) => sum + e.nb_eleves_concernes, 0);
 
   return (
-    <div className="p-6 sm:p-8 lg:p-10 max-w-[1600px] mx-auto space-y-8 sm:space-y-10 relative">
+    <div className="p-6 sm:p-8 lg:p-10 max-w-[1600px] mx-auto space-y-8 sm:space-y-10 relative" aria-busy={isLoading}>
       {/* Toast Notification */}
       {toastMessage && (
         <div className="fixed top-20 right-6 z-50 flex items-center gap-3 bg-slate-900 text-white px-4 py-3 rounded-lg shadow-xl border border-slate-700 animate-in fade-in slide-in-from-top-4">
@@ -103,12 +227,32 @@ export const EcheancesPage: React.FC = () => {
           variant="primary"
           size="sm"
           className="gap-2 h-10 px-4"
-          onClick={() => setIsModalOpen(true)}
+          onClick={() => {
+            setErrorMessage(null);
+            setIsModalOpen(true);
+          }}
         >
           <Plus className="h-4 w-4" />
           + Nouvelle Échéance
         </Button>
       </div>
+
+      {/* Error Alert */}
+      {errorMessage && (
+        <div className="flex items-start gap-3 bg-red-50 dark:bg-red-950/40 text-red-800 dark:text-red-200 p-4 rounded-xl border border-red-200 dark:border-red-800/60 animate-in fade-in">
+          <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400 shrink-0 mt-0.5" />
+          <div className="flex-1 text-xs">
+            <span className="font-bold">Erreur base de données : </span>
+            {errorMessage}
+          </div>
+          <button
+            onClick={() => setErrorMessage(null)}
+            className="text-red-500 hover:text-red-700 ml-2"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
 
       {/* Metric Tiles (Pastel KpiCard Style) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -204,7 +348,32 @@ export const EcheancesPage: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
-              {echeanciers.map((ech) => {
+              {echeanciers.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="py-12 text-center">
+                    <div className="py-8 px-4 text-center space-y-3 max-w-md mx-auto">
+                      <div className="h-12 w-12 rounded-2xl bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mx-auto shadow-sm">
+                        <CreditCard className="h-6 w-6" />
+                      </div>
+                      <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                        Aucun barème d'échéances configuré
+                      </h3>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
+                        Définissez vos tarifs annuels et les mensualités par classe pour activer la facturation automatique de votre école.
+                      </p>
+                      <Button
+                        variant="primary"
+                        onClick={() => setIsModalOpen(true)}
+                        className="gap-2 mx-auto"
+                      >
+                        <Plus className="h-4 w-4" />
+                        Créer un premier barème
+                      </Button>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                echeanciers.map((ech) => {
                 const isMenuOpen = openMenuRowId === ech.id;
                 return (
                   <tr key={ech.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors">
@@ -315,12 +484,20 @@ export const EcheancesPage: React.FC = () => {
                             <FileText className="h-3.5 w-3.5 text-slate-500" />
                             <span>Imprimer l'échéancier</span>
                           </button>
+
+                          <button
+                            onClick={() => handleDeleteBareme(ech)}
+                            className="w-full flex items-center gap-2.5 px-3 py-2 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 border-t border-slate-100 dark:border-slate-700"
+                          >
+                            <Trash2 className="h-3.5 w-3.5 text-rose-600" />
+                            <span>Supprimer le barème</span>
+                          </button>
                         </div>
                       )}
                     </td>
                   </tr>
                 );
-              })}
+              }))}
             </tbody>
           </table>
         </div>
@@ -365,12 +542,7 @@ export const EcheancesPage: React.FC = () => {
                 <Select
                   value={newClasse}
                   onChange={setNewClasse}
-                  options={[
-                    { value: 'Terminales C', label: 'Terminales C' },
-                    { value: '6ème A', label: '6ème A' },
-                    { value: 'CM2 A', label: 'CM2 A' },
-                    { value: '3ème B', label: '3ème B' },
-                  ]}
+                  options={availableClasses.map((cls) => ({ value: cls, label: cls }))}
                   size="sm"
                   triggerClassName="w-full h-9 rounded-lg font-semibold"
                 />
@@ -384,6 +556,7 @@ export const EcheancesPage: React.FC = () => {
                   <input
                     type="number"
                     required
+                    min={100}
                     value={newMontantTotal}
                     onChange={(e) => setNewMontantTotal(Number(e.target.value))}
                     className="w-full h-9 px-3 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-mono font-bold focus:ring-2 focus:ring-blue-600 focus:outline-none"
@@ -408,18 +581,33 @@ export const EcheancesPage: React.FC = () => {
                 </div>
               </div>
 
-              <div>
-                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Nombre de Tranches
-                </label>
-                <input
-                  type="number"
-                  min={1}
-                  max={12}
-                  value={newNombreTranches}
-                  onChange={(e) => setNewNombreTranches(Number(e.target.value))}
-                  className="w-full h-9 px-3 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-mono focus:ring-2 focus:ring-blue-600 focus:outline-none"
-                />
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    Nombre de Tranches
+                  </label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={12}
+                    value={newNombreTranches}
+                    onChange={(e) => setNewNombreTranches(Number(e.target.value))}
+                    className="w-full h-9 px-3 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-mono focus:ring-2 focus:ring-blue-600 focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    1ère Échéance / Limite <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="date"
+                    required
+                    value={newDateLimite}
+                    onChange={(e) => setNewDateLimite(e.target.value)}
+                    className="w-full h-9 px-3 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-mono focus:ring-2 focus:ring-blue-600 focus:outline-none"
+                  />
+                </div>
               </div>
 
               <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
@@ -428,12 +616,22 @@ export const EcheancesPage: React.FC = () => {
                   variant="outline"
                   size="sm"
                   onClick={() => setIsModalOpen(false)}
+                  disabled={isSubmitting}
                 >
                   Annuler
                 </Button>
-                <Button type="submit" variant="primary" size="sm" className="gap-1.5">
-                  <CheckCircle2 className="h-4 w-4" />
-                  Créer l'Échéancier
+                <Button type="submit" variant="primary" size="sm" className="gap-1.5" disabled={isSubmitting}>
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Génération en cours...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="h-4 w-4" />
+                      Créer l'Échéancier
+                    </>
+                  )}
                 </Button>
               </div>
             </form>

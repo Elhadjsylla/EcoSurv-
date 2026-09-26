@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import confetti from 'canvas-confetti';
 import {
   MOCK_ELEVES,
+  MOCK_MONTHLY_REPORTS,
   getDashboardKpis,
   EleveWithStats,
 } from '../../lib/mockData';
@@ -13,6 +13,10 @@ import { Card } from '../ui/Card';
 import { ToastNotification } from '../ui/ToastNotification';
 import { Select } from '../ui/Select';
 import { formatMRU } from '../../lib/utils';
+import { useCaisseStore } from '../../store/useCaisseStore';
+import { generateReceiptPdf } from '../../lib/pdf/generateReceiptPdf';
+import { generateFinancialReportPdf } from '../../lib/pdf/generateFinancialReportPdf';
+import { exportElevesToExcel } from '../../lib/excel/exportElevesToExcel';
 import {
   Search,
   Filter,
@@ -30,10 +34,14 @@ import {
   ChevronRight,
   Eye,
   FileText,
+  School,
+  UserPlus,
 } from 'lucide-react';
 import { ConfirmBulkRelanceModal } from './ConfirmBulkRelanceModal';
 import { StudentDetailDrawer } from './StudentDetailDrawer';
 import { Tooltip } from '../ui/Tooltip';
+import { useAuthStore } from '../../store/useAuthStore';
+import { supabase } from '../../lib/supabase';
 
 interface DirectorDashboardProps {
   onNavigateToEleves?: (statutFilter: string) => void;
@@ -42,13 +50,75 @@ interface DirectorDashboardProps {
 export const DirectorDashboard: React.FC<DirectorDashboardProps> = ({
   onNavigateToEleves,
 }) => {
-  const [elevesList, setElevesList] = useState<EleveWithStats[]>(MOCK_ELEVES);
+  const authProfile = useAuthStore((s) => s.profile);
+  const authEcole = useAuthStore((s) => s.ecole);
+
+  const [elevesList, setElevesList] = useState<EleveWithStats[]>(() => {
+    // Si l'utilisateur est un vrai compte Supabase avec ecole_id, démarrer propre (0 élève tant que non chargé)
+    if (authProfile?.ecole_id) return [];
+    return MOCK_ELEVES;
+  });
+
+  // Charger les vrais élèves et leurs échéances réelles depuis Supabase
+  useEffect(() => {
+    if (authProfile?.ecole_id) {
+      const fetchRealEleves = async () => {
+        try {
+          const [elevesRes, echeancesRes] = await Promise.all([
+            supabase
+              .from('eleves')
+              .select('*')
+              .eq('ecole_id', authProfile.ecole_id),
+            supabase
+              .from('echeances')
+              .select('*')
+              .eq('ecole_id', authProfile.ecole_id),
+          ]);
+
+          if (!elevesRes.error && elevesRes.data) {
+            const allEcheances = echeancesRes.data || [];
+
+            const mapped = elevesRes.data.map((e: any, idx: number) => {
+              const studentEch = allEcheances.filter((ech: any) => ech.eleve_id === e.id);
+              const totalDue = studentEch.reduce((sum: number, ech: any) => sum + Number(ech.montant || 0), 0);
+              const totalPaid = studentEch.reduce((sum: number, ech: any) => sum + Number(ech.montant_paye || 0), 0);
+              const remaining = Math.max(0, totalDue - totalPaid);
+              const hasOverdue = studentEch.some((ech: any) => ech.statut === 'en_retard');
+              const computedStatut = hasOverdue
+                ? 'en_retard'
+                : (totalDue > 0 && remaining === 0
+                  ? 'paye'
+                  : (totalPaid > 0 ? 'partiel' : 'a_jour'));
+
+              return {
+                ...e,
+                matricule: e.matricule || `MAT-${100 + idx}`,
+                total_due: totalDue,
+                total_paid: totalPaid,
+                remaining: remaining,
+                statut: computedStatut,
+                classe: e.classe || 'Non assigné',
+                nom_tuteur: e.nom_tuteur || 'Tuteur Légal',
+                telephone_tuteur: e.telephone_tuteur || '',
+                nb_absences: e.nb_absences ?? 0,
+                timeline_paiements: e.timeline_paiements ?? [],
+              };
+            });
+            setElevesList(mapped as any[]);
+          }
+        } catch (e) {
+          console.warn('[DirectorDashboard] Erreur chargement élèves réels:', e);
+        }
+      };
+      fetchRealEleves();
+    }
+  }, [authProfile?.ecole_id]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedClasse, setSelectedClasse] = useState<string>('all');
   const [selectedStatut, setSelectedStatut] = useState<string>('all');
   const [selectedEleveModal, setSelectedEleveModal] = useState<EleveWithStats | null>(null);
   const [paymentModalEleve, setPaymentModalEleve] = useState<EleveWithStats | null>(null);
-  const [activeToast, setActiveToast] = useState<{ message: string; type: 'success' | 'info' | 'warning' } | null>(null);
+  const [activeToast, setActiveToast] = useState<{ message: string; type: 'success' | 'info' | 'warning' | 'error' } | null>(null);
 
   // Pagination & Context Menu
   const [currentPage, setCurrentPage] = useState(1);
@@ -160,43 +230,109 @@ export const DirectorDashboard: React.FC<DirectorDashboardProps> = ({
   };
 
   // Toast Helper
-  const showToast = (message: string, type: 'success' | 'info' | 'warning' = 'success') => {
+  const showToast = (message: string, type: 'success' | 'info' | 'warning' | 'error' = 'success') => {
     setActiveToast({ message, type });
   };
 
-  // Célébration discrète par confetti
-  const triggerConfettiCelebration = () => {
-    try {
-      confetti({
-        particleCount: 38,
-        spread: 55,
-        origin: { y: 0.72 },
-        colors: ['#10b981', '#3b82f6', '#f59e0b', '#059669'],
-        disableForReducedMotion: true,
-        ticks: 130,
-        scalar: 0.85,
-      });
-    } catch {
-      // Ignorer si bloqué par l'environnement
-    }
-  };
-
-  // Action rapide : Relance individuelle
+  // Action rapide : Relance individuelle par WhatsApp pré-rempli (zéro faux SMS automatique)
   const triggerRelance = (eleve: EleveWithStats, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
+    const rawPhone = eleve.telephone_tuteur ? eleve.telephone_tuteur.replace(/[^0-9]/g, '') : '';
+    if (!rawPhone) {
+      showToast(`Aucun numéro de téléphone renseigné pour le tuteur de ${eleve.prenom} ${eleve.nom}.`, 'warning');
+      return;
+    }
+    const cleanPhone = rawPhone.startsWith('222') ? rawPhone : `222${rawPhone}`;
+    const ecoleNom = authEcole?.nom || 'notre établissement';
+    const msg = `Bonjour M./Mme ${eleve.nom_tuteur || 'le Tuteur'},\n\nL'administration de l'établissement ${ecoleNom} vous informe que l'échéance de scolarité de ${eleve.prenom} ${eleve.nom} (${eleve.classe}) présente un solde restant de ${formatMRU(eleve.remaining)}.\n\nMerci de bien vouloir vous rapprocher du guichet de l'école ou de régulariser ce montant par virement Bankily / Masrvi.\n\nBien cordialement,\nLa Direction.`;
+    window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`, '_blank', 'noopener,noreferrer');
     setRelancedStudentIds((prev) => Array.from(new Set([...prev, eleve.id])));
-    showToast(
-      `Rappel SMS/WhatsApp envoyé au tuteur de ${eleve.prenom} ${eleve.nom} (${eleve.telephone_tuteur})`,
-      'info'
-    );
+    showToast(`WhatsApp pré-rempli ouvert pour le tuteur de ${eleve.prenom} ${eleve.nom}.`, 'info');
   };
 
-  // Action rapide : Marquer payé express (1 clic) avec célébration immédiate
-  const triggerMarquerPayeExpress = (eleve: EleveWithStats, e?: React.MouseEvent) => {
+  // Action rapide : Marquer payé express (circuit guichet caissier : table paiements + vrai reçu PDF)
+  const triggerMarquerPayeExpress = async (eleve: EleveWithStats, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
     setJustPaidEleveId(eleve.id);
-    triggerConfettiCelebration();
 
+    const montantToPay = eleve.remaining > 0 ? eleve.remaining : (eleve.total_due || 15000);
+    const recuRef = `REC-DIR-${Math.floor(1000 + Math.random() * 9000)}`;
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('fr-FR');
+    const heureStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    const encaisseurNom = authProfile ? `${authProfile.prenom} ${authProfile.nom}` : 'Direction de l’établissement';
+    const nomEtablissement = authEcole?.nom || 'Établissement Scolaire';
+
+    // 1. Insertion en base de données Supabase si compte authentifié
+    if (authProfile?.ecole_id) {
+      try {
+        const { data: echs } = await supabase
+          .from('echeances')
+          .select('*')
+          .eq('eleve_id', eleve.id)
+          .neq('statut', 'paye')
+          .order('date_echeance', { ascending: true });
+
+        if (echs && echs.length > 0) {
+          let remainingToDistribute = montantToPay;
+          for (const ech of echs) {
+            if (remainingToDistribute <= 0) break;
+            const dueOnEch = Number(ech.montant) - Number(ech.montant_paye || 0);
+            const payAmount = Math.min(remainingToDistribute, dueOnEch);
+            if (payAmount > 0) {
+              const newPaid = Number(ech.montant_paye || 0) + payAmount;
+              const newStatut = newPaid >= Number(ech.montant) ? 'paye' : 'partiel';
+              await supabase
+                .from('echeances')
+                .update({
+                  montant_paye: newPaid,
+                  statut: newStatut,
+                  date_paiement: new Date().toISOString(),
+                })
+                .eq('id', ech.id);
+
+              await supabase.from('paiements').insert({
+                ecole_id: authProfile.ecole_id,
+                echeance_id: ech.id,
+                montant: payAmount,
+                methode: 'especes',
+                statut: 'confirme',
+                reference_transaction: `${recuRef}-${ech.id.slice(0, 4)}`,
+                encaisse_par: authProfile.id,
+                note: `Règlement express au bureau de direction - ${eleve.prenom} ${eleve.nom}`,
+                paye_le: new Date().toISOString(),
+              });
+              remainingToDistribute -= payAmount;
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('[DirectorDashboard] Erreur écriture paiement express Supabase:', err);
+      }
+    }
+
+    useCaisseStore.getState().deductEleveBalance(eleve.id, montantToPay);
+    useCaisseStore.getState().triggerRefresh();
+
+    // 2. Génération immédiate du vrai reçu PDF
+    generateReceiptPdf(
+      {
+        recuRef,
+        datePaiement: `${dateStr} à ${heureStr}`,
+        eleveNom: eleve.nom,
+        elevePrenom: eleve.prenom,
+        matricule: eleve.matricule,
+        classe: eleve.classe,
+        libelleEcheance: 'Scolarité - Solde comptant express (Direction)',
+        montant: montantToPay,
+        methodePaiement: 'especes',
+        caissierNom: `${encaisseurNom} (Direction)`,
+        ecoleNom: nomEtablissement,
+      },
+      'download'
+    );
+
+    // 3. Mise à jour de l'état local
     setElevesList((prev) =>
       prev.map((item) => {
         if (item.id === eleve.id) {
@@ -209,12 +345,12 @@ export const DirectorDashboard: React.FC<DirectorDashboardProps> = ({
             timeline_paiements: [
               {
                 id: `pay-express-${Date.now()}`,
-                libelle: 'Encaissement Express (Comptant)',
-                montant: item.remaining || 15000,
-                date: new Date().toLocaleDateString('fr-FR'),
+                libelle: 'Encaissement Express Direction (Comptant)',
+                montant: montantToPay,
+                date: dateStr,
                 methode: 'especes',
                 statut: 'regle',
-                recu_ref: `REC-EXP-${Math.floor(1000 + Math.random() * 9000)}`,
+                recu_ref: recuRef,
               },
               ...item.timeline_paiements,
             ],
@@ -225,9 +361,7 @@ export const DirectorDashboard: React.FC<DirectorDashboardProps> = ({
     );
 
     showToast(
-      `✓ Solde de ${eleve.prenom} ${eleve.nom} marqué comme réglé intégralement (${formatMRU(
-        eleve.remaining
-      )})`,
+      `✓ Solde de ${eleve.prenom} ${eleve.nom} réglé (${formatMRU(montantToPay)}). Reçu PDF officiel téléchargé.`,
       'success'
     );
     setTimeout(() => setJustPaidEleveId(null), 1400);
@@ -236,52 +370,40 @@ export const DirectorDashboard: React.FC<DirectorDashboardProps> = ({
   // Export & Relance modal state
   const [isExportingPdf, setIsExportingPdf] = useState(false);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
-  const [isSendingRelance, setIsSendingRelance] = useState(false);
   const [relancedStudentIds, setRelancedStudentIds] = useState<string[]>([]);
 
   // Export PDF réactif avec spinner et confirmation toast
   const handleExportPdf = () => {
     setIsExportingPdf(true);
-    setTimeout(() => {
-      setIsExportingPdf(false);
+    try {
+      generateFinancialReportPdf(MOCK_MONTHLY_REPORTS, authEcole?.nom || 'Établissement Scolaire');
       showToast('✓ Rapport de synthèse PDF généré et téléchargé avec succès !', 'success');
-    }, 850);
+    } catch (err) {
+      console.error('Erreur export PDF :', err);
+      showToast('Erreur lors de la génération du rapport PDF', 'error');
+    } finally {
+      setIsExportingPdf(false);
+    }
   };
 
-  // Confirmation relance groupée
-  const handleConfirmBulkRelance = () => {
-    setIsSendingRelance(true);
-    setTimeout(() => {
-      setIsSendingRelance(false);
-      setIsConfirmModalOpen(false);
-      triggerConfettiCelebration();
-      const overdueIds = elevesList
-        .filter((e) => e.statut === 'en_retard' || e.statut === 'partiel')
-        .map((e) => e.id);
-      setRelancedStudentIds((prev) => Array.from(new Set([...prev, ...overdueIds])));
-      showToast(
-        `⚡ Campagne de relance envoyée avec succès à ${kpis.nombreEnRetard} familles !`,
-        'info'
-      );
-    }, 900);
-  };
-
-  // Actions groupées (Bulk actions)
+  // Actions groupées : ouverture du centre de relances
   const handleBulkRelance = () => {
     const count = selectedEleveIds.length;
     if (count === 0) return;
-    setRelancedStudentIds((prev) => Array.from(new Set([...prev, ...selectedEleveIds])));
-    showToast(
-      `⚡ Campagne de relance envoyée avec succès à ${count} tuteur(s) d'élèves présélectionnés.`,
-      'info'
-    );
-    setSelectedEleveIds([]);
+    setIsConfirmModalOpen(true);
   };
 
   // Action groupée : Exporter la sélection
   const handleBulkExport = () => {
-    const count = selectedEleveIds.length;
-    showToast(`✓ Export du rapport comptable pour ${count} élève(s) généré avec succès.`, 'info');
+    const selectedEleves = elevesList.filter((e) => selectedEleveIds.includes(e.id));
+    if (selectedEleves.length === 0) return;
+    try {
+      exportElevesToExcel(selectedEleves, authEcole?.nom || 'Établissement Scolaire');
+      showToast(`✓ Export comptable pour ${selectedEleves.length} élève(s) généré avec succès.`, 'info');
+    } catch (err) {
+      console.error('Erreur export Excel :', err);
+      showToast("Erreur lors de l'export des élèves", 'error');
+    }
   };
 
   return (
@@ -433,6 +555,33 @@ export const DirectorDashboard: React.FC<DirectorDashboardProps> = ({
         />
       </div>
 
+      {/* Zero State Onboarding pour école neuve */}
+      {elevesList.length === 0 && (
+        <div className="bg-gradient-to-br from-blue-500/10 via-emerald-500/5 to-transparent border border-blue-200/80 dark:border-blue-900 rounded-3xl p-8 text-center space-y-4 shadow-xs">
+          <div className="h-14 w-14 rounded-2xl bg-blue-600 text-white flex items-center justify-center mx-auto shadow-lg shadow-blue-600/30">
+            <School className="h-7 w-7" />
+          </div>
+          <div className="max-w-xl mx-auto">
+            <h2 className="text-xl font-black text-slate-900 dark:text-white">
+              Bienvenue sur votre espace de direction {authEcole?.nom ? `« ${authEcole.nom} »` : ''}
+            </h2>
+            <p className="text-sm text-slate-600 dark:text-slate-300 mt-1">
+              Votre établissement est actif et prêt. Vous pouvez dès maintenant inscrire vos premiers élèves ou configurer vos classes et tarifs.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+            <Button
+              variant="primary"
+              onClick={() => onNavigateToEleves && onNavigateToEleves('all')}
+              className="gap-2"
+            >
+              <UserPlus className="h-4 w-4" />
+              Inscrire un premier élève
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Roster Controls: Search, Filters, Stats Summary */}
       <Card className="p-5 sm:p-6 space-y-4 border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xs rounded-2xl">
         <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
@@ -558,8 +707,20 @@ export const DirectorDashboard: React.FC<DirectorDashboardProps> = ({
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
               {paginatedEleves.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="py-14 text-center text-slate-500 dark:text-slate-400 font-medium">
-                    Aucun élève trouvé correspondant à vos critères de recherche.
+                  <td colSpan={8} className="py-12 text-center text-slate-500 dark:text-slate-400 font-medium">
+                    {elevesList.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center gap-2 py-4">
+                        <School className="h-8 w-8 text-slate-300 dark:text-slate-600" />
+                        <span className="font-bold text-slate-700 dark:text-slate-200 text-sm">
+                          Aucun élève enregistré pour l'instant
+                        </span>
+                        <span className="text-xs text-slate-400 max-w-md">
+                          Votre établissement vient d'être activé. Cliquez sur « Inscrire un premier élève » pour démarrer votre registre scolaire.
+                        </span>
+                      </div>
+                    ) : (
+                      'Aucun élève trouvé correspondant à vos critères de recherche.'
+                    )}
                   </td>
                 </tr>
               ) : (
@@ -790,14 +951,17 @@ export const DirectorDashboard: React.FC<DirectorDashboardProps> = ({
         onQuickRelance={triggerRelance}
       />
 
-      {/* Modale de Confirmation de Relance Groupée */}
+      {/* Centre de Relance WhatsApp Groupée */}
       <ConfirmBulkRelanceModal
         isOpen={isConfirmModalOpen}
         count={kpis.nombreEnRetard}
         totalAmount={kpis.totalImpayes}
-        isSending={isSendingRelance}
-        onConfirm={handleConfirmBulkRelance}
-        onClose={() => setIsConfirmModalOpen(false)}
+        eleves={selectedEleveIds.length > 0 ? elevesList.filter((e) => selectedEleveIds.includes(e.id)) : elevesList}
+        ecoleNom={authEcole?.nom || 'Votre Établissement'}
+        onClose={() => {
+          setIsConfirmModalOpen(false);
+          setSelectedEleveIds([]);
+        }}
       />
     </div>
   );

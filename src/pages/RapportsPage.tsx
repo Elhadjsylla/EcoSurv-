@@ -8,6 +8,8 @@ import {
 } from '../lib/mockData';
 import { formatMRU } from '../lib/utils';
 import { exportFinancialReportsToExcel } from '../lib/excel/exportFinancialReports';
+import { generateFinancialReportPdf } from '../lib/pdf/generateFinancialReportPdf';
+import { useEcoleStore } from '../store/useEcoleStore';
 import {
   FileText,
   FileSpreadsheet,
@@ -20,9 +22,14 @@ import {
   Download,
 } from 'lucide-react';
 import { CollectionChart } from '../components/ui/CollectionChart';
+import { useAuthStore } from '../store/useAuthStore';
 
 export const RapportsPage: React.FC = () => {
-  const [reports] = useState<MonthlyFinancialReport[]>(MOCK_MONTHLY_REPORTS);
+  const authProfile = useAuthStore((s) => s.profile);
+  const [reports] = useState<MonthlyFinancialReport[]>(() => {
+    if (authProfile?.ecole_id) return [];
+    return MOCK_MONTHLY_REPORTS;
+  });
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [isExportingExcel, setIsExportingExcel] = useState(false);
@@ -46,13 +53,25 @@ export const RapportsPage: React.FC = () => {
     }
   };
 
+  const ecole = useEcoleStore((s) => s.ecole);
+  const authEcole = useAuthStore((s) => s.ecole);
+  const ecoleNom = authEcole?.nom || ecole.nom;
+
   const handlePrint = () => {
     setIsGeneratingPdf(true);
-    setTimeout(() => {
+    try {
+      generateFinancialReportPdf(
+        reports,
+        ecoleNom,
+        `Rapport_Financier_Annuel_${new Date().getFullYear()}.pdf`
+      );
+      showToast('✓ Rapport Financier annuel exporté en PDF avec succès.');
+    } catch (err) {
+      console.error('[EcoSurv] Erreur export PDF:', err);
+      showToast('Erreur lors de la génération du rapport PDF');
+    } finally {
       setIsGeneratingPdf(false);
-      showToast('✓ Rapport prêt pour impression ou export PDF');
-      window.print();
-    }, 600);
+    }
   };
 
   // KPIs annuels calculés
@@ -275,6 +294,22 @@ export const RapportsPage: React.FC = () => {
                           >
                             <Download className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
                             <span>Télécharger l'état (.xlsx)</span>
+                          </button>
+
+                          <button
+                            onClick={() => {
+                              setOpenMenuRowId(null);
+                              generateFinancialReportPdf(
+                                [r],
+                                ecoleNom,
+                                `Rapport_Financier_${r.mois.replace(/\s+/g, '_')}_2026.pdf`
+                              );
+                              showToast(`État financier de ${r.mois} exporté en PDF avec succès.`);
+                            }}
+                            className="w-full flex items-center gap-2.5 px-3 py-2 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/60 border-t border-slate-100 dark:border-slate-700"
+                          >
+                            <FileText className="h-3.5 w-3.5 text-rose-500" />
+                            <span>Télécharger en PDF</span>
                           </button>
 
                           <button

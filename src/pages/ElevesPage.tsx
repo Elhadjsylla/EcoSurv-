@@ -3,8 +3,14 @@ import confetti from 'canvas-confetti';
 import {
   MOCK_ELEVES,
   EleveWithStats,
+  LienParente,
+  StatutEcheance,
   getDashboardKpis,
 } from '../lib/mockData';
+import { useAuthStore } from '../store/useAuthStore';
+import { useEcoleStore } from '../store/useEcoleStore';
+import { exportElevesToExcel } from '../lib/excel/exportElevesToExcel';
+import { supabase } from '../lib/supabase';
 import { StudentInitials } from '../components/ui/StudentInitials';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { Button } from '../components/ui/Button';
@@ -17,6 +23,7 @@ import { formatMRU } from '../lib/utils';
 import { formatCompactMRU } from '../lib/formatCompactMRU';
 import { StudentEnrollmentModal } from '../components/eleves/StudentEnrollmentModal';
 import { Select } from '../components/ui/Select';
+import { DEFAULT_CLASSES_MAURITANIE } from '../lib/constants/classes';
 import {
   Search,
   Filter,
@@ -38,6 +45,7 @@ import {
   Eye,
   FileText,
   PhoneCall,
+  Edit3,
 } from 'lucide-react';
 
 interface ElevesPageProps {
@@ -49,7 +57,82 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
   initialStatutFilter = 'all',
   onFilterChange,
 }) => {
-  const [elevesList, setElevesList] = useState<EleveWithStats[]>(MOCK_ELEVES);
+  const authProfile = useAuthStore((s) => s.profile);
+
+  const [elevesList, setElevesList] = useState<EleveWithStats[]>(() => {
+    // Si école authentifiée, démarrer STRICTEMENT à zéro (aucun mock)
+    if (authProfile?.ecole_id) return [];
+    return MOCK_ELEVES;
+  });
+
+  useEffect(() => {
+    if (authProfile?.ecole_id) {
+      const fetchRealEleves = async () => {
+        try {
+          const [elevesRes, echeancesRes] = await Promise.all([
+            supabase
+              .from('eleves')
+              .select('*')
+              .eq('ecole_id', authProfile.ecole_id)
+              .order('nom', { ascending: true }),
+            supabase
+              .from('echeances')
+              .select('*')
+              .eq('ecole_id', authProfile.ecole_id),
+          ]);
+
+          if (!elevesRes.error && elevesRes.data) {
+            const allEcheances = echeancesRes.data || [];
+
+            const mapped: EleveWithStats[] = elevesRes.data.map((d: any) => {
+              const studentEch = allEcheances.filter((ech: any) => ech.eleve_id === d.id);
+              const totalDue = studentEch.reduce((sum: number, ech: any) => sum + Number(ech.montant || 0), 0);
+              const totalPaid = studentEch.reduce((sum: number, ech: any) => sum + Number(ech.montant_paye || 0), 0);
+              const remaining = Math.max(0, totalDue - totalPaid);
+              const hasOverdue = studentEch.some((ech: any) => ech.statut === 'en_retard');
+              const computedStatut = hasOverdue
+                ? 'en_retard'
+                : (totalDue > 0 && remaining === 0
+                  ? 'paye'
+                  : (totalPaid > 0 ? 'partiel' : 'a_jour'));
+
+              return {
+                id: d.id,
+                ecole_id: d.ecole_id,
+                matricule: d.matricule || `ECO-${d.id.slice(0, 4).toUpperCase()}`,
+                nom: d.nom,
+                prenom: d.prenom,
+                date_naissance: d.date_naissance || '',
+                lieu_naissance: d.lieu_naissance || '',
+                sexe: (d.sexe === 'F' ? 'F' : 'M') as 'M' | 'F',
+                classe: d.classe || 'Non assigné',
+                nom_tuteur: d.nom_tuteur || 'Tuteur',
+                telephone_tuteur: d.telephone_tuteur || '',
+                email_tuteur: d.email_tuteur || '',
+                adresse_tuteur: d.adresse_tuteur || '',
+                lien_parente: (d.lien_parente || 'pere') as LienParente,
+                total_due: totalDue,
+                total_paid: totalPaid,
+                remaining: remaining,
+                statut: computedStatut as StatutEcheance,
+                derniere_echeance_date: d.derniere_echeance_date || '',
+                nb_absences: Number(d.nb_absences || 0),
+                prochaine_echeance_date: d.prochaine_echeance_date || '',
+                prochaine_echeance_montant: Number(d.prochaine_echeance_montant || 0),
+                timeline_paiements: [],
+                actif: d.actif ?? true,
+              };
+            });
+            setElevesList(mapped);
+          }
+        } catch (e) {
+          console.warn('[ElevesPage] Erreur chargement élèves réels:', e);
+        }
+      };
+      fetchRealEleves();
+    }
+  }, [authProfile?.ecole_id]);
+
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedClasse, setSelectedClasse] = useState<string>('all');
   const [selectedStatut, setSelectedStatut] = useState<string>(initialStatutFilter);
@@ -68,9 +151,10 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
 
   // Modales & Toasts
   const [isEnrollModalOpen, setIsEnrollModalOpen] = useState(false);
+  const [eleveToEdit, setEleveToEdit] = useState<EleveWithStats | null>(null);
   const [paymentModalEleve, setPaymentModalEleve] = useState<EleveWithStats | null>(null);
   const [paymentMethod, setPaymentMethod] = useState('bankily');
-  const [activeToast, setActiveToast] = useState<{ message: string; type: 'success' | 'info' | 'warning' } | null>(null);
+  const [activeToast, setActiveToast] = useState<{ message: string; type: 'success' | 'info' | 'warning' | 'error' } | null>(null);
 
   // Micro-interactions & animations state
   const [justPaidEleveId, setJustPaidEleveId] = useState<string | null>(null);
@@ -133,11 +217,15 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
   // KPIs
   const kpis = useMemo(() => getDashboardKpis(elevesList), [elevesList]);
 
-  // Classes disponibles
-  const classesList = useMemo(() => {
-    const set = new Set(elevesList.map((e) => e.classe));
-    return Array.from(set);
+  // Classes déjà existantes parmi les élèves enregistrés
+  const existingElevesClasses = useMemo(() => {
+    return Array.from(new Set(elevesList.map((e) => e.classe).filter((c) => Boolean(c && c.trim()))));
   }, [elevesList]);
+
+  // Ensemble complet des classes disponibles pour l'inscription (élèves réels + nomenclature mauritanienne)
+  const classesList = useMemo(() => {
+    return Array.from(new Set([...existingElevesClasses, ...DEFAULT_CLASSES_MAURITANIE]));
+  }, [existingElevesClasses]);
 
   // Filtrage et Tri
   const filteredEleves = useMemo(() => {
@@ -199,7 +287,7 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
   };
 
   // Toast Helper
-  const showToast = (message: string, type: 'success' | 'info' | 'warning' = 'success') => {
+  const showToast = (message: string, type: 'success' | 'info' | 'warning' | 'error' = 'success') => {
     setActiveToast({ message, type });
   };
 
@@ -291,9 +379,17 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
     setSelectedEleveIds([]);
   };
 
+  const ecole = useEcoleStore((s) => s.ecole);
+  const authEcole = useAuthStore((s) => s.ecole);
+  const ecoleNom = authEcole?.nom || ecole.nom;
+
   const handleBulkExport = () => {
-    const count = selectedEleveIds.length;
-    showToast(`Export du rapport comptable pour ${count} élève(s) sélectionné(s).`, 'info');
+    const listToExport = selectedEleveIds.length > 0
+      ? elevesList.filter((e) => selectedEleveIds.includes(e.id))
+      : elevesList;
+
+    exportElevesToExcel(listToExport, ecoleNom);
+    showToast(`✓ Export Excel généré avec succès pour ${listToExport.length} élève(s).`, 'info');
   };
 
   // Encaissement fictif modal
@@ -413,6 +509,15 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
             variant="outline"
             size="sm"
             className="gap-2 h-10 px-4"
+            onClick={handleBulkExport}
+          >
+            <ArrowDownToLine className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+            Exporter Excel
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-2 h-10 px-4"
             onClick={handleImportClick}
             loading={isImporting}
             loadingText="Lecture du fichier..."
@@ -424,7 +529,10 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
             variant="primary"
             size="sm"
             className="gap-2 h-10 px-4"
-            onClick={() => setIsEnrollModalOpen(true)}
+            onClick={() => {
+              setEleveToEdit(null);
+              setIsEnrollModalOpen(true);
+            }}
           >
             <UserPlus className="h-4 w-4" />
             + Inscrire un nouvel élève
@@ -509,8 +617,8 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
               onChange={setSelectedClasse}
               icon={<Filter className="h-4 w-4" />}
               options={[
-                { value: 'all', label: `Toutes les classes (${classesList.length})` },
-                ...classesList.map((c) => ({ value: c, label: c })),
+                { value: 'all', label: `Toutes les classes (${existingElevesClasses.length})` },
+                ...existingElevesClasses.map((c) => ({ value: c, label: c })),
               ]}
               triggerClassName="h-10 rounded-xl text-xs font-semibold"
             />
@@ -634,8 +742,32 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80 text-sm">
               {paginatedEleves.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-14 text-center text-slate-500 dark:text-slate-400 font-medium text-sm">
-                    Aucun élève ne correspond à votre recherche.
+                  <td colSpan={7} className="py-12 text-center">
+                    {elevesList.length === 0 ? (
+                      <div className="py-8 px-4 text-center space-y-3 max-w-md mx-auto">
+                        <div className="h-12 w-12 rounded-2xl bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 flex items-center justify-center mx-auto shadow-sm">
+                          <Users className="h-6 w-6" />
+                        </div>
+                        <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                          Aucun élève enregistré pour le moment
+                        </h3>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                          Votre registre est prêt. Inscrivez votre tout premier élève pour démarrer la gestion académique et financière de votre établissement.
+                        </p>
+                        <Button
+                          variant="primary"
+                          onClick={() => setIsEnrollModalOpen(true)}
+                          className="gap-2 mx-auto"
+                        >
+                          <UserPlus className="h-4 w-4" />
+                          Inscrire un premier élève
+                        </Button>
+                      </div>
+                    ) : (
+                      <p className="text-slate-500 dark:text-slate-400 font-medium text-sm">
+                        Aucun élève ne correspond à votre recherche.
+                      </p>
+                    )}
                   </td>
                 </tr>
               ) : (
@@ -686,11 +818,23 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
 
                       {/* Tuteur */}
                       <td className="py-4 px-4">
-                        <div className="text-xs space-y-0.5">
+                        <div className="text-xs space-y-1">
                           <div className="font-semibold text-slate-800 dark:text-slate-200">{eleve.nom_tuteur}</div>
                           <div className="text-slate-400 dark:text-slate-500 font-mono flex items-center gap-1 text-[11px]">
                             <PhoneCall className="h-3 w-3 text-slate-400 shrink-0" />
                             <span>{eleve.telephone_tuteur}</span>
+                          </div>
+                          <div>
+                            {eleve.email_tuteur?.trim() ? (
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800/50">
+                                <span className="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
+                                <span className="truncate max-w-[150px]">{eleve.email_tuteur}</span>
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800/50">
+                                Accès Famille : en attente d'un email
+                              </span>
+                            )}
                           </div>
                         </div>
                       </td>
@@ -751,6 +895,18 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
                             >
                               <Eye className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
                               <span>Voir la fiche élève</span>
+                            </button>
+
+                            <button
+                              onClick={() => {
+                                setOpenMenuRowId(null);
+                                setEleveToEdit(eleve);
+                                setIsEnrollModalOpen(true);
+                              }}
+                              className="w-full flex items-center gap-2.5 px-3 py-2 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/60 font-semibold"
+                            >
+                              <Edit3 className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+                              <span>Modifier la fiche</span>
                             </button>
 
                             {eleve.remaining > 0 ? (
@@ -870,14 +1026,28 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
         onClose={() => setDrawerEleve(null)}
         onQuickPay={(el) => triggerMarquerPayeExpress(el)}
         onQuickRelance={(el) => triggerRelance(el)}
+        onEdit={(el) => {
+          setDrawerEleve(null);
+          setEleveToEdit(el);
+          setIsEnrollModalOpen(true);
+        }}
       />
 
       {/* Modale d'Inscription Élève */}
       <StudentEnrollmentModal
         isOpen={isEnrollModalOpen}
-        onClose={() => setIsEnrollModalOpen(false)}
+        onClose={() => {
+          setIsEnrollModalOpen(false);
+          setEleveToEdit(null);
+        }}
         onEnroll={handleEnrollStudent}
+        onUpdate={(updated) => {
+          setElevesList((prev) => prev.map((el) => (el.id === updated.id ? updated : el)));
+          setDrawerEleve((prev) => (prev?.id === updated.id ? updated : prev));
+          showToast(`Fiche de ${updated.prenom} ${updated.nom} mise à jour avec succès.`, 'success');
+        }}
         classesList={classesList}
+        eleveToEdit={eleveToEdit}
       />
 
       {/* Modale d'Encaissement Fictif */}

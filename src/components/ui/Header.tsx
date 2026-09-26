@@ -6,6 +6,7 @@ import {
   CURRENT_PARENT,
 } from '../../lib/mockData';
 import { useEcoleStore } from '../../store/useEcoleStore';
+import { useAuthStore } from '../../store/useAuthStore';
 import { StudentInitials } from './StudentInitials';
 import { Select } from './Select';
 import { UserProfileDropdown } from './UserProfileDropdown';
@@ -27,6 +28,9 @@ import {
   Menu,
 } from 'lucide-react';
 import { useNavigationStore } from '../../store/useNavigationStore';
+import { LanguageSelector } from './LanguageSelector';
+import { useLanguageStore } from '../../i18n/useLanguageStore';
+import { isRoleSimulatorAllowed } from '../../config/features';
 
 export type UserRole = 'directeur' | 'enseignant' | 'caissier' | 'parent';
 
@@ -44,6 +48,7 @@ export const Header: React.FC<HeaderProps> = ({
   onNavigateTab,
   onReturnToLanding,
 }) => {
+  const t = useLanguageStore((s) => s.t);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [globalSearch, setGlobalSearch] = useState('');
@@ -86,8 +91,8 @@ export const Header: React.FC<HeaderProps> = ({
     }
   > = {
     directeur: {
-      label: 'Directeur',
-      roleTitle: 'Directeur d\'Établissement',
+      label: t.common.director,
+      roleTitle: t.common.director,
       icon: <UserCheck className="h-4 w-4 text-blue-600" />,
       colorTheme: 'text-blue-700 bg-blue-50 border-blue-200/60 dark:bg-blue-950/60 dark:text-blue-300 dark:border-blue-800',
       badgeColor: 'bg-blue-50 text-blue-800 border-blue-200 dark:bg-blue-950/60 dark:text-blue-300 dark:border-blue-800',
@@ -96,8 +101,8 @@ export const Header: React.FC<HeaderProps> = ({
       user: CURRENT_DIRECTEUR,
     },
     enseignant: {
-      label: 'Enseignant',
-      roleTitle: 'Enseignant • 6ème A & CM2',
+      label: t.common.teacher,
+      roleTitle: t.common.teacher,
       icon: <GraduationCap className="h-4 w-4 text-emerald-600" />,
       colorTheme: 'text-emerald-700 bg-emerald-50 border-emerald-200/60 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800',
       badgeColor: 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800',
@@ -106,8 +111,8 @@ export const Header: React.FC<HeaderProps> = ({
       user: CURRENT_ENSEIGNANT as any,
     },
     caissier: {
-      label: 'Caissier',
-      roleTitle: `Caissier • ${CURRENT_CAISSIER.guichet}`,
+      label: t.common.cashier,
+      roleTitle: t.common.cashier,
       icon: <CreditCard className="h-4 w-4 text-amber-600" />,
       colorTheme: 'text-amber-700 bg-amber-50 border-amber-200/60 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800',
       badgeColor: 'bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800',
@@ -116,23 +121,51 @@ export const Header: React.FC<HeaderProps> = ({
       user: CURRENT_CAISSIER as any,
     },
     parent: {
-      label: 'Parent',
-      roleTitle: 'Parent d\'élève (2 enfants)',
+      label: t.common.parent,
+      roleTitle: t.common.parent,
       icon: <HeartHandshake className="h-4 w-4 text-purple-600 dark:text-purple-400" />,
       colorTheme: 'text-purple-700 bg-purple-50 border-purple-200/60 dark:bg-purple-950/60 dark:text-purple-300 dark:border-purple-800',
       badgeColor: 'bg-purple-50 text-purple-800 border-purple-200 dark:bg-purple-950/60 dark:text-purple-300 dark:border-purple-800',
       badgeText: 'Espace Parent',
-      badgeScope: 'Restreint strictement aux enfants de la famille Diallo',
+      badgeScope: 'Restreint strictement aux enfants de la famille',
       user: CURRENT_PARENT as any,
     },
   };
 
-  const currentConfig = rolesConfig[currentRole];
-  const ecole = useEcoleStore((s) => s.ecole);
+  const currentConfig = (currentRole && rolesConfig[currentRole]) ? rolesConfig[currentRole] : rolesConfig.directeur;
+  const authProfile = useAuthStore((s) => s.profile);
+  const authEcole = useAuthStore((s) => s.ecole);
+  const storeEcole = useEcoleStore((s) => s.ecole);
+
+  // Détection du mode simulation : interdit par défaut pour un compte réel en production
+  const isRealAccount = Boolean(authProfile?.ecole_id && authProfile.ecole_id !== 'ecole-demo');
+  const showRoleSimulator = isRoleSimulatorAllowed(isRealAccount);
+
+  // École réelle prioritaire sur le mock
+  const ecole = {
+    ...storeEcole,
+    nom: authEcole?.nom || storeEcole.nom,
+    ville: authEcole?.ville || storeEcole.ville,
+    code_ecole: authEcole?.nom ? authEcole.nom.slice(0, 4).toUpperCase() : storeEcole.code_ecole,
+  };
+
+  const defaultUser = currentConfig?.user || CURRENT_DIRECTEUR;
+
+  // Utilisateur réel prioritaire sur le mock
+  const activeUser = authProfile
+    ? {
+        ...defaultUser,
+        id: authProfile.id,
+        nom: authProfile.nom,
+        prenom: authProfile.prenom,
+        email: authProfile.email || defaultUser.email,
+        telephone: authProfile.telephone || defaultUser.telephone,
+      }
+    : defaultUser;
 
   useEffect(() => {
-    loadNotificationsForUser(currentConfig.user.id || 'usr-default', currentRole);
-  }, [currentRole, loadNotificationsForUser, currentConfig.user.id]);
+    loadNotificationsForUser(activeUser.id || 'usr-default', currentRole);
+  }, [currentRole, loadNotificationsForUser, activeUser.id]);
 
   return (
     <header className="sticky top-0 z-30 h-16 w-full border-b border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xs px-3.5 sm:px-5 lg:px-6 flex items-center justify-between gap-3 sm:gap-4 shadow-2xs transition-colors duration-200">
@@ -187,7 +220,7 @@ export const Header: React.FC<HeaderProps> = ({
             onChange={(e) => setGlobalSearch(e.target.value)}
             onFocus={() => setIsSearchFocused(true)}
             onBlur={() => setIsSearchFocused(false)}
-            placeholder="Rechercher..."
+            placeholder={t.common.searchPlaceholder}
             className={`w-full h-9 pl-8.5 pr-7 rounded-xl border text-xs bg-slate-50 dark:bg-slate-800/80 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 transition-all ${
               isSearchFocused
                 ? 'border-blue-600 bg-white dark:bg-slate-900 ring-2 ring-blue-600/20'
@@ -211,7 +244,7 @@ export const Header: React.FC<HeaderProps> = ({
               className="flex items-center gap-1.5 h-9 px-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors shrink-0 shadow-2xs"
             >
               <Globe className="h-4 w-4 text-blue-600 dark:text-blue-400 shrink-0" />
-              <span className="hidden xl:inline">Site vitrine</span>
+              <span className="hidden xl:inline">{t.common.viewSite}</span>
             </button>
           </Tooltip>
         )}
@@ -222,24 +255,32 @@ export const Header: React.FC<HeaderProps> = ({
           <span>{ecole.annee_scolaire}</span>
         </div>
 
-        {/* Role Selector (clean & discrete) - Visible UNIQUEMENT pour le Directeur */}
-        {onRoleChange && userRole === 'directeur' && (
-          <Select<UserRole>
-            value={currentRole}
-            onChange={onRoleChange}
-            prefix="Vue :"
-            size="sm"
-            variant="subtle"
-            align="right"
-            className="shrink-0"
-            menuClassName="w-56"
-            options={(Object.keys(rolesConfig) as UserRole[]).map((role) => ({
-              value: role,
-              label: rolesConfig[role].label,
-              icon: rolesConfig[role].icon,
-              description: rolesConfig[role].roleTitle,
-            }))}
-          />
+        {/* Sélecteur de langue (FR / AR / EN) */}
+        <LanguageSelector />
+
+        {/* Role Selector (clean & discrete) - Jamais visible par défaut pour un compte réel en production */}
+        {showRoleSimulator && onRoleChange && userRole === 'directeur' && (
+          <div className="flex items-center gap-1.5">
+            <span className="hidden 2xl:inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60">
+              Simulation
+            </span>
+            <Select<UserRole>
+              value={currentRole}
+              onChange={onRoleChange}
+              prefix={`${t.common.viewAs} :`}
+              size="sm"
+              variant="subtle"
+              align="right"
+              className="shrink-0"
+              menuClassName="w-56"
+              options={(Object.keys(rolesConfig) as UserRole[]).map((role) => ({
+                value: role,
+                label: rolesConfig[role].label,
+                icon: rolesConfig[role].icon,
+                description: rolesConfig[role].roleTitle,
+              }))}
+            />
+          </div>
         )}
 
         {/* Notifications Icon Button with Dropdown */}
@@ -281,14 +322,14 @@ export const Header: React.FC<HeaderProps> = ({
             className="flex items-center gap-1.5 sm:gap-2 h-9 p-1 pl-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors focus:outline-none"
           >
             <StudentInitials
-              nom={currentConfig.user.nom}
-              prenom={currentConfig.user.prenom}
+              nom={activeUser.nom}
+              prenom={activeUser.prenom}
               size="sm"
             />
             <div className="hidden lg:flex flex-col text-left min-w-0 max-w-[90px] xl:max-w-[120px]">
-              <Tooltip content={`${currentConfig.user.prenom} ${currentConfig.user.nom}`} side="bottom" className="flex min-w-0">
+              <Tooltip content={`${activeUser.prenom} ${activeUser.nom}`} side="bottom" className="flex min-w-0">
                 <span className="text-xs font-bold text-slate-900 dark:text-white leading-tight truncate">
-                  {currentConfig.user.prenom}
+                  {activeUser.prenom}
                 </span>
               </Tooltip>
               <Tooltip content={currentConfig.roleTitle} side="bottom" className="flex min-w-0">
@@ -302,7 +343,7 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* Floating Profile Panel */}
           <UserProfileDropdown
-            user={currentConfig.user}
+            user={activeUser}
             roleTitle={currentConfig.roleTitle}
             roleBadge={currentConfig.label}
             isOpen={isProfileOpen}

@@ -26,12 +26,19 @@ import {
   ChevronRight,
 } from 'lucide-react';
 
+import { useAuthStore } from '../../store/useAuthStore';
+
 export const TeacherGradesPage: React.FC = () => {
-  const [evaluations, setEvaluations] = useState<EvaluationRecord[]>(MOCK_EVALUATIONS_INITIAL);
+  const authProfile = useAuthStore((s) => s.profile);
+  const isRealAccount = Boolean(authProfile?.ecole_id);
+  const [evaluations, setEvaluations] = useState<EvaluationRecord[]>(() => {
+    if (isRealAccount) return [];
+    return MOCK_EVALUATIONS_INITIAL;
+  });
   const [selectedClasse, setSelectedClasse] = useState<string>('6ème A');
   const [selectedMatiere, setSelectedMatiere] = useState<string>('Mathématiques');
   const [selectedTrimestre, setSelectedTrimestre] = useState<string>('Trimestre 2');
-  const [activeToast, setActiveToast] = useState<{ message: string; type: 'success' | 'info' | 'warning' } | null>(null);
+  const [activeToast, setActiveToast] = useState<{ message: string; type: 'success' | 'info' | 'warning' | 'error' } | null>(null);
 
   // Pagination pour la table de saisie
   const [currentPage, setCurrentPage] = useState(1);
@@ -45,10 +52,11 @@ export const TeacherGradesPage: React.FC = () => {
 
   // Élèves de la classe choisie
   const teacherStudents = useMemo(() => {
+    if (isRealAccount) return [];
     return getElevesForTeacher(MOCK_ELEVES, CURRENT_ENSEIGNANT.classes_assignees).filter(
       (e) => e.classe === selectedClasse
     );
-  }, [selectedClasse]);
+  }, [isRealAccount, selectedClasse]);
 
   // Évaluations filtrées pour la classe et matière
   const classEvals = useMemo(() => {

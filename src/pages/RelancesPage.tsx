@@ -11,6 +11,7 @@ import {
   HistoriqueRelance,
 } from '../lib/mockData';
 import { formatMRU } from '../lib/utils';
+import { useAuthStore } from '../store/useAuthStore';
 import {
   Send,
   MessageSquare,
@@ -27,8 +28,15 @@ import {
 } from 'lucide-react';
 
 export const RelancesPage: React.FC = () => {
-  const [elevesList] = useState<EleveWithStats[]>(MOCK_ELEVES);
-  const [relancesHistory, setRelancesHistory] = useState<HistoriqueRelance[]>(MOCK_HISTORIQUE_RELANCES);
+  const authProfile = useAuthStore((s) => s.profile);
+  const [elevesList] = useState<EleveWithStats[]>(() => {
+    if (authProfile?.ecole_id) return [];
+    return MOCK_ELEVES;
+  });
+  const [relancesHistory, setRelancesHistory] = useState<HistoriqueRelance[]>(() => {
+    if (authProfile?.ecole_id) return [];
+    return MOCK_HISTORIQUE_RELANCES;
+  });
   const [selectedEleveIds, setSelectedEleveIds] = useState<string[]>([]);
   const [isCampaignModalOpen, setIsCampaignModalOpen] = useState(false);
   const [isSendingCampaign, setIsSendingCampaign] = useState(false);
@@ -278,7 +286,24 @@ export const RelancesPage: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
-              {paginatedOverdueEleves.map((eleve) => {
+              {paginatedOverdueEleves.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="py-12 text-center">
+                    <div className="py-8 px-4 text-center space-y-3 max-w-md mx-auto">
+                      <div className="h-12 w-12 rounded-2xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto shadow-sm">
+                        <CheckCircle2 className="h-6 w-6" />
+                      </div>
+                      <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                        Tous les comptes sont à jour
+                      </h3>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
+                        Aucun impayé ni retard de scolarité constaté pour le moment dans votre établissement.
+                      </p>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                paginatedOverdueEleves.map((eleve) => {
                 const isChecked = selectedEleveIds.includes(eleve.id);
                 const isMenuOpen = openMenuRowId === eleve.id;
                 return (
@@ -391,7 +416,7 @@ export const RelancesPage: React.FC = () => {
                     </td>
                   </tr>
                 );
-              })}
+              }))}
             </tbody>
           </table>
         </div>

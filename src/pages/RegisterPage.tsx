@@ -16,7 +16,11 @@ import {
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuthStore, UserProfile, EcoleInfo } from '../store/useAuthStore';
+import { useEcoleStore } from '../store/useEcoleStore';
 import { useNavigationStore } from '../store/useNavigationStore';
+import { Select } from '../components/ui/Select';
+import { LanguageSelector } from '../components/ui/LanguageSelector';
+import { generateOtp, hashOtp, sendActivationEmail } from '../lib/email/sendActivationEmail';
 import type { UserRole } from '../components/ui/Header';
 
 interface RegisterPageProps {
@@ -99,6 +103,28 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
       return;
     }
 
+    // Validation des limites de taille (spécifications backend trigger inscrire_ecole_depuis_compte)
+    if (nomEcole.trim().length > 150) {
+      setError("Le nom de l'établissement ne peut pas dépasser 150 caractères.");
+      return;
+    }
+    if (nomResponsable.trim().length > 100) {
+      setError("Le nom du responsable ne peut pas dépasser 100 caractères.");
+      return;
+    }
+    if (prenomResponsable.trim().length > 100) {
+      setError("Le prénom du responsable ne peut pas dépasser 100 caractères.");
+      return;
+    }
+    if (ville.trim().length > 100) {
+      setError("La ville ou quartier ne peut pas dépasser 100 caractères.");
+      return;
+    }
+    if (telephone.trim().length > 30) {
+      setError("Le numéro de téléphone / WhatsApp ne peut pas dépasser 30 caractères.");
+      return;
+    }
+
     setError(null);
     setSubmitting(true);
 
@@ -117,58 +143,95 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
             ville: ville.trim(),
             effectif: effectifApprox || undefined,
           },
+          emailRedirectTo: `${window.location.origin}/`,
         },
       });
 
+      // Si Supabase Auth renvoie une erreur : arrêt immédiat, affichage de l'erreur, JAMAIS de redirection vers le succès
       if (signUpError) {
         const msg = signUpError.message.toLowerCase();
         if (msg.includes('already registered') || msg.includes('user already exists')) {
           setError('Un compte existe déjà avec cette adresse email. Veuillez vous connecter.');
-          setSubmitting(false);
-          return;
-        } else if (msg.includes('api key') || msg.includes('failed to fetch') || msg.includes('network')) {
-          console.warn('[EcoSurv Inscription] Clé Supabase locale ou hors-ligne, poursuite en mode résilient:', signUpError.message);
+        } else if (msg.includes('api key') || msg.includes('invalid api key')) {
+          setError("Erreur d'authentification Supabase : clé API anon invalide ou non configurée en local. Vérifiez VITE_SUPABASE_ANON_KEY.");
+        } else if (msg.includes('rate limit')) {
+          setError("Trop de tentatives d'inscription. Veuillez patienter quelques minutes avant de réessayer.");
+        } else if (msg.includes('database error saving new user')) {
+          setError("Erreur backend lors de l'enregistrement de l'école (vérifiez les informations renseignées).");
         } else {
           setError(signUpError.message || "Erreur lors de l'enregistrement de l'école.");
-          setSubmitting(false);
-          return;
         }
+        setSubmitting(false);
+        return;
       }
 
-      // 2. Connexion immédiate pour obtenir une session active
-      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+      if (!signUpData?.user) {
+        setError("Erreur : aucun compte utilisateur n'a été retourné par Supabase. Veuillez réessayer.");
+        setSubmitting(false);
+        return;
+      }
+
+      // Détection Supabase: si un compte existe déjà, Supabase renvoie identities: [] sans erreur explicite.
+      // Dans ce cas, aucun compte ni école n'a été créé par le trigger.
+      if (signUpData.user.identities && signUpData.user.identities.length === 0) {
+        setError("Un compte existe déjà avec cette adresse email (" + email.trim() + "). Veuillez vous connecter ou utiliser une autre adresse.");
+        setSubmitting(false);
+        return;
+      }
+
+      // 2. Connexion immédiate pour obtenir une session active si confirmation auto
+      const { data: signInData } = await supabase.auth.signInWithPassword({
         email: email.trim(),
         password,
       });
 
-      const activeUser = signInData?.user || signUpData?.user;
+      const activeUser = signInData?.user || signUpData.user;
 
-      if (!activeUser && signInError) {
-        // En cas de confirmation par email requise sur Supabase
-        console.warn('[EcoSurv Inscription] Session directe non obtenue:', signInError);
-      }
-
-      // 3. Récupération du statut d'accès calculé par la RPC backend ou fallback
-      let ecoleId = 'ecole-' + Date.now();
+      // 3. Récupération du statut d'accès calculé par la RPC backend ou via requête profil
+      let ecoleId: string | null = null;
       let statutActivation: 'en_attente' | 'active' | 'suspendue' = 'en_attente';
       let nomEnregistre = nomEcole.trim();
 
       try {
-        const { data: rpcData } = await supabase.rpc('mon_statut_acces');
-        if (rpcData && rpcData.length > 0) {
+        const { data: rpcData, error: rpcError } = await supabase.rpc('mon_statut_acces');
+        if (!rpcError && rpcData && rpcData.length > 0) {
           const row = rpcData[0];
           if (row.ecole_id) ecoleId = row.ecole_id;
           if (row.statut_activation) statutActivation = row.statut_activation;
           if (row.ecole_nom) nomEnregistre = row.ecole_nom;
         }
       } catch (rpcErr) {
-        console.warn('[EcoSurv Inscription] RPC mon_statut_acces non disponible:', rpcErr);
+        console.warn('[EcoSurv Inscription] RPC mon_statut_acces:', rpcErr);
       }
 
-      // 4. Initialisation du profil et de l'école dans le store
+      // Fallback consultation du profil créé par le trigger si la RPC n'était pas disponible
+      if (!ecoleId && activeUser.id) {
+        try {
+          const { data: profileRow } = await supabase
+            .from('profils')
+            .select('ecole_id, role, nom, prenom')
+            .eq('id', activeUser.id)
+            .maybeSingle();
+
+          if (profileRow?.ecole_id) {
+            ecoleId = profileRow.ecole_id;
+            const { data: ecoleRow } = await supabase
+              .from('ecoles')
+              .select('id, nom, statut_activation')
+              .eq('id', profileRow.ecole_id)
+              .maybeSingle();
+            if (ecoleRow?.nom) nomEnregistre = ecoleRow.nom;
+            if (ecoleRow?.statut_activation) statutActivation = ecoleRow.statut_activation;
+          }
+        } catch (fetchErr) {
+          console.warn('[EcoSurv Inscription] Consultation profil/école:', fetchErr);
+        }
+      }
+
+      // 4. Initialisation du profil et de l'école dans le store pour l'écran d'attente
       const profile: UserProfile = {
-        id: activeUser?.id || 'usr-' + Date.now(),
-        ecole_id: ecoleId,
+        id: activeUser.id,
+        ecole_id: ecoleId || `ecole-${activeUser.id.slice(0, 8)}`,
         nom: nomResponsable.trim(),
         prenom: prenomResponsable.trim(),
         telephone: telephone.trim(),
@@ -177,7 +240,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
       };
 
       const ecoleInfo: EcoleInfo = {
-        id: ecoleId,
+        id: ecoleId || `ecole-${activeUser.id.slice(0, 8)}`,
         nom: nomEnregistre,
         ville: ville.trim(),
         telephone: telephone.trim(),
@@ -186,15 +249,69 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
         statut_abonnement: 'essai',
       };
 
-      if (activeUser) {
-        useAuthStore.getState().setUser(activeUser);
-      }
+      useAuthStore.getState().setUser(activeUser);
       useAuthStore.getState().setProfile(profile);
       useAuthStore.getState().setEcole(ecoleInfo);
 
-      useNavigationStore.getState().setUserRole('directeur');
+      // Synchroniser useEcoleStore avec les vraies données de l'école créée
+      useEcoleStore.getState().updateEcole({
+        id: ecoleId || `ecole-${activeUser.id.slice(0, 8)}`,
+        nom: nomEnregistre,
+        ville: ville.trim(),
+        telephone: telephone.trim(),
+        email: email.trim(),
+        statut_activation: 'en_attente',
+        code_ecole: nomEnregistre.slice(0, 4).toUpperCase(),
+      });
 
-      // 5. Redirection vers l'écran "École en attente d'activation"
+      // 5. Générer le code d'activation OTP et l'expédier par email via Resend
+      try {
+        const initialOtp = generateOtp();
+        const otpHash = await hashOtp(initialOtp);
+        const targetEcoleId = ecoleId || `ecole-${activeUser.id.slice(0, 8)}`;
+
+        let rpcDone = false;
+        try {
+          const { error: rpcErr } = await supabase.rpc('enregistrer_code_activation', {
+            p_ecole_id: targetEcoleId,
+            p_email: email.trim(),
+            p_code_hash: otpHash,
+          });
+          if (!rpcErr) rpcDone = true;
+        } catch {
+          // fallback
+        }
+
+        if (!rpcDone) {
+          await supabase.from('codes_activation').insert([
+            {
+              ecole_id: targetEcoleId,
+              email: email.trim(),
+              code_hash: otpHash,
+              expire_a: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
+              utilise: false,
+            },
+          ]);
+        }
+
+        // Envoyer l'email via Resend
+        const sendResult = await sendActivationEmail({
+          to: email.trim(),
+          nomDirecteur: `${prenomResponsable.trim()} ${nomResponsable.trim()}`,
+          nomEcole: nomEnregistre,
+          code: initialOtp,
+        });
+
+        if (sendResult?.isTestModeLimitation || !sendResult?.success) {
+          sessionStorage.setItem('ecosurv_test_otp', initialOtp);
+        } else {
+          sessionStorage.removeItem('ecosurv_test_otp');
+        }
+      } catch (otpErr) {
+        console.warn('[Inscription] Génération code OTP initial:', otpErr);
+      }
+
+      // 6. Redirection vers l'écran de saisie du code OTP
       useNavigationStore.getState().navigateToPendingActivation();
     } catch (err: any) {
       console.error('[EcoSurv Inscription] Erreur inattendue:', err);
@@ -202,6 +319,14 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
       setSubmitting(false);
     }
   };
+
+  const TRANCHE_OPTIONS = [
+    { value: '', label: "Sélectionnez une tranche d'élèves" },
+    { value: 'moins_150', label: 'Moins de 150 élèves' },
+    { value: '150_350', label: '150 à 350 élèves' },
+    { value: '350_700', label: '350 à 700 élèves' },
+    { value: 'plus_700', label: 'Plus de 700 élèves' },
+  ];
 
   return (
     <div className="min-h-screen flex flex-col justify-between bg-slate-50 dark:bg-slate-950 px-4 py-8 font-['Plus_Jakarta_Sans',sans-serif] text-slate-900 dark:text-slate-100 antialiased selection:bg-blue-600 selection:text-white">
@@ -217,6 +342,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
         </button>
 
         <div className="flex items-center gap-3">
+          <LanguageSelector />
           <button
             type="button"
             onClick={handleGoToLogin}
@@ -312,28 +438,18 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
 
               {/* Effectif approximatif d'élèves (Optionnel) */}
               <div className="space-y-1.5">
-                <label
-                  htmlFor="reg-effectif"
-                  className="block text-xs font-bold text-slate-700 dark:text-slate-300"
-                >
-                  Effectif approximatif d'élèves <span className="text-slate-400 font-normal">(optionnel)</span>
-                </label>
-                <div className="relative">
-                  <Users className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                  <select
-                    id="reg-effectif"
-                    value={effectifApprox}
-                    disabled={submitting}
-                    onChange={(e) => setEffectifApprox(e.target.value)}
-                    className="w-full h-11 pl-10 pr-8 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-600/30 focus:border-blue-600 dark:focus:border-blue-500 transition-all appearance-none cursor-pointer"
-                  >
-                    <option value="">Sélectionnez une tranche d'élèves</option>
-                    <option value="moins_150">Moins de 150 élèves</option>
-                    <option value="150_350">150 à 350 élèves</option>
-                    <option value="350_700">350 à 700 élèves</option>
-                    <option value="plus_700">Plus de 700 élèves</option>
-                  </select>
-                </div>
+                <Select
+                  id="reg-effectif"
+                  label="Effectif approximatif d'élèves"
+                  options={TRANCHE_OPTIONS}
+                  value={effectifApprox}
+                  onChange={(val) => setEffectifApprox(val)}
+                  disabled={submitting}
+                  icon={<Users className="h-4 w-4" />}
+                  placeholder="Sélectionnez une tranche d'élèves"
+                  className="w-full"
+                  triggerClassName="w-full h-11 bg-slate-50/50 dark:bg-slate-950/50 border-slate-200 dark:border-slate-800 text-sm rounded-xl"
+                />
               </div>
             </div>
 
