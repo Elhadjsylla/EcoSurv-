@@ -9,6 +9,7 @@ import {
   ShieldCheck,
   School,
   ExternalLink,
+  X,
 } from 'lucide-react';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useNavigationStore } from '../../store/useNavigationStore';
@@ -20,12 +21,16 @@ interface AdminSidebarProps {
   activeTab: AdminTab;
   onTabChange: (tab: AdminTab) => void;
   onReturnToLanding?: () => void;
+  isOpen?: boolean;
+  onClose?: () => void;
 }
 
 export const AdminSidebar: React.FC<AdminSidebarProps> = ({
   activeTab,
   onTabChange,
   onReturnToLanding,
+  isOpen = false,
+  onClose,
 }) => {
   const profile = useAuthStore((s) => s.profile);
   const user = useAuthStore((s) => s.user);
@@ -49,24 +54,43 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
     { id: 'audit', label: 'Audit Logs', icon: <ScrollText className="h-4.5 w-4.5" /> },
   ];
 
-  return (
-    <aside className="w-64 h-screen bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col justify-between p-4 shrink-0 selection:bg-emerald-500 selection:text-white">
+  const handleSelectTab = (tab: AdminTab) => {
+    onTabChange(tab);
+    if (onClose) onClose();
+  };
+
+  const sidebarContent = (
+    <div className="flex flex-col justify-between h-full p-4 selection:bg-emerald-500 selection:text-white">
       {/* Top section */}
       <div className="space-y-6">
-        {/* Brand header style Sama Boutik */}
-        <div className="flex items-center gap-3 px-2 pt-2">
-          <div className="h-10 w-10 rounded-xl bg-emerald-600 dark:bg-emerald-500 text-white flex items-center justify-center shadow-md shadow-emerald-600/20">
-            <School className="h-5 w-5" />
-          </div>
-          <div>
-            <div className="font-extrabold text-base tracking-tight text-slate-900 dark:text-white leading-tight">
-              EcoSurv
+        {/* Brand header */}
+        <div className="flex items-center justify-between px-2 pt-2">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-xl bg-emerald-600 dark:bg-emerald-500 text-white flex items-center justify-center shadow-md shadow-emerald-600/20">
+              <School className="h-5 w-5" />
             </div>
-            <div className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1 mt-0.5">
-              <ShieldCheck className="h-3 w-3" />
-              <span>Super Admin</span>
+            <div>
+              <div className="font-extrabold text-base tracking-tight text-slate-900 dark:text-white leading-tight">
+                EcoSurv
+              </div>
+              <div className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1 mt-0.5">
+                <ShieldCheck className="h-3 w-3" />
+                <span>Super Admin</span>
+              </div>
             </div>
           </div>
+
+          {/* Close button for mobile */}
+          {onClose && (
+            <button
+              type="button"
+              onClick={onClose}
+              className="md:hidden p-1.5 rounded-lg text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              aria-label="Fermer le menu"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          )}
         </div>
 
         {/* Navigation list */}
@@ -77,7 +101,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
               <button
                 key={item.id}
                 type="button"
-                onClick={() => onTabChange(item.id)}
+                onClick={() => handleSelectTab(item.id)}
                 className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-semibold text-sm transition-all cursor-pointer text-left ${
                   isActive
                     ? 'bg-slate-900 text-white shadow-xs dark:bg-emerald-600 dark:text-white'
@@ -99,14 +123,15 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
         {/* Profile Card */}
         <div className="flex items-center gap-3 px-2 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-800">
           <div className="h-8 w-8 rounded-lg bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 font-bold text-xs flex items-center justify-center shrink-0">
-            {profile?.prenom?.charAt(0) || 'E'}{profile?.nom?.charAt(0) || 'S'}
+            {profile?.prenom?.charAt(0) || user?.email?.charAt(0).toUpperCase() || 'A'}
+            {profile?.nom?.charAt(0) || 'S'}
           </div>
           <div className="min-w-0 flex-1">
             <div className="text-xs font-bold text-slate-900 dark:text-white truncate">
-              {profile ? `${profile.prenom} ${profile.nom}` : 'Elhadj Sylla'}
+              {profile ? `${profile.prenom} ${profile.nom}` : user?.email || 'Super Admin'}
             </div>
             <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
-              {user?.email || profile?.email || 'admin@ecosurv.mr'}
+              {user?.email || profile?.email || ''}
             </div>
           </div>
         </div>
@@ -133,6 +158,33 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
           <span>Se déconnecter</span>
         </button>
       </div>
-    </aside>
+    </div>
+  );
+
+  return (
+    <>
+      {/* Desktop Sidebar */}
+      <aside className="hidden md:flex w-64 h-screen bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex-col shrink-0">
+        {sidebarContent}
+      </aside>
+
+      {/* Mobile Drawer Backdrop */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-slate-950/60 backdrop-blur-xs md:hidden animate-fade-in"
+          onClick={onClose}
+          aria-hidden="true"
+        />
+      )}
+
+      {/* Mobile Drawer */}
+      <aside
+        className={`fixed inset-y-0 left-0 z-50 flex h-full w-72 max-w-[85vw] flex-col border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xl transition-transform duration-300 md:hidden ${
+          isOpen ? 'translate-x-0' : '-translate-x-full pointer-events-none'
+        }`}
+      >
+        {sidebarContent}
+      </aside>
+    </>
   );
 };

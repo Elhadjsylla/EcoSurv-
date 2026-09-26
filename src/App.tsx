@@ -88,7 +88,7 @@ export function AppContent() {
           // Aucune session en base
           useAuthStore.getState().setLoading(false);
           const match = parsePath(window.location.pathname);
-          if (match.viewMode === 'app') {
+          if (match.viewMode === 'app' || match.viewMode === 'admin_console') {
             // Tentative d'accès à une route protégée sans session -> Login
             useNavigationStore.getState().setViewMode('login');
             window.history.replaceState(null, '', '/login');
@@ -152,6 +152,16 @@ export function AppContent() {
             useNavigationStore.getState().navigateToAdminConsole();
             window.history.replaceState(null, '', getPathForState('admin_console'));
           }
+          if (isMounted) setIsAuthResolving(false);
+          return;
+        }
+
+        // Utilisateur non super_admin tentant d'accéder à /admin -> redirigé vers son portail
+        if (match.viewMode === 'admin_console') {
+          const portalRole: PortalRole = role;
+          useNavigationStore.getState().setUserRole(portalRole);
+          useNavigationStore.getState().launchAppWithPortal(portalRole);
+          window.history.replaceState(null, '', getPathForState('app', PORTAL_HOME[portalRole]));
           if (isMounted) setIsAuthResolving(false);
           return;
         }
