@@ -4,7 +4,7 @@ import { CheckCircle2, AlertCircle, Info, X } from 'lucide-react';
 export interface ToastProps {
   id?: string;
   message: string;
-  type?: 'success' | 'info' | 'warning';
+  type?: 'success' | 'info' | 'warning' | 'error';
   duration?: number;
   onClose: () => void;
 }
@@ -47,6 +47,11 @@ export const ToastNotification = ({
       bg: 'bg-slate-900 border-amber-500/40 text-slate-100',
       icon: <AlertCircle className="w-5 h-5 text-amber-400 shrink-0 animate-scale-in" />,
       bar: 'bg-amber-400',
+    },
+    error: {
+      bg: 'bg-slate-900 border-rose-500/40 text-slate-100',
+      icon: <AlertCircle className="w-5 h-5 text-rose-400 shrink-0 animate-scale-in" />,
+      bar: 'bg-rose-400',
     },
   }[type];
 

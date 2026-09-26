@@ -26,13 +26,15 @@ interface TeacherSidebarProps {
 }
 
 import { useLanguageStore } from '../../i18n/useLanguageStore';
+import { translations } from '../../i18n/translations';
 
 export const TeacherSidebar: React.FC<TeacherSidebarProps> = ({
   activeTab,
   onTabChange,
   className,
 }) => {
-  const t = useLanguageStore((s) => s.t);
+  const storeT = useLanguageStore((s) => s.t);
+  const t = storeT?.nav ? storeT : translations.fr;
   const authProfile = useAuthStore((s) => s.profile);
   const isReal = Boolean(authProfile?.ecole_id);
 
@@ -48,23 +50,23 @@ export const TeacherSidebar: React.FC<TeacherSidebarProps> = ({
   }> = [
     {
       id: 'teacher_dashboard',
-      label: t.nav.dashboard,
+      label: t.nav?.dashboard || 'Tableau de bord',
       icon: <LayoutGrid className="h-4 w-4 shrink-0" />,
     },
     {
       id: 'teacher_classes',
-      label: t.nav.classes,
+      label: t.nav?.classes || 'Mes Classes',
       icon: <UsersRound className="h-4 w-4 shrink-0" />,
       badge: isReal ? undefined : `${CURRENT_ENSEIGNANT.classes_assignees.length}`,
     },
     {
       id: 'teacher_absences',
-      label: t.nav.attendance,
+      label: t.nav?.attendance || 'Saisie des Absences',
       icon: <CalendarCheck2 className="h-4 w-4 shrink-0" />,
     },
     {
       id: 'teacher_grades',
-      label: t.nav.grades,
+      label: t.nav?.grades || 'Saisie des Notes',
       icon: <BookOpenCheck className="h-4 w-4 shrink-0" />,
     },
   ];
@@ -110,7 +112,7 @@ export const TeacherSidebar: React.FC<TeacherSidebarProps> = ({
           <div className="flex-1 px-3 py-4 space-y-1.5 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-800">
             {!isCollapsed && (
               <div className="px-3 pb-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                {t.nav.pedagogicSpace}
+                {t.nav?.pedagogicSpace || 'Espace Pédagogique'}
               </div>
             )}
 

@@ -31,3 +31,6 @@ desktop.ini
 .idea/
 .vscode/*
 !.vscode/extensions.json
+
+# --- Bac a sable local (exports de test, scripts jetables) ---
+scratch/

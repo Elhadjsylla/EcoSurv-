@@ -18,7 +18,7 @@ export const PORTAL_HOME: Record<UserRole, AppRoute> = {
 /** Au-delà, les entrées les plus anciennes sont oubliées, comme dans un navigateur. */
 export const MAX_HISTORY_ENTRIES = 50;
 
-export type ViewMode = 'landing' | 'login' | 'register' | 'pending_activation' | 'app' | 'admin_console';
+export type ViewMode = 'landing' | 'login' | 'register' | 'pending_activation' | 'set_password' | 'app' | 'admin_console';
 
 export const PORTAL_ROUTES: Record<UserRole, AppRoute[]> = {
   directeur: ['dashboard', 'eleves', 'echeances', 'relances', 'rapports', 'config'],
@@ -51,8 +51,10 @@ interface NavigationState {
   navigateToLogin: () => void;
   navigateToRegister: () => void;
   navigateToPendingActivation: () => void;
+  navigateToSetPassword: () => void;
   navigateToAdminConsole: () => void;
   launchAppWithPortal: (portal?: UserRole) => void;
+  launchAppWithRoute: (portal: UserRole, route: AppRoute) => void;
   setUserRole: (role: UserRole) => void;
   reset: () => void;
 }
@@ -90,6 +92,7 @@ export const useNavigationStore = create<NavigationState>((set) => ({
   navigateToLogin: () => set({ viewMode: 'login', isMobileMenuOpen: false }),
   navigateToRegister: () => set({ viewMode: 'register', isMobileMenuOpen: false }),
   navigateToPendingActivation: () => set({ viewMode: 'pending_activation', isMobileMenuOpen: false }),
+  navigateToSetPassword: () => set({ viewMode: 'set_password', isMobileMenuOpen: false }),
   navigateToAdminConsole: () => set({ viewMode: 'admin_console', isMobileMenuOpen: false }),
 
   launchAppWithPortal: (portal) =>
@@ -101,6 +104,18 @@ export const useNavigationStore = create<NavigationState>((set) => ({
         portal: targetRole,
         isMobileMenuOpen: false,
         ...positionAt([PORTAL_HOME[targetRole]], 0),
+      };
+    }),
+
+  launchAppWithRoute: (portal, route) =>
+    set(() => {
+      const targetRole = portal || 'directeur';
+      return {
+        viewMode: 'app',
+        userRole: targetRole,
+        portal: targetRole,
+        isMobileMenuOpen: false,
+        ...positionAt([route], 0),
       };
     }),
 

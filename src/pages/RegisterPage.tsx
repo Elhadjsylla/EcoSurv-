@@ -20,6 +20,7 @@ import { useEcoleStore } from '../store/useEcoleStore';
 import { useNavigationStore } from '../store/useNavigationStore';
 import { Select } from '../components/ui/Select';
 import { LanguageSelector } from '../components/ui/LanguageSelector';
+import { generateOtp, hashOtp, sendActivationEmail } from '../lib/email/sendActivationEmail';
 import type { UserRole } from '../components/ui/Header';
 
 interface RegisterPageProps {
@@ -263,7 +264,54 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
         code_ecole: nomEnregistre.slice(0, 4).toUpperCase(),
       });
 
-      // 5. Redirection vers l'écran en attente d'activation : seul le Super Admin peut valider
+      // 5. Générer le code d'activation OTP et l'expédier par email via Resend
+      try {
+        const initialOtp = generateOtp();
+        const otpHash = await hashOtp(initialOtp);
+        const targetEcoleId = ecoleId || `ecole-${activeUser.id.slice(0, 8)}`;
+
+        let rpcDone = false;
+        try {
+          const { error: rpcErr } = await supabase.rpc('enregistrer_code_activation', {
+            p_ecole_id: targetEcoleId,
+            p_email: email.trim(),
+            p_code_hash: otpHash,
+          });
+          if (!rpcErr) rpcDone = true;
+        } catch {
+          // fallback
+        }
+
+        if (!rpcDone) {
+          await supabase.from('codes_activation').insert([
+            {
+              ecole_id: targetEcoleId,
+              email: email.trim(),
+              code_hash: otpHash,
+              expire_a: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
+              utilise: false,
+            },
+          ]);
+        }
+
+        // Envoyer l'email via Resend
+        const sendResult = await sendActivationEmail({
+          to: email.trim(),
+          nomDirecteur: `${prenomResponsable.trim()} ${nomResponsable.trim()}`,
+          nomEcole: nomEnregistre,
+          code: initialOtp,
+        });
+
+        if (sendResult?.isTestModeLimitation || !sendResult?.success) {
+          sessionStorage.setItem('ecosurv_test_otp', initialOtp);
+        } else {
+          sessionStorage.removeItem('ecosurv_test_otp');
+        }
+      } catch (otpErr) {
+        console.warn('[Inscription] Génération code OTP initial:', otpErr);
+      }
+
+      // 6. Redirection vers l'écran de saisie du code OTP
       useNavigationStore.getState().navigateToPendingActivation();
     } catch (err: any) {
       console.error('[EcoSurv Inscription] Erreur inattendue:', err);

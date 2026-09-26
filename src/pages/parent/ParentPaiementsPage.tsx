@@ -1,10 +1,15 @@
-import React, { useState } from 'react';
-import confetti from 'canvas-confetti';
+import React, { useState, useEffect } from 'react';
 import {
   MOCK_PARENT_ENFANTS_DETAILS,
   CURRENT_PARENT,
   MethodePaiement,
+  ParentEnfantDetail,
 } from '../../lib/mockData';
+import { generateReceiptPdf } from '../../lib/pdf/generateReceiptPdf';
+import { useEcoleStore } from '../../store/useEcoleStore';
+import { useAuthStore } from '../../store/useAuthStore';
+import { useParentChildren } from '../../hooks/useParentChildren';
+import { supabase } from '../../lib/supabase';
 import { Button } from '../../components/ui/Button';
 import { ToastNotification } from '../../components/ui/ToastNotification';
 import { KpiCard } from '../../components/ui/KpiCard';
@@ -15,11 +20,10 @@ import {
   ArrowDownToLine,
   Receipt,
   X,
-  Printer,
   CreditCard,
+  AlertCircle,
+  RefreshCw,
 } from 'lucide-react';
-
-import { useAuthStore } from '../../store/useAuthStore';
 
 interface ParentPaiementsPageProps {
   selectedChildId: string;
@@ -28,28 +32,97 @@ interface ParentPaiementsPageProps {
 export const ParentPaiementsPage: React.FC<ParentPaiementsPageProps> = ({
   selectedChildId,
 }) => {
+  const authEcole = useAuthStore((s) => s.ecole);
   const authProfile = useAuthStore((s) => s.profile);
-  const isRealAccount = Boolean(authProfile?.ecole_id);
-  const childExists = Boolean(selectedChildId && MOCK_PARENT_ENFANTS_DETAILS[selectedChildId]);
+  const storeEcole = useEcoleStore((s) => s.ecole);
+  const ecoleNom = authEcole?.nom || storeEcole.nom;
 
-  const [enfantData, setEnfantData] = useState(() => {
-    if (childExists) return MOCK_PARENT_ENFANTS_DETAILS[selectedChildId];
-    return MOCK_PARENT_ENFANTS_DETAILS['el-003'];
-  });
+  const { activeChild, errorMessage: childrenError, refresh: refreshChildren, isLoading: isChildrenLoading } = useParentChildren(selectedChildId, () => {});
 
-  React.useEffect(() => {
-    if (childExists && MOCK_PARENT_ENFANTS_DETAILS[selectedChildId]) {
-      setEnfantData(MOCK_PARENT_ENFANTS_DETAILS[selectedChildId]);
+  const [realEcheances, setRealEcheances] = useState<any[]>([]);
+  const [realPaiements, setRealPaiements] = useState<any[]>([]);
+  const [isLoadingFinances, setIsLoadingFinances] = useState(false);
+
+  // Charger les échéances et paiements réels depuis Supabase
+  useEffect(() => {
+    if (!activeChild?.id) return;
+    const fetchFinances = async () => {
+      setIsLoadingFinances(true);
+      try {
+        const [echRes, payRes] = await Promise.all([
+          supabase
+            .from('echeances')
+            .select('*')
+            .eq('eleve_id', activeChild.id)
+            .order('date_echeance', { ascending: true }),
+          supabase
+            .from('paiements')
+            .select('*')
+            .eq('eleve_id', activeChild.id)
+            .order('date_paiement', { ascending: false }),
+        ]);
+
+        if (echRes.data) setRealEcheances(echRes.data);
+        if (payRes.data) setRealPaiements(payRes.data);
+      } catch (err) {
+        console.warn('[ParentPaiementsPage] Erreur chargement finances:', err);
+      } finally {
+        setIsLoadingFinances(false);
+      }
+    };
+
+    fetchFinances();
+  }, [activeChild?.id]);
+
+  const mockEnfant = activeChild ? MOCK_PARENT_ENFANTS_DETAILS[activeChild.id] : null;
+
+  // Calculer les données financières dynamiquement d'après les échéances réelles
+  const totalScolarite = activeChild ? activeChild.total_due : 0;
+  const totalRegle = activeChild ? activeChild.total_paid : 0;
+  const resteAPayer = activeChild ? activeChild.remaining : 0;
+  const nextEcheance = realEcheances.find((e) => e.statut !== 'paye');
+
+  const [enfantData, setEnfantData] = useState<ParentEnfantDetail | null>(null);
+
+  useEffect(() => {
+    if (!activeChild) {
+      setEnfantData(null);
+      return;
     }
-  }, [selectedChildId, childExists]);
+
+    if (mockEnfant) {
+      setEnfantData(mockEnfant);
+    } else {
+      setEnfantData({
+        id: activeChild.id,
+        nom: activeChild.nom,
+        prenom: activeChild.prenom,
+        classe: activeChild.classe,
+        matricule: activeChild.matricule,
+        photo_initiales: activeChild.photo_initiales,
+        date_naissance: '',
+        professeur_principal: '',
+        total_scolarite: totalScolarite,
+        total_regle: totalRegle,
+        reste_a_payer: resteAPayer,
+        statut_paiement: (resteAPayer === 0 ? 'paye' : (totalRegle > 0 ? 'partiel' : 'en_retard')) as any,
+        prochaine_echeance_date: nextEcheance?.date_echeance || 'Aucune échéance en attente',
+        prochaine_echeance_montant: nextEcheance ? Number(nextEcheance.montant || 0) : 0,
+        bulletin: [],
+        emploi_du_temps_aujourdhui: [],
+        nb_absences_total: 0,
+        nb_retards_total: 0,
+        rang: '-',
+        moyenne_generale: 0,
+      });
+    }
+  }, [activeChild, mockEnfant, totalScolarite, totalRegle, resteAPayer, realEcheances, realPaiements]);
 
   // Formulaire de paiement mobile
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
-  const [paymentAmount, setPaymentAmount] = useState<number>(
-    enfantData?.reste_a_payer > 0 ? Math.min(enfantData.reste_a_payer, 25000) : 0
-  );
+  const [paymentAmount, setPaymentAmount] = useState<number>(() => (resteAPayer > 0 ? Math.min(resteAPayer, 25000) : 0));
   const [selectedMethod, setSelectedMethod] = useState<MethodePaiement>('bankily');
-  const [phoneNumber, setPhoneNumber] = useState<string>(CURRENT_PARENT.telephone);
+  const [phoneNumber, setPhoneNumber] = useState<string>(authProfile?.telephone || CURRENT_PARENT.telephone);
   const [otpCode, setOtpCode] = useState<string>('1234');
   const [isProcessing, setIsProcessing] = useState(false);
   const [confirmedReceipt, setConfirmedReceipt] = useState<{
@@ -63,25 +136,12 @@ export const ParentPaiementsPage: React.FC<ParentPaiementsPageProps> = ({
 
   const [activeToast, setActiveToast] = useState<{
     message: string;
-    type: 'success' | 'info' | 'warning';
+    type: 'success' | 'info' | 'warning' | 'error';
   } | null>(null);
-
-  const triggerConfetti = () => {
-    try {
-      confetti({
-        particleCount: 40,
-        spread: 60,
-        origin: { y: 0.7 },
-        colors: ['#9333ea', '#10b981', '#f59e0b'],
-        disableForReducedMotion: true,
-      });
-    } catch {
-      // Ignorer
-    }
-  };
 
   const handleConfirmPayment = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!enfantData) return;
     setIsProcessing(true);
 
     setTimeout(() => {
@@ -89,15 +149,18 @@ export const ParentPaiementsPage: React.FC<ParentPaiementsPageProps> = ({
       const now = new Date();
       const ref = `REC-WEB-${Math.floor(1000 + Math.random() * 9000)}`;
 
-      const newPaid = enfantData.total_regle + paymentAmount;
-      const newRemaining = Math.max(0, enfantData.reste_a_payer - paymentAmount);
+      const newPaid = (enfantData.total_regle || 0) + paymentAmount;
+      const newRemaining = Math.max(0, (enfantData.reste_a_payer || 0) - paymentAmount);
 
-      setEnfantData((prev) => ({
-        ...prev,
-        total_regle: newPaid,
-        reste_a_payer: newRemaining,
-        statut_paiement: newRemaining === 0 ? 'paye' : 'partiel',
-      }));
+      setEnfantData((prev) => {
+        if (!prev) return null;
+        return {
+          ...prev,
+          total_regle: newPaid,
+          reste_a_payer: newRemaining,
+          statut_paiement: newRemaining === 0 ? 'paye' : 'partiel',
+        };
+      });
 
       const receipt = {
         recu_ref: ref,
@@ -110,7 +173,6 @@ export const ParentPaiementsPage: React.FC<ParentPaiementsPageProps> = ({
 
       setConfirmedReceipt(receipt);
       setIsPaymentModalOpen(false);
-      triggerConfetti();
 
       setActiveToast({
         message: `Paiement de ${formatMRU(paymentAmount)} validé avec succès via ${selectedMethod.toUpperCase()}. Quittance ${ref} émise.`,
@@ -119,7 +181,37 @@ export const ParentPaiementsPage: React.FC<ParentPaiementsPageProps> = ({
     }, 1000);
   };
 
-  if (isRealAccount && !childExists) {
+  if (childrenError) {
+    return (
+      <div className="p-6 sm:p-8 lg:p-10 max-w-5xl mx-auto space-y-8 animate-stagger-rise">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl p-8 border border-rose-200 dark:border-rose-900/60 shadow-2xs text-center space-y-4 max-w-xl mx-auto my-12">
+          <div className="h-14 w-14 rounded-2xl bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center mx-auto shadow-sm">
+            <AlertCircle className="h-7 w-7" />
+          </div>
+          <h2 className="text-xl font-bold text-slate-900 dark:text-white">
+            Impossible de charger les données de paiement
+          </h2>
+          <p className="text-sm text-slate-600 dark:text-slate-400">
+            {childrenError}
+          </p>
+          <div className="pt-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={refreshChildren}
+              disabled={isChildrenLoading}
+              className="gap-2 border-slate-300 dark:border-slate-700"
+            >
+              <RefreshCw className={`h-4 w-4 ${isChildrenLoading ? 'animate-spin' : ''}`} />
+              <span>Réessayer</span>
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!activeChild || !enfantData) {
     return (
       <div className="p-6 sm:p-8 lg:p-10 max-w-5xl mx-auto space-y-8 animate-stagger-rise">
         <div className="bg-white dark:bg-slate-900 rounded-2xl p-8 border border-slate-200 dark:border-slate-800 shadow-2xs text-center space-y-4 max-w-xl mx-auto my-12">
@@ -130,7 +222,7 @@ export const ParentPaiementsPage: React.FC<ParentPaiementsPageProps> = ({
             Aucun élève rattaché pour le moment
           </h2>
           <p className="text-sm text-slate-500 dark:text-slate-400">
-            Votre espace famille est actif. Le relevé des frais de scolarité et les options de règlement en ligne (Bankily, Masrvi) apparaîtront automatiquement dès que l'école aura validé le rattachement de votre enfant.
+            Votre espace famille est actif. Le relevé des frais de scolarité et les options de règlement en ligne (Bankily, Masrvi) apparaîtront automatiquement dès que l'établissement aura validé le rattachement de votre enfant.
           </p>
         </div>
       </div>
@@ -138,7 +230,7 @@ export const ParentPaiementsPage: React.FC<ParentPaiementsPageProps> = ({
   }
 
   return (
-    <div className="p-6 sm:p-8 lg:p-10 max-w-5xl mx-auto space-y-8 sm:space-y-10 animate-stagger-rise relative">
+    <div className="p-6 sm:p-8 lg:p-10 max-w-5xl mx-auto space-y-8 sm:space-y-10 animate-stagger-rise relative" aria-busy={isLoadingFinances || isChildrenLoading}>
       {/* Toast Notification */}
       {activeToast && (
         <div className="fixed bottom-6 right-6 z-50">
@@ -255,9 +347,22 @@ export const ParentPaiementsPage: React.FC<ParentPaiementsPageProps> = ({
                 variant="outline"
                 size="sm"
                 onClick={() => {
+                  generateReceiptPdf({
+                    recuRef: 'REC-NKTT-7102',
+                    datePaiement: '15/10/2025 à 10:30',
+                    eleveNom: enfantData.nom,
+                    elevePrenom: enfantData.prenom,
+                    matricule: enfantData.matricule,
+                    classe: enfantData.classe,
+                    libelleEcheance: 'Règlement Trimestre 1 (Inscription & Frais de rentrée)',
+                    montant: 40000,
+                    methodePaiement: 'bankily',
+                    caissierNom: 'Caisse Centrale',
+                    ecoleNom,
+                  });
                   setActiveToast({
-                    message: 'Téléchargement de la quittance REC-NKTT-7102...',
-                    type: 'info',
+                    message: `Quittance REC-NKTT-7102 téléchargée en PDF pour ${enfantData.prenom} ${enfantData.nom}.`,
+                    type: 'success',
                   });
                 }}
                 className="text-xs font-semibold gap-1.5"
@@ -290,11 +395,25 @@ export const ParentPaiementsPage: React.FC<ParentPaiementsPageProps> = ({
                 </span>
                 <Button
                   size="sm"
-                  onClick={() => window.print()}
+                  onClick={() => {
+                    generateReceiptPdf({
+                      recuRef: confirmedReceipt.recu_ref,
+                      datePaiement: `${confirmedReceipt.date} à ${confirmedReceipt.heure}`,
+                      eleveNom: enfantData.nom,
+                      elevePrenom: enfantData.prenom,
+                      matricule: enfantData.matricule,
+                      classe: enfantData.classe,
+                      libelleEcheance: 'Paiement en ligne Mobile Money',
+                      montant: confirmedReceipt.montant,
+                      methodePaiement: confirmedReceipt.methode,
+                      caissierNom: 'Guichet Électronique',
+                      ecoleNom,
+                    });
+                  }}
                   className="bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold gap-1.5"
                 >
-                  <Printer className="h-3.5 w-3.5" />
-                  Imprimer
+                  <ArrowDownToLine className="h-3.5 w-3.5" />
+                  Télécharger Quittance PDF
                 </Button>
               </div>
             </div>

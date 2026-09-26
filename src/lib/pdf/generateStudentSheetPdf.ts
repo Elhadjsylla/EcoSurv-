@@ -1,6 +1,7 @@
 import { jsPDF } from 'jspdf';
 import { EleveWithStats } from '../mockData';
 import { formatMRU } from '../utils';
+import { downloadFile } from '../downloadFile';
 
 export function generateStudentSheetPdf(eleve: EleveWithStats, action: 'download' | 'print' = 'download'): jsPDF {
   const doc = new jsPDF({
@@ -269,13 +270,23 @@ export function generateStudentSheetPdf(eleve: EleveWithStats, action: 'download
   doc.text('(Signature précédée de la mention lu et approuvé)', 40, y, { align: 'center' });
   doc.text('(Cachet officiel et signature de la direction)', pageWidth - 45, y, { align: 'center' });
 
+  const cleanMatricule = eleve.matricule && !eleve.matricule.toUpperCase().startsWith('DEMO')
+    ? `_${eleve.matricule}`
+    : '';
+  const filename = `Fiche_Eleve${cleanMatricule}_${eleve.prenom}_${eleve.nom}.pdf`;
+  const blob = doc.output('blob');
+
   if (action === 'print') {
     doc.autoPrint();
-    const blob = doc.output('blob');
     const blobUrl = URL.createObjectURL(blob);
     window.open(blobUrl, '_blank');
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
   } else {
-    doc.save(`Fiche_Eleve_${eleve.matricule}_${eleve.nom}.pdf`);
+    downloadFile({
+      filename,
+      blobOrData: blob,
+      mimeType: 'application/pdf',
+    });
   }
 
   return doc;

@@ -19,6 +19,8 @@ import {
 } from 'lucide-react';
 
 import { useAuthStore } from '../../store/useAuthStore';
+import { useCaisseStore } from '../../store/useCaisseStore';
+import { supabase } from '../../lib/supabase';
 
 interface CaissierImpayesPageProps {
   onGoToGuichetWithEleve: (eleveId: string) => void;
@@ -29,6 +31,10 @@ export const CaissierImpayesPage: React.FC<CaissierImpayesPageProps> = ({
 }) => {
   const authProfile = useAuthStore((s) => s.profile);
   const isRealAccount = Boolean(authProfile?.ecole_id);
+  const refreshKey = useCaisseStore((s) => s.refreshKey);
+  const elevePaymentDeductions = useCaisseStore((s) => s.elevePaymentDeductions);
+  const [realEleves, setRealEleves] = useState<EleveWithStats[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedClasse, setSelectedClasse] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | 'en_retard' | 'partiel'>('all');
@@ -37,17 +43,146 @@ export const CaissierImpayesPage: React.FC<CaissierImpayesPageProps> = ({
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
 
+  React.useEffect(() => {
+    if (authProfile?.ecole_id) {
+      const fetchRealUnpaid = async () => {
+        setIsLoading(true);
+        try {
+          const [elevesRes, echeancesRes] = await Promise.all([
+            supabase
+              .from('eleves')
+              .select('*')
+              .eq('ecole_id', authProfile.ecole_id)
+              .order('nom', { ascending: true }),
+            supabase
+              .from('echeances')
+              .select('*')
+              .eq('ecole_id', authProfile.ecole_id),
+          ]);
+
+          if (!elevesRes.error && elevesRes.data) {
+            const allEch = echeancesRes.data || [];
+            const mapped: EleveWithStats[] = elevesRes.data.map((d: any) => {
+              const studentEch = allEch.filter((ech: any) => ech.eleve_id === d.id);
+              const totalDue = studentEch.reduce((sum: number, ech: any) => sum + Number(ech.montant || 0), 0);
+              const totalPaid = studentEch.reduce((sum: number, ech: any) => sum + Number(ech.montant_paye || 0), 0);
+              const remaining = Math.max(0, totalDue - totalPaid);
+              const pendingEch = studentEch.find((ech: any) => ech.statut !== 'paye');
+              const nextDueAmount = pendingEch ? Math.max(0, Number(pendingEch.montant) - Number(pendingEch.montant_paye || 0)) : 15000;
+              const hasOverdue = studentEch.some((ech: any) => ech.statut === 'en_retard');
+              const derniereEcheanceDate = studentEch
+                .map((ech: any) => String(ech.date_echeance || ''))
+                .filter(Boolean)
+                .sort()
+                .pop() || '';
+              const computedStatut = hasOverdue
+                ? 'en_retard'
+                : (totalDue > 0 && remaining === 0
+                  ? 'paye'
+                  : (totalPaid > 0 ? 'partiel' : 'a_jour'));
+
+              return {
+                id: d.id,
+                ecole_id: d.ecole_id,
+                matricule: d.matricule || `ECO-${d.id.slice(0, 4).toUpperCase()}`,
+                nom: d.nom,
+                prenom: d.prenom,
+                date_naissance: d.date_naissance || '',
+                lieu_naissance: d.lieu_naissance || '',
+                sexe: (d.sexe === 'F' ? 'F' : 'M'),
+                classe: d.classe || 'Non assigné',
+                nom_tuteur: d.nom_tuteur || 'Tuteur',
+                telephone_tuteur: d.telephone_tuteur || '',
+                email_tuteur: d.email_tuteur || '',
+                adresse_tuteur: d.adresse_tuteur || '',
+                lien_parente: d.lien_parente || 'pere',
+                actif: d.actif ?? true,
+                total_due: totalDue,
+                total_paid: totalPaid,
+                remaining: remaining,
+                derniere_echeance_date: derniereEcheanceDate,
+                prochaine_echeance_montant: nextDueAmount,
+                statut: computedStatut,
+                nb_absences: 0,
+                timeline_paiements: [],
+                created_at: d.created_at,
+              };
+            });
+            setRealEleves(mapped);
+          }
+        } catch (e) {
+          console.warn('[CaissierImpayesPage] fetch error:', e);
+        } finally {
+          setIsLoading(false);
+        }
+      };
+
+      fetchRealUnpaid();
+
+      const channel = supabase
+        .channel(`impayes-sync-${authProfile.ecole_id}`)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'echeances',
+            filter: `ecole_id=eq.${authProfile.ecole_id}`,
+          },
+          () => {
+            fetchRealUnpaid();
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'paiements',
+            filter: `ecole_id=eq.${authProfile.ecole_id}`,
+          },
+          () => {
+            fetchRealUnpaid();
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
+  }, [authProfile?.ecole_id, refreshKey]);
+
   // Filtrer uniquement les élèves qui ont un reste à payer
   const elevesAvecReste = useMemo(() => {
-    if (isRealAccount) return [];
-    return MOCK_ELEVES.filter((e) => e.remaining > 0);
-  }, [isRealAccount]);
+    if (isRealAccount) {
+      return realEleves.filter((e) => e.remaining > 0);
+    }
+    return MOCK_ELEVES.map((e) => {
+      const deduction = elevePaymentDeductions[e.id] || 0;
+      const newPaid = e.total_paid + deduction;
+      const newRemaining = Math.max(0, e.remaining - deduction);
+      const newStatut =
+        newRemaining === 0
+          ? 'paye'
+          : newPaid > 0
+          ? 'partiel'
+          : e.statut;
+
+      return {
+        ...e,
+        total_paid: newPaid,
+        remaining: newRemaining,
+        statut: newStatut,
+      };
+    }).filter((e) => e.remaining > 0);
+  }, [isRealAccount, realEleves, elevePaymentDeductions]);
 
   const classesList = useMemo(() => {
-    if (isRealAccount) return [];
-    const set = new Set(MOCK_ELEVES.map((e) => e.classe));
+    const source = isRealAccount ? realEleves : MOCK_ELEVES;
+    const set = new Set(source.map((e) => e.classe));
     return Array.from(set).sort();
-  }, [isRealAccount]);
+  }, [isRealAccount, realEleves]);
 
   // Total des arriérés
   const totalArrieres = useMemo(() => {
@@ -86,7 +221,7 @@ export const CaissierImpayesPage: React.FC<CaissierImpayesPageProps> = ({
   );
 
   return (
-    <div className="p-6 sm:p-8 lg:p-10 max-w-[1600px] mx-auto space-y-8 sm:space-y-10 animate-stagger-rise relative">
+    <div className="p-6 sm:p-8 lg:p-10 max-w-[1600px] mx-auto space-y-8 sm:space-y-10 animate-stagger-rise relative" aria-busy={isLoading}>
       {/* Header Banner */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 bg-white dark:bg-slate-900 p-6 sm:p-8 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xs">
         <div>
