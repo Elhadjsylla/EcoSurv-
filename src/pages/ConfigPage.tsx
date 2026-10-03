@@ -4,14 +4,15 @@ import { Button } from '../components/ui/Button';
 import { Select } from '../components/ui/Select';
 import { KpiCard } from '../components/ui/KpiCard';
 import { Tooltip } from '../components/ui/Tooltip';
+import { AdaptiveTable } from '../components/ui/AdaptiveTable';
 import { useEcoleStore } from '../store/useEcoleStore';
 import { useAuthStore } from '../store/useAuthStore';
 import { supabase } from '../lib/supabase';
 import { parseEdgeFunctionError } from '../lib/functionsHelper';
 import {
-  MOCK_STAFF,
   StaffMember,
   RoleUtilisateur,
+  MOCK_STAFF,
 } from '../lib/mockData';
 import { DEFAULT_CLASSES_MAURITANIE } from '../lib/constants/classes';
 import {
@@ -40,10 +41,7 @@ export const ConfigPage: React.FC = () => {
   const authProfile = useAuthStore((s) => s.profile);
   const [formData, setFormData] = useState(ecole);
   const [isSaving, setIsSaving] = useState(false);
-  const [staffList, setStaffList] = useState<StaffMember[]>(() => {
-    if (authProfile?.ecole_id) return [];
-    return MOCK_STAFF;
-  });
+  const [staffList, setStaffList] = useState<StaffMember[]>([]);
 
   const [isInviting, setIsInviting] = useState(false);
   const [inviteError, setInviteError] = useState<string | null>(null);
@@ -82,10 +80,15 @@ export const ConfigPage: React.FC = () => {
           actif: Boolean(p.actif),
           date_ajout: p.created_at ? new Date(p.created_at).toISOString().split('T')[0] : '2026-09-22',
         }));
-        setStaffList(mapped);
+        setStaffList(mapped.length > 0 ? mapped : MOCK_STAFF);
+      } else if (authProfile.ecole_id === 'ecole-demo') {
+        setStaffList(MOCK_STAFF);
       }
     } catch (e) {
       console.warn('[ConfigPage] Erreur chargement staff:', e);
+      if (authProfile.ecole_id === 'ecole-demo') {
+        setStaffList(MOCK_STAFF);
+      }
     }
   };
 
@@ -159,7 +162,7 @@ export const ConfigPage: React.FC = () => {
           telephone: newTelephone.trim(),
           role: newRole,
           classe_assignee: newRole === 'enseignant' ? newClasse : undefined,
-          redirect_to: window.location.origin,
+          redirect_to: `${window.location.origin}/set-password`,
         },
       });
 
@@ -463,8 +466,8 @@ export const ConfigPage: React.FC = () => {
                 Année Scolaire Active <span className="text-red-500">*</span>
               </label>
               <Select
-                value={formData.annee_scolaire}
-                onChange={(val) => setFormData({ ...formData, annee_scolaire: val })}
+                value={formData.annee_scolaire || '2025-2026'}
+                onChange={(val) => setFormData({ ...formData, annee_scolaire: String(val) })}
                 options={[
                   { value: '2025-2026', label: '2025–2026 (Active)' },
                   { value: '2024-2025', label: '2024–2025 (Archivée)' },
@@ -554,173 +557,198 @@ export const ConfigPage: React.FC = () => {
           </span>
         </div>
 
-        <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700 scrollbar-track-transparent">
-          <table className="w-full text-left text-xs border-collapse">
-            <thead>
-              <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/40 font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                <th className="py-4 px-6">Membre du Personnel</th>
-                <th className="py-4 px-6">Rôle Attribué</th>
-                <th className="py-4 px-6">Classe Assignée</th>
-                <th className="py-4 px-6">Coordonnées</th>
-                <th className="py-4 px-6 text-center">Date Ajout</th>
-                <th className="py-4 px-6 text-center">Statut Compte</th>
-                <th className="py-4 px-6 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-              {paginatedStaff.map((member) => {
-                const roleInfo = roleLabels[member.role] || roleLabels.enseignant;
+        <AdaptiveTable
+          data={paginatedStaff}
+          keyExtractor={(member) => member.id}
+          bordered={false}
+          cardsContainerClassName="p-3 sm:p-4"
+          columns={[
+            {
+              id: 'avatar',
+              header: '',
+              cardRole: 'avatar',
+              className: 'w-10 pr-0',
+              render: (member) => {
                 const initials = `${member.prenom.charAt(0)}${member.nom.charAt(0)}`.toUpperCase();
-
                 return (
-                  <tr
-                    key={member.id}
-                    className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors"
-                  >
-                    {/* 2-line member display + avatar */}
-                    <td className="py-4 px-6 min-w-[240px]">
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-full bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 font-bold text-xs flex items-center justify-center shrink-0 border border-blue-200 dark:border-blue-800">
-                          {initials}
-                        </div>
-                        <div className="min-w-0">
-                          <Tooltip content={`${member.prenom} ${member.nom}`} as="div" className="block min-w-0">
-                            <div className="font-bold text-slate-900 dark:text-white text-sm truncate">
-                              {member.prenom} {member.nom}
-                            </div>
-                          </Tooltip>
-                          <Tooltip content={member.email} as="div" className="block min-w-0">
-                            <div className="text-xs text-slate-500 dark:text-slate-400 truncate font-normal">
-                              {member.email}
-                            </div>
-                          </Tooltip>
-                        </div>
-                      </div>
-                    </td>
-
-                    {/* Role */}
-                    <td className="py-4 px-6 whitespace-nowrap">
-                      <span
-                        className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-bold border ${roleInfo.badge}`}
-                      >
-                        {roleInfo.label}
-                      </span>
-                    </td>
-
-                    {/* Classe assignée */}
-                    <td className="py-4 px-6 whitespace-nowrap">
-                      {member.classe_assignee ? (
-                        <span className="inline-flex items-center rounded-md bg-slate-100 dark:bg-slate-800 px-2.5 py-1 text-xs font-semibold text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
-                          {member.classe_assignee}
-                        </span>
-                      ) : (
-                        <span className="text-slate-400 dark:text-slate-500 italic text-xs">
-                          Établissement entier
-                        </span>
-                      )}
-                    </td>
-
-                    {/* Coordonnées */}
-                    <td className="py-4 px-6 font-mono text-slate-700 dark:text-slate-300 text-xs whitespace-nowrap">
-                      {member.telephone}
-                    </td>
-
-                    {/* Date Ajout */}
-                    <td className="py-4 px-6 text-center font-mono text-slate-500 dark:text-slate-400 text-xs whitespace-nowrap">
-                      {member.date_ajout}
-                    </td>
-
-                    {/* Statut Compte: Pill with dot */}
-                    <td className="py-4 px-6 text-center whitespace-nowrap">
-                      {member.actif ? (
-                        <span className="inline-flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 px-3 py-1 rounded-full font-bold text-xs">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                          Actif
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1.5 bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60 px-3 py-1 rounded-full font-bold text-xs">
-                          <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
-                          En attente
-                        </span>
-                      )}
-                    </td>
-
-                    {/* Context menu "..." */}
-                    <td className="py-4 px-6 text-right whitespace-nowrap relative staff-menu-container">
-                      <Tooltip content="Options">
-                        <button
-                          onClick={() =>
-                            setActiveMenuId(activeMenuId === member.id ? null : member.id)
-                          }
-                          className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
-                          aria-label="Options"
-                        >
-                          <MoreHorizontal className="w-4 h-4" />
-                        </button>
-                      </Tooltip>
-
-                      {activeMenuId === member.id && (
-                        <div className="absolute right-6 top-12 z-30 w-56 bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-slate-200 dark:border-slate-800 py-1.5 text-left animate-in fade-in zoom-in-95">
-                          <button
-                            onClick={() => handleOpenEditModal(member)}
-                            className="w-full px-4 py-2.5 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/60 flex items-center gap-2"
-                          >
-                            <UserCog className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
-                            <span>Modifier les accès & rôle</span>
-                          </button>
-                          <button
-                            onClick={() => handleResetPassword(member)}
-                            disabled={actionInProgressId === member.id}
-                            className="w-full px-4 py-2.5 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/60 flex items-center gap-2 disabled:opacity-50"
-                          >
-                            {actionInProgressId === member.id ? (
-                              <Loader2 className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 animate-spin shrink-0" />
-                            ) : (
-                              <KeyRound className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 shrink-0" />
-                            )}
-                            <span>Réinitialiser mot de passe</span>
-                          </button>
-                          <div className="my-1 border-t border-slate-100 dark:border-slate-800" />
-                          {member.id === authProfile?.id ? (
-                            <div className="px-4 py-2 text-[11px] text-slate-400 dark:text-slate-500 italic">
-                              Compte connecté (non désactivable)
-                            </div>
-                          ) : member.actif ? (
-                            <button
-                              onClick={() => handleToggleActive(member)}
-                              disabled={actionInProgressId === member.id}
-                              className="w-full px-4 py-2.5 text-xs font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 flex items-center gap-2 disabled:opacity-50"
-                            >
-                              {actionInProgressId === member.id ? (
-                                <Loader2 className="w-3.5 h-3.5 text-rose-500 animate-spin shrink-0" />
-                              ) : (
-                                <UserMinus className="w-3.5 h-3.5 text-rose-500 shrink-0" />
-                              )}
-                              <span>Désactiver le compte</span>
-                            </button>
-                          ) : (
-                            <button
-                              onClick={() => handleToggleActive(member)}
-                              disabled={actionInProgressId === member.id}
-                              className="w-full px-4 py-2.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 flex items-center gap-2 disabled:opacity-50"
-                            >
-                              {actionInProgressId === member.id ? (
-                                <Loader2 className="w-3.5 h-3.5 text-emerald-500 animate-spin shrink-0" />
-                              ) : (
-                                <UserCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                              )}
-                              <span>Réactiver le compte</span>
-                            </button>
-                          )}
-                        </div>
-                      )}
-                    </td>
-                  </tr>
+                  <div className="w-9 h-9 rounded-full bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 font-bold text-xs flex items-center justify-center shrink-0 border border-blue-200 dark:border-blue-800">
+                    {initials}
+                  </div>
                 );
-              })}
-            </tbody>
-          </table>
-        </div>
+              },
+            },
+            {
+              id: 'nom',
+              header: 'Membre du Personnel',
+              cardRole: 'title',
+              className: 'min-w-[200px]',
+              render: (member) => (
+                <div className="min-w-0">
+                  <Tooltip content={`${member.prenom} ${member.nom}`} as="div" className="block min-w-0">
+                    <div className="font-bold text-slate-900 dark:text-white text-sm truncate">
+                      {member.prenom} {member.nom}
+                    </div>
+                  </Tooltip>
+                  <Tooltip content={member.email} as="div" className="block min-w-0 md:hidden">
+                    <div className="text-xs text-slate-500 dark:text-slate-400 truncate font-normal">
+                      {member.email}
+                    </div>
+                  </Tooltip>
+                </div>
+              ),
+            },
+            {
+              id: 'role',
+              header: 'Rôle Attribué',
+              cardRole: 'key-fact',
+              cardLabel: 'Habilitation',
+              render: (member) => {
+                const roleInfo = roleLabels[member.role] || roleLabels.enseignant;
+                return (
+                  <span
+                    className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-bold border ${roleInfo.badge}`}
+                  >
+                    {roleInfo.label}
+                  </span>
+                );
+              },
+            },
+            {
+              id: 'classe',
+              header: 'Classe Assignée',
+              cardRole: 'key-fact',
+              cardLabel: 'Classe assignée',
+              render: (member) =>
+                member.classe_assignee ? (
+                  <span className="inline-flex items-center rounded-md bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-xs font-semibold text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                    {member.classe_assignee}
+                  </span>
+                ) : (
+                  <span className="text-slate-400 dark:text-slate-500 italic text-xs">
+                    Établissement entier
+                  </span>
+                ),
+            },
+            {
+              id: 'telephone',
+              header: 'Coordonnées',
+              cardRole: 'key-fact',
+              cardLabel: 'Téléphone',
+              render: (member) => (
+                <span className="font-mono text-slate-700 dark:text-slate-300 text-xs whitespace-nowrap">
+                  {member.telephone}
+                </span>
+              ),
+            },
+            {
+              id: 'date_ajout',
+              header: 'Date Ajout',
+              cardRole: 'key-fact',
+              cardLabel: 'Date ajout',
+              align: 'center',
+              render: (member) => (
+                <span className="font-mono text-slate-500 dark:text-slate-400 text-xs whitespace-nowrap">
+                  {member.date_ajout}
+                </span>
+              ),
+            },
+            {
+              id: 'statut',
+              header: 'Statut Compte',
+              cardRole: 'badge',
+              align: 'center',
+              render: (member) =>
+                member.actif ? (
+                  <span className="inline-flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 px-2.5 py-0.5 rounded-full font-bold text-xs">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                    Actif
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5 bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60 px-2.5 py-0.5 rounded-full font-bold text-xs">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                    En attente
+                  </span>
+                ),
+            },
+            {
+              id: 'actions',
+              header: 'Actions',
+              cardRole: 'action',
+              align: 'right',
+              render: (member) => (
+                <div className="relative staff-menu-container">
+                  <Tooltip content="Options">
+                    <button
+                      onClick={() =>
+                        setActiveMenuId(activeMenuId === member.id ? null : member.id)
+                      }
+                      className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                      aria-label="Options"
+                    >
+                      <MoreHorizontal className="w-4 h-4" />
+                    </button>
+                  </Tooltip>
+
+                  {activeMenuId === member.id && (
+                    <div className="absolute right-0 top-9 sm:top-11 z-30 w-56 bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-slate-200 dark:border-slate-800 py-1.5 text-left animate-in fade-in zoom-in-95">
+                      <button
+                        onClick={() => handleOpenEditModal(member)}
+                        className="w-full px-4 py-2.5 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/60 flex items-center gap-2"
+                      >
+                        <UserCog className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
+                        <span>Modifier les accès & rôle</span>
+                      </button>
+                      <button
+                        onClick={() => handleResetPassword(member)}
+                        disabled={actionInProgressId === member.id}
+                        className="w-full px-4 py-2.5 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/60 flex items-center gap-2 disabled:opacity-50"
+                      >
+                        {actionInProgressId === member.id ? (
+                          <Loader2 className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 animate-spin shrink-0" />
+                        ) : (
+                          <KeyRound className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 shrink-0" />
+                        )}
+                        <span>Réinitialiser mot de passe</span>
+                      </button>
+                      <div className="my-1 border-t border-slate-100 dark:border-slate-800" />
+                      {member.id === authProfile?.id ? (
+                        <div className="px-4 py-2 text-[11px] text-slate-400 dark:text-slate-500 italic">
+                          Compte connecté (non désactivable)
+                        </div>
+                      ) : member.actif ? (
+                        <button
+                          onClick={() => handleToggleActive(member)}
+                          disabled={actionInProgressId === member.id}
+                          className="w-full px-4 py-2.5 text-xs font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 flex items-center gap-2 disabled:opacity-50"
+                        >
+                          {actionInProgressId === member.id ? (
+                            <Loader2 className="w-3.5 h-3.5 text-rose-500 animate-spin shrink-0" />
+                          ) : (
+                            <UserMinus className="w-3.5 h-3.5 text-rose-500 shrink-0" />
+                          )}
+                          <span>Désactiver le compte</span>
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => handleToggleActive(member)}
+                          disabled={actionInProgressId === member.id}
+                          className="w-full px-4 py-2.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 flex items-center gap-2 disabled:opacity-50"
+                        >
+                          {actionInProgressId === member.id ? (
+                            <Loader2 className="w-3.5 h-3.5 text-emerald-500 animate-spin shrink-0" />
+                          ) : (
+                            <UserCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                          )}
+                          <span>Réactiver le compte</span>
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ),
+            },
+          ]}
+        />
 
         {/* Numbered Pagination */}
         <div className="p-4 sm:px-6 border-t border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 flex flex-col sm:flex-row items-center justify-between gap-4">

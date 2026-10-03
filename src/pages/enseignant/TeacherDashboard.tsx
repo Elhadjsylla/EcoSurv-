@@ -1,14 +1,8 @@
-import React, { useMemo } from 'react';
-import {
-  CURRENT_ENSEIGNANT,
-  MOCK_ELEVES,
-  getElevesForTeacher,
-  MOCK_ABSENCES_INITIAL,
-  MOCK_EVALUATIONS_INITIAL,
-} from '../../lib/mockData';
+import React from 'react';
 import { Button } from '../../components/ui/Button';
 import { KpiCard } from '../../components/ui/KpiCard';
 import { useAuthStore } from '../../store/useAuthStore';
+import { CURRENT_ENSEIGNANT } from '../../lib/mockData';
 import {
   Users,
   CalendarCheck,
@@ -28,28 +22,11 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ onNavigateTo
 
   const teacherName = authProfile
     ? `${authProfile.prenom} ${authProfile.nom}`
-    : `${CURRENT_ENSEIGNANT.prenom} ${CURRENT_ENSEIGNANT.nom}`;
+    : 'Enseignant';
 
-  const teacherStudents = useMemo(() => {
-    if (isRealAccount) return [];
-    return getElevesForTeacher(MOCK_ELEVES, CURRENT_ENSEIGNANT.classes_assignees);
-  }, [isRealAccount]);
-
-  const totalEleves = teacherStudents.length;
-  const unverifiedAbsences = isRealAccount ? 0 : MOCK_ABSENCES_INITIAL.filter((a) => !a.justifiee).length;
-
-  const averageGrade = useMemo(() => {
-    if (isRealAccount) return 0;
-    const allNotes: number[] = [];
-    MOCK_EVALUATIONS_INITIAL.forEach((ev) => {
-      Object.values(ev.notes).forEach((n) => {
-        if (n !== null && n !== undefined) allNotes.push(n);
-      });
-    });
-    if (allNotes.length === 0) return 0;
-    const sum = allNotes.reduce((a, b) => a + b, 0);
-    return Math.round((sum / allNotes.length) * 10) / 10;
-  }, [isRealAccount]);
+  const totalEleves = 0;
+  const unverifiedAbsences = 0;
+  const averageGrade = 0;
 
   return (
     <div className="p-6 sm:p-8 lg:p-10 max-w-[1600px] mx-auto space-y-8 sm:space-y-10 animate-stagger-rise">
@@ -268,38 +245,15 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ onNavigateTo
           </div>
 
           <div className="space-y-3">
-            {isRealAccount ? (
-              <div className="p-6 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-center space-y-2">
-                <BookmarkCheck className="h-6 w-6 mx-auto text-emerald-500/70 mb-1" />
-                <p className="font-semibold text-slate-800 dark:text-slate-200 text-xs">
-                  Aucune évaluation enregistrée
-                </p>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                  Utilisez le bouton "Saisir une Note" ci-dessus pour publier vos premières évaluations.
-                </p>
-              </div>
-            ) : (
-              MOCK_EVALUATIONS_INITIAL.slice(0, 3).map((ev) => (
-                <div
-                  key={ev.id}
-                  className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-emerald-300 dark:hover:border-emerald-800 transition-colors space-y-2 shadow-2xs"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-2.5 py-0.5 text-[10px] font-bold text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
-                      {ev.classe} • {ev.matiere}
-                    </span>
-                    <span className="text-[11px] text-slate-500 dark:text-slate-400 font-mono">{ev.date}</span>
-                  </div>
-                  <div className="text-xs font-bold text-slate-900 dark:text-white">{ev.titre}</div>
-                  <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 pt-1 border-t border-slate-100 dark:border-slate-800">
-                    <span>Coeff. {ev.coefficient} • Barème /{ev.bareme}</span>
-                    <span className="text-emerald-700 dark:text-emerald-400 font-bold">
-                      {Object.keys(ev.notes).length} notes saisies
-                    </span>
-                  </div>
-                </div>
-              ))
-            )}
+            <div className="p-6 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-center space-y-2">
+              <BookmarkCheck className="h-6 w-6 mx-auto text-emerald-500/70 mb-1" />
+              <p className="font-semibold text-slate-800 dark:text-slate-200 text-xs">
+                Aucune évaluation enregistrée
+              </p>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                Utilisez le bouton "Saisir une Note" ci-dessus pour publier vos premières évaluations.
+              </p>
+            </div>
           </div>
         </div>
       </div>

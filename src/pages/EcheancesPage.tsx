@@ -5,7 +5,6 @@ import { Select } from '../components/ui/Select';
 import { KpiCard } from '../components/ui/KpiCard';
 import { Tooltip } from '../components/ui/Tooltip';
 import {
-  MOCK_ECHEANCIERS,
   EcheancierConfig,
   FrequenceEcheance,
 } from '../lib/mockData';
@@ -38,10 +37,7 @@ import {
 
 export const EcheancesPage: React.FC = () => {
   const authProfile = useAuthStore((s) => s.profile);
-  const [echeanciers, setEcheanciers] = useState<EcheancierConfig[]>(() => {
-    if (authProfile?.ecole_id) return [];
-    return MOCK_ECHEANCIERS;
-  });
+  const [echeanciers, setEcheanciers] = useState<EcheancierConfig[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);

@@ -1,5 +1,17 @@
 import { create } from 'zustand';
-import { CURRENT_ECOLE, EcoleMock } from '../lib/mockData';
+import { EcoleMock } from '../lib/mockData';
+
+export const INITIAL_ECOLE: EcoleMock = {
+  id: '',
+  nom: 'Établissement Scolaire',
+  adresse: '',
+  telephone: '',
+  email: '',
+  devise: 'MRU',
+  statut_activation: 'active',
+  date_creation: new Date().toISOString(),
+  ville: 'Nouakchott',
+};
 
 interface EcoleState {
   ecole: EcoleMock;
@@ -7,7 +19,7 @@ interface EcoleState {
 }
 
 export const useEcoleStore = create<EcoleState>((set) => ({
-  ecole: CURRENT_ECOLE,
+  ecole: INITIAL_ECOLE,
   updateEcole: (updated) =>
     set((state) => ({
       ecole: { ...state.ecole, ...updated },

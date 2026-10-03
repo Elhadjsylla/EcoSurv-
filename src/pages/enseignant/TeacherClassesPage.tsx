@@ -1,10 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import {
-  CURRENT_ENSEIGNANT,
-  MOCK_ELEVES,
-  getElevesForTeacher,
-  ElevePedagogique,
-} from '../../lib/mockData';
+import { ElevePedagogique, CURRENT_ENSEIGNANT } from '../../lib/mockData';
 import { StudentInitials } from '../../components/ui/StudentInitials';
 import { Tooltip } from '../../components/ui/Tooltip';
 import {
@@ -53,10 +48,7 @@ export const TeacherClassesPage: React.FC = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const teacherStudents = useMemo(() => {
-    if (isRealAccount) return [];
-    return getElevesForTeacher(MOCK_ELEVES, CURRENT_ENSEIGNANT.classes_assignees);
-  }, [isRealAccount]);
+  const teacherStudents: ElevePedagogique[] = [];
 
   const filteredStudents = useMemo(() => {
     return teacherStudents.filter((e) => {

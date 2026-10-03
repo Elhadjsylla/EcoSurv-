@@ -2,7 +2,6 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import {
   CURRENT_CAISSIER,
-  MOCK_ELEVES,
   EleveWithStats,
   MethodePaiement,
   CaisseTransaction,
@@ -38,10 +37,7 @@ export const CaissierGuichetPage: React.FC<CaissierGuichetPageProps> = ({
   preselectedEleveId,
 }) => {
   const authProfile = useAuthStore((s) => s.profile);
-  const [elevesList, setElevesList] = useState<EleveWithStats[]>(() => {
-    if (authProfile?.ecole_id) return [];
-    return MOCK_ELEVES;
-  });
+  const [elevesList, setElevesList] = useState<EleveWithStats[]>([]);
 
   React.useEffect(() => {
     if (authProfile?.ecole_id) {

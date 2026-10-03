@@ -1,6 +1,7 @@
 import { jsPDF } from 'jspdf';
 import { ParentMatiereNote } from '../mockData';
 import { downloadFile } from '../downloadFile';
+import { CLAIMS_CONFIG } from '../../config/claims';
 
 export interface BulletinData {
   enfantNom: string;
@@ -28,20 +29,26 @@ export function generateBulletinPdf(data: BulletinData): jsPDF {
   let y = 16;
 
   // En-tête national & scolaire
+  if (CLAIMS_CONFIG.republiqueIslamiqueMauritanie) {
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9.5);
+    doc.setTextColor(30, 41, 59);
+    doc.text('RÉPUBLIQUE ISLAMIQUE DE MAURITANIE', pageWidth / 2, y, { align: 'center' });
+    y += 4.5;
+  }
+
+  if (CLAIMS_CONFIG.ministereEducationNationale) {
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(100, 116, 139);
+    doc.text('MINISTÈRE DE L\'ÉDUCATION NATIONALE ET DE LA RÉFORME DU SYSTÈME ÉDUCATIF', pageWidth / 2, y, { align: 'center' });
+    y += 4;
+  }
+
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(9.5);
   doc.setTextColor(30, 41, 59);
-  doc.text('RÉPUBLIQUE ISLAMIQUE DE MAURITANIE', pageWidth / 2, y, { align: 'center' });
-
-  y += 4.5;
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8);
-  doc.setTextColor(100, 116, 139);
-  doc.text('MINISTÈRE DE L\'ÉDUCATION NATIONALE ET DE LA RÉFORME DU SYSTÈME ÉDUCATIF', pageWidth / 2, y, { align: 'center' });
-
-  y += 4;
-  doc.setFontSize(8);
-  doc.text(`${data.ecoleNom || 'Lycée Privé d\'Excellence EcoSurv'} • Direction des Études`, pageWidth / 2, y, { align: 'center' });
+  doc.text(`${data.ecoleNom || 'Établissement Scolaire'} • Direction des Études`, pageWidth / 2, y, { align: 'center' });
 
   y += 3.5;
   doc.setDrawColor(203, 213, 225);
@@ -270,7 +277,10 @@ export function generateBulletinPdf(data: BulletinData): jsPDF {
   doc.setFontSize(7);
   doc.setTextColor(148, 163, 184);
   doc.text('(Signature de visa)', tableX + 25, y, { align: 'center' });
-  doc.text('(Sceau officiel certifiant conforme)', tableX + tableW - 35, y, { align: 'center' });
+  const sealText = CLAIMS_CONFIG.documentOfficiel
+    ? '(Sceau officiel certifiant conforme)'
+    : '(Cachet et signature de l\'établissement)';
+  doc.text(sealText, tableX + tableW - 35, y, { align: 'center' });
 
   const pdfBlob = doc.output('blob');
   const cleanMatricule = data.matricule && !data.matricule.toUpperCase().startsWith('DEMO')

@@ -32,6 +32,7 @@ export interface Translations {
     teacher: string;
     parent: string;
     cashier: string;
+    accessPortal: string;
   };
 
   // Navigation
@@ -149,6 +150,7 @@ export const translations: Record<Language, Translations> = {
       teacher: 'Enseignant',
       parent: 'Parent',
       cashier: 'Caissier',
+      accessPortal: 'Accéder à mon espace',
     },
     nav: {
       dashboard: 'Tableau de bord',
@@ -257,6 +259,7 @@ export const translations: Record<Language, Translations> = {
       teacher: 'المعلم',
       parent: 'ولي الأمر',
       cashier: 'أمين الصندوق',
+      accessPortal: 'الدخول إلى مساحتي',
     },
     nav: {
       dashboard: 'لوحة التحكم',
@@ -365,6 +368,7 @@ export const translations: Record<Language, Translations> = {
       teacher: 'Teacher',
       parent: 'Parent',
       cashier: 'Cashier',
+      accessPortal: 'Access My Portal',
     },
     nav: {
       dashboard: 'Dashboard',

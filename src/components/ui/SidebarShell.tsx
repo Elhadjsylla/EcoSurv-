@@ -31,6 +31,12 @@ const accent: Record<UserRole, { logo: string; subtitle: string; toggle: string 
     toggle:
       'hover:text-purple-600 hover:bg-purple-50 hover:border-purple-200 dark:hover:text-purple-300 dark:hover:bg-purple-950/60 dark:hover:border-purple-800 focus-visible:ring-purple-500/40',
   },
+  super_admin: {
+    logo: 'bg-purple-600 shadow-purple-600/20',
+    subtitle: 'text-purple-600 dark:text-purple-400',
+    toggle:
+      'hover:text-purple-600 hover:bg-purple-50 hover:border-purple-200 dark:hover:text-purple-300 dark:hover:bg-purple-950/60 dark:hover:border-purple-800 focus-visible:ring-purple-500/40',
+  },
 };
 
 interface SidebarShellProps {

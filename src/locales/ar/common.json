@@ -28,6 +28,7 @@
   "teacher": "أستاذ",
   "parent": "ولي أمر",
   "cashier": "أمين الصندوق",
+  "accessPortal": "الدخول إلى مساحتي",
   "currency": "أ.ق",
   "pagination": {
     "showing": "عرض {{start}} إلى {{end}} من أصل {{total}}",

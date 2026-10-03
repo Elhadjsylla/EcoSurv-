@@ -136,7 +136,10 @@ Deno.serve(async (req: Request) => {
     }
 
     // 6. Génération du lien d'invitation sécurisé via Supabase Auth Admin
-    const targetRedirectUrl = redirect_to || "https://ecosurv.mr";
+    const rawRedirect = redirect_to || "https://ecosurv.mr";
+    const targetRedirectUrl = rawRedirect.endsWith('/set-password')
+      ? rawRedirect
+      : `${rawRedirect.replace(/\/+$/, '')}/set-password`;
     
     const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
       type: "invite",

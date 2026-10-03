@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { MOCK_ELEVES, EleveWithStats } from '../../lib/mockData';
+import { EleveWithStats } from '../../lib/mockData';
 import { Button } from '../../components/ui/Button';
 import { Select } from '../../components/ui/Select';
 import { StudentInitials } from '../../components/ui/StudentInitials';
@@ -30,9 +30,7 @@ export const CaissierImpayesPage: React.FC<CaissierImpayesPageProps> = ({
   onGoToGuichetWithEleve,
 }) => {
   const authProfile = useAuthStore((s) => s.profile);
-  const isRealAccount = Boolean(authProfile?.ecole_id);
   const refreshKey = useCaisseStore((s) => s.refreshKey);
-  const elevePaymentDeductions = useCaisseStore((s) => s.elevePaymentDeductions);
   const [realEleves, setRealEleves] = useState<EleveWithStats[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -155,34 +153,13 @@ export const CaissierImpayesPage: React.FC<CaissierImpayesPageProps> = ({
 
   // Filtrer uniquement les élèves qui ont un reste à payer
   const elevesAvecReste = useMemo(() => {
-    if (isRealAccount) {
-      return realEleves.filter((e) => e.remaining > 0);
-    }
-    return MOCK_ELEVES.map((e) => {
-      const deduction = elevePaymentDeductions[e.id] || 0;
-      const newPaid = e.total_paid + deduction;
-      const newRemaining = Math.max(0, e.remaining - deduction);
-      const newStatut =
-        newRemaining === 0
-          ? 'paye'
-          : newPaid > 0
-          ? 'partiel'
-          : e.statut;
-
-      return {
-        ...e,
-        total_paid: newPaid,
-        remaining: newRemaining,
-        statut: newStatut,
-      };
-    }).filter((e) => e.remaining > 0);
-  }, [isRealAccount, realEleves, elevePaymentDeductions]);
+    return realEleves.filter((e) => e.remaining > 0);
+  }, [realEleves]);
 
   const classesList = useMemo(() => {
-    const source = isRealAccount ? realEleves : MOCK_ELEVES;
-    const set = new Set(source.map((e) => e.classe));
+    const set = new Set(realEleves.map((e) => e.classe));
     return Array.from(set).sort();
-  }, [isRealAccount, realEleves]);
+  }, [realEleves]);
 
   // Total des arriérés
   const totalArrieres = useMemo(() => {

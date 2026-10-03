@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { supabase } from '../lib/supabase';
-import { CURRENT_CAISSIER, CaisseTransaction, MOCK_CAISSE_TRANSACTIONS_INITIAL } from '../lib/mockData';
+import { CURRENT_CAISSIER, CaisseTransaction } from '../lib/mockData';
 
 export interface ClotureCaisseData {
   id?: string;
@@ -35,7 +35,7 @@ export const useCaisseStore = create<CaisseStoreState>()(
   persist(
     (set, get) => ({
       clotures: {},
-      transactions: MOCK_CAISSE_TRANSACTIONS_INITIAL,
+      transactions: [],
       refreshKey: 1,
       elevePaymentDeductions: {},
 

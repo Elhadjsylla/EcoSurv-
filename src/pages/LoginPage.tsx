@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Mail, Lock, Eye, EyeOff, LogIn, ArrowLeft, AlertCircle, ShieldCheck } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuthStore, UserProfile } from '../store/useAuthStore';
@@ -14,6 +14,15 @@ interface LoginPageProps {
 }
 
 export const LoginPage: React.FC<LoginPageProps> = ({ onReturnToLanding }) => {
+  const authProfile = useAuthStore((s) => s.profile);
+  const navigateToUserPortal = useNavigationStore((s) => s.navigateToUserPortal);
+
+  useEffect(() => {
+    if (authProfile) {
+      navigateToUserPortal(authProfile.role);
+    }
+  }, [authProfile, navigateToUserPortal]);
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);

@@ -7,7 +7,7 @@ import {
   GraduationCap,
   Building2,
 } from 'lucide-react';
-import { CURRENT_CAISSIER } from '../../lib/mockData';
+// Caissier Navigation
 import { useAuthStore } from '../../store/useAuthStore';
 import { Tooltip, TooltipLabel } from '../ui/Tooltip';
 import { SidebarShell } from '../ui/SidebarShell';
@@ -34,10 +34,9 @@ export const CaissierSidebar: React.FC<CaissierSidebarProps> = ({
   const storeT = useLanguageStore((s) => s.t);
   const t = storeT?.nav ? storeT : translations.fr;
   const authProfile = useAuthStore((s) => s.profile);
-  const isReal = Boolean(authProfile?.ecole_id);
   const caissierName = authProfile
     ? `${authProfile.prenom} ${authProfile.nom}`
-    : `${CURRENT_CAISSIER.prenom} ${CURRENT_CAISSIER.nom}`;
+    : 'Caissier';
 
   const navItems: Array<{
     id: CaissierNavTab;
@@ -93,7 +92,7 @@ export const CaissierSidebar: React.FC<CaissierSidebarProps> = ({
                   Poste :
                 </span>
                 <span className="font-bold text-slate-800 dark:text-slate-200">
-                  {isReal ? 'Guichet Principal' : CURRENT_CAISSIER.guichet}
+                  Guichet Principal
                 </span>
               </div>
             </div>

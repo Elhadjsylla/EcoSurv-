@@ -1,10 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import {
-  CURRENT_DIRECTEUR,
-  CURRENT_ENSEIGNANT,
-  CURRENT_CAISSIER,
-  CURRENT_PARENT,
-} from '../../lib/mockData';
+// Rôles et profils réels Supabase
 import { useEcoleStore } from '../../store/useEcoleStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import { StudentInitials } from './StudentInitials';
@@ -31,12 +26,13 @@ import { useNavigationStore } from '../../store/useNavigationStore';
 import { LanguageSelector } from './LanguageSelector';
 import { useLanguageStore } from '../../i18n/useLanguageStore';
 import { isRoleSimulatorAllowed } from '../../config/features';
+import type { UserRole, PortalRole } from '../../store/useAuthStore';
 
-export type UserRole = 'directeur' | 'enseignant' | 'caissier' | 'parent';
+export type { UserRole, PortalRole };
 
 interface HeaderProps {
-  currentRole?: UserRole;
-  onRoleChange?: (role: UserRole) => void;
+  currentRole?: PortalRole;
+  onRoleChange?: (role: PortalRole) => void;
   className?: string;
   onNavigateTab?: (tab: string) => void;
   onReturnToLanding?: () => void;
@@ -78,7 +74,7 @@ export const Header: React.FC<HeaderProps> = ({
   }, []);
 
   const rolesConfig: Record<
-    UserRole,
+    PortalRole,
     {
       label: string;
       roleTitle: string;
@@ -87,7 +83,14 @@ export const Header: React.FC<HeaderProps> = ({
       badgeColor: string;
       badgeText: string;
       badgeScope: string;
-      user: typeof CURRENT_DIRECTEUR;
+      user: {
+        id: string;
+        nom: string;
+        prenom: string;
+        email: string;
+        telephone?: string | null;
+        role: string;
+      };
     }
   > = {
     directeur: {
@@ -98,7 +101,7 @@ export const Header: React.FC<HeaderProps> = ({
       badgeColor: 'bg-blue-50 text-blue-800 border-blue-200 dark:bg-blue-950/60 dark:text-blue-300 dark:border-blue-800',
       badgeText: 'Portail Direction',
       badgeScope: 'Accès complet école, élèves & trésorerie',
-      user: CURRENT_DIRECTEUR,
+      user: { id: '', nom: 'Direction', prenom: 'Établissement', email: '', role: 'directeur' },
     },
     enseignant: {
       label: t.common.teacher,
@@ -108,7 +111,7 @@ export const Header: React.FC<HeaderProps> = ({
       badgeColor: 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800',
       badgeText: 'Espace Enseignant',
       badgeScope: 'Restreint aux classes assignées (zéro données financières)',
-      user: CURRENT_ENSEIGNANT as any,
+      user: { id: '', nom: 'Enseignant', prenom: '', email: '', role: 'enseignant' },
     },
     caissier: {
       label: t.common.cashier,
@@ -118,7 +121,7 @@ export const Header: React.FC<HeaderProps> = ({
       badgeColor: 'bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800',
       badgeText: 'Guichet Caisse',
       badgeScope: 'Encaissement & quittances (zéro données pédagogiques)',
-      user: CURRENT_CAISSIER as any,
+      user: { id: '', nom: 'Guichetier', prenom: 'Caisse', email: '', role: 'caissier' },
     },
     parent: {
       label: t.common.parent,
@@ -128,11 +131,12 @@ export const Header: React.FC<HeaderProps> = ({
       badgeColor: 'bg-purple-50 text-purple-800 border-purple-200 dark:bg-purple-950/60 dark:text-purple-300 dark:border-purple-800',
       badgeText: 'Espace Parent',
       badgeScope: 'Restreint strictement aux enfants de la famille',
-      user: CURRENT_PARENT as any,
+      user: { id: '', nom: 'Tuteur', prenom: 'Parent', email: '', role: 'parent' },
     },
   };
 
-  const currentConfig = (currentRole && rolesConfig[currentRole]) ? rolesConfig[currentRole] : rolesConfig.directeur;
+  const portalKey = (currentRole && currentRole in rolesConfig) ? (currentRole as PortalRole) : 'directeur';
+  const currentConfig = rolesConfig[portalKey];
   const authProfile = useAuthStore((s) => s.profile);
   const authEcole = useAuthStore((s) => s.ecole);
   const storeEcole = useEcoleStore((s) => s.ecole);
@@ -149,7 +153,7 @@ export const Header: React.FC<HeaderProps> = ({
     code_ecole: authEcole?.nom ? authEcole.nom.slice(0, 4).toUpperCase() : storeEcole.code_ecole,
   };
 
-  const defaultUser = currentConfig?.user || CURRENT_DIRECTEUR;
+  const defaultUser = currentConfig?.user || { id: '', nom: 'Direction', prenom: '', email: '', telephone: '', role: 'directeur' };
 
   // Utilisateur réel prioritaire sur le mock
   const activeUser = authProfile
@@ -264,7 +268,7 @@ export const Header: React.FC<HeaderProps> = ({
             <span className="hidden 2xl:inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60">
               Simulation
             </span>
-            <Select<UserRole>
+            <Select<PortalRole>
               value={currentRole}
               onChange={onRoleChange}
               prefix={`${t.common.viewAs} :`}
@@ -273,7 +277,7 @@ export const Header: React.FC<HeaderProps> = ({
               align="right"
               className="shrink-0"
               menuClassName="w-56"
-              options={(Object.keys(rolesConfig) as UserRole[]).map((role) => ({
+              options={(Object.keys(rolesConfig) as PortalRole[]).map((role) => ({
                 value: role,
                 label: rolesConfig[role].label,
                 icon: rolesConfig[role].icon,

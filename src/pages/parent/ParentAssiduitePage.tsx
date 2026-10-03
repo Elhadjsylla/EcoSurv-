@@ -1,9 +1,6 @@
 import React, { useState } from 'react';
-import {
-  MOCK_PARENT_ENFANTS_DETAILS,
-  AbsenceRecord,
-  MOCK_ABSENCES_INITIAL,
-} from '../../lib/mockData';
+import { AbsenceRecord } from '../../lib/mockData';
+import { supabase } from '../../lib/supabase';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Select } from '../../components/ui/Select';
@@ -69,15 +66,14 @@ export const ParentAssiduitePage: React.FC<ParentAssiduitePageProps> = ({
     );
   }
 
-  const mockEnfant = MOCK_PARENT_ENFANTS_DETAILS[activeChild.id];
-  const enfant = mockEnfant || {
+  const enfant = {
     id: activeChild.id,
     nom: activeChild.nom,
     prenom: activeChild.prenom,
     classe: activeChild.classe,
     matricule: activeChild.matricule,
     photo_initiales: activeChild.photo_initiales,
-    rang: 1,
+    rang: '-',
     moyenne_generale: 0,
     reste_a_payer: activeChild.remaining,
     statut_paiement: activeChild.remaining === 0 ? 'paye' : 'partiel',
@@ -88,30 +84,41 @@ export const ParentAssiduitePage: React.FC<ParentAssiduitePageProps> = ({
     nb_retards_total: 0,
   };
 
-  // Récupération des absences de l'enfant
-  const [absencesList, setAbsencesList] = useState<AbsenceRecord[]>(() => {
-    const records = MOCK_ABSENCES_INITIAL.filter(
-      (a) => a.eleve_id === activeChild.id
-    );
-    if (records.length > 0) return records;
-    if (mockEnfant) {
-      return [
-        {
-          id: 'abs-1',
-          eleve_id: activeChild.id,
-          eleve_nom: enfant.nom,
-          eleve_prenom: enfant.prenom,
-          classe: enfant.classe,
-          date_absence: '2026-02-14',
-          creneau: 'matin' as const,
-          type: 'absence',
-          justifiee: false,
-          motif: 'Non justifié',
-        },
-      ];
-    }
-    return [];
-  });
+  // Récupération des absences de l'enfant depuis Supabase
+  const [absencesList, setAbsencesList] = useState<AbsenceRecord[]>([]);
+
+  React.useEffect(() => {
+    if (!activeChild?.id) return;
+    const fetchAbsences = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('absences')
+          .select('*')
+          .eq('eleve_id', activeChild.id)
+          .order('date_absence', { ascending: false });
+
+        if (!error && data) {
+          setAbsencesList(
+            data.map((a: any) => ({
+              id: a.id,
+              eleve_id: a.eleve_id,
+              eleve_nom: activeChild.nom,
+              eleve_prenom: activeChild.prenom,
+              classe: activeChild.classe,
+              date_absence: a.date_absence,
+              creneau: (a.creneau === 'matin' || a.creneau === 'apres_midi' ? a.creneau : 'matin') as 'matin' | 'apres_midi',
+              type: a.type || 'absence',
+              justifiee: Boolean(a.justifiee),
+              motif: a.motif || (a.justifiee ? 'Justifiée' : 'Non justifié'),
+            }))
+          );
+        }
+      } catch (err) {
+        console.warn('[ParentAssiduitePage] Erreur lecture absences:', err);
+      }
+    };
+    fetchAbsences();
+  }, [activeChild?.id]);
 
   // Modal de déclaration
   const [isModalOpen, setIsModalOpen] = useState(false);

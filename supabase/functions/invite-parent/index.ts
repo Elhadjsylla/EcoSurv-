@@ -128,7 +128,10 @@ Deno.serve(async (req: Request) => {
       .maybeSingle();
 
     const nomEcole = ecoleData?.nom || "Votre établissement scolaire";
-    const targetRedirectUrl = redirect_to || "https://ecosurv.mr";
+    const rawRedirect = redirect_to || "https://ecosurv.mr";
+    const targetRedirectUrl = rawRedirect.endsWith('/set-password')
+      ? rawRedirect
+      : `${rawRedirect.replace(/\/+$/, '')}/set-password`;
 
     // 7. Vérifier si un profil existe déjà avec cet email
     const { data: existingProfile } = await supabaseAdmin

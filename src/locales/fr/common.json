@@ -28,6 +28,7 @@
   "teacher": "Enseignant",
   "parent": "Parent",
   "cashier": "Caissier",
+  "accessPortal": "Accéder à mon espace",
   "currency": "MRU",
   "pagination": {
     "showing": "Affichage de {{start}} à {{end}} sur {{total}}",

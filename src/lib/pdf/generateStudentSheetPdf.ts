@@ -2,6 +2,7 @@ import { jsPDF } from 'jspdf';
 import { EleveWithStats } from '../mockData';
 import { formatMRU } from '../utils';
 import { downloadFile } from '../downloadFile';
+import { CLAIMS_CONFIG } from '../../config/claims';
 
 export function generateStudentSheetPdf(eleve: EleveWithStats, action: 'download' | 'print' = 'download'): jsPDF {
   const doc = new jsPDF({
@@ -13,23 +14,26 @@ export function generateStudentSheetPdf(eleve: EleveWithStats, action: 'download
   const pageWidth = 210;
   let y = 18;
 
-  // En-tête national & scolaire officiel
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(10);
-  doc.setTextColor(30, 41, 59);
-  doc.text('RÉPUBLIQUE ISLAMIQUE DE MAURITANIE', pageWidth / 2, y, { align: 'center' });
+  // En-tête national & ministériel officiel (si autorisé par CLAIMS_CONFIG)
+  if (CLAIMS_CONFIG.republiqueIslamiqueMauritanie) {
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor(30, 41, 59);
+    doc.text('RÉPUBLIQUE ISLAMIQUE DE MAURITANIE', pageWidth / 2, y, { align: 'center' });
+    y += 5;
+  }
 
-  y += 5;
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8.5);
-  doc.setTextColor(100, 116, 139);
-  doc.text('MINISTÈRE DE L\'ÉDUCATION NATIONALE ET DE LA RÉFORME DU SYSTÈME ÉDUCATIF', pageWidth / 2, y, { align: 'center' });
+  if (CLAIMS_CONFIG.ministereEducationNationale) {
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8.5);
+    doc.setTextColor(100, 116, 139);
+    doc.text('MINISTÈRE DE L\'ÉDUCATION NATIONALE ET DE LA RÉFORME DU SYSTÈME ÉDUCATIF', pageWidth / 2, y, { align: 'center' });
+    y += 4;
+    doc.setFontSize(8);
+    doc.text('Direction de l\'Enseignement Privé • Pôle de Nouakchott', pageWidth / 2, y, { align: 'center' });
+    y += 4;
+  }
 
-  y += 4;
-  doc.setFontSize(8);
-  doc.text('Direction de l\'Enseignement Privé • Pôle de Nouakchott', pageWidth / 2, y, { align: 'center' });
-
-  y += 4;
   doc.setDrawColor(203, 213, 225);
   doc.line(20, y, pageWidth - 20, y);
 
@@ -268,7 +272,10 @@ export function generateStudentSheetPdf(eleve: EleveWithStats, action: 'download
   doc.setFontSize(7);
   doc.setTextColor(148, 163, 184);
   doc.text('(Signature précédée de la mention lu et approuvé)', 40, y, { align: 'center' });
-  doc.text('(Cachet officiel et signature de la direction)', pageWidth - 45, y, { align: 'center' });
+  const cachetNotice = CLAIMS_CONFIG.documentOfficiel
+    ? '(Cachet officiel et signature de la direction)'
+    : '(Cachet et signature de la direction)';
+  doc.text(cachetNotice, pageWidth - 45, y, { align: 'center' });
 
   const cleanMatricule = eleve.matricule && !eleve.matricule.toUpperCase().startsWith('DEMO')
     ? `_${eleve.matricule}`

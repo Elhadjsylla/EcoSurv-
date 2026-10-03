@@ -2,12 +2,19 @@ import { jsPDF } from 'jspdf';
 import { MonthlyFinancialReport } from '../mockData';
 import { formatMRU } from '../utils';
 import { downloadFile } from '../downloadFile';
+import { CLAIMS_CONFIG } from '../../config/claims';
+import { ATTACHMENT_RULE_DESCRIPTION } from '../financialReportsHelper';
 
 export function generateFinancialReportPdf(
   reports: MonthlyFinancialReport[],
   ecoleNom?: string,
   filename?: string
-): jsPDF {
+): jsPDF | null {
+  if (!reports || reports.length === 0) {
+    console.warn('[generateFinancialReportPdf] Aucun rapport à exporter.');
+    return null;
+  }
+
   const doc = new jsPDF({
     orientation: 'portrait',
     unit: 'mm',
@@ -17,25 +24,38 @@ export function generateFinancialReportPdf(
   const pageWidth = 210;
   let y = 18;
 
-  // En-tête national & scolaire
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(9);
-  doc.setTextColor(30, 41, 59);
-  doc.text('RÉPUBLIQUE ISLAMIQUE DE MAURITANIE', pageWidth / 2, y, { align: 'center' });
+  // En-tête national & ministériel (conditionné aux autorisations légales via CLAIMS_CONFIG)
+  if (CLAIMS_CONFIG.republiqueIslamiqueMauritanie) {
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.setTextColor(30, 41, 59);
+    doc.text('RÉPUBLIQUE ISLAMIQUE DE MAURITANIE', pageWidth / 2, y, { align: 'center' });
+    y += 4.5;
+  }
 
-  y += 4.5;
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8);
-  doc.setTextColor(100, 116, 139);
-  doc.text("MINISTÈRE DE L'ÉDUCATION NATIONALE • DIRECTION DE L'ENSEIGNEMENT PRIVÉ", pageWidth / 2, y, { align: 'center' });
+  if (CLAIMS_CONFIG.deviseNationale) {
+    doc.setFont('helvetica', 'italic');
+    doc.setFontSize(7.5);
+    doc.setTextColor(100, 116, 139);
+    doc.text('Honneur - Fraternité - Justice', pageWidth / 2, y, { align: 'center' });
+    y += 4;
+  }
 
-  y += 4;
-  doc.setFontSize(8.5);
+  if (CLAIMS_CONFIG.ministereEducationNationale) {
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(100, 116, 139);
+    doc.text("MINISTÈRE DE L'ÉDUCATION NATIONALE • DIRECTION DE L'ENSEIGNEMENT PRIVÉ", pageWidth / 2, y, { align: 'center' });
+    y += 4;
+  }
+
+  // Établissement scolaire
+  doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(30, 41, 59);
   doc.text(`${ecoleNom || 'Établissement Scolaire'} • Direction Financière & Comptable`, pageWidth / 2, y, { align: 'center' });
 
-  y += 3.5;
+  y += 4;
   doc.setDrawColor(203, 213, 225);
   doc.line(18, y, pageWidth - 18, y);
 
@@ -52,10 +72,17 @@ export function generateFinancialReportPdf(
   doc.setTextColor(100, 116, 139);
   doc.text(`Exercice Scolaire 2025–2026 • Arrêté au ${new Date().toLocaleDateString('fr-FR')}`, pageWidth / 2, y, { align: 'center' });
 
+  // Règle de rattachement comptable affichée explicitement
+  y += 4.5;
+  doc.setFont('helvetica', 'italic');
+  doc.setFontSize(7.5);
+  doc.setTextColor(71, 85, 105);
+  doc.text(ATTACHMENT_RULE_DESCRIPTION, pageWidth / 2, y, { align: 'center' });
+
   // Tableau récapitulatif
-  y += 10;
+  y += 8;
   const tableX = 18;
-  const colWidths = [35, 34, 34, 34, 37]; // total = 174mm (pageWidth 210 - 2*18)
+  const colWidths = [45, 32, 32, 32, 33]; // total = 174mm (pageWidth 210 - 2*18)
 
   // En-tête du tableau
   doc.setFillColor(30, 41, 59);
@@ -65,7 +92,7 @@ export function generateFinancialReportPdf(
   doc.setTextColor(255, 255, 255);
 
   let currentX = tableX + 3;
-  doc.text('Mois', currentX, y + 5.5);
+  doc.text("Mois d'échéance", currentX, y + 5.5);
   currentX += colWidths[0];
   doc.text('Attendu', currentX + colWidths[1] - 6, y + 5.5, { align: 'right' });
   currentX += colWidths[1];
@@ -73,7 +100,7 @@ export function generateFinancialReportPdf(
   currentX += colWidths[2];
   doc.text('Impayés', currentX + colWidths[3] - 6, y + 5.5, { align: 'right' });
   currentX += colWidths[3];
-  doc.text('Taux & Statut', currentX + 4, y + 5.5);
+  doc.text('Taux Recouvr.', currentX + colWidths[4] - 6, y + 5.5, { align: 'right' });
 
   y += 8;
 
@@ -113,9 +140,10 @@ export function generateFinancialReportPdf(
     doc.setTextColor(r.impayes > 0 ? 185 : 100, r.impayes > 0 ? 28 : 116, r.impayes > 0 ? 28 : 139);
     doc.text(formatMRU(r.impayes), currentX + colWidths[3] - 6, y + 5, { align: 'right' });
 
+    // Taux : Affichage pur du pourcentage sans libellés subjectifs (Performant/Moyen/Critique)
     currentX += colWidths[3];
     doc.setTextColor(30, 41, 59);
-    doc.text(`${r.taux}% (${r.taux >= 85 ? 'Performant' : r.taux >= 70 ? 'Moyen' : 'Critique'})`, currentX + 4, y + 5);
+    doc.text(`${r.taux}%`, currentX + colWidths[4] - 6, y + 5, { align: 'right' });
 
     y += 7;
   });
@@ -149,9 +177,9 @@ export function generateFinancialReportPdf(
 
   currentX += colWidths[3];
   doc.setTextColor(30, 58, 138);
-  doc.text(`${tauxGlobal}% Recouvrement`, currentX + 4, y + 6);
+  doc.text(`${tauxGlobal}%`, currentX + colWidths[4] - 6, y + 6, { align: 'right' });
 
-  // Signatures et validation
+  // Signatures et validation de l'établissement
   y += 25;
   doc.setDrawColor(203, 213, 225);
   doc.line(tableX, y, tableX + 174, y);
@@ -160,23 +188,26 @@ export function generateFinancialReportPdf(
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(7.5);
   doc.setTextColor(100, 116, 139);
-  doc.text(`Document financier certifié généré par EcoSurv le ${new Date().toLocaleDateString('fr-FR')}`, tableX, y);
+  const mentionBas = CLAIMS_CONFIG.documentCertifie
+    ? `Document financier certifié généré par EcoSurv le ${new Date().toLocaleDateString('fr-FR')}`
+    : `Document financier de synthèse généré par EcoSurv le ${new Date().toLocaleDateString('fr-FR')}`;
+  doc.text(mentionBas, tableX, y);
 
   y += 6;
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(8);
   doc.setTextColor(30, 41, 59);
   doc.text('Le Responsable Administratif & Financier', tableX + 30, y, { align: 'center' });
-  doc.text("Le Directeur Général de l'Établissement", tableX + 140, y, { align: 'center' });
+  doc.text("Le Directeur de l'Établissement", tableX + 140, y, { align: 'center' });
 
   y += 18;
   doc.setFont('helvetica', 'italic');
   doc.setFontSize(7);
   doc.setTextColor(148, 163, 184);
   doc.text('(Signature et visa comptable)', tableX + 30, y, { align: 'center' });
-  doc.text('(Cachet officiel de l\'établissement)', tableX + 140, y, { align: 'center' });
+  doc.text("(Cachet de l'établissement)", tableX + 140, y, { align: 'center' });
 
-  // Téléchargement
+  // Téléchargement sécurisé
   const finalFilename = filename || `Rapport_Financier_${new Date().toISOString().split('T')[0]}.pdf`;
   const pdfBlob = doc.output('blob');
 

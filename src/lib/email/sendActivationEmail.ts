@@ -60,6 +60,7 @@ export async function sendActivationEmail({
         nomDirecteur,
         nomEcole,
         code,
+        redirect_to: typeof window !== 'undefined' ? `${window.location.origin}/activation` : undefined,
       },
     });
 

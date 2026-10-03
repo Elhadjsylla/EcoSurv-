@@ -1,11 +1,11 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import confetti from 'canvas-confetti';
 import {
-  MOCK_ELEVES,
   EleveWithStats,
   LienParente,
   StatutEcheance,
   getDashboardKpis,
+  MOCK_ELEVES,
 } from '../lib/mockData';
 import { useAuthStore } from '../store/useAuthStore';
 import { useEcoleStore } from '../store/useEcoleStore';
@@ -22,6 +22,7 @@ import { StudentDetailDrawer } from '../components/dashboard/StudentDetailDrawer
 import { formatMRU } from '../lib/utils';
 import { formatCompactMRU } from '../lib/formatCompactMRU';
 import { StudentEnrollmentModal } from '../components/eleves/StudentEnrollmentModal';
+import { AdaptiveTable } from '../components/ui/AdaptiveTable';
 import { Select } from '../components/ui/Select';
 import { DEFAULT_CLASSES_MAURITANIE } from '../lib/constants/classes';
 import {
@@ -59,14 +60,10 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
 }) => {
   const authProfile = useAuthStore((s) => s.profile);
 
-  const [elevesList, setElevesList] = useState<EleveWithStats[]>(() => {
-    // Si école authentifiée, démarrer STRICTEMENT à zéro (aucun mock)
-    if (authProfile?.ecole_id) return [];
-    return MOCK_ELEVES;
-  });
+  const [elevesList, setElevesList] = useState<EleveWithStats[]>(MOCK_ELEVES);
 
   useEffect(() => {
-    if (authProfile?.ecole_id) {
+    if (authProfile?.ecole_id && authProfile.ecole_id !== 'ecole-demo') {
       const fetchRealEleves = async () => {
         try {
           const [elevesRes, echeancesRes] = await Promise.all([
@@ -81,7 +78,7 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
               .eq('ecole_id', authProfile.ecole_id),
           ]);
 
-          if (!elevesRes.error && elevesRes.data) {
+          if (!elevesRes.error && elevesRes.data && elevesRes.data.length > 0) {
             const allEcheances = echeancesRes.data || [];
 
             const mapped: EleveWithStats[] = elevesRes.data.map((d: any) => {
@@ -124,12 +121,17 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
               };
             });
             setElevesList(mapped);
+          } else {
+            setElevesList(MOCK_ELEVES);
           }
         } catch (e) {
           console.warn('[ElevesPage] Erreur chargement élèves réels:', e);
+          setElevesList(MOCK_ELEVES);
         }
       };
       fetchRealEleves();
+    } else {
+      setElevesList(MOCK_ELEVES);
     }
   }, [authProfile?.ecole_id]);
 
@@ -277,8 +279,8 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
     }
   };
 
-  const toggleSelectEleve = (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
+  const toggleSelectEleve = (id: string, e?: React.MouseEvent) => {
+    e?.stopPropagation?.();
     if (selectedEleveIds.includes(id)) {
       setSelectedEleveIds(selectedEleveIds.filter((item) => item !== id));
     } else {
@@ -719,253 +721,274 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
         </div>
 
         {/* Tabular Roster with smooth internal scrollbar */}
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs border-collapse min-w-[720px]">
-            <thead>
-              <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/60 font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                <th className="py-4 px-4 w-10 text-center">
-                  <input
-                    type="checkbox"
-                    checked={isAllSelected}
-                    onChange={toggleSelectAll}
-                    className="h-4 w-4 rounded border-slate-300 dark:border-slate-600 text-blue-600 focus:ring-blue-500 cursor-pointer"
-                  />
-                </th>
-                <th className="py-4 px-4">Élève</th>
-                <th className="py-4 px-4">Tuteur Légal</th>
-                <th className="py-4 px-4 hidden md:table-cell">Ville / Quartier</th>
-                <th className="py-4 px-4 text-center">Statut</th>
-                <th className="py-4 px-4 text-right">Solde Dû</th>
-                <th className="py-4 px-4 text-center w-16">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80 text-sm">
-              {paginatedEleves.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="py-12 text-center">
-                    {elevesList.length === 0 ? (
-                      <div className="py-8 px-4 text-center space-y-3 max-w-md mx-auto">
-                        <div className="h-12 w-12 rounded-2xl bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 flex items-center justify-center mx-auto shadow-sm">
-                          <Users className="h-6 w-6" />
-                        </div>
-                        <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                          Aucun élève enregistré pour le moment
-                        </h3>
-                        <p className="text-xs text-slate-500 dark:text-slate-400">
-                          Votre registre est prêt. Inscrivez votre tout premier élève pour démarrer la gestion académique et financière de votre établissement.
-                        </p>
-                        <Button
-                          variant="primary"
-                          onClick={() => setIsEnrollModalOpen(true)}
-                          className="gap-2 mx-auto"
-                        >
-                          <UserPlus className="h-4 w-4" />
-                          Inscrire un premier élève
-                        </Button>
-                      </div>
+        <AdaptiveTable<EleveWithStats>
+          data={paginatedEleves}
+          keyExtractor={(eleve) => eleve.id}
+          bordered={false}
+          selectable={true}
+          isSelected={(eleve) => selectedEleveIds.includes(eleve.id)}
+          onToggleSelect={(eleve) => toggleSelectEleve(eleve.id)}
+          isAllSelected={isAllSelected}
+          onToggleSelectAll={toggleSelectAll}
+          onRowClick={(eleve) => setDrawerEleve(eleve)}
+          rowClassName={(eleve) =>
+            justPaidEleveId === eleve.id
+              ? 'bg-emerald-50/90 dark:bg-emerald-950/60 ring-1 ring-emerald-400'
+              : ''
+          }
+          cardsContainerClassName="p-3 sm:p-4"
+          emptyState={
+            elevesList.length === 0 ? (
+              <div className="py-8 px-4 text-center space-y-3 max-w-md mx-auto">
+                <div className="h-12 w-12 rounded-2xl bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 flex items-center justify-center mx-auto shadow-sm">
+                  <Users className="h-6 w-6" />
+                </div>
+                <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                  Aucun élève enregistré pour le moment
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Votre registre est prêt. Inscrivez votre tout premier élève pour démarrer la gestion académique et financière de votre établissement.
+                </p>
+                <Button
+                  variant="primary"
+                  onClick={() => setIsEnrollModalOpen(true)}
+                  className="gap-2 mx-auto"
+                >
+                  <UserPlus className="h-4 w-4" />
+                  Inscrire un premier élève
+                </Button>
+              </div>
+            ) : (
+              <div className="py-8 px-4 text-center">
+                <p className="text-slate-500 dark:text-slate-400 font-medium text-sm">
+                  Aucun élève ne correspond à votre recherche.
+                </p>
+              </div>
+            )
+          }
+          columns={[
+            {
+              id: 'avatar',
+              header: '',
+              cardRole: 'avatar',
+              className: 'w-10 pr-0',
+              render: (eleve) => (
+                <StudentInitials nom={eleve.nom} prenom={eleve.prenom} />
+              ),
+            },
+            {
+              id: 'eleve',
+              header: 'Élève',
+              cardRole: 'title',
+              className: 'whitespace-nowrap',
+              render: (eleve) => (
+                <div>
+                  <div className="font-bold text-slate-900 dark:text-white leading-snug text-sm">
+                    {eleve.prenom} {eleve.nom}
+                  </div>
+                  <div className="text-xs text-slate-400 dark:text-slate-500 font-mono mt-0.5 flex items-center gap-1.5 whitespace-nowrap">
+                    <span>#{eleve.matricule}</span>
+                    <span>•</span>
+                    <span className="font-semibold text-slate-600 dark:text-slate-400">{eleve.classe}</span>
+                  </div>
+                </div>
+              ),
+            },
+            {
+              id: 'tuteur',
+              header: 'Tuteur Légal',
+              cardRole: 'key-fact',
+              cardLabel: 'Tuteur légal',
+              render: (eleve) => (
+                <div className="text-xs space-y-1">
+                  <div className="font-semibold text-slate-800 dark:text-slate-200">{eleve.nom_tuteur}</div>
+                  <div className="text-slate-400 dark:text-slate-500 font-mono flex items-center gap-1 text-[11px]">
+                    <PhoneCall className="h-3 w-3 text-slate-400 shrink-0" />
+                    <span>{eleve.telephone_tuteur}</span>
+                  </div>
+                  <div>
+                    {eleve.email_tuteur?.trim() ? (
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800/50">
+                        <span className="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
+                        <span className="truncate max-w-[150px]">{eleve.email_tuteur}</span>
+                      </span>
                     ) : (
-                      <p className="text-slate-500 dark:text-slate-400 font-medium text-sm">
-                        Aucun élève ne correspond à votre recherche.
-                      </p>
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800/50">
+                        Accès Famille : en attente d'un email
+                      </span>
                     )}
-                  </td>
-                </tr>
-              ) : (
-                paginatedEleves.map((eleve) => {
-                  const isChecked = selectedEleveIds.includes(eleve.id);
-                  const isJustPaid = justPaidEleveId === eleve.id;
-                  const isRelancing = relancingId === eleve.id;
-                  const isMenuOpen = openMenuRowId === eleve.id;
-
-                  return (
-                    <tr
-                      key={eleve.id}
+                  </div>
+                </div>
+              ),
+            },
+            {
+              id: 'ville',
+              header: 'Ville / Quartier',
+              cardRole: 'key-fact',
+              cardLabel: 'Quartier',
+              className: 'hidden md:table-cell text-xs text-slate-600 dark:text-slate-400 font-medium',
+              render: (eleve) =>
+                eleve.adresse_tuteur ? eleve.adresse_tuteur.split(',')[0] : 'Tevragh-Zeina',
+            },
+            {
+              id: 'statut',
+              header: 'Statut',
+              cardRole: 'badge',
+              align: 'center',
+              className: 'whitespace-nowrap',
+              render: (eleve) => <StatusBadge statut={eleve.statut} />,
+            },
+            {
+              id: 'solde',
+              header: 'Solde Dû',
+              cardRole: 'key-fact',
+              cardLabel: 'Solde dû',
+              align: 'right',
+              className: 'font-mono font-black whitespace-nowrap text-xs',
+              render: (eleve) =>
+                eleve.remaining > 0 ? (
+                  <Tooltip content={formatMRU(eleve.remaining)}>
+                    <span className="text-rose-600 dark:text-rose-400 cursor-help">
+                      {eleve.remaining >= 100000
+                        ? formatCompactMRU(eleve.remaining)
+                        : formatMRU(eleve.remaining)}
+                    </span>
+                  </Tooltip>
+                ) : (
+                  <span className="text-emerald-600 dark:text-emerald-400 font-bold">Soldé</span>
+                ),
+            },
+            {
+              id: 'actions',
+              header: 'Actions',
+              cardRole: 'action',
+              align: 'center',
+              className: 'w-16',
+              render: (eleve) => {
+                const isMenuOpen = openMenuRowId === eleve.id;
+                const isRelancing = relancingId === eleve.id;
+                return (
+                  <div
+                    className="relative flex items-center justify-end gap-1.5 w-full sm:w-auto"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {/* Bouton rapide d'accès à la fiche (sur mobile) */}
+                    <button
+                      type="button"
                       onClick={() => setDrawerEleve(eleve)}
-                      className={`cursor-pointer transition-all duration-200 group ${
-                        isJustPaid
-                          ? 'bg-emerald-50/90 dark:bg-emerald-950/60 ring-1 ring-emerald-400'
-                          : isChecked
-                          ? 'bg-blue-50/60 dark:bg-blue-950/40'
-                          : 'hover:bg-slate-50/80 dark:hover:bg-slate-800/50'
-                      }`}
+                      className="md:hidden inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors"
                     >
-                      {/* Checkbox */}
-                      <td className="py-4 px-4 text-center" onClick={(e) => e.stopPropagation()}>
-                        <input
-                          type="checkbox"
-                          checked={isChecked}
-                          onChange={(e) => toggleSelectEleve(eleve.id, e as any)}
-                          className="h-4 w-4 rounded border-slate-300 dark:border-slate-600 text-blue-600 focus:ring-blue-500 cursor-pointer"
-                        />
-                      </td>
+                      <Eye className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                      <span>Fiche</span>
+                    </button>
 
-                      {/* Élève (Nom en gras sur ligne 1 + matricule et classe en ligne 2) */}
-                      <td className="py-4 px-4 whitespace-nowrap">
-                        <div className="flex items-center gap-3.5">
-                          <StudentInitials nom={eleve.nom} prenom={eleve.prenom} />
-                          <div>
-                            <div className="font-bold text-slate-900 dark:text-white leading-snug text-sm">
-                              {eleve.prenom} {eleve.nom}
-                            </div>
-                            <div className="text-xs text-slate-400 dark:text-slate-500 font-mono mt-0.5 flex items-center gap-1.5 whitespace-nowrap">
-                              <span>#{eleve.matricule}</span>
-                              <span>•</span>
-                              <span className="font-semibold text-slate-600 dark:text-slate-400">{eleve.classe}</span>
-                            </div>
-                          </div>
-                        </div>
-                      </td>
-
-                      {/* Tuteur */}
-                      <td className="py-4 px-4">
-                        <div className="text-xs space-y-1">
-                          <div className="font-semibold text-slate-800 dark:text-slate-200">{eleve.nom_tuteur}</div>
-                          <div className="text-slate-400 dark:text-slate-500 font-mono flex items-center gap-1 text-[11px]">
-                            <PhoneCall className="h-3 w-3 text-slate-400 shrink-0" />
-                            <span>{eleve.telephone_tuteur}</span>
-                          </div>
-                          <div>
-                            {eleve.email_tuteur?.trim() ? (
-                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800/50">
-                                <span className="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
-                                <span className="truncate max-w-[150px]">{eleve.email_tuteur}</span>
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800/50">
-                                Accès Famille : en attente d'un email
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </td>
-
-                      {/* Ville / Quartier */}
-                      <td className="py-4 px-4 hidden md:table-cell text-xs text-slate-600 dark:text-slate-400 font-medium">
-                        {eleve.adresse_tuteur ? eleve.adresse_tuteur.split(',')[0] : 'Tevragh-Zeina'}
-                      </td>
-
-                      {/* Statut Badge */}
-                      <td className="py-4 px-4 text-center whitespace-nowrap">
-                        <StatusBadge statut={eleve.statut} />
-                      </td>
-
-                      {/* Solde Dû */}
-                      <td className="py-4 px-4 text-right font-mono font-black whitespace-nowrap text-xs">
-                        {eleve.remaining > 0 ? (
-                          <Tooltip content={formatMRU(eleve.remaining)}>
-                            <span className="text-rose-600 dark:text-rose-400 cursor-help">
-                              {eleve.remaining >= 100000
-                                ? formatCompactMRU(eleve.remaining)
-                                : formatMRU(eleve.remaining)}
-                            </span>
-                          </Tooltip>
-                        ) : (
-                          <span className="text-emerald-600 dark:text-emerald-400 font-bold">Soldé</span>
-                        )}
-                      </td>
-
-                      {/* Context Menu "..." Button */}
-                      <td
-                        className="py-4 px-4 text-center relative"
-                        onClick={(e) => e.stopPropagation()}
+                    {/* Bouton rapide Encaisser comptant (sur mobile si restant > 0) */}
+                    {eleve.remaining > 0 && (
+                      <button
+                        type="button"
+                        onClick={(e) => triggerMarquerPayeExpress(eleve, e)}
+                        className="md:hidden inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 transition-colors"
                       >
-                        <Tooltip content="Options">
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setOpenMenuRowId(isMenuOpen ? null : eleve.id);
-                            }}
-                            className="h-8 w-8 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 flex items-center justify-center transition-colors mx-auto"
-                            aria-label="Options"
-                          >
-                            <MoreHorizontal className="h-4 w-4" />
-                          </button>
-                        </Tooltip>
+                        <Zap className="w-3.5 h-3.5" />
+                        <span>Encaisser</span>
+                      </button>
+                    )}
 
-                        {/* Dropdown Menu */}
-                        {isMenuOpen && (
-                          <div className="absolute right-4 top-10 w-48 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xl z-30 py-1 text-xs text-left animate-in fade-in zoom-in-95">
+                    <Tooltip content="Options">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setOpenMenuRowId(isMenuOpen ? null : eleve.id);
+                        }}
+                        className="h-8 w-8 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 flex items-center justify-center transition-colors mx-auto"
+                        aria-label="Options"
+                      >
+                        <MoreHorizontal className="h-4 w-4" />
+                      </button>
+                    </Tooltip>
+
+                    {/* Dropdown Menu */}
+                    {isMenuOpen && (
+                      <div className="absolute right-0 top-10 w-48 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xl z-30 py-1 text-xs text-left animate-in fade-in zoom-in-95">
+                        <button
+                          onClick={() => {
+                            setOpenMenuRowId(null);
+                            setDrawerEleve(eleve);
+                          }}
+                          className="w-full flex items-center gap-2.5 px-3 py-2 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/60 font-semibold"
+                        >
+                          <Eye className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+                          <span>Voir la fiche élève</span>
+                        </button>
+
+                        <button
+                          onClick={() => {
+                            setOpenMenuRowId(null);
+                            setEleveToEdit(eleve);
+                            setIsEnrollModalOpen(true);
+                          }}
+                          className="w-full flex items-center gap-2.5 px-3 py-2 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/60 font-semibold"
+                        >
+                          <Edit3 className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+                          <span>Modifier la fiche</span>
+                        </button>
+
+                        {eleve.remaining > 0 ? (
+                          <>
                             <button
-                              onClick={() => {
+                              onClick={(e) => {
                                 setOpenMenuRowId(null);
-                                setDrawerEleve(eleve);
+                                triggerMarquerPayeExpress(eleve, e);
                               }}
-                              className="w-full flex items-center gap-2.5 px-3 py-2 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/60 font-semibold"
+                              className="w-full flex items-center gap-2.5 px-3 py-2 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 font-semibold"
                             >
-                              <Eye className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
-                              <span>Voir la fiche élève</span>
+                              <Zap className="h-3.5 w-3.5" />
+                              <span>Encaisser comptant</span>
                             </button>
 
                             <button
-                              onClick={() => {
+                              onClick={(e) => {
                                 setOpenMenuRowId(null);
-                                setEleveToEdit(eleve);
-                                setIsEnrollModalOpen(true);
+                                triggerRelance(eleve, e);
                               }}
-                              className="w-full flex items-center gap-2.5 px-3 py-2 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/60 font-semibold"
+                              className="w-full flex items-center gap-2.5 px-3 py-2 text-rose-700 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 font-semibold"
                             >
-                              <Edit3 className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
-                              <span>Modifier la fiche</span>
+                              <Send className="h-3.5 w-3.5" />
+                              <span>{isRelancing ? 'Envoi...' : 'Envoyer relance SMS'}</span>
                             </button>
+                          </>
+                        ) : null}
 
-                            {eleve.remaining > 0 ? (
-                              <>
-                                <button
-                                  onClick={(e) => {
-                                    setOpenMenuRowId(null);
-                                    triggerMarquerPayeExpress(eleve, e);
-                                  }}
-                                  className="w-full flex items-center gap-2.5 px-3 py-2 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 font-semibold"
-                                >
-                                  <Zap className="h-3.5 w-3.5" />
-                                  <span>Encaisser comptant</span>
-                                </button>
+                        <button
+                          onClick={() => {
+                            setOpenMenuRowId(null);
+                            setPaymentModalEleve(eleve);
+                          }}
+                          className="w-full flex items-center gap-2.5 px-3 py-2 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/60 border-t border-slate-100 dark:border-slate-700"
+                        >
+                          <PlusCircle className="h-3.5 w-3.5 text-slate-500" />
+                          <span>Enregistrer paiement</span>
+                        </button>
 
-                                <button
-                                  onClick={(e) => {
-                                    setOpenMenuRowId(null);
-                                    triggerRelance(eleve, e);
-                                  }}
-                                  className="w-full flex items-center gap-2.5 px-3 py-2 text-rose-700 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 font-semibold"
-                                >
-                                  <Send className="h-3.5 w-3.5" />
-                                  <span>{isRelancing ? 'Envoi...' : 'Envoyer relance SMS'}</span>
-                                </button>
-                              </>
-                            ) : null}
-
-                            <button
-                              onClick={() => {
-                                setOpenMenuRowId(null);
-                                setPaymentModalEleve(eleve);
-                              }}
-                              className="w-full flex items-center gap-2.5 px-3 py-2 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/60 border-t border-slate-100 dark:border-slate-700"
-                            >
-                              <PlusCircle className="h-3.5 w-3.5 text-slate-500" />
-                              <span>Enregistrer paiement</span>
-                            </button>
-
-                            <button
-                              onClick={() => {
-                                setOpenMenuRowId(null);
-                                window.print();
-                              }}
-                              className="w-full flex items-center gap-2.5 px-3 py-2 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/60"
-                            >
-                              <FileText className="h-3.5 w-3.5 text-slate-500" />
-                              <span>Imprimer reçu</span>
-                            </button>
-                          </div>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
+                        <button
+                          onClick={() => {
+                            setOpenMenuRowId(null);
+                            window.print();
+                          }}
+                          className="w-full flex items-center gap-2.5 px-3 py-2 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/60"
+                        >
+                          <FileText className="h-3.5 w-3.5 text-slate-500" />
+                          <span>Imprimer reçu</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                );
+              },
+            },
+          ]}
+        />
 
         {/* Numbered Pagination (Nexoov Style) */}
         <div className="p-4 sm:px-6 bg-slate-50/60 dark:bg-slate-800/40 border-t border-slate-200/90 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
@@ -1107,10 +1130,11 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
               </div>
             </div>
 
-            <div className="flex items-center justify-end gap-3 pt-2 border-t border-slate-100 dark:border-slate-800">
+            <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2.5 sm:gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
               <Button
                 variant="outline"
                 size="sm"
+                className="w-full sm:w-auto justify-center"
                 onClick={() => setPaymentModalEleve(null)}
               >
                 Annuler (Échap)
@@ -1118,6 +1142,7 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
               <Button
                 variant="primary"
                 size="sm"
+                className="w-full sm:w-auto justify-center"
                 onClick={() => {
                   const inputAmt = (
                     document.getElementById('payAmountInput') as HTMLInputElement

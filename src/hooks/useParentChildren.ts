@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuthStore } from '../store/useAuthStore';
-import { CURRENT_PARENT, MOCK_PARENT_ENFANTS_DETAILS } from '../lib/mockData';
 
 export interface ParentChild {
   id: string;
@@ -131,38 +130,8 @@ export function useParentChildren(selectedChildId: string, onSelectChild: (id: s
         setIsLoading(false);
       }
     } else {
-      // Démo / simulateur
       setErrorMessage(null);
-      const demoChildren: ParentChild[] = CURRENT_PARENT.enfants_ids.map((id) => {
-        const item = MOCK_PARENT_ENFANTS_DETAILS[id] || {
-          prenom: 'Enfant',
-          nom: 'Démo',
-          classe: 'Classe',
-          matricule: 'DEMO',
-          reste_a_payer: 0,
-          montant_annuel: 0,
-          montant_deja_paye: 0,
-          photo_initiales: 'ED',
-        };
-        return {
-          id: id,
-          nom: item.nom || 'SOW',
-          prenom: item.prenom || 'Enfant',
-          classe: item.classe,
-          matricule: item.matricule,
-          lien: 'parent',
-          total_due: item.total_scolarite || 0,
-          total_paid: item.total_regle || 0,
-          remaining: item.reste_a_payer || 0,
-          statut: item.reste_a_payer > 0 ? 'en_retard' : 'a_jour',
-          photo_initiales: item.photo_initiales,
-        };
-      });
-
-      setChildren(demoChildren);
-      if (!selectedChildId && demoChildren[0]) {
-        onSelectChild(demoChildren[0].id);
-      }
+      setChildren([]);
     }
   }, [authProfile?.id, authProfile?.role, onSelectChild, selectedChildId]);
 

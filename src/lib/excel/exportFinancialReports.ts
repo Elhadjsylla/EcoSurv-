@@ -1,11 +1,17 @@
 import * as XLSX from 'xlsx';
 import { MonthlyFinancialReport } from '../mockData';
 import { downloadFile } from '../downloadFile';
+import { ATTACHMENT_RULE_DESCRIPTION } from '../financialReportsHelper';
 
 export function exportFinancialReportsToExcel(
   reports: MonthlyFinancialReport[],
   filename?: string
 ) {
+  if (!reports || reports.length === 0) {
+    console.warn('[exportFinancialReportsToExcel] Aucun rapport à exporter.');
+    return;
+  }
+
   // Calculs annuels
   const totalAttendu = reports.reduce((sum, r) => sum + r.attendu, 0);
   const totalEncaisse = reports.reduce((sum, r) => sum + r.encaisse, 0);
@@ -16,19 +22,19 @@ export function exportFinancialReportsToExcel(
   const sheetData: (string | number)[][] = [
     ['ECOSURV — SYSTÈME DE GESTION DE SCOLARITÉ DES ÉCOLES PRIVÉES'],
     ['RAPPORT FINANCIER & ÉTAT DE RECOUVREMENT DE SCOLARITÉ'],
-    [`Année Scolaire : 2025-2026 | Date d'exportation : ${new Date().toLocaleDateString('fr-FR')}`],
+    [`Exercice Scolaire : 2025-2026 | Date d'exportation : ${new Date().toLocaleDateString('fr-FR')}`],
+    [ATTACHMENT_RULE_DESCRIPTION],
     [], // ligne vide
     [
-      'Mois',
+      "Mois d'échéance",
       'Attendu (MRU)',
       'Encaissé (MRU)',
       'Impayés (MRU)',
       'Taux de recouvrement',
-      'Statut Mensuel',
     ],
   ];
 
-  // Lignes mensuelles
+  // Lignes mensuelles (pourcentages purs sans étiquettes subjectives)
   reports.forEach((r) => {
     sheetData.push([
       r.mois,
@@ -36,19 +42,17 @@ export function exportFinancialReportsToExcel(
       r.encaisse,
       r.impayes,
       `${r.taux}%`,
-      r.taux >= 85 ? 'Performant' : r.taux >= 70 ? 'Satisfaisant' : 'En retard',
     ]);
   });
 
   // Ligne de totalisation
   sheetData.push([]);
   sheetData.push([
-    'TOTAL GÉNÉRAL ANNUEL',
+    'TOTAL GÉNÉRAL',
     totalAttendu,
     totalEncaisse,
     totalImpayes,
     `${tauxGlobal}%`,
-    tauxGlobal >= 80 ? 'Conforme aux objectifs' : 'Action de relance requise',
   ]);
 
   // Création du workbook et worksheet
@@ -57,24 +61,25 @@ export function exportFinancialReportsToExcel(
 
   // Définition des largeurs de colonnes
   ws['!cols'] = [
-    { wch: 20 }, // Mois
-    { wch: 18 }, // Attendu
-    { wch: 18 }, // Encaissé
-    { wch: 18 }, // Impayés
-    { wch: 22 }, // Taux
-    { wch: 28 }, // Statut
+    { wch: 24 }, // Mois d'échéance
+    { wch: 20 }, // Attendu
+    { wch: 20 }, // Encaissé
+    { wch: 20 }, // Impayés
+    { wch: 24 }, // Taux
   ];
 
-  XLSX.utils.book_append_sheet(wb, ws, 'Rapport_Financier_2025_2026');
+  XLSX.utils.book_append_sheet(wb, ws, 'Rapport_Financier');
 
   // Déclencher le téléchargement du fichier binaire .xlsx
-  const outputFileName =
-    filename || `Rapport_Financier_EcoSurv_${new Date().toISOString().split('T')[0]}.xlsx`;
+  const finalFilename = filename || `Rapport_Financier_${new Date().toISOString().split('T')[0]}.xlsx`;
+  const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+  const blob = new Blob([wbout], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  });
 
-  const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
   downloadFile({
-    filename: outputFileName,
-    blobOrData: excelBuffer,
+    filename: finalFilename,
+    blobOrData: blob,
     mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   });
 }

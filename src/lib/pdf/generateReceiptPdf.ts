@@ -1,6 +1,7 @@
 import { jsPDF } from 'jspdf';
 import { formatMRU } from '../utils';
 import { downloadFile } from '../downloadFile';
+import { CLAIMS_CONFIG } from '../../config/claims';
 
 export interface ReceiptData {
   recuRef: string;
@@ -134,7 +135,10 @@ export function generateReceiptPdf(data: ReceiptData, action: 'download' | 'prin
   doc.text(`Opérateur de caisse : ${data.caissierNom || 'Guichet Central'}`, pageWidth / 2, y, { align: 'center' });
 
   y += 3.5;
-  doc.text('Quittance informatisée - Document officiel', pageWidth / 2, y, { align: 'center' });
+  const mentionRecu = CLAIMS_CONFIG.documentOfficiel
+    ? 'Quittance informatisée - Document officiel'
+    : 'Quittance de versement informatisée';
+  doc.text(mentionRecu, pageWidth / 2, y, { align: 'center' });
 
   y += 3.5;
   doc.text('Conservez ce ticket comme justificatif de paiement', pageWidth / 2, y, { align: 'center' });

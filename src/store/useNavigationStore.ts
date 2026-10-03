@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { UserRole } from '../components/ui/Header';
+import type { UserRole, PortalRole } from './useAuthStore';
 import type { NavTab } from '../components/ui/Sidebar';
 import type { TeacherNavTab } from '../components/enseignant/TeacherSidebar';
 import type { CaissierNavTab } from '../components/caissier/CaissierSidebar';
@@ -8,7 +8,7 @@ import type { ParentNavTab } from '../components/parent/ParentSidebar';
 export type AppRoute = NavTab | TeacherNavTab | CaissierNavTab | ParentNavTab;
 
 /** Écran d'arrivée de chaque portail. */
-export const PORTAL_HOME: Record<UserRole, AppRoute> = {
+export const PORTAL_HOME: Record<PortalRole, AppRoute> = {
   directeur: 'dashboard',
   enseignant: 'teacher_dashboard',
   caissier: 'caissier_guichet',
@@ -20,21 +20,21 @@ export const MAX_HISTORY_ENTRIES = 50;
 
 export type ViewMode = 'landing' | 'login' | 'register' | 'pending_activation' | 'set_password' | 'app' | 'admin_console';
 
-export const PORTAL_ROUTES: Record<UserRole, AppRoute[]> = {
+export const PORTAL_ROUTES: Record<PortalRole, AppRoute[]> = {
   directeur: ['dashboard', 'eleves', 'echeances', 'relances', 'rapports', 'config'],
   enseignant: ['teacher_dashboard', 'teacher_classes', 'teacher_absences', 'teacher_grades'],
   caissier: ['caissier_guichet', 'caissier_journal', 'caissier_impayes'],
   parent: ['parent_dashboard', 'parent_paiements', 'parent_pedagogie', 'parent_assiduite'],
 };
 
-export const isRouteAllowedForRole = (role: UserRole, route: AppRoute): boolean => {
+export const isRouteAllowedForRole = (role: PortalRole, route: AppRoute): boolean => {
   return PORTAL_ROUTES[role]?.includes(route) ?? false;
 };
 
 interface NavigationState {
   viewMode: ViewMode;
-  userRole: UserRole;
-  portal: UserRole;
+  userRole: PortalRole;
+  portal: PortalRole;
   isMobileMenuOpen: boolean;
   setMobileMenuOpen: (open: boolean) => void;
   toggleMobileMenu: () => void;
@@ -46,7 +46,7 @@ interface NavigationState {
   navigate: (route: AppRoute) => void;
   goBack: () => void;
   goForward: () => void;
-  switchPortal: (portal: UserRole) => void;
+  switchPortal: (portal: PortalRole) => void;
   setViewMode: (mode: ViewMode) => void;
   navigateToLogin: () => void;
   navigateToRegister: () => void;
@@ -54,7 +54,8 @@ interface NavigationState {
   navigateToSetPassword: () => void;
   navigateToAdminConsole: () => void;
   launchAppWithPortal: (portal?: UserRole) => void;
-  launchAppWithRoute: (portal: UserRole, route: AppRoute) => void;
+  launchAppWithRoute: (portal: UserRole, route?: AppRoute) => void;
+  navigateToUserPortal: (role?: UserRole) => void;
   setUserRole: (role: UserRole) => void;
   reset: () => void;
 }
@@ -69,8 +70,8 @@ const positionAt = (entries: AppRoute[], index: number) => ({
 
 const initialState = {
   viewMode: 'landing' as ViewMode,
-  userRole: 'directeur' as UserRole,
-  portal: 'directeur' as UserRole,
+  userRole: 'directeur' as PortalRole,
+  portal: 'directeur' as PortalRole,
   isMobileMenuOpen: false,
   ...positionAt([PORTAL_HOME.directeur], 0),
 };
@@ -82,7 +83,7 @@ const initialState = {
 export const useNavigationStore = create<NavigationState>((set) => ({
   ...initialState,
 
-  setUserRole: (role) => set({ userRole: role }),
+  setUserRole: (role) => set({ userRole: (role !== 'super_admin' ? role : 'directeur') as PortalRole }),
 
   setMobileMenuOpen: (open) => set({ isMobileMenuOpen: open }),
   toggleMobileMenu: () => set((state) => ({ isMobileMenuOpen: !state.isMobileMenuOpen })),
@@ -97,7 +98,7 @@ export const useNavigationStore = create<NavigationState>((set) => ({
 
   launchAppWithPortal: (portal) =>
     set(() => {
-      const targetRole = portal || 'directeur';
+      const targetRole: PortalRole = (portal && portal !== 'super_admin') ? portal : 'directeur';
       return {
         viewMode: 'app',
         userRole: targetRole,
@@ -109,13 +110,38 @@ export const useNavigationStore = create<NavigationState>((set) => ({
 
   launchAppWithRoute: (portal, route) =>
     set(() => {
-      const targetRole = portal || 'directeur';
+      if (portal === 'super_admin') {
+        return {
+          viewMode: 'admin_console',
+          isMobileMenuOpen: false,
+        };
+      }
+      const targetRole: PortalRole = (portal as PortalRole) || 'directeur';
+      const targetRoute = route || PORTAL_HOME[targetRole];
       return {
         viewMode: 'app',
         userRole: targetRole,
         portal: targetRole,
         isMobileMenuOpen: false,
-        ...positionAt([route], 0),
+        ...positionAt([targetRoute], 0),
+      };
+    }),
+
+  navigateToUserPortal: (role) =>
+    set(() => {
+      if (role === 'super_admin') {
+        return {
+          viewMode: 'admin_console',
+          isMobileMenuOpen: false,
+        };
+      }
+      const targetRole: PortalRole = role || 'directeur';
+      return {
+        viewMode: 'app',
+        userRole: targetRole,
+        portal: targetRole,
+        isMobileMenuOpen: false,
+        ...positionAt([PORTAL_HOME[targetRole]], 0),
       };
     }),
 

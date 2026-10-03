@@ -8,7 +8,7 @@ import {
   GraduationCap,
   BookMarked,
 } from 'lucide-react';
-import { CURRENT_ENSEIGNANT } from '../../lib/mockData';
+// Teacher Navigation
 import { useAuthStore } from '../../store/useAuthStore';
 import { Tooltip, TooltipLabel } from '../ui/Tooltip';
 import { SidebarShell } from '../ui/SidebarShell';
@@ -36,11 +36,10 @@ export const TeacherSidebar: React.FC<TeacherSidebarProps> = ({
   const storeT = useLanguageStore((s) => s.t);
   const t = storeT?.nav ? storeT : translations.fr;
   const authProfile = useAuthStore((s) => s.profile);
-  const isReal = Boolean(authProfile?.ecole_id);
 
   const teacherName = authProfile
     ? `${authProfile.prenom} ${authProfile.nom}`
-    : `${CURRENT_ENSEIGNANT.prenom} ${CURRENT_ENSEIGNANT.nom}`;
+    : 'Enseignant';
 
   const navItems: Array<{
     id: TeacherNavTab;
@@ -57,7 +56,7 @@ export const TeacherSidebar: React.FC<TeacherSidebarProps> = ({
       id: 'teacher_classes',
       label: t.nav?.classes || 'Mes Classes',
       icon: <UsersRound className="h-4 w-4 shrink-0" />,
-      badge: isReal ? undefined : `${CURRENT_ENSEIGNANT.classes_assignees.length}`,
+      badge: undefined,
     },
     {
       id: 'teacher_absences',
@@ -92,7 +91,7 @@ export const TeacherSidebar: React.FC<TeacherSidebarProps> = ({
                     {teacherName}
                   </div>
                   <div className="text-[11px] text-emerald-700 dark:text-emerald-400 truncate font-medium">
-                    {isReal ? 'Corps Enseignant' : CURRENT_ENSEIGNANT.matieres[0]}
+                    Corps Enseignant
                   </div>
                 </div>
               </div>
@@ -102,7 +101,7 @@ export const TeacherSidebar: React.FC<TeacherSidebarProps> = ({
                   Classes :
                 </span>
                 <span className="font-bold text-slate-800 dark:text-slate-200">
-                  {isReal ? '0 classe' : CURRENT_ENSEIGNANT.classes_assignees.join(', ')}
+                  Classes assignées
                 </span>
               </div>
             </div>

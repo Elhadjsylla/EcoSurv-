@@ -390,6 +390,25 @@ export const PendingActivationScreen: React.FC = () => {
             <span className="truncate font-semibold">{ecoleNom}</span>
           </div>
 
+          {!user && (
+            <div className="p-3.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-200 text-xs space-y-2">
+              <div className="flex items-start gap-2">
+                <AlertCircle className="h-4 w-4 shrink-0 mt-0.5 text-amber-600 dark:text-amber-400" />
+                <span>Session requise : Pour activer votre établissement, connectez-vous avec les identifiants créés lors de l'inscription.</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  useNavigationStore.getState().setViewMode('login');
+                  window.history.pushState(null, '', '/login');
+                }}
+                className="w-full py-2 px-3 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-bold text-center block transition-colors"
+              >
+                Se connecter pour activer →
+              </button>
+            </div>
+          )}
+
           {/* Error Message */}
           {errorMessage && (
             <div className="p-3.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 text-rose-700 dark:text-rose-300 text-xs flex items-start gap-2.5 animate-shake">

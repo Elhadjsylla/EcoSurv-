@@ -10,14 +10,16 @@ export type FrequenceEcheance = 'mensuel' | 'trimestriel' | 'annuel';
 export interface EcoleMock {
   id: string;
   nom: string;
-  code_ecole: string;
+  code_ecole?: string;
   ville: string;
   adresse: string;
   telephone: string;
   email: string;
-  annee_scolaire: string;
-  statut_abonnement: 'essai' | 'actif' | 'suspendu' | 'expire' | 'annule';
+  annee_scolaire?: string;
+  statut_abonnement?: 'essai' | 'actif' | 'suspendu' | 'expire' | 'annule';
   statut_activation?: string;
+  devise?: string;
+  date_creation?: string;
 }
 
 export interface PaymentTimelineItem {
@@ -1107,6 +1109,7 @@ export const MOCK_PARENT_ENFANTS_DETAILS: Record<string, ParentEnfantDetail> = {
     ],
   },
 };
+
 
 
 

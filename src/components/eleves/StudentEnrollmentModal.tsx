@@ -206,7 +206,7 @@ export const StudentEnrollmentModal: React.FC<StudentEnrollmentModalProps> = ({
                   email_tuteur: emailTuteur,
                   telephone_tuteur: validData.telephone_tuteur?.trim(),
                   lien_parente: validData.lien_parente,
-                  redirect_to: window.location.origin,
+                  redirect_to: `${window.location.origin}/set-password`,
                 },
               });
 
@@ -302,7 +302,7 @@ export const StudentEnrollmentModal: React.FC<StudentEnrollmentModalProps> = ({
                   email_tuteur: validData.email_tuteur.trim(),
                   telephone_tuteur: validData.telephone_tuteur?.trim(),
                   lien_parente: validData.lien_parente,
-                  redirect_to: window.location.origin,
+                  redirect_to: `${window.location.origin}/set-password`,
                 },
               });
 
@@ -367,8 +367,8 @@ export const StudentEnrollmentModal: React.FC<StudentEnrollmentModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 dark:bg-slate-950/75 backdrop-blur-xs p-4 animate-in fade-in">
-      <div className="w-full max-w-2xl rounded-2xl bg-white dark:bg-slate-900 p-6 sm:p-8 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-6 max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 dark:bg-slate-950/75 backdrop-blur-xs p-3 sm:p-4 animate-in fade-in">
+      <div className="w-full max-w-2xl rounded-2xl bg-white dark:bg-slate-900 p-4 sm:p-6 md:p-8 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-5 sm:space-y-6 max-h-[92vh] overflow-y-auto">
         {/* Header Modal */}
         <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
           <div className="flex items-center gap-3">
@@ -737,11 +737,11 @@ export const StudentEnrollmentModal: React.FC<StudentEnrollmentModalProps> = ({
             </div>
 
             {/* Footer Buttons */}
-            <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
-              <Button type="button" variant="outline" size="sm" onClick={onClose} disabled={isEnrolling}>
+            <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2.5 sm:gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+              <Button type="button" variant="outline" size="sm" onClick={onClose} disabled={isEnrolling} className="w-full sm:w-auto justify-center">
                 Annuler
               </Button>
-              <Button type="submit" variant="primary" size="sm" className="gap-2" disabled={isEnrolling}>
+              <Button type="submit" variant="primary" size="sm" className="gap-2 w-full sm:w-auto justify-center" disabled={isEnrolling}>
                 {isEnrolling ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />

@@ -5,13 +5,12 @@ import { StudentInitials } from '../components/ui/StudentInitials';
 import { KpiCard } from '../components/ui/KpiCard';
 import { StudentDetailDrawer } from '../components/dashboard/StudentDetailDrawer';
 import {
-  MOCK_ELEVES,
-  MOCK_HISTORIQUE_RELANCES,
   EleveWithStats,
   HistoriqueRelance,
 } from '../lib/mockData';
 import { formatMRU } from '../lib/utils';
 import { useAuthStore } from '../store/useAuthStore';
+import { supabase } from '../lib/supabase';
 import {
   Send,
   MessageSquare,
@@ -29,14 +28,62 @@ import {
 
 export const RelancesPage: React.FC = () => {
   const authProfile = useAuthStore((s) => s.profile);
-  const [elevesList] = useState<EleveWithStats[]>(() => {
-    if (authProfile?.ecole_id) return [];
-    return MOCK_ELEVES;
-  });
-  const [relancesHistory, setRelancesHistory] = useState<HistoriqueRelance[]>(() => {
-    if (authProfile?.ecole_id) return [];
-    return MOCK_HISTORIQUE_RELANCES;
-  });
+  const [elevesList, setElevesList] = useState<EleveWithStats[]>([]);
+  const [relancesHistory, setRelancesHistory] = useState<HistoriqueRelance[]>([]);
+
+  // Charger les élèves et échéances réelles depuis Supabase
+  React.useEffect(() => {
+    if (authProfile?.ecole_id) {
+      const fetchOverdueData = async () => {
+        try {
+          const [elevesRes, echeancesRes] = await Promise.all([
+            supabase
+              .from('eleves')
+              .select('*')
+              .eq('ecole_id', authProfile.ecole_id),
+            supabase
+              .from('echeances')
+              .select('*')
+              .eq('ecole_id', authProfile.ecole_id),
+          ]);
+
+          if (!elevesRes.error && elevesRes.data) {
+            const allEcheances = echeancesRes.data || [];
+            const mapped = elevesRes.data.map((e: any, idx: number) => {
+              const studentEch = allEcheances.filter((ech: any) => ech.eleve_id === e.id);
+              const totalDue = studentEch.reduce((sum: number, ech: any) => sum + Number(ech.montant || 0), 0);
+              const totalPaid = studentEch.reduce((sum: number, ech: any) => sum + Number(ech.montant_paye || 0), 0);
+              const remaining = Math.max(0, totalDue - totalPaid);
+              const hasOverdue = studentEch.some((ech: any) => ech.statut === 'en_retard');
+              const computedStatut = hasOverdue
+                ? 'en_retard'
+                : (totalDue > 0 && remaining === 0
+                  ? 'paye'
+                  : (totalPaid > 0 ? 'partiel' : 'a_jour'));
+
+              return {
+                ...e,
+                matricule: e.matricule || `MAT-${100 + idx}`,
+                total_due: totalDue,
+                total_paid: totalPaid,
+                remaining: remaining,
+                statut: computedStatut,
+                classe: e.classe || 'Non assigné',
+                nom_tuteur: e.nom_tuteur || 'Tuteur Légal',
+                telephone_tuteur: e.telephone_tuteur || '',
+                nb_absences: e.nb_absences ?? 0,
+                timeline_paiements: e.timeline_paiements ?? [],
+              };
+            });
+            setElevesList(mapped as any[]);
+          }
+        } catch (err) {
+          console.warn('[RelancesPage] Erreur chargement:', err);
+        }
+      };
+      fetchOverdueData();
+    }
+  }, [authProfile?.ecole_id]);
   const [selectedEleveIds, setSelectedEleveIds] = useState<string[]>([]);
   const [isCampaignModalOpen, setIsCampaignModalOpen] = useState(false);
   const [isSendingCampaign, setIsSendingCampaign] = useState(false);

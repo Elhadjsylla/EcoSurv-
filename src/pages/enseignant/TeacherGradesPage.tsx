@@ -1,12 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import confetti from 'canvas-confetti';
-import {
-  CURRENT_ENSEIGNANT,
-  MOCK_ELEVES,
-  getElevesForTeacher,
-  MOCK_EVALUATIONS_INITIAL,
-  EvaluationRecord,
-} from '../../lib/mockData';
+import { EvaluationRecord, CURRENT_ENSEIGNANT } from '../../lib/mockData';
 import { Button } from '../../components/ui/Button';
 import { StudentInitials } from '../../components/ui/StudentInitials';
 import { ToastNotification } from '../../components/ui/ToastNotification';
@@ -26,15 +20,8 @@ import {
   ChevronRight,
 } from 'lucide-react';
 
-import { useAuthStore } from '../../store/useAuthStore';
-
 export const TeacherGradesPage: React.FC = () => {
-  const authProfile = useAuthStore((s) => s.profile);
-  const isRealAccount = Boolean(authProfile?.ecole_id);
-  const [evaluations, setEvaluations] = useState<EvaluationRecord[]>(() => {
-    if (isRealAccount) return [];
-    return MOCK_EVALUATIONS_INITIAL;
-  });
+  const [evaluations, setEvaluations] = useState<EvaluationRecord[]>([]);
   const [selectedClasse, setSelectedClasse] = useState<string>('6ème A');
   const [selectedMatiere, setSelectedMatiere] = useState<string>('Mathématiques');
   const [selectedTrimestre, setSelectedTrimestre] = useState<string>('Trimestre 2');
@@ -51,12 +38,7 @@ export const TeacherGradesPage: React.FC = () => {
   const [newEvalDate, setNewEvalDate] = useState('2026-03-09');
 
   // Élèves de la classe choisie
-  const teacherStudents = useMemo(() => {
-    if (isRealAccount) return [];
-    return getElevesForTeacher(MOCK_ELEVES, CURRENT_ENSEIGNANT.classes_assignees).filter(
-      (e) => e.classe === selectedClasse
-    );
-  }, [isRealAccount, selectedClasse]);
+  const teacherStudents: any[] = [];
 
   // Évaluations filtrées pour la classe et matière
   const classEvals = useMemo(() => {

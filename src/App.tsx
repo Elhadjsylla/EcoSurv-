@@ -32,6 +32,7 @@ import { RegisterPage } from './pages/RegisterPage';
 import { PendingActivationScreen } from './pages/PendingActivationScreen';
 import { SuperAdminConsole } from './pages/admin/SuperAdminConsole';
 import { SetPasswordPage } from './pages/SetPasswordPage';
+import { AdaptiveTableDemo } from './components/ui/AdaptiveTableDemo';
 import { ErrorBoundary } from './components/ui/ErrorBoundary';
 import { isRoleSimulatorAllowed } from './config/features';
 import { supabase } from './lib/supabase';
@@ -80,15 +81,32 @@ export function AppContent() {
   useEffect(() => {
     let isMounted = true;
 
+    // Détection stricte d'un flux d'activation de compte ou de réinitialisation de mot de passe
+    const checkIsActivationOrRecovery = (): boolean => {
+      const path = typeof window !== 'undefined' ? window.location.pathname.toLowerCase().replace(/\/+$/, '') || '/' : '/';
+      if (path === '/set-password' || path === '/reinitialisation') return true;
+
+      const hash = typeof window !== 'undefined' ? window.location.hash : '';
+      if (hash.includes('type=invite') || hash.includes('type=recovery')) return true;
+
+      const search = typeof window !== 'undefined' ? window.location.search : '';
+      if (search.includes('type=invite') || search.includes('type=recovery')) return true;
+
+      return false;
+    };
+
     const resolveSession = async () => {
       try {
+        const isActivationLink = checkIsActivationOrRecovery();
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
         if (sessionError || !session?.user) {
           // Aucune session en base
           useAuthStore.getState().setLoading(false);
           const match = parsePath(window.location.pathname);
-          if (match.viewMode === 'app' || match.viewMode === 'admin_console') {
+          if (isActivationLink || match.viewMode === 'set_password') {
+            useNavigationStore.getState().navigateToSetPassword();
+          } else if (match.viewMode === 'app' || match.viewMode === 'admin_console') {
             // Tentative d'accès à une route protégée sans session -> Login
             useNavigationStore.getState().setViewMode('login');
             window.history.replaceState(null, '', '/login');
@@ -99,7 +117,35 @@ export function AppContent() {
           return;
         }
 
-        // Session valide : charger le profil utilisateur
+        // Si l'utilisateur arrive via un lien d'activation (invitation parent/personnel ou recovery) :
+        // Le profil peut être inactif (actif: false, ex: personnel invité en attente de premier mot de passe).
+        // On NE DOIT PAS le déconnecter ni l'envoyer sur la landing page !
+        if (isActivationLink) {
+          useAuthStore.getState().setUser(session.user);
+          const { data: profile } = await supabase
+            .from('profils')
+            .select('*')
+            .eq('id', session.user.id)
+            .maybeSingle();
+
+          if (profile) {
+            useAuthStore.getState().setProfile(profile as UserProfile);
+            if (profile.ecole_id) {
+              const { data: ecoleData } = await supabase
+                .from('ecoles')
+                .select('id, nom, ville, telephone, email, statut_activation, statut_abonnement')
+                .eq('id', profile.ecole_id)
+                .maybeSingle();
+              if (ecoleData) useAuthStore.getState().setEcole(ecoleData);
+            }
+          }
+          useNavigationStore.getState().navigateToSetPassword();
+          window.history.replaceState(null, '', '/set-password');
+          if (isMounted) setIsAuthResolving(false);
+          return;
+        }
+
+        // Session valide standard : charger le profil utilisateur
         const { data: profile, error: profileError } = await supabase
           .from('profils')
           .select('*')
@@ -145,9 +191,11 @@ export function AppContent() {
         const role = profile.role as UserRole;
 
         if (role === 'super_admin') {
-          // Aucun portail métier pour le super admin : il rejoint toujours sa console.
+          // Aucun portail métier pour le super admin : il rejoint sa console ou reste sur landing
           if (match.viewMode === 'set_password') {
             useNavigationStore.getState().navigateToSetPassword();
+          } else if (match.viewMode === 'landing') {
+            useNavigationStore.getState().setViewMode('landing');
           } else {
             useNavigationStore.getState().navigateToAdminConsole();
             window.history.replaceState(null, '', getPathForState('admin_console'));
@@ -174,8 +222,11 @@ export function AppContent() {
           useNavigationStore.getState().launchAppWithRoute(targetPortal, match.route);
         } else if (match.viewMode === 'set_password') {
           useNavigationStore.getState().navigateToSetPassword();
+        } else if (match.viewMode === 'landing') {
+          // Si l'utilisateur connecté est sur la landing page, on le laisse sur la landing page
+          useNavigationStore.getState().setViewMode('landing');
         } else {
-          // Si l'utilisateur était sur '/' ou '/login' alors qu'il est déjà connecté
+          // Si l'utilisateur était sur '/login' alors qu'il est déjà connecté -> redirection vers son portail
           useNavigationStore.getState().launchAppWithPortal(portalRole);
           const homePath = getPathForState('app', PORTAL_HOME[portalRole]);
           window.history.replaceState(null, '', homePath);
@@ -191,8 +242,24 @@ export function AppContent() {
 
     resolveSession();
 
+    // Écoute des événements d'authentification dynamiques (ex: lien de récupération mot de passe cliqué en direct)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event) => {
+      if (!isMounted) return;
+      if (event === 'PASSWORD_RECOVERY') {
+        useNavigationStore.getState().navigateToSetPassword();
+        window.history.replaceState(null, '', '/set-password');
+      } else if (event === 'SIGNED_IN') {
+        const hash = typeof window !== 'undefined' ? window.location.hash : '';
+        if (hash.includes('type=invite') || hash.includes('type=recovery')) {
+          useNavigationStore.getState().navigateToSetPassword();
+          window.history.replaceState(null, '', '/set-password');
+        }
+      }
+    });
+
     return () => {
       isMounted = false;
+      subscription.unsubscribe();
     };
   }, []);
 
@@ -210,7 +277,10 @@ export function AppContent() {
   useEffect(() => {
     const handlePopState = () => {
       const match = parsePath(window.location.pathname);
-      if (match.viewMode === 'app' && match.route) {
+      const currentProfile = useAuthStore.getState().profile;
+      if (match.viewMode === 'login' && currentProfile) {
+        useNavigationStore.getState().navigateToUserPortal(currentProfile.role);
+      } else if (match.viewMode === 'app' && match.route) {
         navigate(match.route);
       } else {
         setViewMode(match.viewMode);
@@ -435,6 +505,14 @@ export function AppContent() {
     );
   }
 
+  if (window.location.hash === '#demo-adaptive-table') {
+    return (
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white p-4">
+        <AdaptiveTableDemo />
+      </div>
+    );
+  }
+
   if (viewMode === 'landing') {
     return (
       <div key="landing-page" className="animate-page-enter">
@@ -444,6 +522,10 @@ export function AppContent() {
   }
 
   if (viewMode === 'login') {
+    if (authProfile) {
+      useNavigationStore.getState().navigateToUserPortal(authProfile.role);
+      return null;
+    }
     return (
       <div key="login-page" className="animate-page-enter">
         <LoginPage onReturnToLanding={() => setViewMode('landing')} />

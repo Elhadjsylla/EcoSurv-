@@ -2,10 +2,10 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import {
   CaisseTransaction,
-  MOCK_CAISSE_TRANSACTIONS_INITIAL,
   CURRENT_CAISSIER,
   MethodePaiement,
 } from '../../lib/mockData';
+import { CLAIMS_CONFIG } from '../../config/claims';
 import { Button } from '../../components/ui/Button';
 import { ToastNotification } from '../../components/ui/ToastNotification';
 import { Select } from '../../components/ui/Select';
@@ -44,10 +44,7 @@ export const CaissierJournalPage: React.FC = () => {
   const authEcole = useAuthStore((s) => s.ecole);
   const isRealAccount = Boolean(authProfile?.ecole_id);
 
-  const [transactions, setTransactions] = useState<CaisseTransaction[]>(() => {
-    if (isRealAccount) return [];
-    return MOCK_CAISSE_TRANSACTIONS_INITIAL;
-  });
+  const [transactions, setTransactions] = useState<CaisseTransaction[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedMethod, setSelectedMethod] = useState<string>('all');
@@ -69,7 +66,7 @@ export const CaissierJournalPage: React.FC = () => {
   // Chargement réel des transactions depuis Supabase (tables paiements et echeances)
   const fetchJournalTransactions = async () => {
     if (!authProfile?.ecole_id) {
-      setTransactions(useCaisseStore.getState().transactions);
+      setTransactions([]);
       setIsLoading(false);
       return;
     }
@@ -478,7 +475,7 @@ export const CaissierJournalPage: React.FC = () => {
           title="Quittances Émises"
           amount={transactions.length}
           unit="count"
-          subtitle="Journal certifié conforme"
+          subtitle={CLAIMS_CONFIG.journalCertifieConforme ? "Journal certifié conforme" : "Journal de caisse validé"}
           icon={<FileCheck className="w-5 h-5 text-slate-600 dark:text-slate-300" />}
           variant="default"
         />
@@ -697,7 +694,9 @@ export const CaissierJournalPage: React.FC = () => {
               <div className="bg-slate-900 text-white p-4 flex items-center justify-between border-b border-slate-800">
                 <div className="flex items-center gap-2">
                   <Receipt className="h-5 w-5 text-amber-400" />
-                  <span className="font-bold text-sm">Duplicata Quittance Officielle</span>
+                  <span className="font-bold text-sm">
+                    {CLAIMS_CONFIG.duplicataQuittanceOfficielle ? 'Duplicata Quittance Officielle' : 'Duplicata Quittance de Paiement'}
+                  </span>
                 </div>
                 <button
                   onClick={() => setSelectedReceipt(null)}
@@ -771,7 +770,7 @@ export const CaissierJournalPage: React.FC = () => {
                 <div className="text-[10px] text-slate-400 dark:text-slate-500 text-center border-t border-slate-100 dark:border-slate-800 pt-2">
                   Encaissé par {selectedReceipt.encaisse_par} • Guichet Central N°1
                   <br />
-                  Ce document certifie la libération de l'échéance susmentionnée.
+                  Ce document atteste le versement de l'échéance susmentionnée.
                 </div>
               </div>
 

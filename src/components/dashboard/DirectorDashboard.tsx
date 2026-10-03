@@ -1,10 +1,10 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import {
-  MOCK_ELEVES,
-  MOCK_MONTHLY_REPORTS,
   getDashboardKpis,
   EleveWithStats,
+  MonthlyFinancialReport,
 } from '../../lib/mockData';
+import { computeMonthlyFinancialReports } from '../../lib/financialReportsHelper';
 import { KpiCard } from '../ui/KpiCard';
 import { StatusBadge } from '../ui/StatusBadge';
 import { StudentInitials } from '../ui/StudentInitials';
@@ -53,18 +53,17 @@ export const DirectorDashboard: React.FC<DirectorDashboardProps> = ({
   const authProfile = useAuthStore((s) => s.profile);
   const authEcole = useAuthStore((s) => s.ecole);
 
-  const [elevesList, setElevesList] = useState<EleveWithStats[]>(() => {
-    // Si l'utilisateur est un vrai compte Supabase avec ecole_id, démarrer propre (0 élève tant que non chargé)
-    if (authProfile?.ecole_id) return [];
-    return MOCK_ELEVES;
-  });
+  const [elevesList, setElevesList] = useState<EleveWithStats[]>([]);
+  const [monthlyReports, setMonthlyReports] = useState<MonthlyFinancialReport[]>([]);
+  const [isLoadingFinances, setIsLoadingFinances] = useState(true);
 
-  // Charger les vrais élèves et leurs échéances réelles depuis Supabase
+  // Charger les vrais élèves, échéances et paiements depuis Supabase
   useEffect(() => {
     if (authProfile?.ecole_id) {
-      const fetchRealEleves = async () => {
+      const fetchRealData = async () => {
+        setIsLoadingFinances(true);
         try {
-          const [elevesRes, echeancesRes] = await Promise.all([
+          const [elevesRes, echeancesRes, paiementsRes] = await Promise.all([
             supabase
               .from('eleves')
               .select('*')
@@ -73,11 +72,20 @@ export const DirectorDashboard: React.FC<DirectorDashboardProps> = ({
               .from('echeances')
               .select('*')
               .eq('ecole_id', authProfile.ecole_id),
+            supabase
+              .from('paiements')
+              .select('*')
+              .eq('ecole_id', authProfile.ecole_id),
           ]);
 
-          if (!elevesRes.error && elevesRes.data) {
-            const allEcheances = echeancesRes.data || [];
+          const allEcheances = echeancesRes.data || [];
+          const allPaiements = paiementsRes.data || [];
 
+          // Calculer les rapports financiers réels
+          const computedReports = computeMonthlyFinancialReports(allEcheances, allPaiements);
+          setMonthlyReports(computedReports);
+
+          if (!elevesRes.error && elevesRes.data) {
             const mapped = elevesRes.data.map((e: any, idx: number) => {
               const studentEch = allEcheances.filter((ech: any) => ech.eleve_id === e.id);
               const totalDue = studentEch.reduce((sum: number, ech: any) => sum + Number(ech.montant || 0), 0);
@@ -107,10 +115,14 @@ export const DirectorDashboard: React.FC<DirectorDashboardProps> = ({
             setElevesList(mapped as any[]);
           }
         } catch (e) {
-          console.warn('[DirectorDashboard] Erreur chargement élèves réels:', e);
+          console.warn('[DirectorDashboard] Erreur chargement données réelles:', e);
+        } finally {
+          setIsLoadingFinances(false);
         }
       };
-      fetchRealEleves();
+      fetchRealData();
+    } else {
+      setIsLoadingFinances(false);
     }
   }, [authProfile?.ecole_id]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -374,9 +386,13 @@ export const DirectorDashboard: React.FC<DirectorDashboardProps> = ({
 
   // Export PDF réactif avec spinner et confirmation toast
   const handleExportPdf = () => {
+    if (monthlyReports.length === 0) {
+      showToast('Export indisponible : aucune donnée financière enregistrée', 'warning');
+      return;
+    }
     setIsExportingPdf(true);
     try {
-      generateFinancialReportPdf(MOCK_MONTHLY_REPORTS, authEcole?.nom || 'Établissement Scolaire');
+      generateFinancialReportPdf(monthlyReports, authEcole?.nom || 'Établissement Scolaire');
       showToast('✓ Rapport de synthèse PDF généré et téléchargé avec succès !', 'success');
     } catch (err) {
       console.error('Erreur export PDF :', err);
@@ -472,9 +488,15 @@ export const DirectorDashboard: React.FC<DirectorDashboardProps> = ({
           <Button
             variant="outline"
             size="sm"
-            className="gap-2 h-10 px-4"
+            className="gap-2 h-10 px-4 disabled:opacity-50 disabled:cursor-not-allowed"
             loading={isExportingPdf}
             loadingText="Génération PDF..."
+            disabled={monthlyReports.length === 0 || isLoadingFinances}
+            title={
+              monthlyReports.length === 0
+                ? "Export indisponible : aucune donnée financière enregistrée"
+                : "Exporter le rapport financier officiel en PDF"
+            }
             onClick={handleExportPdf}
           >
             <ArrowDownToLine className="h-4 w-4" />

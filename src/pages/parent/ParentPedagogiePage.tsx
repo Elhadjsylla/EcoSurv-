@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import {
-  MOCK_PARENT_ENFANTS_DETAILS,
   ParentMatiereNote,
 } from '../../lib/mockData';
 import { Button } from '../../components/ui/Button';
@@ -72,15 +71,14 @@ export const ParentPedagogiePage: React.FC<ParentPedagogiePageProps> = ({
     );
   }
 
-  const mockEnfant = MOCK_PARENT_ENFANTS_DETAILS[activeChild.id];
-  const enfant = mockEnfant || {
+  const enfant = {
     id: activeChild.id,
     nom: activeChild.nom,
     prenom: activeChild.prenom,
     classe: activeChild.classe,
     matricule: activeChild.matricule,
     photo_initiales: activeChild.photo_initiales,
-    rang: 1,
+    rang: '-',
     moyenne_generale: 0,
     reste_a_payer: activeChild.remaining,
     statut_paiement: (activeChild.remaining === 0 ? 'paye' : 'partiel') as any,
@@ -167,7 +165,14 @@ export const ParentPedagogiePage: React.FC<ParentPedagogiePageProps> = ({
 
           <Button
             size="sm"
+            disabled={enfant.bulletin.length === 0}
+            title={
+              enfant.bulletin.length === 0
+                ? "Export indisponible : aucune note enregistrée pour ce trimestre"
+                : "Télécharger le bulletin trimestriel en PDF"
+            }
             onClick={() => {
+              if (enfant.bulletin.length === 0) return;
               generateBulletinPdf({
                 enfantNom: enfant.nom,
                 enfantPrenom: enfant.prenom,
@@ -175,18 +180,18 @@ export const ParentPedagogiePage: React.FC<ParentPedagogiePageProps> = ({
                 classe: enfant.classe,
                 trimestre: selectedTrimestre,
                 rang: enfant.rang,
-                effectif: 32,
+                effectif: 0,
                 moyenneGenerale: moyenneCalculee,
-                moyenneClasse: 12.4,
+                moyenneClasse: 0,
                 matieres: enfant.bulletin,
                 ecoleNom,
               });
               setActiveToast({
-                message: `Bulletin officiel du ${selectedTrimestre === 'T1' ? '1er' : selectedTrimestre === 'T2' ? '2ème' : '3ème'} Trimestre téléchargé en PDF pour ${enfant.prenom} ${enfant.nom}.`,
+                message: `Bulletin du ${selectedTrimestre === 'T1' ? '1er' : selectedTrimestre === 'T2' ? '2ème' : '3ème'} Trimestre téléchargé en PDF pour ${enfant.prenom} ${enfant.nom}.`,
                 type: 'success',
               });
             }}
-            className="bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold gap-2 px-3.5 py-2.5 rounded-xl shadow-xs"
+            className="bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold gap-2 px-3.5 py-2.5 rounded-xl shadow-xs disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <ArrowDownToLine className="h-4 w-4" />
             Bulletin PDF

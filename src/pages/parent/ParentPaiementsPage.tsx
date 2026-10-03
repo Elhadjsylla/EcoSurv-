@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import {
-  MOCK_PARENT_ENFANTS_DETAILS,
-  CURRENT_PARENT,
   MethodePaiement,
   ParentEnfantDetail,
 } from '../../lib/mockData';
+import { CLAIMS_CONFIG } from '../../config/claims';
 import { generateReceiptPdf } from '../../lib/pdf/generateReceiptPdf';
 import { useEcoleStore } from '../../store/useEcoleStore';
 import { useAuthStore } from '../../store/useAuthStore';
@@ -49,21 +48,27 @@ export const ParentPaiementsPage: React.FC<ParentPaiementsPageProps> = ({
     const fetchFinances = async () => {
       setIsLoadingFinances(true);
       try {
-        const [echRes, payRes] = await Promise.all([
-          supabase
-            .from('echeances')
-            .select('*')
-            .eq('eleve_id', activeChild.id)
-            .order('date_echeance', { ascending: true }),
-          supabase
+        const { data: echData } = await supabase
+          .from('echeances')
+          .select('*')
+          .eq('eleve_id', activeChild.id)
+          .order('date_echeance', { ascending: true });
+
+        const echList = echData || [];
+        setRealEcheances(echList);
+
+        if (echList.length > 0) {
+          const echIds = echList.map((e) => e.id);
+          const { data: payData } = await supabase
             .from('paiements')
             .select('*')
-            .eq('eleve_id', activeChild.id)
-            .order('date_paiement', { ascending: false }),
-        ]);
+            .in('echeance_id', echIds)
+            .order('created_at', { ascending: false });
 
-        if (echRes.data) setRealEcheances(echRes.data);
-        if (payRes.data) setRealPaiements(payRes.data);
+          setRealPaiements(payData || []);
+        } else {
+          setRealPaiements([]);
+        }
       } catch (err) {
         console.warn('[ParentPaiementsPage] Erreur chargement finances:', err);
       } finally {
@@ -73,8 +78,6 @@ export const ParentPaiementsPage: React.FC<ParentPaiementsPageProps> = ({
 
     fetchFinances();
   }, [activeChild?.id]);
-
-  const mockEnfant = activeChild ? MOCK_PARENT_ENFANTS_DETAILS[activeChild.id] : null;
 
   // Calculer les données financières dynamiquement d'après les échéances réelles
   const totalScolarite = activeChild ? activeChild.total_due : 0;
@@ -90,39 +93,35 @@ export const ParentPaiementsPage: React.FC<ParentPaiementsPageProps> = ({
       return;
     }
 
-    if (mockEnfant) {
-      setEnfantData(mockEnfant);
-    } else {
-      setEnfantData({
-        id: activeChild.id,
-        nom: activeChild.nom,
-        prenom: activeChild.prenom,
-        classe: activeChild.classe,
-        matricule: activeChild.matricule,
-        photo_initiales: activeChild.photo_initiales,
-        date_naissance: '',
-        professeur_principal: '',
-        total_scolarite: totalScolarite,
-        total_regle: totalRegle,
-        reste_a_payer: resteAPayer,
-        statut_paiement: (resteAPayer === 0 ? 'paye' : (totalRegle > 0 ? 'partiel' : 'en_retard')) as any,
-        prochaine_echeance_date: nextEcheance?.date_echeance || 'Aucune échéance en attente',
-        prochaine_echeance_montant: nextEcheance ? Number(nextEcheance.montant || 0) : 0,
-        bulletin: [],
-        emploi_du_temps_aujourdhui: [],
-        nb_absences_total: 0,
-        nb_retards_total: 0,
-        rang: '-',
-        moyenne_generale: 0,
-      });
-    }
-  }, [activeChild, mockEnfant, totalScolarite, totalRegle, resteAPayer, realEcheances, realPaiements]);
+    setEnfantData({
+      id: activeChild.id,
+      nom: activeChild.nom,
+      prenom: activeChild.prenom,
+      classe: activeChild.classe,
+      matricule: activeChild.matricule,
+      photo_initiales: activeChild.photo_initiales,
+      date_naissance: '',
+      professeur_principal: '',
+      total_scolarite: totalScolarite,
+      total_regle: totalRegle,
+      reste_a_payer: resteAPayer,
+      statut_paiement: (resteAPayer === 0 ? 'paye' : (totalRegle > 0 ? 'partiel' : 'en_retard')) as any,
+      prochaine_echeance_date: nextEcheance?.date_echeance || 'Aucune échéance en attente',
+      prochaine_echeance_montant: nextEcheance ? Number(nextEcheance.montant || 0) : 0,
+      bulletin: [],
+      emploi_du_temps_aujourdhui: [],
+      nb_absences_total: 0,
+      nb_retards_total: 0,
+      rang: '-',
+      moyenne_generale: 0,
+    });
+  }, [activeChild, totalScolarite, totalRegle, resteAPayer, nextEcheance]);
 
   // Formulaire de paiement mobile
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [paymentAmount, setPaymentAmount] = useState<number>(() => (resteAPayer > 0 ? Math.min(resteAPayer, 25000) : 0));
   const [selectedMethod, setSelectedMethod] = useState<MethodePaiement>('bankily');
-  const [phoneNumber, setPhoneNumber] = useState<string>(authProfile?.telephone || CURRENT_PARENT.telephone);
+  const [phoneNumber, setPhoneNumber] = useState<string>(authProfile?.telephone || '');
   const [otpCode, setOtpCode] = useState<string>('1234');
   const [isProcessing, setIsProcessing] = useState(false);
   const [confirmedReceipt, setConfirmedReceipt] = useState<{
@@ -318,60 +317,93 @@ export const ParentPaiementsPage: React.FC<ParentPaiementsPageProps> = ({
             </h3>
           </div>
           <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-            Quittances certifiées par l'établissement
+            {CLAIMS_CONFIG.quittancesCertifiees ? "Quittances certifiées par l'établissement" : "Quittances et justificatifs de paiement"}
           </span>
         </div>
 
         <div className="space-y-3">
-          {/* Lignes d'historique */}
-          <div className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="flex items-center gap-3.5">
-              <div className="h-10 w-10 rounded-xl bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 flex items-center justify-center shrink-0 border border-emerald-200 dark:border-emerald-800">
-                <CheckCircle2 className="h-5 w-5" />
-              </div>
-              <div>
-                <div className="font-bold text-slate-900 dark:text-white text-sm">
-                  Règlement Trimestre 1 (Inscription & Frais de rentrée)
-                </div>
-                <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                  Payé le 15 Octobre 2025 • Via Bankily • Réf: <span className="font-mono text-purple-700 dark:text-purple-400 font-semibold">REC-NKTT-7102</span>
-                </div>
-              </div>
+          {/* Lignes d'historique réelles depuis la base de données */}
+          {realPaiements.length === 0 && !confirmedReceipt && (
+            <div className="py-8 px-4 text-center rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/20">
+              <Receipt className="h-8 w-8 text-slate-300 dark:text-slate-600 mx-auto mb-2" />
+              <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                Aucune quittance de paiement disponible
+              </p>
+              <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 max-w-md mx-auto">
+                Vos quittances et justificatifs apparaîtront automatiquement dès enregistrement et validation de vos règlements par l'établissement.
+              </p>
             </div>
+          )}
 
-            <div className="flex items-center gap-4">
-              <span className="font-black text-slate-900 dark:text-white text-base font-mono">
-                {formatMRU(40000)}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  generateReceiptPdf({
-                    recuRef: 'REC-NKTT-7102',
-                    datePaiement: '15/10/2025 à 10:30',
-                    eleveNom: enfantData.nom,
-                    elevePrenom: enfantData.prenom,
-                    matricule: enfantData.matricule,
-                    classe: enfantData.classe,
-                    libelleEcheance: 'Règlement Trimestre 1 (Inscription & Frais de rentrée)',
-                    montant: 40000,
-                    methodePaiement: 'bankily',
-                    caissierNom: 'Caisse Centrale',
-                    ecoleNom,
-                  });
-                  setActiveToast({
-                    message: `Quittance REC-NKTT-7102 téléchargée en PDF pour ${enfantData.prenom} ${enfantData.nom}.`,
-                    type: 'success',
-                  });
-                }}
-                className="text-xs font-semibold gap-1.5"
+          {realPaiements.map((p) => {
+            const echeanceAssociee = realEcheances.find((e) => e.id === p.echeance_id);
+            const dateStr = p.created_at
+              ? new Date(p.created_at).toLocaleDateString('fr-FR', {
+                  day: '2-digit',
+                  month: 'short',
+                  year: 'numeric',
+                })
+              : 'Date non renseignée';
+            const refPaiement = p.reference_transaction || `REC-${p.id.slice(0, 8).toUpperCase()}`;
+
+            return (
+              <div
+                key={p.id}
+                className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
               >
-                <ArrowDownToLine className="h-3.5 w-3.5" />
-                Quittance
-              </Button>
-            </div>
-          </div>
+                <div className="flex items-center gap-3.5">
+                  <div className="h-10 w-10 rounded-xl bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 flex items-center justify-center shrink-0 border border-emerald-200 dark:border-emerald-800">
+                    <CheckCircle2 className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <div className="font-bold text-slate-900 dark:text-white text-sm">
+                      {echeanceAssociee?.libelle || 'Règlement de scolarité'}
+                    </div>
+                    <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                      Payé le {dateStr} • Via {p.methode?.toUpperCase() || 'GUICHET'} • Réf:{' '}
+                      <span className="font-mono text-purple-700 dark:text-purple-400 font-semibold">
+                        {refPaiement}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-4">
+                  <span className="font-black text-slate-900 dark:text-white text-base font-mono">
+                    {formatMRU(Number(p.montant || 0))}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      if (!enfantData) return;
+                      generateReceiptPdf({
+                        recuRef: refPaiement,
+                        datePaiement: dateStr,
+                        eleveNom: enfantData.nom,
+                        elevePrenom: enfantData.prenom,
+                        matricule: enfantData.matricule,
+                        classe: enfantData.classe,
+                        libelleEcheance: echeanceAssociee?.libelle || 'Règlement de scolarité',
+                        montant: Number(p.montant || 0),
+                        methodePaiement: p.methode || 'especes',
+                        caissierNom: 'Caisse Établissement',
+                        ecoleNom,
+                      });
+                      setActiveToast({
+                        message: `Quittance ${refPaiement} téléchargée en PDF pour ${enfantData.prenom} ${enfantData.nom}.`,
+                        type: 'success',
+                      });
+                    }}
+                    className="text-xs font-semibold gap-1.5"
+                  >
+                    <ArrowDownToLine className="h-3.5 w-3.5" />
+                    Quittance
+                  </Button>
+                </div>
+              </div>
+            );
+          })}
 
           {confirmedReceipt && (
             <div className="p-4 rounded-2xl border border-emerald-300 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-950/30 flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-in fade-in">

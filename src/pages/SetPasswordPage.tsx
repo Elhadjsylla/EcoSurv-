@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Lock, Eye, EyeOff, CheckCircle2, AlertCircle, ShieldCheck, GraduationCap } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuthStore } from '../store/useAuthStore';
@@ -14,7 +14,54 @@ export const SetPasswordPage: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+
+  // Extraction d'une éventuelle erreur renvoyée par Supabase dans le hash ou la query (ex: token expiré)
+  const [error, setError] = useState<string | null>(() => {
+    const hash = typeof window !== 'undefined' ? window.location.hash : '';
+    if (hash.includes('error_description=')) {
+      const params = new URLSearchParams(hash.replace(/^#/, ''));
+      const desc = params.get('error_description');
+      if (desc) return decodeURIComponent(desc.replace(/\+/g, ' '));
+    }
+    const search = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+    const desc = search?.get('error_description');
+    if (desc) return decodeURIComponent(desc.replace(/\+/g, ' '));
+    return null;
+  });
+
+  // Chargement de secours du profil si non encore présent dans le store Zustand
+  useEffect(() => {
+    if (!profile) {
+      const fetchSessionProfile = async () => {
+        try {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            useAuthStore.getState().setUser(user);
+            const { data: userProf } = await supabase
+              .from('profils')
+              .select('*')
+              .eq('id', user.id)
+              .maybeSingle();
+
+            if (userProf) {
+              useAuthStore.getState().setProfile(userProf);
+              if (userProf.ecole_id) {
+                const { data: ecoleData } = await supabase
+                  .from('ecoles')
+                  .select('id, nom, ville, telephone, email, statut_activation, statut_abonnement')
+                  .eq('id', userProf.ecole_id)
+                  .maybeSingle();
+                if (ecoleData) useAuthStore.getState().setEcole(ecoleData);
+              }
+            }
+          }
+        } catch (e) {
+          console.warn('[SetPassword] Note chargement profil:', e);
+        }
+      };
+      fetchSessionProfile();
+    }
+  }, [profile]);
 
   const roleLabel =
     profile?.role === 'enseignant'
@@ -23,6 +70,8 @@ export const SetPasswordPage: React.FC = () => {
       ? 'Espace Caissier'
       : profile?.role === 'parent'
       ? 'Espace Parent'
+      : profile?.role === 'directeur'
+      ? 'Espace Direction'
       : 'Espace Collaborateur';
 
   const ecoleNom = ecole?.nom || 'Votre établissement';
