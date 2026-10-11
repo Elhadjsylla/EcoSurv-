@@ -19,6 +19,16 @@ interface ManageStaffRequest {
   redirect_to?: string;
 }
 
+function escapeHtml(str: string | null | undefined): string {
+  if (!str) return "";
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -35,11 +45,21 @@ Deno.serve(async (req: Request) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     const resendApiKey = Deno.env.get("RESEND_API_KEY");
+    const siteUrl = Deno.env.get("SITE_URL");
+    const allowTestActionLinks = Deno.env.get("ALLOW_TEST_ACTION_LINKS") === "true";
 
     if (!supabaseUrl || !serviceRoleKey) {
       console.error("[manage-staff-member] Configuration Supabase manquante.");
       return new Response(
         JSON.stringify({ error: "Configuration serveur Supabase incomplète." }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (!siteUrl?.trim()) {
+      console.error("[manage-staff-member] Configuration serveur manquante: SITE_URL non configuré.");
+      return new Response(
+        JSON.stringify({ error: "Configuration serveur incomplète : la variable d'environnement SITE_URL est requise." }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -110,9 +130,13 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    if (targetProfile.role === "super_admin") {
+    // Restriction stricte de rôle cible : manage-staff-member ne gère QUE les enseignants et les caissiers
+    // (refus strict pour directeur, parent ou super_admin)
+    if (targetProfile.role !== "enseignant" && targetProfile.role !== "caissier") {
       return new Response(
-        JSON.stringify({ error: "Impossible de modifier un compte Super Admin." }),
+        JSON.stringify({
+          error: "Action non autorisée : cette fonction est strictement réservée à la gestion des enseignants et caissiers de l'établissement.",
+        }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -135,7 +159,31 @@ Deno.serve(async (req: Request) => {
         );
       }
 
-      const targetRedirectUrl = payload.redirect_to || "https://ecosurv.mr";
+      // Détermination stricte de targetRedirectUrl via ALLOWED_ORIGINS et SITE_URL
+      const rawOrigin = (req.headers.get("origin") || "").trim();
+      let clientOrigin = "";
+      if (rawOrigin) {
+        try {
+          clientOrigin = new URL(rawOrigin).origin;
+        } catch {
+          clientOrigin = rawOrigin.replace(/\/+$/, "");
+        }
+      }
+
+      const allowedOriginsRaw = Deno.env.get("ALLOWED_ORIGINS") || "";
+      const allowedOrigins = allowedOriginsRaw
+        .split(",")
+        .map((o) => o.trim().replace(/\/+$/, ""))
+        .filter(Boolean);
+
+      const defaultSiteUrl = siteUrl.trim().replace(/\/+$/, "");
+      let resolvedOrigin = defaultSiteUrl;
+
+      if (clientOrigin && allowedOrigins.includes(clientOrigin)) {
+        resolvedOrigin = clientOrigin;
+      }
+
+      const targetRedirectUrl = `${resolvedOrigin}/set-password`;
 
       // Générer le lien de récupération sécurisé
       const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
@@ -154,7 +202,16 @@ Deno.serve(async (req: Request) => {
         );
       }
 
-      const actionLink = linkData.properties.action_link;
+      let actionLink = linkData.properties.action_link;
+      if (actionLink) {
+        try {
+          const parsedLink = new URL(actionLink);
+          parsedLink.searchParams.set("redirect_to", targetRedirectUrl);
+          actionLink = parsedLink.toString();
+        } catch {
+          actionLink = actionLink.replace(/redirect_to=[^&]+/, `redirect_to=${encodeURIComponent(targetRedirectUrl)}`);
+        }
+      }
 
       // Récupérer le nom de l'école
       const { data: ecoleData } = await supabaseAdmin
@@ -194,9 +251,9 @@ Deno.serve(async (req: Request) => {
               <p>Sécurité & Gestion des Accès</p>
             </div>
             <div class="content">
-              <div class="greeting">Bonjour ${targetProfile.prenom || ''} ${targetProfile.nom || ''},</div>
+              <div class="greeting">Bonjour ${escapeHtml(targetProfile.prenom)} ${escapeHtml(targetProfile.nom)},</div>
               <p class="message">
-                La direction de <strong>${nomEcole}</strong> a initié une demande de réinitialisation de votre mot de passe pour votre compte EcoSurv.
+                La direction de <strong>${escapeHtml(nomEcole)}</strong> a initié une demande de réinitialisation de votre mot de passe pour votre compte EcoSurv.
               </p>
               <div class="cta-wrap">
                 <a href="${actionLink}" class="cta-btn">Définir un nouveau mot de passe</a>
@@ -206,7 +263,7 @@ Deno.serve(async (req: Request) => {
               </p>
             </div>
             <div class="footer">
-              EcoSurv • République Islamique de Mauritanie • Support : contact@ecosurv.mr
+              EcoSurv • République Islamique de Mauritanie • Plateforme de Gestion Scolaire
             </div>
           </div>
         </body>
@@ -235,7 +292,7 @@ Deno.serve(async (req: Request) => {
           JSON.stringify({
             success: false,
             error: resendData.message || "Échec de l'envoi de l'email de réinitialisation.",
-            actionLink: actionLink,
+            actionLink: allowTestActionLinks ? actionLink : undefined,
           }),
           { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
@@ -245,6 +302,7 @@ Deno.serve(async (req: Request) => {
         JSON.stringify({
           success: true,
           message: `Lien de réinitialisation envoyé avec succès à ${targetProfile.email}.`,
+          actionLink: allowTestActionLinks ? actionLink : undefined,
         }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
