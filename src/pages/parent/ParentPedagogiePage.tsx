@@ -20,14 +20,16 @@ import { useParentChildren } from '../../hooks/useParentChildren';
 
 interface ParentPedagogiePageProps {
   selectedChildId: string;
+  onSelectChild?: (id: string) => void;
 }
 
 export const ParentPedagogiePage: React.FC<ParentPedagogiePageProps> = ({
   selectedChildId,
+  onSelectChild,
 }) => {
   const authEcole = useAuthStore((s) => s.ecole);
   const ecoleNom = authEcole?.nom || 'Établissement Scolaire';
-  const { activeChild, errorMessage: childrenError } = useParentChildren(selectedChildId, () => {});
+  const { activeChild, errorMessage: childrenError } = useParentChildren(selectedChildId, onSelectChild || (() => {}));
 
   const [selectedTrimestre, setSelectedTrimestre] = useState<string>('T2');
   const [activeToast, setActiveToast] = useState<{
@@ -89,13 +91,27 @@ export const ParentPedagogiePage: React.FC<ParentPedagogiePageProps> = ({
     nb_retards_total: 0,
   };
 
+  const hasNotes = enfant.bulletin.length > 0;
+
   // Calcul du total des points
   const totalPoints = enfant.bulletin.reduce(
     (acc, m) => acc + m.moyenne * m.coefficient,
     0
   );
   const totalCoefs = enfant.bulletin.reduce((acc, m) => acc + m.coefficient, 0);
-  const moyenneCalculee = totalCoefs > 0 ? totalPoints / totalCoefs : 0;
+  const moyenneCalculee = hasNotes && totalCoefs > 0 ? totalPoints / totalCoefs : null;
+
+  const trimestreLabel =
+    selectedTrimestre === 'T1'
+      ? 'Trimestre 1'
+      : selectedTrimestre === 'T2'
+      ? 'Trimestre 2'
+      : 'Trimestre 3';
+
+  const formattedRang =
+    !hasNotes || !enfant.rang || enfant.rang === '-'
+      ? '—'
+      : `${enfant.rang}${String(enfant.rang) === '1' ? 'er' : 'e'} rang`;
 
   return (
     <div className="p-6 sm:p-8 lg:p-10 max-w-5xl mx-auto space-y-8 sm:space-y-10 animate-stagger-rise relative">
@@ -116,7 +132,7 @@ export const ParentPedagogiePage: React.FC<ParentPedagogiePageProps> = ({
           <div className="flex items-center gap-2.5 mb-1.5">
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-purple-100 dark:bg-purple-950/60 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-800/60">
               <span className="w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse"></span>
-              Résultats Scolaires
+              Résultats Scolaires • {trimestreLabel}
             </span>
             <span className="text-xs text-slate-500 dark:text-slate-400">• Notes & Évaluations Périodiques</span>
           </div>
@@ -165,14 +181,14 @@ export const ParentPedagogiePage: React.FC<ParentPedagogiePageProps> = ({
 
           <Button
             size="sm"
-            disabled={enfant.bulletin.length === 0}
+            disabled={!hasNotes}
             title={
-              enfant.bulletin.length === 0
-                ? "Export indisponible : aucune note enregistrée pour ce trimestre"
+              !hasNotes
+                ? "Export indisponible : aucune note saisie ce trimestre"
                 : "Télécharger le bulletin trimestriel en PDF"
             }
             onClick={() => {
-              if (enfant.bulletin.length === 0) return;
+              if (!hasNotes || moyenneCalculee === null) return;
               generateBulletinPdf({
                 enfantNom: enfant.nom,
                 enfantPrenom: enfant.prenom,
@@ -202,25 +218,33 @@ export const ParentPedagogiePage: React.FC<ParentPedagogiePageProps> = ({
       {/* 3 Pastel KPI Cards (Purple & Complementary accents) */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <KpiCard
-          title="Moyenne Trimestrielle"
-          customValue={`${moyenneCalculee.toFixed(2)} / 20`}
-          subtitle="Mention : Félicitations du Conseil"
+          title={`Moyenne ${trimestreLabel}`}
+          customValue={moyenneCalculee !== null ? `${moyenneCalculee.toFixed(2)} / 20` : '—'}
+          subtitle={
+            moyenneCalculee !== null
+              ? (moyenneCalculee >= 10 ? 'Admis(e)' : 'Travail à consolider')
+              : 'Aucune note saisie ce trimestre'
+          }
           icon={<GraduationCap className="w-5 h-5 text-purple-600 dark:text-purple-400" />}
           variant="purple"
         />
 
         <KpiCard
           title="Rang & Classement"
-          customValue={`${enfant.rang}e rang`}
-          subtitle={`Parmi les élèves de ${enfant.classe}`}
+          customValue={formattedRang}
+          subtitle={
+            hasNotes && enfant.rang && enfant.rang !== '-'
+              ? `Parmi les élèves de ${enfant.classe}`
+              : 'Classement indisponible'
+          }
           icon={<Award className="w-5 h-5 text-blue-600 dark:text-blue-400" />}
           variant="primary"
         />
 
         <KpiCard
           title="Moyenne de la Classe"
-          customValue="12.4 / 20"
-          subtitle={`+${(moyenneCalculee - 12.4).toFixed(1)} pts au-dessus de la classe`}
+          customValue="—"
+          subtitle="Aucune évaluation de classe"
           icon={<GraduationCap className="w-5 h-5 text-slate-600 dark:text-slate-300" />}
           variant="default"
         />
@@ -262,7 +286,7 @@ export const ParentPedagogiePage: React.FC<ParentPedagogiePageProps> = ({
                 {enfant.bulletin.length === 0 ? (
                   <tr>
                     <td colSpan={5} className="py-8 text-center text-slate-500 dark:text-slate-400 italic">
-                      Aucune évaluation ni note enregistrée pour le moment pour ce trimestre.
+                      Aucune note saisie ce trimestre pour cet élève.
                     </td>
                   </tr>
                 ) : (

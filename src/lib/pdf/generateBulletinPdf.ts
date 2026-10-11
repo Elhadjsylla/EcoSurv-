@@ -228,26 +228,34 @@ export function generateBulletinPdf(data: BulletinData): jsPDF {
   doc.setFontSize(8);
   doc.setTextColor(71, 85, 105);
 
-  const mention =
-    data.moyenneGenerale >= 16
-      ? 'Très Bien — Félicitations du Conseil de Classe'
-      : data.moyenneGenerale >= 14
-      ? 'Bien — Tableau d\'Honneur avec Encouragements'
-      : data.moyenneGenerale >= 12
-      ? 'Assez Bien — Tableau d\'Honneur'
-      : data.moyenneGenerale >= 10
-      ? 'Passable — Travail à consolider'
-      : 'Insuffisant — Redoublement d\'efforts nécessaire';
+  const hasNotes = Boolean(data.matieres && data.matieres.length > 0);
+
+  const mention = !hasNotes
+    ? '—'
+    : data.moyenneGenerale >= 16
+    ? 'Très Bien — Félicitations du Conseil de Classe'
+    : data.moyenneGenerale >= 14
+    ? 'Bien — Tableau d\'Honneur avec Encouragements'
+    : data.moyenneGenerale >= 12
+    ? 'Assez Bien — Tableau d\'Honneur'
+    : data.moyenneGenerale >= 10
+    ? 'Passable — Travail à consolider'
+    : 'Insuffisant — Redoublement d\'efforts nécessaire';
 
   doc.text(`Moyenne Générale de l'élève : `, tableX + 5, y + 13);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(107, 33, 168);
-  doc.text(`${data.moyenneGenerale.toFixed(2)} / 20`, tableX + 48, y + 13);
+  doc.text(hasNotes ? `${data.moyenneGenerale.toFixed(2)} / 20` : '—', tableX + 48, y + 13);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(71, 85, 105);
 
-  doc.text(`Moyenne de la classe : ${data.moyenneClasse ? data.moyenneClasse.toFixed(1) : '12.4'} / 20`, tableX + 85, y + 13);
-  doc.text(`Rang : ${data.rang}e sur ${data.effectif || 32}`, tableX + 135, y + 13);
+  const moyClasseTxt = data.moyenneClasse && data.moyenneClasse > 0 ? `${data.moyenneClasse.toFixed(1)} / 20` : '—';
+  const rangTxt = !data.rang || data.rang === '-' || !hasNotes
+    ? '—'
+    : `${data.rang}${String(data.rang) === '1' ? 'er' : 'e'}${data.effectif && data.effectif > 0 ? ` sur ${data.effectif}` : ''}`;
+
+  doc.text(`Moyenne de la classe : ${moyClasseTxt}`, tableX + 85, y + 13);
+  doc.text(`Rang : ${rangTxt}`, tableX + 135, y + 13);
 
   doc.text(`Distinction & Mention accordée : `, tableX + 5, y + 20);
   doc.setFont('helvetica', 'bold');

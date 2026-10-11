@@ -8,7 +8,8 @@ import { useAuthStore } from '../../store/useAuthStore';
 import { supabase } from '../../lib/supabase';
 import { generateEcheancesForNewStudent } from '../../lib/echeancesHelper';
 import { parseEdgeFunctionError } from '../../lib/functionsHelper';
-import { X, UserPlus, ShieldAlert, CheckCircle, Copy, Check, Loader2, Mail, HeartHandshake } from 'lucide-react';
+import { TestActivationLinkBanner } from '../ui/TestActivationLinkBanner';
+import { X, UserPlus, ShieldAlert, CheckCircle, Loader2, HeartHandshake } from 'lucide-react';
 
 // Schéma Zod de validation stricte pour l'inscription d'un élève
 export const studentEnrollmentSchema = z.object({
@@ -72,7 +73,6 @@ export const StudentEnrollmentModal: React.FC<StudentEnrollmentModalProps> = ({
   const [isEnrolling, setIsEnrolling] = useState(false);
   const [createdParentLink, setCreatedParentLink] = useState<string | null>(null);
   const [parentInviteNotice, setParentInviteNotice] = useState<string | null>(null);
-  const [copiedLink, setCopiedLink] = useState(false);
   const [enrolledEleve, setEnrolledEleve] = useState<EleveWithStats | null>(null);
 
   React.useEffect(() => {
@@ -206,7 +206,6 @@ export const StudentEnrollmentModal: React.FC<StudentEnrollmentModalProps> = ({
                   email_tuteur: emailTuteur,
                   telephone_tuteur: validData.telephone_tuteur?.trim(),
                   lien_parente: validData.lien_parente,
-                  redirect_to: `${window.location.origin}/set-password`,
                 },
               });
 
@@ -302,7 +301,6 @@ export const StudentEnrollmentModal: React.FC<StudentEnrollmentModalProps> = ({
                   email_tuteur: validData.email_tuteur.trim(),
                   telephone_tuteur: validData.telephone_tuteur?.trim(),
                   lien_parente: validData.lien_parente,
-                  redirect_to: `${window.location.origin}/set-password`,
                 },
               });
 
@@ -421,28 +419,11 @@ export const StudentEnrollmentModal: React.FC<StudentEnrollmentModalProps> = ({
             )}
 
             {createdParentLink && (
-              <div className="p-4 rounded-xl bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800 text-left space-y-2 max-w-lg mx-auto">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-purple-900 dark:text-purple-300 flex items-center gap-1.5">
-                    <Mail className="h-3.5 w-3.5" /> Lien d'activation Espace Famille (mode test) :
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      navigator.clipboard.writeText(createdParentLink);
-                      setCopiedLink(true);
-                      setTimeout(() => setCopiedLink(false), 2000);
-                    }}
-                    className="text-[11px] font-bold text-purple-700 dark:text-purple-400 hover:underline flex items-center gap-1"
-                  >
-                    {copiedLink ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
-                    {copiedLink ? 'Copié !' : 'Copier le lien'}
-                  </button>
-                </div>
-                <p className="text-[11px] text-purple-700/80 dark:text-purple-300/80">
-                  En mode bac à sable Resend, vous pouvez ouvrir ce lien directement pour tester la première connexion du parent.
-                </p>
-              </div>
+              <TestActivationLinkBanner
+                actionLink={createdParentLink}
+                title="Lien d'activation Espace Famille (mode test)"
+                className="max-w-lg mx-auto"
+              />
             )}
 
             <div className="pt-3 flex justify-center">

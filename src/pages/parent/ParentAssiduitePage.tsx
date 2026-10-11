@@ -23,12 +23,61 @@ import { useParentChildren } from '../../hooks/useParentChildren';
 
 interface ParentAssiduitePageProps {
   selectedChildId: string;
+  onSelectChild?: (id: string) => void;
 }
 
 export const ParentAssiduitePage: React.FC<ParentAssiduitePageProps> = ({
   selectedChildId,
+  onSelectChild,
 }) => {
-  const { activeChild, errorMessage: childrenError } = useParentChildren(selectedChildId, () => {});
+  const { activeChild, errorMessage: childrenError } = useParentChildren(selectedChildId, onSelectChild || (() => {}));
+
+  // Récupération des absences de l'enfant depuis Supabase (tous les hooks appelés inconditionnellement)
+  const [absencesList, setAbsencesList] = useState<AbsenceRecord[]>([]);
+
+  React.useEffect(() => {
+    if (!activeChild?.id) return;
+    const fetchAbsences = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('absences')
+          .select('*')
+          .eq('eleve_id', activeChild.id)
+          .order('date_absence', { ascending: false });
+
+        if (!error && data) {
+          setAbsencesList(
+            data.map((a: any) => ({
+              id: a.id,
+              eleve_id: a.eleve_id,
+              eleve_nom: activeChild.nom,
+              eleve_prenom: activeChild.prenom,
+              classe: activeChild.classe,
+              date_absence: a.date_absence,
+              creneau: (a.creneau === 'matin' || a.creneau === 'apres_midi' ? a.creneau : 'matin') as 'matin' | 'apres_midi',
+              type: a.type || 'absence',
+              justifiee: Boolean(a.justifiee),
+              motif: a.motif || (a.justifiee ? 'Justifiée' : 'Non justifié'),
+            }))
+          );
+        }
+      } catch (err) {
+        console.warn('[ParentAssiduitePage] Erreur lecture absences:', err);
+      }
+    };
+    fetchAbsences();
+  }, [activeChild?.id, activeChild?.nom, activeChild?.prenom, activeChild?.classe]);
+
+  // Modal de déclaration
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [dateAbsence, setDateAbsence] = useState('2026-03-10');
+  const [creneau, setCreneau] = useState<'journee' | 'matin' | 'apres_midi'>('journee');
+  const [motif, setMotif] = useState('Rendez-vous médical');
+  const [commentaire, setCommentaire] = useState('');
+  const [activeToast, setActiveToast] = useState<{
+    message: string;
+    type: 'success' | 'info' | 'warning' | 'error';
+  } | null>(null);
 
   if (childrenError) {
     return (
@@ -83,53 +132,6 @@ export const ParentAssiduitePage: React.FC<ParentAssiduitePageProps> = ({
     nb_absences_total: 0,
     nb_retards_total: 0,
   };
-
-  // Récupération des absences de l'enfant depuis Supabase
-  const [absencesList, setAbsencesList] = useState<AbsenceRecord[]>([]);
-
-  React.useEffect(() => {
-    if (!activeChild?.id) return;
-    const fetchAbsences = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('absences')
-          .select('*')
-          .eq('eleve_id', activeChild.id)
-          .order('date_absence', { ascending: false });
-
-        if (!error && data) {
-          setAbsencesList(
-            data.map((a: any) => ({
-              id: a.id,
-              eleve_id: a.eleve_id,
-              eleve_nom: activeChild.nom,
-              eleve_prenom: activeChild.prenom,
-              classe: activeChild.classe,
-              date_absence: a.date_absence,
-              creneau: (a.creneau === 'matin' || a.creneau === 'apres_midi' ? a.creneau : 'matin') as 'matin' | 'apres_midi',
-              type: a.type || 'absence',
-              justifiee: Boolean(a.justifiee),
-              motif: a.motif || (a.justifiee ? 'Justifiée' : 'Non justifié'),
-            }))
-          );
-        }
-      } catch (err) {
-        console.warn('[ParentAssiduitePage] Erreur lecture absences:', err);
-      }
-    };
-    fetchAbsences();
-  }, [activeChild?.id]);
-
-  // Modal de déclaration
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [dateAbsence, setDateAbsence] = useState('2026-03-10');
-  const [creneau, setCreneau] = useState<'journee' | 'matin' | 'apres_midi'>('journee');
-  const [motif, setMotif] = useState('Rendez-vous médical');
-  const [commentaire, setCommentaire] = useState('');
-  const [activeToast, setActiveToast] = useState<{
-    message: string;
-    type: 'success' | 'info' | 'warning' | 'error';
-  } | null>(null);
 
   const totalAbsences = absencesList.filter((a) => a.type === 'absence').length;
   const justifiees = absencesList.filter((a) => a.justifiee).length;

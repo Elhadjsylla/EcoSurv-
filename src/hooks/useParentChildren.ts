@@ -90,11 +90,13 @@ export function useParentChildren(selectedChildId: string, onSelectChild: (id: s
             const totalPaid = studentEch.reduce((sum, ech) => sum + Number(ech.montant_paye || 0), 0);
             const remaining = Math.max(0, totalDue - totalPaid);
             const hasOverdue = studentEch.some((ech) => ech.statut === 'en_retard');
-            const statut = hasOverdue
+            const statut = studentEch.length === 0
+              ? 'aucun_frais'
+              : hasOverdue
               ? 'en_retard'
               : (totalDue > 0 && remaining === 0
                 ? 'a_jour'
-                : (totalPaid > 0 ? 'partiel' : 'a_jour'));
+                : (totalPaid > 0 ? 'partiel' : 'en_attente'));
 
             return {
               id: el.id,
