@@ -18,7 +18,22 @@ interface TeacherDashboardProps {
 
 export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ onNavigateToTab }) => {
   const authProfile = useAuthStore((s) => s.profile);
-  const isRealAccount = Boolean(authProfile?.ecole_id);
+  const isAuthLoading = useAuthStore((s) => s.isLoading);
+  const isRealAccount = Boolean(authProfile);
+
+  if (isAuthLoading) {
+    return (
+      <div className="p-6 sm:p-8 lg:p-10 max-w-[1600px] mx-auto space-y-8 animate-pulse">
+        <div className="h-32 bg-slate-100 dark:bg-slate-800 rounded-2xl" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          <div className="h-28 bg-slate-100 dark:bg-slate-800 rounded-2xl" />
+          <div className="h-28 bg-slate-100 dark:bg-slate-800 rounded-2xl" />
+          <div className="h-28 bg-slate-100 dark:bg-slate-800 rounded-2xl" />
+          <div className="h-28 bg-slate-100 dark:bg-slate-800 rounded-2xl" />
+        </div>
+      </div>
+    );
+  }
 
   const teacherName = authProfile
     ? `${authProfile.prenom} ${authProfile.nom}`

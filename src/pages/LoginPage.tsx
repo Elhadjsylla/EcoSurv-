@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Mail, Lock, Eye, EyeOff, LogIn, ArrowLeft, AlertCircle, ShieldCheck } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, LogIn, ArrowLeft, AlertCircle, ShieldCheck, CheckCircle2, X } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuthStore, UserProfile } from '../store/useAuthStore';
 import { useEcoleStore } from '../store/useEcoleStore';
@@ -28,6 +28,40 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onReturnToLanding }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  // Mot de passe oublié
+  const [isForgotModalOpen, setIsForgotModalOpen] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotSubmitting, setForgotSubmitting] = useState(false);
+  const [forgotSuccess, setForgotSuccess] = useState(false);
+  const [forgotError, setForgotError] = useState<string | null>(null);
+
+  const handleForgotSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!forgotEmail.trim()) return;
+    setForgotSubmitting(true);
+    setForgotError(null);
+    try {
+      const cleanEmail = forgotEmail.trim().toLowerCase();
+      // Envoi du lien via le mailer Supabase Auth vers la page /set-password
+      const { error } = await supabase.auth.resetPasswordForEmail(cleanEmail, {
+        redirectTo: `${window.location.origin}/set-password`,
+      });
+
+      // Sécurité anti-énumération : même si l'email n'existe pas en base ou rate-limit natif,
+      // on affiche toujours le message neutre pour ne jamais dévoiler l'existence du compte.
+      if (error) {
+        console.warn('[LoginPage] resetPasswordForEmail retour Supabase:', error.message);
+      }
+      setForgotSuccess(true);
+    } catch (err: any) {
+      console.warn('[LoginPage] resetPasswordForEmail exception:', err);
+      // Réponse neutre même en cas d'exception
+      setForgotSuccess(true);
+    } finally {
+      setForgotSubmitting(false);
+    }
+  };
 
   const passwordRef = useRef<HTMLInputElement>(null);
 
@@ -71,30 +105,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onReturnToLanding }) => {
               telephone: '+222 45 00 00 00',
               role: 'super_admin',
               actif: true,
-            });
-            useNavigationStore.getState().setUserRole('directeur');
-            useNavigationStore.getState().launchAppWithPortal('directeur');
-            return;
-          }
-          if (email.toLowerCase().includes('directeur')) {
-            useAuthStore.getState().setUser({ id: 'usr-directeur', email } as any);
-            useAuthStore.getState().setProfile({
-              id: 'usr-directeur',
-              ecole_id: 'ecole-demo',
-              nom: 'Diallo',
-              prenom: 'Mamadou',
-              telephone: '+222 46 00 00 00',
-              role: 'directeur',
-              actif: true,
-            });
-            useAuthStore.getState().setEcole({
-              id: 'ecole-demo',
-              nom: 'École Al Baraka',
-              ville: 'Nouakchott',
-              telephone: '+222 46 00 00 00',
-              email: 'directeur@ecole.mr',
-              statut_activation: 'active',
-              statut_abonnement: 'actif',
             });
             useNavigationStore.getState().setUserRole('directeur');
             useNavigationStore.getState().launchAppWithPortal('directeur');
@@ -266,7 +276,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onReturnToLanding }) => {
                   value={email}
                   disabled={submitting}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="directeur@ecole.mr"
+                  placeholder="exemple@exemple.com"
                   className="w-full h-11 pl-10 pr-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600/30 focus:border-blue-600 dark:focus:border-blue-500 transition-all disabled:opacity-60"
                 />
               </div>
@@ -281,6 +291,18 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onReturnToLanding }) => {
                 >
                   Mot de passe
                 </label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setForgotEmail(email);
+                    setForgotSuccess(false);
+                    setForgotError(null);
+                    setIsForgotModalOpen(true);
+                  }}
+                  className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+                >
+                  Mot de passe oublié ?
+                </button>
               </div>
               <div className="relative">
                 <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -366,6 +388,94 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onReturnToLanding }) => {
       <div className="text-center text-[11px] text-slate-400 dark:text-slate-500">
         &copy; {new Date().getFullYear()} EcoSurv Mauritanie &bull; Plateforme agréée de gestion scolaire
       </div>
+
+      {/* Modal Mot de passe oublié */}
+      {isForgotModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 dark:bg-slate-950/80 backdrop-blur-xs p-4 animate-in fade-in">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 sm:p-7 shadow-2xl max-w-md w-full space-y-5 animate-scale-in">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400">
+                  <Mail className="h-5 w-5" />
+                </div>
+                <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                  Réinitialiser le mot de passe
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsForgotModalOpen(false)}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 rounded-lg"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {forgotSuccess ? (
+              <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-center space-y-3">
+                <CheckCircle2 className="h-8 w-8 text-emerald-600 mx-auto" />
+                <div className="text-xs font-bold text-emerald-900 dark:text-emerald-100">
+                  Email de réinitialisation envoyé !
+                </div>
+                <p className="text-[11px] text-emerald-700 dark:text-emerald-300 leading-relaxed">
+                  Si ce compte existe, un email contenant un lien sécurisé a été envoyé pour redéfinir votre mot de passe.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setIsForgotModalOpen(false)}
+                  className="w-full py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs"
+                >
+                  Compris
+                </button>
+              </div>
+            ) : (
+              <form onSubmit={handleForgotSubmit} className="space-y-4">
+                <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                  Indiquez votre adresse email de connexion. Vous recevrez un lien sécurisé vers la page de réinitialisation pour définir un nouveau mot de passe.
+                </p>
+
+                {forgotError && (
+                  <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-xs text-rose-700 dark:text-rose-300 flex items-center gap-2">
+                    <AlertCircle className="h-4 w-4 shrink-0" />
+                    <span>{forgotError}</span>
+                  </div>
+                )}
+
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                    Adresse email
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    value={forgotEmail}
+                    onChange={(e) => setForgotEmail(e.target.value)}
+                    placeholder="exemple@exemple.com"
+                    className="w-full h-10 px-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-600"
+                  />
+                </div>
+
+                <div className="flex items-center justify-end gap-2.5 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsForgotModalOpen(false)}
+                    className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 dark:text-slate-400"
+                  >
+                    Annuler
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={forgotSubmitting}
+                    className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs disabled:opacity-60"
+                  >
+                    {forgotSubmitting ? 'Envoi...' : 'Envoyer le lien'}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

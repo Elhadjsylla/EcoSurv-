@@ -16,9 +16,6 @@ const LANGUAGES: LanguageOption[] = [
 ];
 
 export const LanguageSelector: React.FC<{ variant?: 'light' | 'dark' | 'header' }> = () => {
-  // Masquer le sélecteur si le projet multilingue est en pause
-  if (I18N_PAUSED) return null;
-
   const { language, setLanguage } = useLanguageStore();
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -26,6 +23,7 @@ export const LanguageSelector: React.FC<{ variant?: 'light' | 'dark' | 'header' 
   const currentLang = LANGUAGES.find((l) => l.code === language) || LANGUAGES[0];
 
   useEffect(() => {
+    if (I18N_PAUSED) return;
     const handleClickOutside = (e: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
         setIsOpen(false);
@@ -34,6 +32,9 @@ export const LanguageSelector: React.FC<{ variant?: 'light' | 'dark' | 'header' 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // Masquer le sélecteur si le projet multilingue est en pause
+  if (I18N_PAUSED) return null;
 
   return (
     <div ref={containerRef} className="relative inline-block text-left z-40">

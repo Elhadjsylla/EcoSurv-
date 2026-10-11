@@ -9,6 +9,7 @@ import { useEcoleStore } from '../store/useEcoleStore';
 import { useAuthStore } from '../store/useAuthStore';
 import { supabase } from '../lib/supabase';
 import { parseEdgeFunctionError } from '../lib/functionsHelper';
+import { TestActivationLinkBanner } from '../components/ui/TestActivationLinkBanner';
 import {
   StaffMember,
   RoleUtilisateur,
@@ -130,6 +131,7 @@ export const ConfigPage: React.FC = () => {
   const [newTelephone, setNewTelephone] = useState('+222 ');
   const [newRole, setNewRole] = useState<RoleUtilisateur>('enseignant');
   const [newClasse, setNewClasse] = useState('Terminales C');
+  const [testStaffActionLink, setTestStaffActionLink] = useState<{ label: string; link: string } | null>(null);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -162,9 +164,12 @@ export const ConfigPage: React.FC = () => {
           telephone: newTelephone.trim(),
           role: newRole,
           classe_assignee: newRole === 'enseignant' ? newClasse : undefined,
-          redirect_to: `${window.location.origin}/set-password`,
         },
       });
+
+      if (data?.actionLink) {
+        setTestStaffActionLink({ label: `Invitation ${newPrenom} ${newNom}`, link: data.actionLink });
+      }
 
       if (error) {
         const errorMsg = await parseEdgeFunctionError(error, "Erreur lors de l'envoi de l'invitation.");
@@ -270,9 +275,12 @@ export const ConfigPage: React.FC = () => {
         body: {
           action: 'reset_password',
           member_id: member.id,
-          redirect_to: window.location.origin,
         },
       });
+
+      if (data?.actionLink) {
+        setTestStaffActionLink({ label: `Réinitialisation mot de passe (${member.email})`, link: data.actionLink });
+      }
 
       if (error || (data && !data.success)) {
         const errorMsg = error ? await parseEdgeFunctionError(error, "Échec de l'envoi du lien.") : (data?.error || "Échec de l'envoi du lien.");
@@ -542,6 +550,23 @@ export const ConfigPage: React.FC = () => {
           </div>
         </form>
       </Card>
+
+      {/* Test Link Banner (Mode Diagnostic/Dev Uniquement) */}
+      {testStaffActionLink && (
+        <div className="relative animate-in fade-in">
+          <TestActivationLinkBanner
+            actionLink={testStaffActionLink.link}
+            title={`Lien de secours généré (Mode Test) — ${testStaffActionLink.label}`}
+          />
+          <button
+            type="button"
+            onClick={() => setTestStaffActionLink(null)}
+            className="absolute top-3 right-3 text-amber-800 dark:text-amber-200 hover:text-amber-950 dark:hover:text-white text-xs font-bold px-2 py-0.5 rounded bg-amber-200/60 dark:bg-amber-900/40"
+          >
+            Fermer
+          </button>
+        </div>
+      )}
 
       {/* Staff Directory Table */}
       <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xs overflow-hidden">

@@ -23,7 +23,6 @@ import {
   LogIn,
   MapPin,
   Phone,
-  Mail,
   AlertCircle,
   Clock,
   Calculator,
@@ -939,7 +938,7 @@ export const LandingPage: React.FC = () => {
               <div className="mt-6 sm:mt-8">
                 <button
                   type="button"
-                  onClick={() => window.location.href = 'mailto:contact@ecosurv.mr'}
+                  onClick={() => window.open(getWhatsAppUrl('Bonjour EcoSurv, je souhaite contacter l\'équipe commerciale pour mon établissement.'), '_blank', 'noopener,noreferrer')}
                   className="w-full py-3 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-900 dark:text-white text-xs font-bold transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md cursor-pointer"
                 >
                   Contacter les Ventes
@@ -1141,10 +1140,15 @@ export const LandingPage: React.FC = () => {
                   <Phone className="h-3.5 w-3.5 text-blue-400 shrink-0" />
                   <span>{CONTACT_CONFIG.phone.display}</span>
                 </p>
-                <p className="flex items-center gap-2">
-                  <Mail className="h-3.5 w-3.5 text-blue-400 shrink-0" />
-                  <span>{CONTACT_CONFIG.email.support}</span>
-                </p>
+                <a
+                  href={getWhatsAppUrl()}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 text-emerald-400 hover:text-emerald-300 transition-colors"
+                >
+                  <MessageCircle className="h-3.5 w-3.5 shrink-0" />
+                  <span>WhatsApp : {CONTACT_CONFIG.whatsapp.display}</span>
+                </a>
               </div>
             </div>
 

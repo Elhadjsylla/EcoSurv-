@@ -519,7 +519,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
                       value={email}
                       disabled={submitting}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="direction@ecole.mr"
+                      placeholder="exemple@exemple.com"
                       className="w-full h-11 pl-10 pr-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600/30 focus:border-blue-600 dark:focus:border-blue-500 transition-all"
                     />
                   </div>

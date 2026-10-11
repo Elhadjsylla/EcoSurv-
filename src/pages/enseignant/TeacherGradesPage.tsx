@@ -19,13 +19,22 @@ import {
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
+import { useAuthStore } from '../../store/useAuthStore';
 
 export const TeacherGradesPage: React.FC = () => {
+  const authProfile = useAuthStore((s) => s.profile);
+  const isAuthLoading = useAuthStore((s) => s.isLoading);
+  const isRealAccount = Boolean(authProfile);
+
+  const classesOptions = isRealAccount ? [] : CURRENT_ENSEIGNANT.classes_assignees;
+  const matieresOptions = isRealAccount ? [] : CURRENT_ENSEIGNANT.matieres;
+
   const [evaluations, setEvaluations] = useState<EvaluationRecord[]>([]);
-  const [selectedClasse, setSelectedClasse] = useState<string>('6ème A');
-  const [selectedMatiere, setSelectedMatiere] = useState<string>('Mathématiques');
+  const [selectedClasse, setSelectedClasse] = useState<string>(classesOptions[0] || 'none');
+  const [selectedMatiere, setSelectedMatiere] = useState<string>(matieresOptions[0] || 'none');
   const [selectedTrimestre, setSelectedTrimestre] = useState<string>('Trimestre 2');
   const [activeToast, setActiveToast] = useState<{ message: string; type: 'success' | 'info' | 'warning' | 'error' } | null>(null);
+
 
   // Pagination pour la table de saisie
   const [currentPage, setCurrentPage] = useState(1);
@@ -178,6 +187,20 @@ export const TeacherGradesPage: React.FC = () => {
     });
   };
 
+  if (isAuthLoading) {
+    return (
+      <div className="p-6 sm:p-8 lg:p-10 max-w-[1600px] mx-auto space-y-8 animate-pulse">
+        <div className="h-24 bg-slate-100 dark:bg-slate-800 rounded-2xl" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          <div className="h-28 bg-slate-100 dark:bg-slate-800 rounded-2xl" />
+          <div className="h-28 bg-slate-100 dark:bg-slate-800 rounded-2xl" />
+          <div className="h-28 bg-slate-100 dark:bg-slate-800 rounded-2xl" />
+          <div className="h-28 bg-slate-100 dark:bg-slate-800 rounded-2xl" />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-6 sm:p-8 lg:p-10 max-w-[1600px] mx-auto space-y-8 sm:space-y-10 animate-stagger-rise relative">
       {/* Toast Notification */}
@@ -220,13 +243,23 @@ export const TeacherGradesPage: React.FC = () => {
           <Button
             variant="primary"
             size="sm"
-            className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs"
+            disabled={true}
+            title="Fonction en cours de développement : les notes saisies ne sont pas encore enregistrées en base de données"
+            className="gap-2 bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500 cursor-not-allowed shadow-none"
             onClick={handleSaveGrades}
           >
             <Save className="h-4 w-4" />
             Enregistrer les Notes
           </Button>
         </div>
+      </div>
+
+      {/* Avertissement officiel persistance */}
+      <div className="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 rounded-xl p-4 flex items-center gap-3 text-amber-800 dark:text-amber-200 text-sm">
+        <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0" />
+        <p className="font-semibold">
+          Fonction en cours de développement : les notes saisies ne sont pas encore enregistrées.
+        </p>
       </div>
 
       {/* 4 Pastel Stat Cards (Nexoov Style) */}
@@ -277,10 +310,11 @@ export const TeacherGradesPage: React.FC = () => {
                 setCurrentPage(1);
               }}
               prefix="Classe :"
-              options={CURRENT_ENSEIGNANT.classes_assignees.map((c) => ({
-                value: c,
-                label: c,
-              }))}
+              options={
+                classesOptions.length > 0
+                  ? classesOptions.map((c) => ({ value: c, label: c }))
+                  : [{ value: 'none', label: 'Aucune classe' }]
+              }
               size="sm"
               triggerClassName="h-10 rounded-xl text-xs font-bold"
             />
@@ -290,10 +324,11 @@ export const TeacherGradesPage: React.FC = () => {
               value={selectedMatiere}
               onChange={setSelectedMatiere}
               prefix="Matière :"
-              options={CURRENT_ENSEIGNANT.matieres.map((m) => ({
-                value: m,
-                label: m,
-              }))}
+              options={
+                matieresOptions.length > 0
+                  ? matieresOptions.map((m) => ({ value: m, label: m }))
+                  : [{ value: 'none', label: 'Aucune matière' }]
+              }
               size="sm"
               triggerClassName="h-10 rounded-xl text-xs font-bold"
             />

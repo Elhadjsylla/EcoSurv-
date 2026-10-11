@@ -20,7 +20,10 @@ import { useAuthStore } from '../../store/useAuthStore';
 
 export const TeacherClassesPage: React.FC = () => {
   const authProfile = useAuthStore((s) => s.profile);
-  const isRealAccount = Boolean(authProfile?.ecole_id);
+  const isAuthLoading = useAuthStore((s) => s.isLoading);
+  const isRealAccount = Boolean(authProfile);
+  const teacherClasses = isRealAccount ? [] : CURRENT_ENSEIGNANT.classes_assignees;
+
   const [selectedClasse, setSelectedClasse] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedEleve, setSelectedEleve] = useState<ElevePedagogique | null>(null);
@@ -67,6 +70,15 @@ export const TeacherClassesPage: React.FC = () => {
     currentPage * itemsPerPage
   );
 
+  if (isAuthLoading) {
+    return (
+      <div className="p-6 sm:p-8 lg:p-10 max-w-[1600px] mx-auto space-y-8 animate-pulse">
+        <div className="h-24 bg-slate-100 dark:bg-slate-800 rounded-2xl" />
+        <div className="h-96 bg-slate-100 dark:bg-slate-800 rounded-2xl" />
+      </div>
+    );
+  }
+
   return (
     <div className="p-6 sm:p-8 lg:p-10 max-w-[1600px] mx-auto space-y-8 sm:space-y-10 animate-stagger-rise relative">
       {/* Toast Notification */}
@@ -85,7 +97,7 @@ export const TeacherClassesPage: React.FC = () => {
             </h1>
             <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 px-3 py-1 text-xs font-bold text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-              {CURRENT_ENSEIGNANT.classes_assignees.length} classes
+              {teacherClasses.length} classe{teacherClasses.length > 1 ? 's' : ''}
             </span>
           </div>
           <p className="text-sm text-slate-500 dark:text-slate-400 font-medium mt-1.5">
@@ -94,41 +106,43 @@ export const TeacherClassesPage: React.FC = () => {
         </div>
 
         {/* Filter by class pills */}
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            onClick={() => {
-              setSelectedClasse('all');
-              setCurrentPage(1);
-            }}
-            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
-              selectedClasse === 'all'
-                ? 'bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 shadow-xs'
-                : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
-            }`}
-          >
-            Toutes ({teacherStudents.length})
-          </button>
-          {CURRENT_ENSEIGNANT.classes_assignees.map((cls) => {
-            const count = teacherStudents.filter((e) => e.classe === cls).length;
-            const isSelected = selectedClasse === cls;
-            return (
-              <button
-                key={cls}
-                onClick={() => {
-                  setSelectedClasse(cls);
-                  setCurrentPage(1);
-                }}
-                className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
-                  isSelected
-                    ? 'bg-emerald-600 text-white shadow-xs'
-                    : 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/50'
-                }`}
-              >
-                {cls} ({count})
-              </button>
-            );
-          })}
-        </div>
+        {teacherClasses.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={() => {
+                setSelectedClasse('all');
+                setCurrentPage(1);
+              }}
+              className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
+                selectedClasse === 'all'
+                  ? 'bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 shadow-xs'
+                  : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+              }`}
+            >
+              Toutes ({teacherStudents.length})
+            </button>
+            {teacherClasses.map((cls) => {
+              const count = teacherStudents.filter((e) => e.classe === cls).length;
+              const isSelected = selectedClasse === cls;
+              return (
+                <button
+                  key={cls}
+                  onClick={() => {
+                    setSelectedClasse(cls);
+                    setCurrentPage(1);
+                  }}
+                  className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
+                    isSelected
+                      ? 'bg-emerald-600 text-white shadow-xs'
+                      : 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/50'
+                  }`}
+                >
+                  {cls} ({count})
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Class Overview Cards (Nexoov Pastel Style) */}

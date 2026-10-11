@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Lock, Eye, EyeOff, CheckCircle2, AlertCircle, ShieldCheck, GraduationCap } from 'lucide-react';
+import { Lock, Eye, EyeOff, CheckCircle2, AlertCircle, ShieldCheck, GraduationCap, Users } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuthStore } from '../store/useAuthStore';
 import { useNavigationStore } from '../store/useNavigationStore';
@@ -63,16 +63,37 @@ export const SetPasswordPage: React.FC = () => {
     }
   }, [profile]);
 
-  const roleLabel =
-    profile?.role === 'enseignant'
-      ? 'Espace Enseignant'
-      : profile?.role === 'caissier'
-      ? 'Espace Caissier'
-      : profile?.role === 'parent'
-      ? 'Espace Parent'
-      : profile?.role === 'directeur'
-      ? 'Espace Direction'
-      : 'Espace Collaborateur';
+  const isRecoveryMode = (() => {
+    if (typeof window === 'undefined') return false;
+    const hash = window.location.hash || '';
+    const search = window.location.search || '';
+    const path = window.location.pathname.toLowerCase() || '';
+    return hash.includes('type=recovery') || search.includes('type=recovery') || path.includes('/reinitialisation');
+  })();
+
+  const roleLabel = isRecoveryMode
+    ? 'Réinitialisation de mot de passe'
+    : profile?.role === 'enseignant'
+    ? 'Espace Enseignant'
+    : profile?.role === 'caissier'
+    ? 'Espace Caissier'
+    : profile?.role === 'parent'
+    ? 'Espace Famille'
+    : profile?.role === 'directeur'
+    ? 'Espace Direction'
+    : 'Espace Collaborateur';
+
+  const roleSubtitle = isRecoveryMode
+    ? "Définissez votre nouveau mot de passe sécurisé pour retrouver l'accès à votre espace."
+    : profile?.role === 'parent'
+    ? "Votre invitation a été validée. Définissez votre mot de passe pour finaliser l'accès à votre Espace Famille."
+    : profile?.role === 'enseignant'
+    ? "Votre invitation a été validée. Définissez votre mot de passe pour finaliser l'activation de votre compte enseignant."
+    : profile?.role === 'caissier'
+    ? "Votre invitation a été validée. Définissez votre mot de passe pour finaliser l'activation de votre compte caissier."
+    : profile?.role === 'directeur'
+    ? "Définissez votre mot de passe pour finaliser l'accès à votre compte de direction."
+    : "Définissez votre mot de passe pour finaliser l'activation de votre compte.";
 
   const ecoleNom = ecole?.nom || 'Votre établissement';
 
@@ -156,16 +177,16 @@ export const SetPasswordPage: React.FC = () => {
         <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 shadow-xl shadow-slate-200/50 dark:shadow-none border border-slate-200/80 dark:border-slate-800 space-y-6">
           <div className="text-center space-y-2">
             <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 border border-blue-200/60 dark:border-blue-800/60 mb-3">
-              <GraduationCap className="h-6 w-6" />
+              {profile?.role === 'parent' ? <Users className="h-6 w-6" /> : <GraduationCap className="h-6 w-6" />}
             </div>
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/60">
               {roleLabel} • {ecoleNom}
             </div>
             <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
-              Bienvenue, {profile?.prenom || ''} {profile?.nom || ''}
+              {isRecoveryMode ? 'Réinitialiser votre mot de passe' : `Bienvenue, ${profile?.prenom || ''} ${profile?.nom || ''}`}
             </h1>
             <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-              Votre invitation a été validée. Définissez votre mot de passe pour finaliser l'activation de votre compte professionnel.
+              {roleSubtitle}
             </p>
           </div>
 
@@ -234,7 +255,11 @@ export const SetPasswordPage: React.FC = () => {
                 className="w-full h-11 inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md shadow-blue-600/25 transition-all cursor-pointer disabled:opacity-50"
               >
                 <CheckCircle2 className="h-4 w-4" />
-                <span>{submitting ? 'Activation en cours...' : 'Activer mon compte et accéder'}</span>
+                <span>
+                  {submitting
+                    ? isRecoveryMode ? 'Enregistrement en cours...' : 'Activation en cours...'
+                    : isRecoveryMode ? 'Enregistrer mon nouveau mot de passe' : 'Activer mon compte et accéder'}
+                </span>
               </button>
             </div>
           </form>

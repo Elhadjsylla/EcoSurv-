@@ -463,18 +463,21 @@ export function AppContent() {
         return (
           <ParentPaiementsPage
             selectedChildId={selectedParentChildId}
+            onSelectChild={setSelectedParentChildId}
           />
         );
       case 'parent_pedagogie':
         return (
           <ParentPedagogiePage
             selectedChildId={selectedParentChildId}
+            onSelectChild={setSelectedParentChildId}
           />
         );
       case 'parent_assiduite':
         return (
           <ParentAssiduitePage
             selectedChildId={selectedParentChildId}
+            onSelectChild={setSelectedParentChildId}
           />
         );
       default:

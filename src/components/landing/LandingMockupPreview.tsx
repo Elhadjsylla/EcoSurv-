@@ -432,7 +432,7 @@ export const LandingMockupPreview: React.FC = () => {
                   <p>• Masrvi : Tél caisse <span className="text-white font-bold">+222 45 25 00 00</span></p>
                 </div>
                 <p className="text-slate-300">
-                  Téléchargez votre quittance officielle dès validation : <span className="text-emerald-400 underline font-semibold">ecosurv.mr/r/2025-0492</span>
+                  Téléchargez votre quittance officielle dès validation : <span className="text-emerald-400 font-semibold">[Lien sécurisé unique • Exemple fictif]</span>
                 </p>
                 <div className="text-right text-[10px] text-slate-400 pt-1 flex items-center justify-end gap-1">
                   <span>10:14</span>

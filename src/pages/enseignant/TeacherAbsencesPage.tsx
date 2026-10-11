@@ -19,7 +19,10 @@ import {
   Users,
   ChevronLeft,
   ChevronRight,
+  AlertCircle,
 } from 'lucide-react';
+
+import { useAuthStore } from '../../store/useAuthStore';
 
 type AttendanceStatus = 'present' | 'absent' | 'retard';
 
@@ -30,11 +33,19 @@ interface StudentAttendanceState {
 }
 
 export const TeacherAbsencesPage: React.FC = () => {
-  const [selectedClasse, setSelectedClasse] = useState<string>('6ème A');
+  const authProfile = useAuthStore((s) => s.profile);
+  const isAuthLoading = useAuthStore((s) => s.isLoading);
+  const isRealAccount = Boolean(authProfile);
+
+  const classesOptions = isRealAccount ? [] : CURRENT_ENSEIGNANT.classes_assignees;
+
+  const [selectedClasse, setSelectedClasse] = useState<string>(classesOptions[0] || 'none');
   const [selectedDate, setSelectedDate] = useState<string>('2026-03-09');
   const [selectedCreneau, setSelectedCreneau] = useState<'matin' | 'apres_midi'>('matin');
   const [absencesHistory, setAbsencesHistory] = useState<AbsenceRecord[]>([]);
   const [activeToast, setActiveToast] = useState<{ message: string; type: 'success' | 'info' | 'warning' | 'error' } | null>(null);
+
+
 
   // Pagination pour la table d'appel
   const [currentPage, setCurrentPage] = useState(1);
@@ -123,6 +134,20 @@ export const TeacherAbsencesPage: React.FC = () => {
   const countRetards = teacherStudents.filter((e) => getStatus(e.id) === 'retard').length;
   const attendanceRate = teacherStudents.length > 0 ? Math.round((countPresents / teacherStudents.length) * 100) : 100;
 
+  if (isAuthLoading) {
+    return (
+      <div className="p-6 sm:p-8 lg:p-10 max-w-[1600px] mx-auto space-y-8 animate-pulse">
+        <div className="h-24 bg-slate-100 dark:bg-slate-800 rounded-2xl" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          <div className="h-28 bg-slate-100 dark:bg-slate-800 rounded-2xl" />
+          <div className="h-28 bg-slate-100 dark:bg-slate-800 rounded-2xl" />
+          <div className="h-28 bg-slate-100 dark:bg-slate-800 rounded-2xl" />
+          <div className="h-28 bg-slate-100 dark:bg-slate-800 rounded-2xl" />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-6 sm:p-8 lg:p-10 max-w-[1600px] mx-auto space-y-8 sm:space-y-10 animate-stagger-rise relative">
       {/* Toast Notification */}
@@ -155,23 +180,35 @@ export const TeacherAbsencesPage: React.FC = () => {
           <Button
             variant="outline"
             size="sm"
-            className="gap-2 border-emerald-300 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/40"
+            disabled={true}
+            title="Fonction en cours de développement : les données ne sont pas encore enregistrées"
+            className="gap-2 border-slate-200 dark:border-slate-800 text-slate-400 dark:text-slate-500 cursor-not-allowed"
             onClick={handleMarkAllPresent}
           >
-            <CheckCheck className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+            <CheckCheck className="h-4 w-4" />
             Tous Présents
           </Button>
 
           <Button
             variant="primary"
             size="sm"
-            className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs"
+            disabled={true}
+            title="Fonction en cours de développement : les données saisies ne sont pas encore enregistrées en base de données"
+            className="gap-2 bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500 cursor-not-allowed shadow-none"
             onClick={handleSaveAttendance}
           >
             <FileCheck className="h-4 w-4" />
             Enregistrer l'Appel
           </Button>
         </div>
+      </div>
+
+      {/* Avertissement officiel persistance */}
+      <div className="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 rounded-xl p-4 flex items-center gap-3 text-amber-800 dark:text-amber-200 text-sm">
+        <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0" />
+        <p className="font-semibold">
+          Fonction en cours de développement : les données saisies ne sont pas encore enregistrées.
+        </p>
       </div>
 
       {/* 4 Pastel Stat Cards (Nexoov Style) */}
@@ -225,10 +262,11 @@ export const TeacherAbsencesPage: React.FC = () => {
                 setCurrentPage(1);
               }}
               prefix="Classe :"
-              options={CURRENT_ENSEIGNANT.classes_assignees.map((cls) => ({
-                value: cls,
-                label: cls,
-              }))}
+              options={
+                classesOptions.length > 0
+                  ? classesOptions.map((cls) => ({ value: cls, label: cls }))
+                  : [{ value: 'none', label: 'Aucune classe assignée' }]
+              }
               size="sm"
               triggerClassName="h-10 rounded-xl text-xs font-bold"
             />

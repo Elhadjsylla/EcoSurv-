@@ -24,6 +24,7 @@ import {
   ChevronRight,
   Eye,
   FileText,
+  AlertCircle,
 } from 'lucide-react';
 
 export const RelancesPage: React.FC = () => {
@@ -206,7 +207,9 @@ export const RelancesPage: React.FC = () => {
             <Button
               variant="danger"
               size="sm"
-              className="gap-1.5 py-1 text-xs"
+              disabled={true}
+              title="Fonction en cours de développement : les relances ne sont pas encore transmises"
+              className="gap-1.5 py-1 text-xs opacity-50 cursor-not-allowed"
               onClick={handleBulkRelance}
             >
               <Send className="h-3.5 w-3.5" />
@@ -242,12 +245,22 @@ export const RelancesPage: React.FC = () => {
         <Button
           variant="danger"
           size="sm"
-          className="gap-2 shrink-0"
+          disabled={true}
+          title="Fonction en cours de développement : l'envoi de relances n'est pas encore actif"
+          className="gap-2 shrink-0 opacity-50 cursor-not-allowed shadow-none"
           onClick={() => setIsCampaignModalOpen(true)}
         >
           <Send className="h-4 w-4" />
           Lancer Campagne SMS Globale
         </Button>
+      </div>
+
+      {/* Avertissement officiel persistance */}
+      <div className="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 rounded-xl p-4 flex items-center gap-3 text-amber-800 dark:text-amber-200 text-sm">
+        <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0" />
+        <p className="font-semibold">
+          Fonction en cours de développement : les relances SMS et WhatsApp ne sont pas encore transmises aux opérateurs télécoms.
+        </p>
       </div>
 
       {/* KPI Tiles (Nexoov Pastel Cards) */}
@@ -438,14 +451,12 @@ export const RelancesPage: React.FC = () => {
                           </button>
 
                           <button
-                            onClick={(e) => {
-                              setOpenMenuRowId(null);
-                              handleRelancerSingle(eleve, e);
-                            }}
-                            className="w-full flex items-center gap-2.5 px-3 py-2 text-rose-700 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 font-semibold"
+                            disabled={true}
+                            title="Fonction en cours de développement : l'envoi WhatsApp n'est pas encore actif"
+                            className="w-full flex items-center gap-2.5 px-3 py-2 text-slate-400 font-semibold cursor-not-allowed"
                           >
                             <Send className="h-3.5 w-3.5" />
-                            <span>Envoyer WhatsApp</span>
+                            <span>Envoyer WhatsApp (Bientôt disponible)</span>
                           </button>
 
                           <button
