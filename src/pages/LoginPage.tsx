@@ -94,22 +94,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onReturnToLanding }) => {
       if (authError) {
         const msg = authError.message.toLowerCase();
         if (msg.includes('api key') || msg.includes('fetch') || msg.includes('network')) {
-          // Gestion des comptes de test / démo en environnement local
-          if (email.toLowerCase().includes('admin') || email.toLowerCase().includes('super')) {
-            useAuthStore.getState().setUser({ id: 'usr-super-admin', email } as any);
-            useAuthStore.getState().setProfile({
-              id: 'usr-super-admin',
-              ecole_id: null,
-              nom: 'Super Admin',
-              prenom: 'Direction',
-              telephone: '+222 45 00 00 00',
-              role: 'super_admin',
-              actif: true,
-            });
-            useNavigationStore.getState().setUserRole('directeur');
-            useNavigationStore.getState().launchAppWithPortal('directeur');
-            return;
-          }
           setError('Impossible de joindre le serveur. Vérifiez votre connexion internet.');
         } else if (msg.includes('invalid') || authError.status === 400) {
           setError('Email ou mot de passe incorrect.');

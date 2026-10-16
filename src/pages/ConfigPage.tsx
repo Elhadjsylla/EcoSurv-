@@ -13,7 +13,6 @@ import { TestActivationLinkBanner } from '../components/ui/TestActivationLinkBan
 import {
   StaffMember,
   RoleUtilisateur,
-  MOCK_STAFF,
 } from '../lib/mockData';
 import { DEFAULT_CLASSES_MAURITANIE } from '../lib/constants/classes';
 import {
@@ -43,12 +42,16 @@ export const ConfigPage: React.FC = () => {
   const [formData, setFormData] = useState(ecole);
   const [isSaving, setIsSaving] = useState(false);
   const [staffList, setStaffList] = useState<StaffMember[]>([]);
+  const [isLoadingStaff, setIsLoadingStaff] = useState(false);
+  const [staffError, setStaffError] = useState<string | null>(null);
 
   const [isInviting, setIsInviting] = useState(false);
   const [inviteError, setInviteError] = useState<string | null>(null);
 
   const fetchStaff = async () => {
     if (!authProfile?.ecole_id) return;
+    setIsLoadingStaff(true);
+    setStaffError(null);
     try {
       const { data: profilsData, error: profilsErr } = await supabase
         .from('profils')
@@ -56,7 +59,11 @@ export const ConfigPage: React.FC = () => {
         .eq('ecole_id', authProfile.ecole_id)
         .order('created_at', { ascending: false });
 
-      if (!profilsErr && profilsData) {
+      if (profilsErr) {
+        throw profilsErr;
+      }
+
+      if (profilsData) {
         // Récupérer les classes assignées pour les enseignants
         const { data: affectations } = await supabase
           .from('affectations_enseignants')
@@ -81,15 +88,16 @@ export const ConfigPage: React.FC = () => {
           actif: Boolean(p.actif),
           date_ajout: p.created_at ? new Date(p.created_at).toISOString().split('T')[0] : '2026-09-22',
         }));
-        setStaffList(mapped.length > 0 ? mapped : MOCK_STAFF);
-      } else if (authProfile.ecole_id === 'ecole-demo') {
-        setStaffList(MOCK_STAFF);
+        setStaffList(mapped);
+      } else {
+        setStaffList([]);
       }
-    } catch (e) {
+    } catch (e: any) {
       console.warn('[ConfigPage] Erreur chargement staff:', e);
-      if (authProfile.ecole_id === 'ecole-demo') {
-        setStaffList(MOCK_STAFF);
-      }
+      setStaffError(e?.message || 'Erreur lors du chargement des membres');
+      setStaffList([]);
+    } finally {
+      setIsLoadingStaff(false);
     }
   };
 
@@ -587,6 +595,38 @@ export const ConfigPage: React.FC = () => {
           keyExtractor={(member) => member.id}
           bordered={false}
           cardsContainerClassName="p-3 sm:p-4"
+          isLoading={isLoadingStaff}
+          emptyState={
+            staffError ? (
+              <div className="py-8 px-4 text-center space-y-3 max-w-md mx-auto">
+                <AlertCircle className="w-8 h-8 text-rose-500 mx-auto" />
+                <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200">
+                  Erreur de chargement du personnel
+                </h4>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  {staffError}
+                </p>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={fetchStaff}
+                  className="gap-2 mx-auto"
+                >
+                  Réessayer
+                </Button>
+              </div>
+            ) : (
+              <div className="py-8 px-4 text-center space-y-2 max-w-md mx-auto">
+                <Users className="w-8 h-8 text-slate-400 mx-auto" />
+                <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200">
+                  Aucun membre du personnel
+                </h4>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Invitez des enseignants ou surveillants avec le bouton « Inviter un membre ».
+                </p>
+              </div>
+            )
+          }
           columns={[
             {
               id: 'avatar',

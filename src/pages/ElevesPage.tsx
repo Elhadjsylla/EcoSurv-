@@ -5,7 +5,6 @@ import {
   LienParente,
   StatutEcheance,
   getDashboardKpis,
-  MOCK_ELEVES,
 } from '../lib/mockData';
 import { useAuthStore } from '../store/useAuthStore';
 import { useEcoleStore } from '../store/useEcoleStore';
@@ -60,80 +59,92 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
 }) => {
   const authProfile = useAuthStore((s) => s.profile);
 
-  const [elevesList, setElevesList] = useState<EleveWithStats[]>(MOCK_ELEVES);
+  const [elevesList, setElevesList] = useState<EleveWithStats[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (authProfile?.ecole_id && authProfile.ecole_id !== 'ecole-demo') {
-      const fetchRealEleves = async () => {
-        try {
-          const [elevesRes, echeancesRes] = await Promise.all([
-            supabase
-              .from('eleves')
-              .select('*')
-              .eq('ecole_id', authProfile.ecole_id)
-              .order('nom', { ascending: true }),
-            supabase
-              .from('echeances')
-              .select('*')
-              .eq('ecole_id', authProfile.ecole_id),
-          ]);
+  const fetchRealEleves = React.useCallback(async () => {
+    if (!authProfile?.ecole_id) return;
+    setIsLoading(true);
+    setFetchError(null);
+    try {
+      const [elevesRes, echeancesRes] = await Promise.all([
+        supabase
+          .from('eleves')
+          .select('*')
+          .eq('ecole_id', authProfile.ecole_id)
+          .order('nom', { ascending: true }),
+        supabase
+          .from('echeances')
+          .select('*')
+          .eq('ecole_id', authProfile.ecole_id),
+      ]);
 
-          if (!elevesRes.error && elevesRes.data && elevesRes.data.length > 0) {
-            const allEcheances = echeancesRes.data || [];
+      if (elevesRes.error) {
+        throw elevesRes.error;
+      }
+      if (echeancesRes.error) {
+        throw echeancesRes.error;
+      }
 
-            const mapped: EleveWithStats[] = elevesRes.data.map((d: any) => {
-              const studentEch = allEcheances.filter((ech: any) => ech.eleve_id === d.id);
-              const totalDue = studentEch.reduce((sum: number, ech: any) => sum + Number(ech.montant || 0), 0);
-              const totalPaid = studentEch.reduce((sum: number, ech: any) => sum + Number(ech.montant_paye || 0), 0);
-              const remaining = Math.max(0, totalDue - totalPaid);
-              const hasOverdue = studentEch.some((ech: any) => ech.statut === 'en_retard');
-              const computedStatut = hasOverdue
-                ? 'en_retard'
-                : (totalDue > 0 && remaining === 0
-                  ? 'paye'
-                  : (totalPaid > 0 ? 'partiel' : 'a_jour'));
+      if (elevesRes.data && elevesRes.data.length > 0) {
+        const allEcheances = echeancesRes.data || [];
 
-              return {
-                id: d.id,
-                ecole_id: d.ecole_id,
-                matricule: d.matricule || `ECO-${d.id.slice(0, 4).toUpperCase()}`,
-                nom: d.nom,
-                prenom: d.prenom,
-                date_naissance: d.date_naissance || '',
-                lieu_naissance: d.lieu_naissance || '',
-                sexe: (d.sexe === 'F' ? 'F' : 'M') as 'M' | 'F',
-                classe: d.classe || 'Non assigné',
-                nom_tuteur: d.nom_tuteur || 'Tuteur',
-                telephone_tuteur: d.telephone_tuteur || '',
-                email_tuteur: d.email_tuteur || '',
-                adresse_tuteur: d.adresse_tuteur || '',
-                lien_parente: (d.lien_parente || 'pere') as LienParente,
-                total_due: totalDue,
-                total_paid: totalPaid,
-                remaining: remaining,
-                statut: computedStatut as StatutEcheance,
-                derniere_echeance_date: d.derniere_echeance_date || '',
-                nb_absences: Number(d.nb_absences || 0),
-                prochaine_echeance_date: d.prochaine_echeance_date || '',
-                prochaine_echeance_montant: Number(d.prochaine_echeance_montant || 0),
-                timeline_paiements: [],
-                actif: d.actif ?? true,
-              };
-            });
-            setElevesList(mapped);
-          } else {
-            setElevesList(MOCK_ELEVES);
-          }
-        } catch (e) {
-          console.warn('[ElevesPage] Erreur chargement élèves réels:', e);
-          setElevesList(MOCK_ELEVES);
-        }
-      };
-      fetchRealEleves();
-    } else {
-      setElevesList(MOCK_ELEVES);
+        const mapped: EleveWithStats[] = elevesRes.data.map((d: any) => {
+          const studentEch = allEcheances.filter((ech: any) => ech.eleve_id === d.id);
+          const totalDue = studentEch.reduce((sum: number, ech: any) => sum + Number(ech.montant || 0), 0);
+          const totalPaid = studentEch.reduce((sum: number, ech: any) => sum + Number(ech.montant_paye || 0), 0);
+          const remaining = Math.max(0, totalDue - totalPaid);
+          const hasOverdue = studentEch.some((ech: any) => ech.statut === 'en_retard');
+          const computedStatut = hasOverdue
+            ? 'en_retard'
+            : (totalDue > 0 && remaining === 0
+              ? 'paye'
+              : (totalPaid > 0 ? 'partiel' : 'a_jour'));
+
+          return {
+            id: d.id,
+            ecole_id: d.ecole_id,
+            matricule: d.matricule || `ECO-${d.id.slice(0, 4).toUpperCase()}`,
+            nom: d.nom,
+            prenom: d.prenom,
+            date_naissance: d.date_naissance || '',
+            lieu_naissance: d.lieu_naissance || '',
+            sexe: (d.sexe === 'F' ? 'F' : 'M') as 'M' | 'F',
+            classe: d.classe || 'Non assigné',
+            nom_tuteur: d.nom_tuteur || 'Tuteur',
+            telephone_tuteur: d.telephone_tuteur || '',
+            email_tuteur: d.email_tuteur || '',
+            adresse_tuteur: d.adresse_tuteur || '',
+            lien_parente: (d.lien_parente || 'pere') as LienParente,
+            total_due: totalDue,
+            total_paid: totalPaid,
+            remaining: remaining,
+            statut: computedStatut as StatutEcheance,
+            derniere_echeance_date: d.derniere_echeance_date || '',
+            nb_absences: Number(d.nb_absences || 0),
+            prochaine_echeance_date: d.prochaine_echeance_date || '',
+            prochaine_echeance_montant: Number(d.prochaine_echeance_montant || 0),
+            timeline_paiements: [],
+            actif: d.actif ?? true,
+          };
+        });
+        setElevesList(mapped);
+      } else {
+        setElevesList([]);
+      }
+    } catch (e: any) {
+      console.warn('[ElevesPage] Erreur chargement élèves réels:', e);
+      setFetchError(e?.message || 'Erreur lors du chargement des élèves');
+      setElevesList([]);
+    } finally {
+      setIsLoading(false);
     }
   }, [authProfile?.ecole_id]);
+
+  useEffect(() => {
+    fetchRealEleves();
+  }, [fetchRealEleves]);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedClasse, setSelectedClasse] = useState<string>('all');
@@ -737,8 +748,27 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
               : ''
           }
           cardsContainerClassName="p-3 sm:p-4"
+          isLoading={isLoading}
           emptyState={
-            elevesList.length === 0 ? (
+            fetchError ? (
+              <div className="py-8 px-4 text-center space-y-3 max-w-md mx-auto">
+                <AlertTriangle className="h-8 w-8 text-rose-500 mx-auto" />
+                <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                  Erreur de chargement des élèves
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  {fetchError}
+                </p>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={fetchRealEleves}
+                  className="gap-2 mx-auto"
+                >
+                  Réessayer
+                </Button>
+              </div>
+            ) : elevesList.length === 0 ? (
               <div className="py-8 px-4 text-center space-y-3 max-w-md mx-auto">
                 <div className="h-12 w-12 rounded-2xl bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 flex items-center justify-center mx-auto shadow-sm">
                   <Users className="h-6 w-6" />
