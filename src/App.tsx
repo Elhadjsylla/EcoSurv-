@@ -33,6 +33,7 @@ import { PendingActivationScreen } from './pages/PendingActivationScreen';
 import { SuperAdminConsole } from './pages/admin/SuperAdminConsole';
 import { SetPasswordPage } from './pages/SetPasswordPage';
 import { AdaptiveTableDemo } from './components/ui/AdaptiveTableDemo';
+import { DesignPreviewPage } from './pages/dev/DesignPreviewPage';
 import { ErrorBoundary } from './components/ui/ErrorBoundary';
 import { isRoleSimulatorAllowed } from './config/features';
 import { supabase } from './lib/supabase';
@@ -506,6 +507,10 @@ export function AppContent() {
         </div>
       </div>
     );
+  }
+
+  if (import.meta.env.DEV && (window.location.pathname === '/design-preview' || window.location.hash === '#design-preview')) {
+    return <DesignPreviewPage />;
   }
 
   if (window.location.hash === '#demo-adaptive-table') {
