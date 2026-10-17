@@ -383,13 +383,17 @@ export const LandingPage: React.FC = () => {
               <span>{t.landing.heroBadge}</span>
             </motion.div>
 
-            {/* Main Headline avec 'Zéro impayé.' fixe et saisie / effacement progressif */}
+            {/* Main Headline avec promesse réaliste fixe et rotation de claims */}
             <motion.h1 
               variants={motionItem} 
               className="text-3xl sm:text-5xl lg:text-6xl font-black tracking-tight leading-[1.15] text-slate-950 dark:text-white max-w-5xl mx-auto"
             >
               <span className="block mb-2 sm:mb-3 text-slate-950 dark:text-white">
-                {language === 'ar' ? 'صفر متأخرات.' : language === 'en' ? 'Zero Overdue.' : 'Zéro impayé.'}
+                {language === 'ar'
+                  ? 'كل دفعة مصاريف مدرسية، متابعة من التسجيل إلى الإيصال.'
+                  : language === 'en'
+                  ? 'Every tuition payment, tracked from enrollment to receipt.'
+                  : "Chaque paiement de scolarité, suivi de l'inscription au reçu."}
               </span>
               <div className="min-h-[2.6em] sm:min-h-[1.5em] flex items-center justify-center text-center px-2">
                 <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 via-indigo-600 to-emerald-500 dark:from-blue-400 dark:via-indigo-300 dark:to-emerald-400 inline">

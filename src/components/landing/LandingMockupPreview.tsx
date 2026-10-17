@@ -171,7 +171,7 @@ export const LandingMockupPreview: React.FC = () => {
                 </div>
                 <div className="mt-2 flex items-center gap-1 text-[11px] font-semibold text-amber-600 dark:text-amber-400">
                   <AlertCircle className="h-3.5 w-3.5" />
-                  <span>Relances WhatsApp auto programmées</span>
+                  <span>Suivi des échéances et impayés</span>
                 </div>
               </div>
             </div>

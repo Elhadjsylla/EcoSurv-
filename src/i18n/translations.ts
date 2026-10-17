@@ -175,7 +175,7 @@ export const translations: Record<Language, Translations> = {
     landing: {
       heroBadge: 'SaaS Scolarité & Finance — Mauritanie',
       heroTitle: 'La gestion scolaire moderne pensée pour la Mauritanie',
-      heroSubtitle: 'Pilotez vos inscriptions, recouvrements Ouguiya (MRU), relances WhatsApp et scolarité en temps réel avec un outil conçu sur-mesure.',
+      heroSubtitle: 'Pilotez vos inscriptions, encaissements en Ouguiya (MRU) et scolarité en temps réel avec un outil conçu sur-mesure.',
       ctaStart: 'Créer mon école gratuitement',
       ctaDemo: 'Explorer la démo interactive',
       featureTitle: 'Une suite complète pour votre établissement',
