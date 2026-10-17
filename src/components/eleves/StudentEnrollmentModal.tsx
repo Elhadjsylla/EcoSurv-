@@ -212,7 +212,9 @@ export const StudentEnrollmentModal: React.FC<StudentEnrollmentModalProps> = ({
               if (inviteRes?.actionLink) {
                 testActionLink = inviteRes.actionLink;
               }
-              if (inviteRes?.message) {
+              if (inviteRes?.isExistingParent) {
+                inviteNotice = inviteRes.message || "Compte parent existant, enfant rattaché.";
+              } else if (inviteRes?.message) {
                 inviteNotice = inviteRes.message;
               } else if (inviteErr) {
                 const realErrorMsg = await parseEdgeFunctionError(inviteErr, "Le service d'invitation parent n'a pas pu traiter la demande.");
@@ -307,7 +309,9 @@ export const StudentEnrollmentModal: React.FC<StudentEnrollmentModalProps> = ({
               if (inviteRes?.actionLink) {
                 testActionLink = inviteRes.actionLink;
               }
-              if (inviteRes?.message) {
+              if (inviteRes?.isExistingParent) {
+                inviteNotice = inviteRes.message || "Compte parent existant, enfant rattaché.";
+              } else if (inviteRes?.message) {
                 inviteNotice = inviteRes.message;
               } else if (inviteErr) {
                 const realErrorMsg = await parseEdgeFunctionError(inviteErr, "Le service d'invitation parent n'a pas pu traiter la demande.");

@@ -191,7 +191,17 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // 8. Vérifier si cet élève est déjà rattaché à ce parent
+    // Garde-fou multi-école : si l'email appartient à un parent d'une AUTRE école (ecole_id différent)
+    if (existingProfile && existingProfile.ecole_id && existingProfile.ecole_id !== targetEcoleId) {
+      return new Response(
+        JSON.stringify({
+          error: "Cette adresse email ne peut pas être utilisée pour cette invitation. Veuillez vérifier l'adresse saisie ou utiliser une autre adresse.",
+        }),
+        { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // 8. Cas PARENT EXISTANT (même école) : Rattachement de l'enfant sans upsert de profil ni génération de lien
     if (existingProfile) {
       const { data: existingLink } = await supabaseAdmin
         .from("parents_eleves")
@@ -204,14 +214,15 @@ Deno.serve(async (req: Request) => {
         return new Response(
           JSON.stringify({
             success: true,
+            isExistingParent: true,
             alreadyLinked: true,
-            message: `Cet élève est déjà relié au compte parent de ${existingProfile.prenom} ${existingProfile.nom}.`,
+            message: `Cet élève est déjà relié au compte parent de ${escapeHtml(existingProfile.prenom || "")} ${escapeHtml(existingProfile.nom || "")}.`,
           }),
           { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
 
-      // Cas FRATRIE / NOUVEL ENFANT pour un parent existant
+      // Cas FRATRIE / NOUVEL ENFANT pour un parent existant (SANS upsert sur profils !)
       const { error: linkErr } = await supabaseAdmin
         .from("parents_eleves")
         .upsert(
@@ -233,15 +244,16 @@ Deno.serve(async (req: Request) => {
         );
       }
 
-      // Si Resend est configuré, on envoie un email d'information de rattachement
+      // Si Resend est configuré, on envoie un email d'information de rattachement (SANS lien magique ni token !)
       if (resendApiKey) {
         const subject = `Nouvel enfant rattaché à votre compte EcoSurv : ${eleveData.prenom} ${eleveData.nom}`;
+        const loginUrl = `${resolvedOrigin}/login`;
         const siblingHtml = `
           <!DOCTYPE html>
           <html lang="fr">
           <head>
             <meta charset="utf-8">
-            <title>${subject}</title>
+            <title>${escapeHtml(subject)}</title>
             <style>
               body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #0f172a; margin: 0; padding: 24px; color: #f8fafc; }
               .container { max-width: 560px; margin: 0 auto; background: #1e293b; border-radius: 20px; border: 1px solid #334155; overflow: hidden; }
@@ -261,23 +273,23 @@ Deno.serve(async (req: Request) => {
                 <h1>EcoSurv Espace Famille</h1>
               </div>
               <div class="content">
-                <p class="message">Bonjour ${existingProfile.prenom} ${existingProfile.nom},</p>
+                <p class="message">Bonjour ${escapeHtml(existingProfile.prenom || "")} ${escapeHtml(existingProfile.nom || "")},</p>
                 <p class="message">
-                  L'établissement <strong>${nomEcole}</strong> a rattaché un nouvel élève à votre compte Famille existant :
+                  L'établissement <strong>${escapeHtml(nomEcole)}</strong> a rattaché un nouvel élève à votre compte Famille existant :
                 </p>
                 <div class="card">
-                  <div style="font-weight: 800; font-size: 16px; color: #ffffff;">${eleveData.prenom} ${eleveData.nom}</div>
-                  <div style="font-size: 12px; color: #a78bfa; margin-top: 4px;">Classe : ${eleveData.classe} • Matr. #${eleveData.matricule || ''}</div>
+                  <div style="font-weight: 800; font-size: 16px; color: #ffffff;">${escapeHtml(eleveData.prenom)} ${escapeHtml(eleveData.nom)}</div>
+                  <div style="font-size: 12px; color: #a78bfa; margin-top: 4px;">Classe : ${escapeHtml(eleveData.classe || "")} • Matr. #${escapeHtml(eleveData.matricule || "")}</div>
                 </div>
                 <p class="message">
                   Vous pouvez dès à présent consulter son dossier, ses notes et sa situation financière directement dans votre Espace Famille avec vos identifiants habituels.
                 </p>
                 <div class="cta-wrap">
-                  <a href="${targetRedirectUrl}" class="cta-btn">Accéder à mon Espace Famille</a>
+                  <a href="${escapeHtml(loginUrl)}" class="cta-btn">Accéder à mon Espace Famille</a>
                 </div>
               </div>
               <div class="footer">
-                EcoSurv • République Islamique de Mauritanie
+                EcoSurv • Système de Gestion Scolaire
               </div>
             </div>
           </body>
@@ -307,7 +319,7 @@ Deno.serve(async (req: Request) => {
         JSON.stringify({
           success: true,
           isExistingParent: true,
-          message: `L'élève ${eleveData.prenom} a été rattaché au compte Famille existant de ${existingProfile.prenom} ${existingProfile.nom}.`,
+          message: "Compte parent existant, enfant rattaché.",
         }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
@@ -319,7 +331,7 @@ Deno.serve(async (req: Request) => {
     let parentUserId: string;
     let actionLink: string | null = null;
 
-    // Tentative 1 : Générer un lien d'invitation (crée l'utilisateur dans auth.users de façon native)
+    // Tentative unique : Générer un lien d'invitation (crée l'utilisateur dans auth.users de façon native)
     const { data: inviteLinkData, error: inviteLinkError } = await supabaseAdmin.auth.admin.generateLink({
       type: "invite",
       email: cleanEmail,
@@ -335,46 +347,20 @@ Deno.serve(async (req: Request) => {
       },
     });
 
-    if (!inviteLinkError && inviteLinkData?.user) {
-      parentUserId = inviteLinkData.user.id;
-      actionLink = inviteLinkData.properties?.action_link || null;
-    } else {
-      // Tentative 2 : Si l'utilisateur existe déjà dans auth.users, générer un lien recovery pour qu'il puisse se connecter/définir son mot de passe
-      const { data: recoveryLinkData, error: recoveryError } = await supabaseAdmin.auth.admin.generateLink({
-        type: "recovery",
-        email: cleanEmail,
-        options: {
-          redirectTo: targetRedirectUrl,
-        },
-      });
-
-      if (!recoveryError && recoveryLinkData?.user) {
-        parentUserId = recoveryLinkData.user.id;
-        actionLink = recoveryLinkData.properties?.action_link || null;
-      } else {
-        // Tentative 3 : Si recovery échoue également, tenter un lien de connexion magique (magiclink)
-        const { data: magicData, error: magicError } = await supabaseAdmin.auth.admin.generateLink({
-          type: "magiclink",
-          email: cleanEmail,
-          options: {
-            redirectTo: targetRedirectUrl,
-          },
-        });
-
-        if (magicError || !magicData?.user) {
-          console.error("[invite-parent] Erreur generateLink (invite/recovery/magiclink):", inviteLinkError, recoveryError, magicError);
-          return new Response(
-            JSON.stringify({
-              error: recoveryError?.message || inviteLinkError?.message || magicError?.message || "Impossible de générer le compte tuteur ou son lien d'accès.",
-            }),
-            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
-        }
-
-        parentUserId = magicData.user.id;
-        actionLink = magicData.properties?.action_link || null;
-      }
+    // Règle 4 : Si generateLink('invite') échoue, cela signifie que l'utilisateur existe déjà dans auth.users
+    // (ou que l'adresse est invalide). Règle stricte : refus neutre, aucun fallback recovery ou magiclink, aucun lien généré !
+    if (inviteLinkError || !inviteLinkData?.user) {
+      console.warn("[invite-parent] Échec generateLink type 'invite' (compte existant dans auth ou invalide):", inviteLinkError?.message);
+      return new Response(
+        JSON.stringify({
+          error: "Cette adresse email ne peut pas être utilisée pour cette invitation. Veuillez vérifier l'adresse saisie ou utiliser une autre adresse.",
+        }),
+        { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
+
+    parentUserId = inviteLinkData.user.id;
+    actionLink = inviteLinkData.properties?.action_link || null;
     // Garantir que le paramètre redirect_to dans le lien d'action pointe strictement vers targetRedirectUrl
     if (actionLink) {
       try {
