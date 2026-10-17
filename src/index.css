@@ -13,10 +13,11 @@
     scroll-behavior: smooth;
   }
   body {
-    @apply bg-slate-50 text-slate-900 antialiased transition-colors duration-300;
-  }
-  html.dark body {
-    @apply bg-slate-950 text-slate-100;
+    background-color: var(--page-bg);
+    color: var(--text-main);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    transition: background-color 0.2s, color 0.2s;
   }
 }
 

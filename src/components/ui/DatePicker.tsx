@@ -249,6 +249,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
             align === 'right' ? 'right-0' : 'left-0'
           )}
         >
+          {/* Dropdown Calendar Panel */}
           {/* Month & Year Navigation Header */}
           <div className="flex items-center justify-between pb-3 border-b border-subtle mb-3">
             <div className="flex items-center gap-0.5">
@@ -256,7 +257,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
                 <button
                   type="button"
                   onClick={() => setViewYear((y) => y - 1)}
-                  className="p-1 rounded-sm hover:bg-surface-subtle text-muted hover:text-main text-xs font-bold transition-colors cursor-pointer"
+                  className="min-h-[40px] min-w-[40px] sm:min-h-0 sm:min-w-0 sm:p-1 flex items-center justify-center rounded-sm hover:bg-surface-subtle text-muted hover:text-main text-xs font-bold transition-colors cursor-pointer"
                   aria-label="Année précédente"
                 >
                   «
@@ -266,7 +267,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
                 <button
                   type="button"
                   onClick={prevMonth}
-                  className="p-1 rounded-sm hover:bg-surface-subtle text-secondary hover:text-main transition-colors cursor-pointer"
+                  className="min-h-[40px] min-w-[40px] sm:min-h-0 sm:min-w-0 sm:p-1 flex items-center justify-center rounded-sm hover:bg-surface-subtle text-secondary hover:text-main transition-colors cursor-pointer"
                   aria-label="Mois précédent"
                 >
                   <ChevronLeft className="h-4 w-4" />
@@ -288,7 +289,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
                 <button
                   type="button"
                   onClick={nextMonth}
-                  className="p-1 rounded-sm hover:bg-surface-subtle text-secondary hover:text-main transition-colors cursor-pointer"
+                  className="min-h-[40px] min-w-[40px] sm:min-h-0 sm:min-w-0 sm:p-1 flex items-center justify-center rounded-sm hover:bg-surface-subtle text-secondary hover:text-main transition-colors cursor-pointer"
                   aria-label="Mois suivant"
                 >
                   <ChevronRight className="h-4 w-4" />
@@ -298,7 +299,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
                 <button
                   type="button"
                   onClick={() => setViewYear((y) => y + 1)}
-                  className="p-1 rounded-sm hover:bg-surface-subtle text-muted hover:text-main text-xs font-bold transition-colors cursor-pointer"
+                  className="min-h-[40px] min-w-[40px] sm:min-h-0 sm:min-w-0 sm:p-1 flex items-center justify-center rounded-sm hover:bg-surface-subtle text-muted hover:text-main text-xs font-bold transition-colors cursor-pointer"
                   aria-label="Année suivante"
                 >
                   »
@@ -327,7 +328,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
               return (
                 <span
                   key={`prev-${idx}`}
-                  className="py-1.5 text-muted/40 text-xs font-normal"
+                  className="min-h-[40px] sm:min-h-0 py-1.5 flex items-center justify-center text-muted/40 text-xs font-normal"
                 >
                   {dayNum}
                 </span>
@@ -356,7 +357,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
                   disabled={isOutOfRange}
                   onClick={() => !isOutOfRange && handleSelectDay(day)}
                   className={cn(
-                    'py-1.5 rounded-sm text-xs font-semibold transition-colors select-none tabular-nums',
+                    'min-h-[40px] sm:min-h-0 py-1.5 flex items-center justify-center rounded-sm text-xs font-semibold transition-colors select-none tabular-nums',
                     isOutOfRange
                       ? 'text-muted/40 cursor-not-allowed opacity-40'
                       : isSelected

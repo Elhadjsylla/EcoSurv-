@@ -82,6 +82,10 @@
   /* Espacement : 4/8 scale & Padding de page unique */
   --spacing-page: 24px;
   --spacing-page-lg: 32px;
+
+  /* Ombres sémantiques */
+  --shadow-card: var(--shadow-card);
+  --shadow-elevated: var(--shadow-elevated);
 }
 
 /* Mode clair par défaut */

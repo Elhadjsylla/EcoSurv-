@@ -109,6 +109,18 @@ export const KpiCard: React.FC<KpiCardProps> = ({
       whileHover={{ y: -2, transition: { duration: 0.15 } }}
       whileTap={onClick ? { scale: 0.99 } : undefined}
       onClick={onClick}
+      role={onClick ? 'button' : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      onKeyDown={
+        onClick
+          ? (e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                onClick();
+              }
+            }
+          : undefined
+      }
       className={cn(
         'rounded-md border p-5 sm:p-6 shadow-xs transition-colors duration-150 relative overflow-hidden flex flex-col justify-between min-w-0',
         cardVariantStyles[variant],
