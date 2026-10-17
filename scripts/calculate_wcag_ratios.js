@@ -66,6 +66,10 @@ const lightPairs = [
   evaluate('Texte bouton primaire (--on-primary #FFFFFF) sur survol (--primary-hover #1E40AF)', '#FFFFFF', '#1E40AF', 'text'),
   evaluate('Lien / texte primaire (--primary-text #1D4ED8) sur fond blanc (#FFFFFF)', '#1D4ED8', '#FFFFFF', 'text'),
 
+  // Anneau de Focus (exigence >= 3.0:1 pour indicateur de focus WCAG 2.4.11)
+  evaluate('Anneau de focus (--focus-ring #1D4ED8) sur carte (--surface #FFFFFF)', '#1D4ED8', '#FFFFFF', 'ui'),
+  evaluate('Anneau de focus (--focus-ring #1D4ED8) sur fond page (--page-bg #F8FAFC)', '#1D4ED8', '#F8FAFC', 'ui'),
+
   // Bordures (exigence >= 3.0:1)
   evaluate('Bordure forte (--border-strong #64748B) sur champ input (--surface-input #FFFFFF)', '#64748B', '#FFFFFF', 'ui'),
   evaluate('Bordure forte (--border-strong #64748B) sur carte (--surface #FFFFFF)', '#64748B', '#FFFFFF', 'ui'),
@@ -109,6 +113,10 @@ const darkPairs = [
   evaluate('Texte bouton primaire (--on-primary #FFFFFF) sur bouton (--primary #2563EB)', '#FFFFFF', '#2563EB', 'text'),
   evaluate('Lien / texte primaire (--primary-text #60A5FA) sur carte sombre (#0F172A)', '#60A5FA', '#0F172A', 'text'),
   evaluate('Lien / texte primaire (--primary-text #60A5FA) sur surface élevée (#1E293B)', '#60A5FA', '#1E293B', 'text'),
+
+  // Anneau de Focus sombre (exigence >= 3.0:1 pour indicateur de focus WCAG 2.4.11)
+  evaluate('Anneau de focus sombre (--focus-ring #60A5FA) sur surface sombre (--surface #0F172A)', '#60A5FA', '#0F172A', 'ui'),
+  evaluate('Anneau de focus sombre (--focus-ring #60A5FA) sur fond page sombre (--page-bg #090D16)', '#60A5FA', '#090D16', 'ui'),
 
   // Bordures en sombre (exigence >= 3.0:1)
   evaluate('Bordure forte (--border-strong #64748B) sur champ sombre (--surface-input #0F172A)', '#64748B', '#0F172A', 'ui'),

@@ -189,8 +189,9 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* Halo de focus sobre et accessible */
-.focus-halo:focus-visible {
-  outline: none;
-  box-shadow: var(--focus-halo);
+/* Anneau de focus plein de 2px avec offset 2px, haute visibilité WCAG 2.4.11 */
+.focus-halo:focus-visible,
+.focus-ring:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
 }

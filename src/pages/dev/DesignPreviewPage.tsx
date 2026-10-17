@@ -17,11 +17,22 @@ import { useThemeStore } from '../../store/useThemeStore';
 import { Button } from '../../components/ui/Button';
 import { Card, CardHeader, CardTitle, CardDescription } from '../../components/ui/Card';
 import { KpiCard } from '../../components/ui/KpiCard';
+import { Select } from '../../components/ui/Select';
+import { DatePicker } from '../../components/ui/DatePicker';
 
 export const DesignPreviewPage: React.FC = () => {
   const { theme, toggleTheme } = useThemeStore();
   const [showToast, setShowToast] = useState(true);
   const [inputValue, setInputValue] = useState('');
+  const [selectedClasse, setSelectedClasse] = useState('1AF');
+  const [selectedDate, setSelectedDate] = useState('2026-10-17');
+
+  const classeOptions = [
+    { value: '1AF', label: '1AF (CI / CP1)', description: 'Fondamental' },
+    { value: '2AF', label: '2AF (CP / CP2)', description: 'Fondamental' },
+    { value: '1AS_A', label: '1AS (6ème A)', description: 'Collège' },
+    { value: '2nde_C', label: '2nde C (Scientifique)', description: 'Lycée' },
+  ];
 
   return (
     <div className="min-h-screen bg-page-bg text-main p-page transition-colors duration-200">
@@ -129,7 +140,7 @@ export const DesignPreviewPage: React.FC = () => {
               </Button>
             </div>
             <p className="text-xs text-muted mt-4">
-              Cibles tactiles mobiles garanties ≥ 44px sur mobile (<code className="bg-surface-subtle px-1 py-0.5 rounded-sm">min-h-[44px]</code>) et focus visible avec <code className="bg-surface-subtle px-1 py-0.5 rounded-sm">focus-halo</code>.
+              Cibles tactiles mobiles garanties ≥ 44px sur mobile (<code className="bg-surface-subtle px-1 py-0.5 rounded-sm">min-h-[44px]</code>) et focus anneau plein 2px offset 2px avec <code className="bg-surface-subtle px-1 py-0.5 rounded-sm">focus-halo</code>.
             </p>
           </Card>
         </section>
@@ -167,54 +178,74 @@ export const DesignPreviewPage: React.FC = () => {
           </div>
         </section>
 
-        {/* 2. SECTION CHAMPS DE SAISIE */}
+        {/* GROUPE 2 MIGRÉ : SELECT & DATEPICKER */}
         <section className="space-y-4">
-          <h2 className="text-lg font-bold text-main">2. Champs de Saisie (Inputs & Select)</h2>
-          <div className="p-6 rounded-md bg-surface border border-subtle shadow-xs grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="space-y-1.5">
-              <label className="block text-sm font-medium text-main">
-                Champ standard
-              </label>
-              <div className="relative">
-                <Search className="h-4 w-4 text-muted absolute left-3 top-1/2 -translate-y-1/2" />
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-bold text-main">Groupe 2 : Composants Select & DatePicker</h2>
+            <span className="text-xs text-muted">Remplacement complet du select natif avec anneau plein 2px</span>
+          </div>
+          <Card>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 items-start">
+              {/* Select migré */}
+              <div className="space-y-1.5 w-full">
+                <Select
+                  label="Sélecteur de classe (Composant Select)"
+                  options={classeOptions}
+                  value={selectedClasse}
+                  onChange={(val) => setSelectedClasse(val)}
+                  size="md"
+                  className="w-full"
+                />
+                <p className="text-xs text-muted">Menu déroulant accessible au clavier avec focus visible.</p>
+              </div>
+
+              {/* DatePicker migré */}
+              <div className="space-y-1.5 w-full">
+                <DatePicker
+                  label="Date d'échéance (Composant DatePicker)"
+                  value={selectedDate}
+                  onChange={(d) => setSelectedDate(d)}
+                  size="md"
+                  className="w-full"
+                />
+                <p className="text-xs text-muted">Calendrier avec tabular-nums et rayon md (12px).</p>
+              </div>
+
+              {/* Input standard avec recherche */}
+              <div className="space-y-1.5 w-full">
+                <label className="block text-xs font-bold text-main">
+                  Champ standard (Input)
+                </label>
+                <div className="relative">
+                  <Search className="h-4 w-4 text-muted absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    placeholder="Rechercher un élève..."
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
+                    className="w-full pl-9 pr-3 py-2 rounded-md bg-surface-input border border-strong text-sm text-main placeholder:text-muted focus-halo transition-colors"
+                  />
+                </div>
+                <p className="text-xs text-muted">Bordure forte (contraste ≥ 3.0:1 sur fond input).</p>
+              </div>
+
+              {/* Input avec erreur */}
+              <div className="space-y-1.5 w-full">
+                <label className="block text-xs font-bold text-danger">
+                  Champ en erreur
+                </label>
                 <input
                   type="text"
-                  placeholder="Rechercher un élève..."
-                  value={inputValue}
-                  onChange={(e) => setInputValue(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 rounded-md bg-surface-input border border-strong text-sm text-main placeholder:text-muted focus-halo transition-colors"
+                  defaultValue="Valeur incorrecte"
+                  className="w-full px-3 py-2 rounded-md bg-surface-input border border-danger text-sm text-main focus-halo transition-colors"
                 />
+                <p className="text-xs text-danger font-medium flex items-center gap-1">
+                  <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                  <span>Champ obligatoire.</span>
+                </p>
               </div>
-              <p className="text-xs text-muted">Bordure forte (contraste ≥ 3.0:1 sur fond input).</p>
             </div>
-
-            <div className="space-y-1.5">
-              <label className="block text-sm font-medium text-main">
-                Sélecteur de classe
-              </label>
-              <select className="w-full px-3 py-2 rounded-md bg-surface-input border border-strong text-sm text-main focus-halo transition-colors">
-                <option>1AF (CI / CP1)</option>
-                <option>2AF (CP / CP2)</option>
-                <option>3AF (CE1)</option>
-              </select>
-              <p className="text-xs text-muted">Alignement sur le rayon md (12px).</p>
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="block text-sm font-medium text-danger">
-                Champ en erreur
-              </label>
-              <input
-                type="text"
-                defaultValue="Valeur incorrecte"
-                className="w-full px-3 py-2 rounded-md bg-surface-input border border-danger text-sm text-main focus:outline-none focus:ring-2 focus:ring-danger/30 transition-colors"
-              />
-              <p className="text-xs text-danger font-medium flex items-center gap-1">
-                <AlertCircle className="h-3.5 w-3.5" />
-                <span>Ce champ est obligatoire.</span>
-              </p>
-            </div>
-          </div>
+          </Card>
         </section>
 
         {/* 3. SECTION BADGES D'ÉTAT SÉMANTIQUES */}

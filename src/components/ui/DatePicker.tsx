@@ -10,18 +10,18 @@ import { cn } from '../../lib/utils';
 import { Tooltip } from './Tooltip';
 
 export interface DatePickerProps {
-  value: string; // Format 'YYYY-MM-DD'
-  onChange: (value: string) => void;
+  value?: string; // Format ISO: 'YYYY-MM-DD'
+  onChange: (date: string) => void;
   placeholder?: string;
   label?: string;
-  disabled?: boolean;
   min?: string;
   max?: string;
+  disabled?: boolean;
+  className?: string;
+  triggerClassName?: string;
   size?: 'sm' | 'md' | 'lg';
   variant?: 'default' | 'subtle' | 'outline';
   align?: 'left' | 'right';
-  className?: string;
-  triggerClassName?: string;
   id?: string;
 }
 
@@ -45,16 +45,16 @@ const DAYS_SHORT = ['Lu', 'Ma', 'Me', 'Je', 'Ve', 'Sa', 'Di'];
 export const DatePicker: React.FC<DatePickerProps> = ({
   value,
   onChange,
-  placeholder = 'JJ/MM/AAAA',
+  placeholder = 'Sélectionner une date',
   label,
-  disabled = false,
   min,
   max,
+  disabled = false,
+  className,
+  triggerClassName,
   size = 'md',
   variant = 'default',
   align = 'left',
-  className,
-  triggerClassName,
   id,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -62,32 +62,12 @@ export const DatePicker: React.FC<DatePickerProps> = ({
   const generatedId = useId();
   const datePickerId = id || generatedId;
 
-  // Parse current value or default to current date
-  const parsedDate = value ? new Date(value + 'T00:00:00') : null;
-  const initialYear =
-    parsedDate && !isNaN(parsedDate.getTime())
-      ? parsedDate.getFullYear()
-      : new Date().getFullYear();
-  const initialMonth =
-    parsedDate && !isNaN(parsedDate.getTime())
-      ? parsedDate.getMonth()
-      : new Date().getMonth();
+  // Initial Calendar View (Month & Year)
+  const initialDate = value ? new Date(value) : new Date();
+  const [viewYear, setViewYear] = useState(initialDate.getFullYear());
+  const [viewMonth, setViewMonth] = useState(initialDate.getMonth());
 
-  const [viewYear, setViewYear] = useState<number>(initialYear);
-  const [viewMonth, setViewMonth] = useState<number>(initialMonth);
-
-  // Sync view when value changes externally
-  useEffect(() => {
-    if (value) {
-      const d = new Date(value + 'T00:00:00');
-      if (!isNaN(d.getTime())) {
-        setViewYear(d.getFullYear());
-        setViewMonth(d.getMonth());
-      }
-    }
-  }, [value]);
-
-  // Click outside & Escape listeners
+  // Click outside to close
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (
@@ -97,41 +77,22 @@ export const DatePicker: React.FC<DatePickerProps> = ({
         setIsOpen(false);
       }
     };
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isOpen) {
-        setIsOpen(false);
-      }
-    };
-
     if (isOpen) {
       document.addEventListener('mousedown', handleClickOutside);
-      document.addEventListener('keydown', handleKeyDown);
     }
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('keydown', handleKeyDown);
     };
   }, [isOpen]);
 
-  // Format date display (e.g., '14/02/2026' or '14 févr. 2026')
-  const formatDisplay = (isoStr: string) => {
-    if (!isoStr) return '';
-    const parts = isoStr.split('-');
-    if (parts.length === 3) {
-      return `${parts[2]}/${parts[1]}/${parts[0]}`;
-    }
-    return isoStr;
-  };
-
-  // Calendar calculations
+  // Calendar logic helpers
   const getDaysInMonth = (year: number, month: number) => {
     return new Date(year, month + 1, 0).getDate();
   };
 
   const getFirstDayOfMonth = (year: number, month: number) => {
-    // 0 is Sunday, 1 is Monday... Adjust to Monday = 0
     const day = new Date(year, month, 1).getDay();
-    return day === 0 ? 6 : day - 1;
+    return day === 0 ? 6 : day - 1; // 0 = Lundi, 6 = Dimanche
   };
 
   const daysInCurrentMonth = getDaysInMonth(viewYear, viewMonth);
@@ -159,8 +120,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
   const handleSelectDay = (day: number) => {
     const mm = String(viewMonth + 1).padStart(2, '0');
     const dd = String(day).padStart(2, '0');
-    const iso = `${viewYear}-${mm}-${dd}`;
-    onChange(iso);
+    onChange(`${viewYear}-${mm}-${dd}`);
     setIsOpen(false);
   };
 
@@ -169,9 +129,9 @@ export const DatePicker: React.FC<DatePickerProps> = ({
     const yyyy = today.getFullYear();
     const mm = String(today.getMonth() + 1).padStart(2, '0');
     const dd = String(today.getDate()).padStart(2, '0');
-    onChange(`${yyyy}-${mm}-${dd}`);
     setViewYear(yyyy);
     setViewMonth(today.getMonth());
+    onChange(`${yyyy}-${mm}-${dd}`);
     setIsOpen(false);
   };
 
@@ -180,28 +140,34 @@ export const DatePicker: React.FC<DatePickerProps> = ({
     onChange('');
   };
 
-  // Generate a list of years for quick selection (e.g. for birth dates)
-  const currentYear = new Date().getFullYear();
-  const yearOptions: number[] = [];
-  for (let y = currentYear + 2; y >= currentYear - 80; y--) {
-    yearOptions.push(y);
-  }
-
-  // Sizes
-  const sizeStyles = {
-    sm: 'h-9 px-3 text-xs gap-1.5 rounded-lg',
-    md: 'h-11 px-3.5 text-xs sm:text-sm gap-2 rounded-xl',
-    lg: 'h-12 px-4 text-sm sm:text-base gap-2.5 rounded-xl',
+  const formatDisplay = (isoStr?: string) => {
+    if (!isoStr) return '';
+    try {
+      const parts = isoStr.split('-');
+      if (parts.length === 3) {
+        return `${parts[2]}/${parts[1]}/${parts[0]}`;
+      }
+      return isoStr;
+    } catch {
+      return isoStr;
+    }
   };
 
-  // Variants
+  // Sizes avec cible tactile mobile garantie >= 44px
+  const sizeStyles = {
+    sm: 'min-h-[44px] sm:min-h-0 sm:h-8 px-3 text-xs gap-1.5 rounded-sm',
+    md: 'min-h-[44px] sm:h-10 px-3.5 text-xs sm:text-sm gap-2 rounded-md',
+    lg: 'min-h-[48px] h-12 px-4 text-sm sm:text-base gap-2.5 rounded-md',
+  };
+
+  // Variants alignées sur les tokens sémantiques EcoSurv
   const variantStyles = {
     default:
-      'bg-white border border-slate-200 hover:border-slate-300 text-slate-800 shadow-2xs focus-visible:ring-2 focus-visible:ring-blue-500/20 focus-visible:border-blue-500',
+      'bg-surface-input border border-strong text-main shadow-2xs focus-halo',
     subtle:
-      'bg-slate-50 border border-slate-200/90 hover:bg-slate-100/80 text-slate-800 hover:border-slate-300 shadow-2xs focus-visible:ring-2 focus-visible:ring-blue-500/20 focus-visible:border-blue-500',
+      'bg-surface-subtle border border-default text-main shadow-2xs focus-halo',
     outline:
-      'bg-transparent border border-slate-300 hover:bg-slate-50 text-slate-700 focus-visible:ring-2 focus-visible:ring-blue-500/20 focus-visible:border-blue-500',
+      'bg-surface border border-default text-secondary focus-halo',
   };
 
   const isFullWidth =
@@ -219,7 +185,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
       {label && (
         <label
           htmlFor={datePickerId}
-          className="mb-1.5 block text-xs font-bold text-slate-700"
+          className="mb-1.5 block text-xs font-bold text-main"
         >
           {label}
         </label>
@@ -232,23 +198,23 @@ export const DatePicker: React.FC<DatePickerProps> = ({
         disabled={disabled}
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
-          'flex items-center justify-between font-medium transition-all duration-150 outline-none select-none cursor-pointer',
+          'flex items-center justify-between font-medium transition-colors duration-150 select-none cursor-pointer',
           sizeStyles[size],
           variantStyles[variant],
           disabled &&
-            'opacity-50 cursor-not-allowed pointer-events-none bg-slate-100 text-slate-400 border-slate-200',
-          isOpen && 'ring-2 ring-blue-500/20 border-blue-500',
+            'opacity-50 cursor-not-allowed pointer-events-none bg-surface-subtle text-muted border-subtle',
+          isOpen && 'border-primary ring-2 ring-primary/20',
           triggerClassName
         )}
       >
         <div className="flex items-center gap-2 truncate pr-1">
-          <CalendarIcon className="h-4 w-4 text-slate-400 shrink-0" />
+          <CalendarIcon className="h-4 w-4 text-muted shrink-0" />
           {value ? (
-            <span className="font-semibold text-slate-900 truncate font-mono">
+            <span className="font-semibold text-main truncate tabular-nums">
               {formatDisplay(value)}
             </span>
           ) : (
-            <span className="text-slate-400 truncate">{placeholder}</span>
+            <span className="text-muted truncate">{placeholder}</span>
           )}
         </div>
 
@@ -259,7 +225,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
                 role="button"
                 tabIndex={0}
                 onClick={handleClear}
-                className="p-0.5 text-slate-400 hover:text-slate-600 rounded hover:bg-slate-100 transition-colors"
+                className="p-0.5 text-muted hover:text-main rounded-sm hover:bg-surface-subtle transition-colors"
                 aria-label="Effacer la date"
               >
                 <X className="h-3.5 w-3.5" />
@@ -268,8 +234,8 @@ export const DatePicker: React.FC<DatePickerProps> = ({
           )}
           <ChevronDown
             className={cn(
-              'h-4 w-4 text-slate-400 transition-transform duration-200 ease-out',
-              isOpen && 'rotate-180 text-slate-700'
+              'h-4 w-4 text-muted transition-transform duration-150 ease-out',
+              isOpen && 'rotate-180 text-primary'
             )}
           />
         </div>
@@ -279,18 +245,18 @@ export const DatePicker: React.FC<DatePickerProps> = ({
       {isOpen && (
         <div
           className={cn(
-            'absolute top-full mt-1.5 w-72 rounded-2xl border border-slate-200 bg-white p-4 shadow-xl z-50 animate-in fade-in zoom-in-95 duration-150 select-none',
+            'absolute top-full mt-1.5 w-72 rounded-md border border-subtle bg-surface-elevated p-4 shadow-elevated z-50 animate-in fade-in zoom-in-95 duration-100 select-none',
             align === 'right' ? 'right-0' : 'left-0'
           )}
         >
           {/* Month & Year Navigation Header */}
-          <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
+          <div className="flex items-center justify-between pb-3 border-b border-subtle mb-3">
             <div className="flex items-center gap-0.5">
               <Tooltip content="Année précédente">
                 <button
                   type="button"
                   onClick={() => setViewYear((y) => y - 1)}
-                  className="p-1 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 text-xs font-bold transition-colors"
+                  className="p-1 rounded-sm hover:bg-surface-subtle text-muted hover:text-main text-xs font-bold transition-colors cursor-pointer"
                   aria-label="Année précédente"
                 >
                   «
@@ -300,7 +266,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
                 <button
                   type="button"
                   onClick={prevMonth}
-                  className="p-1 rounded-lg hover:bg-slate-100 text-slate-600 transition-colors"
+                  className="p-1 rounded-sm hover:bg-surface-subtle text-secondary hover:text-main transition-colors cursor-pointer"
                   aria-label="Mois précédent"
                 >
                   <ChevronLeft className="h-4 w-4" />
@@ -308,11 +274,11 @@ export const DatePicker: React.FC<DatePickerProps> = ({
               </Tooltip>
             </div>
 
-            <div className="flex items-center gap-1">
-              <span className="text-xs font-bold text-slate-900">
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs font-bold text-main">
                 {MONTHS_FR[viewMonth]}
               </span>
-              <span className="text-xs font-bold font-mono text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded-md">
+              <span className="text-xs font-bold text-primary bg-surface-subtle border border-subtle px-2 py-0.5 rounded-sm tabular-nums">
                 {viewYear}
               </span>
             </div>
@@ -322,7 +288,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
                 <button
                   type="button"
                   onClick={nextMonth}
-                  className="p-1 rounded-lg hover:bg-slate-100 text-slate-600 transition-colors"
+                  className="p-1 rounded-sm hover:bg-surface-subtle text-secondary hover:text-main transition-colors cursor-pointer"
                   aria-label="Mois suivant"
                 >
                   <ChevronRight className="h-4 w-4" />
@@ -332,7 +298,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
                 <button
                   type="button"
                   onClick={() => setViewYear((y) => y + 1)}
-                  className="p-1 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 text-xs font-bold transition-colors"
+                  className="p-1 rounded-sm hover:bg-surface-subtle text-muted hover:text-main text-xs font-bold transition-colors cursor-pointer"
                   aria-label="Année suivante"
                 >
                   »
@@ -346,7 +312,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
             {DAYS_SHORT.map((day) => (
               <span
                 key={day}
-                className="text-[10px] font-bold uppercase tracking-wider text-slate-400 py-1"
+                className="text-xs font-bold uppercase tracking-wider text-muted py-1"
               >
                 {day}
               </span>
@@ -361,7 +327,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
               return (
                 <span
                   key={`prev-${idx}`}
-                  className="py-1.5 text-slate-300 text-xs font-normal"
+                  className="py-1.5 text-muted/40 text-xs font-normal"
                 >
                   {dayNum}
                 </span>
@@ -390,14 +356,14 @@ export const DatePicker: React.FC<DatePickerProps> = ({
                   disabled={isOutOfRange}
                   onClick={() => !isOutOfRange && handleSelectDay(day)}
                   className={cn(
-                    'py-1.5 rounded-lg text-xs font-semibold transition-all select-none',
+                    'py-1.5 rounded-sm text-xs font-semibold transition-colors select-none tabular-nums',
                     isOutOfRange
-                      ? 'text-slate-300 cursor-not-allowed opacity-40'
+                      ? 'text-muted/40 cursor-not-allowed opacity-40'
                       : isSelected
-                      ? 'bg-blue-600 text-white font-bold shadow-xs cursor-pointer'
+                      ? 'bg-primary text-on-primary font-bold shadow-xs cursor-pointer'
                       : isToday
-                      ? 'bg-blue-50 text-blue-800 font-bold border border-blue-200 hover:bg-blue-100 cursor-pointer'
-                      : 'text-slate-700 hover:bg-slate-100 cursor-pointer'
+                      ? 'bg-surface-subtle text-primary font-bold border border-primary hover:bg-surface-subtle/80 cursor-pointer'
+                      : 'text-secondary hover:bg-surface-subtle hover:text-main cursor-pointer'
                   )}
                 >
                   {day}
@@ -407,11 +373,11 @@ export const DatePicker: React.FC<DatePickerProps> = ({
           </div>
 
           {/* Footer Shortcuts */}
-          <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs">
+          <div className="mt-3 pt-2.5 border-t border-subtle flex items-center justify-between text-xs">
             <button
               type="button"
               onClick={handleSelectToday}
-              className="text-xs font-bold text-blue-600 hover:text-blue-800 transition-colors"
+              className="text-xs font-bold text-primary hover:text-primary-hover transition-colors cursor-pointer"
             >
               Aujourd'hui
             </button>
@@ -419,7 +385,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
               <button
                 type="button"
                 onClick={handleClear}
-                className="text-xs font-semibold text-slate-400 hover:text-slate-600 transition-colors"
+                className="text-xs font-semibold text-muted hover:text-main transition-colors cursor-pointer"
               >
                 Réinitialiser
               </button>
