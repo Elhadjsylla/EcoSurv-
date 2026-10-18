@@ -62,11 +62,11 @@ export const KpiCard: React.FC<KpiCardProps> = ({
 
   const iconTextColors = {
     default: 'text-secondary',
-    primary: 'text-primary',
+    primary: 'text-primary-text',
     success: 'text-success-text',
     danger: 'text-danger-text',
     warning: 'text-warning-text',
-    purple: 'text-primary',
+    purple: 'text-primary-text',
   };
 
   const borderHoverStyles = {
@@ -138,7 +138,7 @@ export const KpiCard: React.FC<KpiCardProps> = ({
               {title}
             </span>
             {onClick && (
-              <ArrowUpRight className="h-4 w-4 text-muted group-hover:text-primary transition-colors shrink-0" />
+              <ArrowUpRight className="h-4 w-4 text-muted group-hover:text-primary-text transition-colors shrink-0" />
             )}
           </div>
           {icon && (
@@ -197,7 +197,7 @@ export const KpiCard: React.FC<KpiCardProps> = ({
               <span className="truncate min-w-0">{subtitle}</span>
             </Tooltip>
             {onClick && (
-              <span className="text-xs font-bold text-primary opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+              <span className="text-xs font-bold text-primary-text opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
                 Filtrer →
               </span>
             )}

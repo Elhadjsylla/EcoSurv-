@@ -225,7 +225,13 @@ export const DatePicker: React.FC<DatePickerProps> = ({
                 role="button"
                 tabIndex={0}
                 onClick={handleClear}
-                className="p-0.5 text-muted hover:text-main rounded-sm hover:bg-surface-subtle transition-colors"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    handleClear(e as any);
+                  }
+                }}
+                className="p-0.5 text-muted hover:text-main rounded-sm hover:bg-surface-subtle transition-colors focus-halo cursor-pointer"
                 aria-label="Effacer la date"
               >
                 <X className="h-3.5 w-3.5" />
@@ -279,7 +285,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
               <span className="text-xs font-bold text-main">
                 {MONTHS_FR[viewMonth]}
               </span>
-              <span className="text-xs font-bold text-primary bg-surface-subtle border border-subtle px-2 py-0.5 rounded-sm tabular-nums">
+              <span className="text-xs font-bold text-primary-text bg-surface-subtle border border-subtle px-2 py-0.5 rounded-sm tabular-nums">
                 {viewYear}
               </span>
             </div>
@@ -363,7 +369,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
                       : isSelected
                       ? 'bg-primary text-on-primary font-bold shadow-xs cursor-pointer'
                       : isToday
-                      ? 'bg-surface-subtle text-primary font-bold border border-primary hover:bg-surface-subtle/80 cursor-pointer'
+                      ? 'bg-surface-subtle text-primary-text font-bold border border-primary hover:bg-surface-subtle/80 cursor-pointer'
                       : 'text-secondary hover:bg-surface-subtle hover:text-main cursor-pointer'
                   )}
                 >
@@ -378,7 +384,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
             <button
               type="button"
               onClick={handleSelectToday}
-              className="text-xs font-bold text-primary hover:text-primary-hover transition-colors cursor-pointer"
+              className="text-xs font-bold text-primary-text hover:text-primary-hover transition-colors cursor-pointer"
             >
               Aujourd'hui
             </button>

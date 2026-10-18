@@ -95,9 +95,9 @@ export const Header: React.FC<HeaderProps> = ({
     directeur: {
       label: t.common.director,
       roleTitle: t.common.director,
-      icon: <UserCheck className="h-4 w-4 text-primary" />,
-      colorTheme: 'text-primary bg-surface-subtle border-subtle',
-      badgeColor: 'bg-surface-subtle text-primary border-subtle',
+      icon: <UserCheck className="h-4 w-4 text-primary-text" />,
+      colorTheme: 'text-primary-text bg-surface-subtle border-subtle',
+      badgeColor: 'bg-surface-subtle text-primary-text border-subtle',
       badgeText: 'Portail Direction',
       badgeScope: 'Accès complet école, élèves & trésorerie',
       user: { id: '', nom: 'Direction', prenom: 'Établissement', email: '', role: 'directeur' },
@@ -105,9 +105,9 @@ export const Header: React.FC<HeaderProps> = ({
     enseignant: {
       label: t.common.teacher,
       roleTitle: t.common.teacher,
-      icon: <GraduationCap className="h-4 w-4 text-primary" />,
-      colorTheme: 'text-primary bg-surface-subtle border-subtle',
-      badgeColor: 'bg-surface-subtle text-primary border-subtle',
+      icon: <GraduationCap className="h-4 w-4 text-primary-text" />,
+      colorTheme: 'text-primary-text bg-surface-subtle border-subtle',
+      badgeColor: 'bg-surface-subtle text-primary-text border-subtle',
       badgeText: 'Espace Enseignant',
       badgeScope: 'Restreint aux classes assignées (zéro données financières)',
       user: { id: '', nom: 'Enseignant', prenom: '', email: '', role: 'enseignant' },
@@ -115,9 +115,9 @@ export const Header: React.FC<HeaderProps> = ({
     caissier: {
       label: t.common.cashier,
       roleTitle: t.common.cashier,
-      icon: <CreditCard className="h-4 w-4 text-primary" />,
-      colorTheme: 'text-primary bg-surface-subtle border-subtle',
-      badgeColor: 'bg-surface-subtle text-primary border-subtle',
+      icon: <CreditCard className="h-4 w-4 text-primary-text" />,
+      colorTheme: 'text-primary-text bg-surface-subtle border-subtle',
+      badgeColor: 'bg-surface-subtle text-primary-text border-subtle',
       badgeText: 'Guichet Caisse',
       badgeScope: 'Encaissement & quittances (zéro données pédagogiques)',
       user: { id: '', nom: 'Guichetier', prenom: 'Caisse', email: '', role: 'caissier' },
@@ -125,9 +125,9 @@ export const Header: React.FC<HeaderProps> = ({
     parent: {
       label: t.common.parent,
       roleTitle: t.common.parent,
-      icon: <HeartHandshake className="h-4 w-4 text-primary" />,
-      colorTheme: 'text-primary bg-surface-subtle border-subtle',
-      badgeColor: 'bg-surface-subtle text-primary border-subtle',
+      icon: <HeartHandshake className="h-4 w-4 text-primary-text" />,
+      colorTheme: 'text-primary-text bg-surface-subtle border-subtle',
+      badgeColor: 'bg-surface-subtle text-primary-text border-subtle',
       badgeText: 'Espace Parent',
       badgeScope: 'Restreint strictement aux enfants de la famille',
       user: { id: '', nom: 'Tuteur', prenom: 'Parent', email: '', role: 'parent' },
@@ -237,9 +237,9 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               type="button"
               onClick={onReturnToLanding}
-              className="flex items-center gap-1.5 h-9 px-2.5 rounded-sm border border-default text-xs font-semibold text-secondary hover:text-primary hover:bg-surface-subtle transition-colors shrink-0 shadow-xs focus-halo cursor-pointer"
+              className="flex items-center gap-1.5 h-9 px-2.5 rounded-sm border border-default text-xs font-semibold text-secondary hover:text-primary-text hover:bg-surface-subtle transition-colors shrink-0 shadow-xs focus-halo cursor-pointer"
             >
-              <Globe className="h-4 w-4 text-primary shrink-0" />
+              <Globe className="h-4 w-4 text-primary-text shrink-0" />
               <span className="hidden xl:inline">{t.common.viewSite}</span>
             </button>
           </Tooltip>
@@ -286,7 +286,7 @@ export const Header: React.FC<HeaderProps> = ({
               type="button"
               className={`relative flex h-9 w-9 items-center justify-center transition-colors rounded-sm focus-halo cursor-pointer ${
                 isNotificationsOpen
-                  ? 'bg-surface-subtle text-primary border border-subtle'
+                  ? 'bg-surface-subtle text-primary-text border border-subtle'
                   : 'text-secondary hover:text-main hover:bg-surface-subtle'
               }`}
               aria-label="Notifications"

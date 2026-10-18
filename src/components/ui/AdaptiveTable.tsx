@@ -187,9 +187,21 @@ export function AdaptiveTable<T>({
                 <tr
                   key={key}
                   onClick={() => onRowClick?.(item)}
+                  role={onRowClick ? 'button' : undefined}
+                  tabIndex={onRowClick ? 0 : undefined}
+                  onKeyDown={
+                    onRowClick
+                      ? (e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            onRowClick(item);
+                          }
+                        }
+                      : undefined
+                  }
                   className={cn(
                     'transition-colors duration-150',
-                    onRowClick && 'cursor-pointer hover:bg-surface-subtle',
+                    onRowClick && 'cursor-pointer hover:bg-surface-subtle focus-halo',
                     checked && 'bg-surface-subtle text-main',
                     extraRowClass
                   )}
@@ -289,9 +301,21 @@ export function AdaptiveTable<T>({
             <div
               key={key}
               onClick={() => onRowClick?.(item)}
+              role={onRowClick ? 'button' : undefined}
+              tabIndex={onRowClick ? 0 : undefined}
+              onKeyDown={
+                onRowClick
+                  ? (e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        onRowClick(item);
+                      }
+                    }
+                  : undefined
+              }
               className={cn(
                 'rounded-md border border-subtle bg-surface p-4 shadow-xs transition-colors duration-150 space-y-3 text-left',
-                onRowClick && 'cursor-pointer active:scale-[0.99] hover:border-default',
+                onRowClick && 'cursor-pointer active:scale-[0.99] hover:border-default focus-halo',
                 checked && 'ring-2 ring-primary bg-surface-subtle border-primary',
                 cardClassName,
                 extraRowClass

@@ -40,7 +40,7 @@ export const ToastNotification = ({
     },
     info: {
       border: 'border-primary',
-      icon: <Info className="w-5 h-5 text-primary shrink-0" />,
+      icon: <Info className="w-5 h-5 text-primary-text shrink-0" />,
       bar: 'bg-primary',
     },
     warning: {

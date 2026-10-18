@@ -120,7 +120,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange, classN
                           className={cn(
                             'px-2 py-0.5 text-xs font-bold rounded-sm border',
                             isActive
-                              ? 'bg-surface text-primary border-subtle'
+                              ? 'bg-white/20 text-on-primary border-transparent'
                               : 'bg-danger-surface text-danger-text border-danger-border'
                           )}
                         >

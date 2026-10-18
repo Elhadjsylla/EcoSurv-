@@ -16,7 +16,7 @@ export const Badge: React.FC<BadgeProps> = ({
     success: 'bg-success-surface text-success-text border-success-border',
     warning: 'bg-warning-surface text-warning-text border-warning-border',
     danger: 'bg-danger-surface text-danger-text border-danger-border',
-    info: 'bg-surface-subtle text-primary border-subtle',
+    info: 'bg-surface-subtle text-primary-text border-subtle',
     outline: 'bg-surface text-secondary border-default',
   };
 
