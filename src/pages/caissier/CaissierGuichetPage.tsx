@@ -180,6 +180,38 @@ export const CaissierGuichetPage: React.FC<CaissierGuichetPageProps> = ({
     }
   }, [printedReceipt]);
 
+  const formatRpcError = (err: any): string => {
+    const raw = `${err?.message || ''} ${err?.details || ''} ${err?.hint || ''}`;
+    if (raw.includes('NON_AUTHENTIFIE')) {
+      return 'Votre session est absente ou expirée. Veuillez vous reconnecter.';
+    }
+    if (raw.includes('ACCES_REFUSE')) {
+      return 'Accès refusé : votre profil n’est pas autorisé à enregistrer des paiements.';
+    }
+    if (raw.includes('MONTANT_INVALIDE')) {
+      return 'Montant invalide : le montant doit être strictement supérieur à 0 MRU.';
+    }
+    if (raw.includes('ECHEANCE_INTROUVABLE')) {
+      return 'Échéance introuvable dans la base de données.';
+    }
+    if (raw.includes('ACCES_INTERDIT_ECOLE')) {
+      return 'Accès interdit : vous ne pouvez pas enregistrer un paiement pour une autre école.';
+    }
+    if (raw.includes('REFERENCE_DEJA_UTILISEE')) {
+      return 'Référence opérateur déjà utilisée : cette référence de transaction a déjà été enregistrée pour cette école.';
+    }
+    if (raw.includes('ECHEANCE_DEJA_SOLDEE')) {
+      return 'Échéance déjà soldée : cette échéance est déjà intégralement payée.';
+    }
+    if (raw.includes('DEPASSEMENT_SOLDE')) {
+      return 'Dépassement de solde : le montant saisi excède le solde restant dû.';
+    }
+    if (err?.code === '42501' || raw.includes('row-level security')) {
+      return 'Accès refusé par la politique de sécurité (RLS).';
+    }
+    return err?.message || 'Une erreur inattendue est survenue lors de l’enregistrement du paiement.';
+  };
+
   const handleProcessPayment = async () => {
     if (isCaisseCloturee) {
       setActiveToast({
@@ -197,116 +229,114 @@ export const CaissierGuichetPage: React.FC<CaissierGuichetPageProps> = ({
       return;
     }
 
-    const recuRef = `REC-NKTT-${Math.floor(1000 + Math.random() * 9000)}`;
+    if (!authProfile?.ecole_id) {
+      setActiveToast({
+        message: 'Votre session utilisateur est incomplète (école manquante). Veuillez vous reconnecter.',
+        type: 'error',
+      });
+      return;
+    }
+
+    // 1. Récupération de l'échéance non soldée la plus ancienne pour cet élève
+    const { data: echs, error: echsError } = await supabase
+      .from('echeances')
+      .select('id, libelle, montant, montant_paye, date_echeance')
+      .eq('eleve_id', selectedEleve.id)
+      .neq('statut', 'paye')
+      .order('date_echeance', { ascending: true })
+      .limit(1);
+
+    if (echsError) {
+      setActiveToast({
+        message: `Erreur lors de la récupération des échéances : ${echsError.message}`,
+        type: 'error',
+      });
+      return;
+    }
+
+    const targetEcheance = echs && echs.length > 0 ? echs[0] : null;
+
+    // Règle stricte : si l'élève n'a pas d'échéance, ne rien créer à la volée
+    if (!targetEcheance) {
+      setActiveToast({
+        message: 'Aucune échéance pour cet élève. Demandez au directeur de les générer.',
+        type: 'warning',
+      });
+      return;
+    }
+
+    // 2. Appel atomique et sécurisé à la RPC enregistrer_paiement
+    const { data: rpcResult, error: rpcError } = await supabase.rpc('enregistrer_paiement', {
+      p_echeance_id: targetEcheance.id,
+      p_montant: montant,
+      p_methode: methode,
+      p_reference_operateur: referenceOperateur.trim() ? referenceOperateur.trim() : null,
+      p_note: libelle?.trim() || null,
+    });
+
+    if (rpcError) {
+      setActiveToast({
+        message: formatRpcError(rpcError),
+        type: 'error',
+      });
+      return;
+    }
+
+    if (!rpcResult || rpcResult.success === false) {
+      setActiveToast({
+        message: 'Échec de l’enregistrement du paiement : réponse inattendue du serveur.',
+        type: 'error',
+      });
+      return;
+    }
+
+    // 3. Traitement des données retournées par le serveur
+    const numeroRecu: string = rpcResult.numero_recu || `REC-${Date.now()}`;
+    const returnedStatut = (rpcResult.statut || (methode === 'especes' ? 'confirme' : 'en_attente')) as 'confirme' | 'en_attente';
+    const isEnAttente = returnedStatut === 'en_attente';
+
     const now = new Date();
     const dateStr = now.toISOString().split('T')[0];
     const heureStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-    const studentName = `${selectedEleve.prenom} ${selectedEleve.nom}`;
     const studentMatricule = selectedEleve.matricule;
     const studentClasse = selectedEleve.classe;
-
-    // 1. Écriture réelle dans les tables `echeances` et `paiements`
-    if (authProfile?.ecole_id) {
-      try {
-        let { data: echs } = await supabase
-          .from('echeances')
-          .select('id, libelle, montant, montant_paye')
-          .eq('eleve_id', selectedEleve.id)
-          .neq('statut', 'paye')
-          .order('date_echeance', { ascending: true })
-          .limit(1);
-
-        let targetEcheanceId = echs && echs.length > 0 ? echs[0].id : null;
-
-        if (!targetEcheanceId) {
-          const { data: newEch, error: newEchErr } = await supabase
-            .from('echeances')
-            .insert({
-              ecole_id: authProfile.ecole_id,
-              eleve_id: selectedEleve.id,
-              libelle: libelle || 'Mensualité de scolarité',
-              montant: montant,
-              montant_paye: montant,
-              date_echeance: dateStr,
-              statut: 'paye',
-            })
-            .select('id')
-            .single();
-
-          if (!newEchErr && newEch) {
-            targetEcheanceId = newEch.id;
-          }
-        } else if (echs && echs.length > 0) {
-          const currentEch = echs[0];
-          const updatedPaid = Number(currentEch.montant_paye || 0) + montant;
-          const updatedStatut = updatedPaid >= Number(currentEch.montant) ? 'paye' : 'partiel';
-          await supabase
-            .from('echeances')
-            .update({
-              montant_paye: updatedPaid,
-              statut: updatedStatut,
-              date_paiement: now.toISOString(),
-            })
-            .eq('id', targetEcheanceId);
-        }
-
-        if (targetEcheanceId) {
-          const { error: insertError } = await supabase.from('paiements').insert([
-            {
-              ecole_id: authProfile.ecole_id,
-              echeance_id: targetEcheanceId,
-              montant: montant,
-              methode: methode,
-              statut: 'confirme',
-              reference_transaction: referenceOperateur || recuRef,
-              encaisse_par: authProfile.id,
-              note: `${libelle} - Quittance #${recuRef} (${studentName})`,
-              paye_le: now.toISOString(),
-            },
-          ]);
-          if (insertError) {
-            console.error('[CaissierGuichet] Erreur insert paiement:', insertError.message);
-          }
-        }
-      } catch (err) {
-        console.warn('[CaissierGuichet] Erreur Supabase:', err);
-      }
-    }
+    const receiptMotif = isEnAttente
+      ? `${targetEcheance.libelle || libelle} [EN ATTENTE DE CONFIRMATION]`
+      : (targetEcheance.libelle || libelle);
 
     const newTx: CaisseTransaction = {
-      id: `cais-tx-${Date.now()}`,
+      id: rpcResult.paiement_id || `cais-tx-${Date.now()}`,
       eleve_id: selectedEleve.id,
       eleve_nom: selectedEleve.nom,
       eleve_prenom: selectedEleve.prenom,
-      matricule: selectedEleve.matricule,
-      classe: selectedEleve.classe,
-      echeance_libelle: libelle,
+      matricule: studentMatricule,
+      classe: studentClasse,
+      echeance_libelle: receiptMotif,
       montant,
       date: dateStr,
       heure: heureStr,
       methode,
-      recu_ref: recuRef,
+      recu_ref: numeroRecu,
       encaisse_par: authProfile ? `${authProfile.prenom} ${authProfile.nom}` : `${CURRENT_CAISSIER.prenom} ${CURRENT_CAISSIER.nom}`,
-      statut: 'confirme',
+      statut: returnedStatut,
     };
 
-    // Propager immédiatement à l'ensemble des écrans Caissier
+    // 4. Synchronisation de l'état local caisse
     useCaisseStore.getState().addTransaction(newTx);
-    useCaisseStore.getState().deductEleveBalance(selectedEleve.id, montant);
+    if (!isEnAttente) {
+      useCaisseStore.getState().deductEleveBalance(selectedEleve.id, montant);
+    }
     useCaisseStore.getState().triggerRefresh();
 
-    // 2. Mise à jour de l'échéance et du statut de l'élève
+    // 5. Mise à jour de l'affichage local de l'élève
     setElevesList((prev) =>
       prev.map((e) => {
         if (e.id === selectedEleve.id) {
-          const newPaid = e.total_paid + montant;
-          const newRemaining = Math.max(0, e.total_due - newPaid);
-          const newStatut =
-            newRemaining === 0
-              ? 'paye'
-              : newPaid > 0
-              ? 'partiel'
-              : 'en_retard';
+          const newPaid = isEnAttente ? e.total_paid : e.total_paid + montant;
+          const newRemaining = isEnAttente ? e.remaining : Math.max(0, e.total_due - newPaid);
+          const newStatut = isEnAttente
+            ? e.statut
+            : (newRemaining === 0 ? 'paye' : newPaid > 0 ? 'partiel' : 'en_retard');
 
           return {
             ...e,
@@ -315,13 +345,13 @@ export const CaissierGuichetPage: React.FC<CaissierGuichetPageProps> = ({
             statut: newStatut,
             timeline_paiements: [
               {
-                id: `pay-${Date.now()}`,
-                libelle,
+                id: rpcResult.paiement_id || `pay-${Date.now()}`,
+                libelle: receiptMotif,
                 montant,
                 date: now.toLocaleDateString('fr-FR'),
                 methode,
-                statut: 'regle',
-                recu_ref: recuRef,
+                statut: isEnAttente ? ('en_attente' as any) : 'regle',
+                recu_ref: numeroRecu,
               },
               ...e.timeline_paiements,
             ],
@@ -331,31 +361,41 @@ export const CaissierGuichetPage: React.FC<CaissierGuichetPageProps> = ({
       })
     );
 
-    // 3. Déclenchement automatique du téléchargement du reçu PDF ticket de caisse
+    // 6. Déclenchement automatique du téléchargement du reçu PDF avec le vrai numero_recu
     generateReceiptPdf(
       {
-        recuRef,
+        recuRef: numeroRecu,
         datePaiement: `${dateStr} à ${heureStr}`,
         eleveNom: selectedEleve.nom,
         elevePrenom: selectedEleve.prenom,
         matricule: studentMatricule,
         classe: studentClasse,
-        libelleEcheance: libelle,
+        libelleEcheance: receiptMotif,
         montant,
         methodePaiement: methode,
         caissierNom: authProfile ? `${authProfile.prenom} ${authProfile.nom}` : `${CURRENT_CAISSIER.prenom} ${CURRENT_CAISSIER.nom}`,
         ecoleNom: useAuthStore.getState().ecole?.nom,
+        statut: returnedStatut,
       },
       'download'
     );
 
+    // 7. Modal de quittance et Toast de succès différencié
     setPrintedReceipt(newTx);
-    setActiveToast({
-      message: `Paiement enregistré dans paiements & Reçu ticket #${recuRef} téléchargé en PDF pour ${studentName}.`,
-      type: 'success',
-    });
 
-    // 4. Réinitialisation du formulaire pour le prochain encaissement
+    if (isEnAttente) {
+      setActiveToast({
+        message: `Paiement de ${formatMRU(montant)} enregistré, en attente de confirmation (Reçu #${numeroRecu}).`,
+        type: 'info',
+      });
+    } else {
+      setActiveToast({
+        message: `Paiement de ${formatMRU(montant)} encaissé avec succès (Reçu #${numeroRecu}).`,
+        type: 'success',
+      });
+    }
+
+    // 8. Réinitialisation du formulaire pour le prochain encaissement
     setSelectedEleveId('');
     setSearchQuery('');
     setReferenceOperateur('');
@@ -703,9 +743,15 @@ export const CaissierGuichetPage: React.FC<CaissierGuichetPageProps> = ({
                   </p>
                 </div>
 
-                <span className="rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 font-bold px-3 py-1 text-xs">
-                  Payé & Confirmé
-                </span>
+                {printedReceipt.statut === 'en_attente' ? (
+                  <span className="rounded-full bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60 font-bold px-3 py-1 text-xs">
+                    EN ATTENTE DE CONFIRMATION
+                  </span>
+                ) : (
+                  <span className="rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 font-bold px-3 py-1 text-xs">
+                    Payé & Confirmé
+                  </span>
+                )}
               </div>
 
               {/* Corps du Reçu */}
@@ -750,11 +796,23 @@ export const CaissierGuichetPage: React.FC<CaissierGuichetPageProps> = ({
                 </div>
 
                 {/* Montant Mis en Avant */}
-                <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 text-center">
-                  <span className="text-xs font-bold text-emerald-800 dark:text-emerald-300 uppercase tracking-wider block">
-                    Montant Encaissé
+                <div className={`p-4 rounded-2xl border text-center ${
+                  printedReceipt.statut === 'en_attente'
+                    ? 'bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800/60'
+                    : 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800/60'
+                }`}>
+                  <span className={`text-xs font-bold uppercase tracking-wider block ${
+                    printedReceipt.statut === 'en_attente'
+                      ? 'text-amber-800 dark:text-amber-300'
+                      : 'text-emerald-800 dark:text-emerald-300'
+                  }`}>
+                    {printedReceipt.statut === 'en_attente' ? 'Montant Déclaré (En Attente)' : 'Montant Encaissé'}
                   </span>
-                  <span className="text-3xl font-extrabold font-mono text-emerald-700 dark:text-emerald-400 mt-1 block">
+                  <span className={`text-3xl font-extrabold font-mono mt-1 block ${
+                    printedReceipt.statut === 'en_attente'
+                      ? 'text-amber-700 dark:text-amber-400'
+                      : 'text-emerald-700 dark:text-emerald-400'
+                  }`}>
                     {formatMRU(printedReceipt.montant)}
                   </span>
                 </div>
@@ -789,6 +847,7 @@ export const CaissierGuichetPage: React.FC<CaissierGuichetPageProps> = ({
                         methodePaiement: printedReceipt.methode,
                         caissierNom: printedReceipt.encaisse_par,
                         ecoleNom: useAuthStore.getState().ecole?.nom,
+                        statut: printedReceipt.statut,
                       },
                       'download'
                     );

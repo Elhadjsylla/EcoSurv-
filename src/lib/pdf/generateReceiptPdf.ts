@@ -16,6 +16,7 @@ export interface ReceiptData {
   caissierNom?: string;
   ecoleNom?: string;
   ecoleCode?: string;
+  statut?: 'confirme' | 'en_attente' | string;
 }
 
 /**
@@ -52,9 +53,18 @@ export function generateReceiptPdf(data: ReceiptData, action: 'download' | 'prin
 
   y += 6;
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(9.5);
-  doc.setTextColor(15, 23, 42);
-  doc.text('REÇU D\'ENCAISSEMENT', pageWidth / 2, y, { align: 'center' });
+  if (data.statut === 'en_attente') {
+    doc.setFontSize(8.5);
+    doc.setTextColor(180, 83, 9); // ambre
+    doc.text('REÇU PROVISOIRE DE PAIEMENT', pageWidth / 2, y, { align: 'center' });
+    y += 3.5;
+    doc.setFontSize(7);
+    doc.text('EN ATTENTE DE CONFIRMATION', pageWidth / 2, y, { align: 'center' });
+  } else {
+    doc.setFontSize(9.5);
+    doc.setTextColor(15, 23, 42);
+    doc.text('REÇU D\'ENCAISSEMENT', pageWidth / 2, y, { align: 'center' });
+  }
 
   y += 4;
   doc.setFont('helvetica', 'normal');
@@ -113,18 +123,23 @@ export function generateReceiptPdf(data: ReceiptData, action: 'download' | 'prin
 
   // Encadré Montant réglé
   y += 6;
-  doc.setFillColor(245, 247, 250);
+  const isEnAttente = data.statut === 'en_attente';
+  doc.setFillColor(isEnAttente ? 254 : 245, isEnAttente ? 243 : 247, isEnAttente ? 199 : 250); // amber-50 ou slate-50
   doc.roundedRect(6, y, pageWidth - 12, 14, 2, 2, 'F');
-  doc.setDrawColor(210, 220, 230);
+  doc.setDrawColor(isEnAttente ? 245 : 210, isEnAttente ? 158 : 220, isEnAttente ? 11 : 230); // amber-500 ou slate-300
   doc.roundedRect(6, y, pageWidth - 12, 14, 2, 2, 'S');
 
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(7.5);
-  doc.setTextColor(30, 41, 59);
-  doc.text('MONTANT ENCAISSÉ', pageWidth / 2, y + 4.5, { align: 'center' });
+  doc.setTextColor(isEnAttente ? 146 : 30, isEnAttente ? 64 : 41, isEnAttente ? 14 : 59);
+  doc.text(isEnAttente ? 'MONTANT DÉCLARÉ (EN ATTENTE)' : 'MONTANT ENCAISSÉ', pageWidth / 2, y + 4.5, { align: 'center' });
 
   doc.setFontSize(11);
-  doc.setTextColor(16, 120, 60); // vert sérieux
+  if (isEnAttente) {
+    doc.setTextColor(180, 83, 9); // ambre
+  } else {
+    doc.setTextColor(16, 120, 60); // vert sérieux
+  }
   doc.text(formatMRU(data.montant), pageWidth / 2, y + 10.5, { align: 'center' });
 
   // Pied de page ticket
@@ -135,13 +150,22 @@ export function generateReceiptPdf(data: ReceiptData, action: 'download' | 'prin
   doc.text(`Opérateur de caisse : ${data.caissierNom || 'Guichet Central'}`, pageWidth / 2, y, { align: 'center' });
 
   y += 3.5;
-  const mentionRecu = CLAIMS_CONFIG.documentOfficiel
-    ? 'Quittance informatisée - Document officiel'
-    : 'Quittance de versement informatisée';
+  const mentionRecu = isEnAttente
+    ? 'Reçu provisoire — En attente de rapprochement bancaire'
+    : (CLAIMS_CONFIG.documentOfficiel
+      ? 'Quittance informatisée - Document officiel'
+      : 'Quittance de versement informatisée');
   doc.text(mentionRecu, pageWidth / 2, y, { align: 'center' });
 
   y += 3.5;
-  doc.text('Conservez ce ticket comme justificatif de paiement', pageWidth / 2, y, { align: 'center' });
+  doc.text(
+    isEnAttente
+      ? 'Conservez ce reçu jusqu’à la confirmation de votre règlement'
+      : 'Conservez ce ticket comme justificatif de paiement',
+    pageWidth / 2,
+    y,
+    { align: 'center' }
+  );
 
   const cleanRef = data.recuRef.replace(/[^a-zA-Z0-9_-]/g, '_');
   const eleveSlug = `${data.elevePrenom || ''}_${data.eleveNom || ''}`.trim().replace(/\s+/g, '_');
