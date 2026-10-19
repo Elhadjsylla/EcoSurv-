@@ -82,44 +82,44 @@ export const CollectionChart: React.FC<CollectionChartProps> = ({
   return (
     <div className={`space-y-4 ${className}`}>
       {/* Chart Header & Controls */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-subtle pb-4">
         <div>
-          <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2.5">
-            <LineChart className="h-5 w-5 text-blue-600 dark:text-blue-400 shrink-0" />
+          <h3 className="text-base sm:text-lg font-bold text-main flex items-center gap-2.5">
+            <LineChart className="h-5 w-5 text-primary-text shrink-0" />
             <span>Évolution Chronologique des Encaissements</span>
           </h3>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+          <p className="text-xs text-muted mt-0.5">
             Suivi mensuel de la trésorerie : montant réel encaissé vs objectif budgétaire attendu.
           </p>
         </div>
 
         <div className="flex items-center gap-4">
           {/* Légende harmonieuse */}
-          <div className="flex items-center gap-4 text-xs font-semibold text-slate-600 dark:text-slate-300">
+          <div className="flex items-center gap-4 text-xs font-semibold text-secondary">
             <div className="flex items-center gap-2">
-              <span className="h-3 w-3 rounded-full bg-blue-600 dark:bg-blue-500 shadow-xs" />
+              <span className="h-3 w-3 rounded-sm bg-primary shadow-xs" />
               <span>Encaissé Réel</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="h-3 w-3 rounded-full bg-slate-300 dark:bg-slate-700" />
+              <span className="h-3 w-3 rounded-sm bg-surface-subtle border border-subtle" />
               <span>Attendu Total</span>
             </div>
           </div>
 
           {/* Toggle Type de Graphique */}
-          <div className="flex items-center p-0.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700">
+          <div className="flex items-center p-0.5 rounded-sm bg-surface-subtle border border-subtle">
             <Tooltip content="Affichage en Courbe">
               <button
                 type="button"
                 onClick={() => setChartType('line')}
-                className={`p-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all ${
+                className={`p-1.5 rounded-sm text-xs font-bold flex items-center gap-1.5 transition-colors focus-halo cursor-pointer ${
                   chartType === 'line'
-                    ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-xs'
-                    : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                    ? 'bg-surface text-primary-text shadow-xs border border-subtle'
+                    : 'text-muted hover:text-main'
                 }`}
                 aria-label="Affichage en Courbe"
               >
-                <LineChart className="h-3.5 w-3.5" />
+                <LineChart className="h-4 w-4" />
                 <span className="hidden md:inline">Courbe</span>
               </button>
             </Tooltip>
@@ -127,14 +127,14 @@ export const CollectionChart: React.FC<CollectionChartProps> = ({
               <button
                 type="button"
                 onClick={() => setChartType('bar')}
-                className={`p-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all ${
+                className={`p-1.5 rounded-sm text-xs font-bold flex items-center gap-1.5 transition-colors focus-halo cursor-pointer ${
                   chartType === 'bar'
-                    ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-xs'
-                    : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                    ? 'bg-surface text-primary-text shadow-xs border border-subtle'
+                    : 'text-muted hover:text-main'
                 }`}
                 aria-label="Affichage en Barres"
               >
-                <BarChart3 className="h-3.5 w-3.5" />
+                <BarChart3 className="h-4 w-4" />
                 <span className="hidden md:inline">Barres</span>
               </button>
             </Tooltip>
@@ -142,25 +142,25 @@ export const CollectionChart: React.FC<CollectionChartProps> = ({
         </div>
       </div>
 
-      {/* Main Chart Container */}
-      <div className="relative pt-2 pb-2 select-none">
+      {/* Surface principale du graphique */}
+      <div className="relative pt-2">
         {chartType === 'line' ? (
-          <div className="w-full relative overflow-hidden">
+          <div className="relative overflow-x-auto">
             <svg
               viewBox={`0 0 ${usableWidth} ${chartHeight}`}
               className="w-full h-64 sm:h-72 overflow-visible"
             >
               <defs>
                 {/* Dégradé doux d'aire */}
-                <linearGradient id="blueAreaGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#2563eb" stopOpacity="0.28" />
-                  <stop offset="100%" stopColor="#2563eb" stopOpacity="0.0" />
+                <linearGradient id="collectionAreaGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="var(--primary)" stopOpacity="0.25" />
+                  <stop offset="100%" stopColor="var(--primary)" stopOpacity="0.0" />
                 </linearGradient>
 
                 {/* Dégradé de la ligne principale */}
-                <linearGradient id="blueLineGradient" x1="0" y1="0" x2="1" y2="0">
-                  <stop offset="0%" stopColor="#3b82f6" />
-                  <stop offset="100%" stopColor="#1d4ed8" />
+                <linearGradient id="collectionLineGradient" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stopColor="var(--primary-text)" />
+                  <stop offset="100%" stopColor="var(--primary)" />
                 </linearGradient>
               </defs>
 
@@ -174,16 +174,16 @@ export const CollectionChart: React.FC<CollectionChartProps> = ({
                       y1={y}
                       x2={usableWidth - paddingX}
                       y2={y}
-                      stroke="currentColor"
-                      className="text-slate-200/80 dark:text-slate-800/80"
+                      stroke="var(--border-subtle)"
                       strokeDasharray="4 4"
                       strokeWidth="1"
                     />
                     <text
                       x={paddingX - 8}
-                      y={y + 3}
+                      y={y + 4}
                       textAnchor="end"
-                      className="fill-slate-400 dark:fill-slate-500 text-[9px] font-mono"
+                      fill="var(--text-muted)"
+                      className="text-xs font-medium tabular-nums"
                     >
                       {Math.round(ratio * 100)}%
                     </text>
@@ -191,12 +191,11 @@ export const CollectionChart: React.FC<CollectionChartProps> = ({
                 );
               })}
 
-              {/* Ligne d'objectif Attendu (pointillés gris neutre élégant) */}
+              {/* Ligne d'objectif Attendu (pointillés neutres) */}
               <path
                 d={targetLinePath}
                 fill="none"
-                stroke="currentColor"
-                className="text-slate-300 dark:text-slate-700"
+                stroke="var(--border-strong)"
                 strokeWidth="1.5"
                 strokeDasharray="5 5"
               />
@@ -204,7 +203,7 @@ export const CollectionChart: React.FC<CollectionChartProps> = ({
               {/* Aire colorée sous la courbe */}
               <path
                 d={areaPath}
-                fill="url(#blueAreaGradient)"
+                fill="url(#collectionAreaGradient)"
                 className="transition-all duration-300"
               />
 
@@ -212,46 +211,52 @@ export const CollectionChart: React.FC<CollectionChartProps> = ({
               <path
                 d={linePath}
                 fill="none"
-                stroke="url(#blueLineGradient)"
+                stroke="url(#collectionLineGradient)"
                 strokeWidth="3.5"
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                className="transition-all duration-300 filter drop-shadow-xs"
+                className="transition-all duration-300"
               />
 
-              {/* Ligne verticale de repère au survol */}
-              {activePoint && (
-                <line
-                  x1={activePoint.x}
-                  y1={paddingY}
-                  x2={activePoint.x}
-                  y2={chartHeight - paddingY}
-                  stroke="currentColor"
-                  className="text-blue-500/60 dark:text-blue-400/60"
-                  strokeWidth="1.5"
-                  strokeDasharray="3 3"
-                />
-              )}
-
-              {/* Points de données interactifs */}
+              {/* Points interactifs au survol */}
               {points.map((p, idx) => {
                 const isHovered = hoveredIndex === idx;
+
                 return (
                   <g
                     key={p.mois}
-                    className="cursor-pointer"
+                    className="cursor-pointer group"
                     onMouseEnter={(e) => hoverPoint(idx, e.currentTarget.querySelector('[data-chart-anchor]'))}
                     onMouseLeave={() => setHoveredIndex(null)}
                   >
-                    {/* Zone de contact élargie transparente pour faciliter le survol tactile/souris */}
-                    <circle cx={p.x} cy={p.y} r={18} fill="transparent" />
+                    {/* Zone d'accroche invisible large pour confort tactile */}
+                    <rect
+                      x={p.x - 20}
+                      y={0}
+                      width={40}
+                      height={chartHeight}
+                      fill="transparent"
+                    />
 
-                    {/* Point cible attendu */}
+                    {/* Ligne verticale de repère au survol */}
+                    {isHovered && (
+                      <line
+                        x1={p.x}
+                        y1={paddingY}
+                        x2={p.x}
+                        y2={chartHeight - paddingY}
+                        stroke="var(--primary)"
+                        strokeDasharray="3 3"
+                        strokeWidth="1.5"
+                      />
+                    )}
+
+                    {/* Point cible objectif */}
                     <circle
                       cx={p.x}
                       cy={p.yTarget}
                       r={3}
-                      className="fill-slate-400 dark:fill-slate-600"
+                      fill="var(--border-strong)"
                     />
 
                     {/* Halo interactif au survol */}
@@ -260,7 +265,8 @@ export const CollectionChart: React.FC<CollectionChartProps> = ({
                         cx={p.x}
                         cy={p.y}
                         r={12}
-                        className="fill-blue-500/20 dark:fill-blue-400/30 animate-pulse"
+                        fill="var(--primary)"
+                        fillOpacity="0.2"
                       />
                     )}
 
@@ -270,8 +276,10 @@ export const CollectionChart: React.FC<CollectionChartProps> = ({
                       cx={p.x}
                       cy={p.y}
                       r={isHovered ? 6 : 4.5}
-                      className="fill-white dark:fill-slate-900 stroke-blue-600 dark:stroke-blue-400 transition-all"
+                      fill="var(--surface)"
+                      stroke="var(--primary)"
                       strokeWidth={isHovered ? 3.5 : 2.5}
+                      className="transition-all"
                     />
 
                     {/* Étiquette mois en bas */}
@@ -279,10 +287,9 @@ export const CollectionChart: React.FC<CollectionChartProps> = ({
                       x={p.x}
                       y={chartHeight - 6}
                       textAnchor="middle"
-                      className={`text-[11px] font-bold transition-colors ${
-                        isHovered
-                          ? 'fill-blue-600 dark:fill-blue-400 font-extrabold'
-                          : 'fill-slate-500 dark:fill-slate-400'
+                      fill={isHovered ? 'var(--primary-text)' : 'var(--text-muted)'}
+                      className={`text-xs font-semibold transition-colors ${
+                        isHovered ? 'font-bold' : ''
                       }`}
                     >
                       {p.mois.split(' ')[0]}
@@ -293,8 +300,8 @@ export const CollectionChart: React.FC<CollectionChartProps> = ({
             </svg>
           </div>
         ) : (
-          /* Vue Barres Harmonisée (Bleu cohérent pour Encaissé, Slate neutre pour Attendu) */
-          <div className="grid grid-cols-7 gap-3 sm:gap-6 items-end h-64 border-b border-slate-200 dark:border-slate-800 px-4 pt-4">
+          /* Vue Barres Harmonisée */
+          <div className="grid grid-cols-7 gap-3 sm:gap-6 items-end h-64 border-b border-subtle px-4 pt-4">
             {data.map((r, idx) => {
               const heightPercent = Math.min(Math.round((r.encaisse / maxAttendu) * 100), 100);
               const isHovered = hoveredIndex === idx;
@@ -302,23 +309,23 @@ export const CollectionChart: React.FC<CollectionChartProps> = ({
               return (
                 <div
                   key={r.mois}
-                  className="flex flex-col items-center gap-2.5 h-full justify-end group cursor-pointer"
+                  className="flex flex-col items-center gap-2.5 h-full justify-end group cursor-pointer focus-halo"
                   onMouseEnter={(e) => hoverPoint(idx, e.currentTarget.querySelector('[data-chart-anchor]'))}
                   onMouseLeave={() => setHoveredIndex(null)}
                 >
                   <div
-                    className={`text-xs font-mono font-bold transition-opacity ${
-                      isHovered ? 'opacity-100 text-blue-600 dark:text-blue-400' : 'opacity-0 group-hover:opacity-100 text-slate-700 dark:text-slate-300'
+                    className={`text-xs font-semibold tabular-nums transition-opacity ${
+                      isHovered ? 'opacity-100 text-primary-text font-bold' : 'opacity-0 group-hover:opacity-100 text-secondary'
                     }`}
                   >
                     {r.taux}%
                   </div>
 
                   {/* Conteneur de barre : fond = Attendu total, remplissage = Encaissé réel */}
-                  <div className="w-full max-w-[48px] bg-slate-100 dark:bg-slate-800 rounded-t-xl h-full flex items-end overflow-hidden relative border border-slate-200/70 dark:border-slate-700/70 shadow-2xs">
+                  <div className="w-full max-w-[48px] bg-surface-subtle rounded-t-sm h-full flex items-end overflow-hidden relative border border-subtle shadow-xs">
                     <div
                       data-chart-anchor=""
-                      className={`w-full rounded-t-xl transition-all duration-500 bg-blue-600 dark:bg-blue-500 ${
+                      className={`w-full rounded-t-sm transition-all duration-500 bg-primary ${
                         isHovered ? 'brightness-110' : ''
                       }`}
                       style={{ height: `${heightPercent}%` }}
@@ -326,10 +333,10 @@ export const CollectionChart: React.FC<CollectionChartProps> = ({
                   </div>
 
                   <span
-                    className={`text-xs font-bold text-center truncate max-w-[80px] transition-colors ${
+                    className={`text-xs font-semibold text-center truncate max-w-[80px] transition-colors ${
                       isHovered
-                        ? 'text-blue-600 dark:text-blue-400 font-extrabold'
-                        : 'text-slate-600 dark:text-slate-400'
+                        ? 'text-primary-text font-bold'
+                        : 'text-muted'
                     }`}
                   >
                     {r.mois.split(' ')[0]}
@@ -340,28 +347,28 @@ export const CollectionChart: React.FC<CollectionChartProps> = ({
           </div>
         )}
 
-        {/* Infobulle de données : même bulle que les autres tooltips de l'application */}
+        {/* Infobulle de données */}
         {activePoint && (
           <TooltipBubble
             anchorRef={hoveredAnchorRef}
             content={
               <span className="block space-y-1">
-                <span className="flex items-center justify-between gap-4 border-b border-white/15 pb-1">
-                  <span className="font-bold">{activePoint.mois}</span>
-                  <span className="font-mono font-medium text-slate-300">{activePoint.taux}% recouvré</span>
+                <span className="flex items-center justify-between gap-4 border-b border-subtle pb-1">
+                  <span className="font-bold text-main">{activePoint.mois}</span>
+                  <span className="font-semibold tabular-nums text-secondary">{activePoint.taux}% recouvré</span>
                 </span>
                 <span className="flex items-center justify-between gap-4">
-                  <span className="font-medium text-slate-300">Encaissé</span>
-                  <span className="font-mono">{formatMRU(activePoint.encaisse)}</span>
+                  <span className="font-medium text-muted">Encaissé</span>
+                  <span className="tabular-nums text-main font-bold">{formatMRU(activePoint.encaisse)}</span>
                 </span>
                 <span className="flex items-center justify-between gap-4">
-                  <span className="font-medium text-slate-300">Attendu total</span>
-                  <span className="font-mono">{formatMRU(activePoint.attendu)}</span>
+                  <span className="font-medium text-muted">Attendu total</span>
+                  <span className="tabular-nums text-secondary">{formatMRU(activePoint.attendu)}</span>
                 </span>
                 {activePoint.impayes > 0 && (
-                  <span className="flex items-center justify-between gap-4 text-rose-300">
+                  <span className="flex items-center justify-between gap-4 text-danger-text">
                     <span className="font-medium">Reste impayé</span>
-                    <span className="font-mono">{formatMRU(activePoint.impayes)}</span>
+                    <span className="tabular-nums font-bold">{formatMRU(activePoint.impayes)}</span>
                   </span>
                 )}
               </span>

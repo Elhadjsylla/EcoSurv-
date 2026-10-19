@@ -26,16 +26,16 @@ export const TestActivationLinkBanner: React.FC<TestActivationLinkBannerProps> =
 
   return (
     <div
-      className={`p-4 rounded-2xl bg-amber-50/80 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/60 text-left space-y-2.5 shadow-2xs ${className}`}
+      className={`p-4 rounded-md bg-warning-surface border border-warning-border text-left space-y-2.5 shadow-xs ${className}`}
       role="region"
       aria-label="Lien d'activation mode test"
     >
-      <div className="flex flex-wrap items-center justify-between gap-2 pb-1.5 border-b border-amber-200/60 dark:border-amber-900/40">
+      <div className="flex flex-wrap items-center justify-between gap-2 pb-1.5 border-b border-warning-border/40">
         <div className="flex items-center gap-2">
-          <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-amber-200 dark:bg-amber-900 text-amber-800 dark:text-amber-200">
+          <span className="flex h-6 w-6 items-center justify-center rounded-sm bg-warning-surface text-warning-text border border-warning-border">
             <Mail className="h-3.5 w-3.5" />
           </span>
-          <span className="text-xs font-bold text-amber-950 dark:text-amber-100">
+          <span className="text-xs font-bold text-warning-text">
             {title}
           </span>
         </div>
@@ -44,9 +44,9 @@ export const TestActivationLinkBanner: React.FC<TestActivationLinkBannerProps> =
           <button
             type="button"
             onClick={handleCopy}
-            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-white dark:bg-slate-900 text-amber-900 dark:text-amber-200 border border-amber-300 dark:border-amber-700 hover:bg-amber-100/50 dark:hover:bg-amber-900/40 transition-colors cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-sm text-xs font-bold bg-surface text-secondary border border-default hover:bg-surface-subtle hover:text-main transition-colors cursor-pointer focus-halo"
           >
-            {copied ? <Check className="h-3 w-3 text-emerald-600" /> : <Copy className="h-3 w-3" />}
+            {copied ? <Check className="h-3 w-3 text-success" /> : <Copy className="h-3 w-3" />}
             <span>{copied ? 'Lien copié !' : 'Copier'}</span>
           </button>
 
@@ -54,7 +54,7 @@ export const TestActivationLinkBanner: React.FC<TestActivationLinkBannerProps> =
             href={actionLink}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-amber-600 hover:bg-amber-700 text-white transition-colors"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-sm text-xs font-bold bg-warning text-white hover:opacity-90 transition-opacity shadow-xs focus-halo"
           >
             <ExternalLink className="h-3 w-3" />
             <span>Tester l'activation</span>
@@ -62,13 +62,13 @@ export const TestActivationLinkBanner: React.FC<TestActivationLinkBannerProps> =
         </div>
       </div>
 
-      <div className="p-2 rounded-xl bg-white/70 dark:bg-slate-900/60 border border-amber-100 dark:border-amber-900/30 overflow-hidden">
-        <code className="text-[10px] font-mono text-amber-900 dark:text-amber-300 break-all select-all block max-h-16 overflow-y-auto">
+      <div className="p-2 rounded-sm bg-surface border border-subtle overflow-hidden">
+        <code className="text-xs font-mono text-warning-text break-all select-all block max-h-16 overflow-y-auto">
           {actionLink}
         </code>
       </div>
 
-      <p className="text-[11px] text-amber-800/80 dark:text-amber-300/80 leading-relaxed">
+      <p className="text-xs text-muted leading-relaxed">
         {description}
       </p>
     </div>
