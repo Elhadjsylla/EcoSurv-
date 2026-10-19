@@ -284,7 +284,7 @@ export const translations: Record<Language, Translations> = {
     landing: {
       heroBadge: 'برنامج إدارة المدارس والمالية — موريتانيا',
       heroTitle: 'الإدارة المدرسية الحديثة المصممة خصيصاً لموريتانيا',
-      heroSubtitle: 'تابع التسجيلات، وتحصيل الرسوم بالأوقية، والتنبيهات عبر الواتساب بدقة وسهولة فائقة.',
+      heroSubtitle: 'تابع التسجيلات، وتحصيل الرسوم بالأوقية، ومتابعة الأقساط بدقة وسهولة فائقة.',
       ctaStart: 'أنشئ مدرستك مجاناً',
       ctaDemo: 'استكشف النسخة التجريبية',
       featureTitle: 'منظومة متكاملة لجميع أركان مؤسستك',
@@ -393,7 +393,7 @@ export const translations: Record<Language, Translations> = {
     landing: {
       heroBadge: 'School Management & Finance SaaS — Mauritania',
       heroTitle: 'Modern school management tailored for Mauritania',
-      heroSubtitle: 'Manage enrollments, Ouguiya (MRU) payments, automated WhatsApp reminders, and academic tracking in real time.',
+      heroSubtitle: 'Manage enrollments, Ouguiya (MRU) payments, tuition schedules, and academic tracking in real time.',
       ctaStart: 'Create Free School Account',
       ctaDemo: 'Explore Interactive Demo',
       featureTitle: 'A complete suite for your educational institution',
