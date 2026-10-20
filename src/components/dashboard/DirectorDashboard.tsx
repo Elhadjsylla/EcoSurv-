@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import {
   getDashboardKpis,
   EleveWithStats,
@@ -13,10 +13,10 @@ import { Card } from '../ui/Card';
 import { ToastNotification } from '../ui/ToastNotification';
 import { Select } from '../ui/Select';
 import { formatMRU } from '../../lib/utils';
-import { useCaisseStore } from '../../store/useCaisseStore';
 import { generateReceiptPdf } from '../../lib/pdf/generateReceiptPdf';
 import { generateFinancialReportPdf } from '../../lib/pdf/generateFinancialReportPdf';
 import { exportElevesToExcel } from '../../lib/excel/exportElevesToExcel';
+import { getEcheanceActive, encaisser, ActiveEcheance } from '../../lib/paiements';
 import {
   Search,
   Filter,
@@ -28,7 +28,6 @@ import {
   Clock,
   TrendingUp,
   Check,
-  Zap,
   MoreHorizontal,
   ChevronLeft,
   ChevronRight,
@@ -36,6 +35,11 @@ import {
   FileText,
   School,
   UserPlus,
+  CreditCard,
+  PlusCircle,
+  X,
+  Loader2,
+  Receipt,
 } from 'lucide-react';
 import { ConfirmBulkRelanceModal } from './ConfirmBulkRelanceModal';
 import { StudentDetailDrawer } from './StudentDetailDrawer';
@@ -58,78 +62,132 @@ export const DirectorDashboard: React.FC<DirectorDashboardProps> = ({
   const [isLoadingFinances, setIsLoadingFinances] = useState(true);
 
   // Charger les vrais élèves, échéances et paiements depuis Supabase
-  useEffect(() => {
-    if (authProfile?.ecole_id) {
-      const fetchRealData = async () => {
-        setIsLoadingFinances(true);
-        try {
-          const [elevesRes, echeancesRes, paiementsRes] = await Promise.all([
-            supabase
-              .from('eleves')
-              .select('*')
-              .eq('ecole_id', authProfile.ecole_id),
-            supabase
-              .from('echeances')
-              .select('*')
-              .eq('ecole_id', authProfile.ecole_id),
-            supabase
-              .from('paiements')
-              .select('*')
-              .eq('ecole_id', authProfile.ecole_id),
-          ]);
+  const fetchRealData = useCallback(async () => {
+    if (!authProfile?.ecole_id) {
+      setIsLoadingFinances(false);
+      return;
+    }
+    setIsLoadingFinances(true);
+    try {
+      const [elevesRes, echeancesRes, paiementsRes] = await Promise.all([
+        supabase
+          .from('eleves')
+          .select('*')
+          .eq('ecole_id', authProfile.ecole_id),
+        supabase
+          .from('echeances')
+          .select('*')
+          .eq('ecole_id', authProfile.ecole_id),
+        supabase
+          .from('paiements')
+          .select('*')
+          .eq('ecole_id', authProfile.ecole_id),
+      ]);
 
-          const allEcheances = echeancesRes.data || [];
-          const allPaiements = paiementsRes.data || [];
+      const allEcheances = echeancesRes.data || [];
+      const allPaiements = paiementsRes.data || [];
 
-          // Calculer les rapports financiers réels
-          const computedReports = computeMonthlyFinancialReports(allEcheances, allPaiements);
-          setMonthlyReports(computedReports);
+      // Calculer les rapports financiers réels
+      const computedReports = computeMonthlyFinancialReports(allEcheances, allPaiements);
+      setMonthlyReports(computedReports);
 
-          if (!elevesRes.error && elevesRes.data) {
-            const mapped = elevesRes.data.map((e: any, idx: number) => {
-              const studentEch = allEcheances.filter((ech: any) => ech.eleve_id === e.id);
-              const totalDue = studentEch.reduce((sum: number, ech: any) => sum + Number(ech.montant || 0), 0);
-              const totalPaid = studentEch.reduce((sum: number, ech: any) => sum + Number(ech.montant_paye || 0), 0);
-              const remaining = Math.max(0, totalDue - totalPaid);
-              const hasOverdue = studentEch.some((ech: any) => ech.statut === 'en_retard');
-              const computedStatut = hasOverdue
-                ? 'en_retard'
-                : (totalDue > 0 && remaining === 0
-                  ? 'paye'
-                  : (totalPaid > 0 ? 'partiel' : 'a_jour'));
+      if (!elevesRes.error && elevesRes.data) {
+        const mapped = elevesRes.data.map((e: any, idx: number) => {
+          const studentEch = allEcheances.filter((ech: any) => ech.eleve_id === e.id);
+          const totalDue = studentEch.reduce((sum: number, ech: any) => sum + Number(ech.montant || 0), 0);
+          const totalPaid = studentEch.reduce((sum: number, ech: any) => sum + Number(ech.montant_paye || 0), 0);
+          const remaining = Math.max(0, totalDue - totalPaid);
+          const hasOverdue = studentEch.some((ech: any) => ech.statut === 'en_retard');
+          const computedStatut = hasOverdue
+            ? 'en_retard'
+            : (totalDue > 0 && remaining === 0
+              ? 'paye'
+              : (totalPaid > 0 ? 'partiel' : 'a_jour'));
 
-              return {
-                ...e,
-                matricule: e.matricule || `MAT-${100 + idx}`,
-                total_due: totalDue,
-                total_paid: totalPaid,
-                remaining: remaining,
-                statut: computedStatut,
-                classe: e.classe || 'Non assigné',
-                nom_tuteur: e.nom_tuteur || 'Tuteur Légal',
-                telephone_tuteur: e.telephone_tuteur || '',
-                nb_absences: e.nb_absences ?? 0,
-                timeline_paiements: e.timeline_paiements ?? [],
-              };
-            });
-            setElevesList(mapped as any[]);
-          }
-        } catch (e) {
-          console.warn('[DirectorDashboard] Erreur chargement données réelles:', e);
-        } finally {
-          setIsLoadingFinances(false);
-        }
-      };
-      fetchRealData();
-    } else {
+          return {
+            ...e,
+            matricule: e.matricule || `MAT-${100 + idx}`,
+            total_due: totalDue,
+            total_paid: totalPaid,
+            remaining: remaining,
+            statut: computedStatut,
+            classe: e.classe || 'Non assigné',
+            nom_tuteur: e.nom_tuteur || 'Tuteur Légal',
+            telephone_tuteur: e.telephone_tuteur || '',
+            nb_absences: e.nb_absences ?? 0,
+            timeline_paiements: e.timeline_paiements ?? [],
+          };
+        });
+        setElevesList(mapped as any[]);
+      }
+    } catch (e) {
+      console.warn('[DirectorDashboard] Erreur chargement données réelles:', e);
+    } finally {
       setIsLoadingFinances(false);
     }
   }, [authProfile?.ecole_id]);
+
+  useEffect(() => {
+    fetchRealData();
+  }, [fetchRealData]);
+
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedClasse, setSelectedClasse] = useState<string>('all');
   const [selectedStatut, setSelectedStatut] = useState<string>('all');
   const [selectedEleveModal, setSelectedEleveModal] = useState<EleveWithStats | null>(null);
+
+  // Modale d'encaissement réelle (RPC Supabase)
   const [paymentModalEleve, setPaymentModalEleve] = useState<EleveWithStats | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<string>('especes');
+  const [modalActiveEcheance, setModalActiveEcheance] = useState<ActiveEcheance | null>(null);
+  const [isLoadingModalEcheance, setIsLoadingModalEcheance] = useState<boolean>(false);
+  const [hasLoadedModalEcheance, setHasLoadedModalEcheance] = useState<boolean>(false);
+  const [payMontant, setPayMontant] = useState<number>(0);
+  const [referenceOperateur, setReferenceOperateur] = useState<string>('');
+  const [payNote, setPayNote] = useState<string>('');
+  const [isSubmittingPayment, setIsSubmittingPayment] = useState<boolean>(false);
+
+  // Chargement de l'échéance non soldée la plus ancienne
+  useEffect(() => {
+    if (!paymentModalEleve) {
+      setModalActiveEcheance(null);
+      setHasLoadedModalEcheance(false);
+      setPayMontant(0);
+      setReferenceOperateur('');
+      setPayNote('');
+      return;
+    }
+
+    let isCancelled = false;
+    setIsLoadingModalEcheance(true);
+    setHasLoadedModalEcheance(false);
+
+    getEcheanceActive(paymentModalEleve.id)
+      .then((ech) => {
+        if (isCancelled) return;
+        setModalActiveEcheance(ech);
+        setPayMontant(ech ? ech.solde_restant : 0);
+        setHasLoadedModalEcheance(true);
+      })
+      .catch((err) => {
+        if (isCancelled) return;
+        setActiveToast({
+          message: `Erreur chargement échéance : ${err?.message || 'Erreur'}`,
+          type: 'error',
+        });
+        setModalActiveEcheance(null);
+        setPayMontant(0);
+        setHasLoadedModalEcheance(true);
+      })
+      .finally(() => {
+        if (!isCancelled) setIsLoadingModalEcheance(false);
+      });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [paymentModalEleve]);
+
   const [activeToast, setActiveToast] = useState<{ message: string; type: 'success' | 'info' | 'warning' | 'error' } | null>(null);
 
   // Pagination & Context Menu
@@ -262,121 +320,71 @@ export const DirectorDashboard: React.FC<DirectorDashboardProps> = ({
     showToast(`WhatsApp pré-rempli ouvert pour le tuteur de ${eleve.prenom} ${eleve.nom}.`, 'info');
   };
 
-  // Action rapide : Marquer payé express (circuit guichet caissier : table paiements + vrai reçu PDF)
-  const triggerMarquerPayeExpress = async (eleve: EleveWithStats, e?: React.MouseEvent) => {
-    if (e) e.stopPropagation();
-    setJustPaidEleveId(eleve.id);
-
-    const montantToPay = eleve.remaining > 0 ? eleve.remaining : (eleve.total_due || 15000);
-    const recuRef = `REC-DIR-${Math.floor(1000 + Math.random() * 9000)}`;
-    const now = new Date();
-    const dateStr = now.toLocaleDateString('fr-FR');
-    const heureStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-    const encaisseurNom = authProfile ? `${authProfile.prenom} ${authProfile.nom}` : 'Direction de l’établissement';
-    const nomEtablissement = authEcole?.nom || 'Établissement Scolaire';
-
-    // 1. Insertion en base de données Supabase si compte authentifié
-    if (authProfile?.ecole_id) {
-      try {
-        const { data: echs } = await supabase
-          .from('echeances')
-          .select('*')
-          .eq('eleve_id', eleve.id)
-          .neq('statut', 'paye')
-          .order('date_echeance', { ascending: true });
-
-        if (echs && echs.length > 0) {
-          let remainingToDistribute = montantToPay;
-          for (const ech of echs) {
-            if (remainingToDistribute <= 0) break;
-            const dueOnEch = Number(ech.montant) - Number(ech.montant_paye || 0);
-            const payAmount = Math.min(remainingToDistribute, dueOnEch);
-            if (payAmount > 0) {
-              const newPaid = Number(ech.montant_paye || 0) + payAmount;
-              const newStatut = newPaid >= Number(ech.montant) ? 'paye' : 'partiel';
-              await supabase
-                .from('echeances')
-                .update({
-                  montant_paye: newPaid,
-                  statut: newStatut,
-                  date_paiement: new Date().toISOString(),
-                })
-                .eq('id', ech.id);
-
-              await supabase.from('paiements').insert({
-                ecole_id: authProfile.ecole_id,
-                echeance_id: ech.id,
-                montant: payAmount,
-                methode: 'especes',
-                statut: 'confirme',
-                reference_transaction: `${recuRef}-${ech.id.slice(0, 4)}`,
-                encaisse_par: authProfile.id,
-                note: `Règlement express au bureau de direction - ${eleve.prenom} ${eleve.nom}`,
-                paye_le: new Date().toISOString(),
-              });
-              remainingToDistribute -= payAmount;
-            }
-          }
-        }
-      } catch (err) {
-        console.warn('[DirectorDashboard] Erreur écriture paiement express Supabase:', err);
-      }
+  // Action d'encaissement via RPC Supabase
+  const handleConfirmPayment = async () => {
+    if (!paymentModalEleve || !modalActiveEcheance) return;
+    if (payMontant <= 0 || payMontant > modalActiveEcheance.solde_restant) {
+      showToast(`Le montant doit être compris entre 1 et ${formatMRU(modalActiveEcheance.solde_restant)}.`, 'error');
+      return;
     }
 
-    useCaisseStore.getState().deductEleveBalance(eleve.id, montantToPay);
-    useCaisseStore.getState().triggerRefresh();
+    setIsSubmittingPayment(true);
+    try {
+      const res = await encaisser({
+        echeanceId: modalActiveEcheance.id,
+        montant: payMontant,
+        methode: paymentMethod,
+        referenceOperateur: referenceOperateur.trim() || undefined,
+        note: payNote.trim() || undefined,
+      });
 
-    // 2. Génération immédiate du vrai reçu PDF
-    generateReceiptPdf(
-      {
-        recuRef,
-        datePaiement: `${dateStr} à ${heureStr}`,
-        eleveNom: eleve.nom,
-        elevePrenom: eleve.prenom,
-        matricule: eleve.matricule,
-        classe: eleve.classe,
-        libelleEcheance: 'Scolarité - Solde comptant express (Direction)',
-        montant: montantToPay,
-        methodePaiement: 'especes',
-        caissierNom: `${encaisseurNom} (Direction)`,
-        ecoleNom: nomEtablissement,
-      },
-      'download'
-    );
+      const now = new Date();
+      const dateStr = now.toLocaleDateString('fr-FR');
+      const heureStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+      const encaisseurNom = authProfile ? `${authProfile.prenom} ${authProfile.nom}` : 'Direction de l’établissement';
+      const nomEtablissement = authEcole?.nom || 'Établissement Scolaire';
 
-    // 3. Mise à jour de l'état local
-    setElevesList((prev) =>
-      prev.map((item) => {
-        if (item.id === eleve.id) {
-          const newPaid = item.total_due;
-          return {
-            ...item,
-            total_paid: newPaid,
-            remaining: 0,
-            statut: 'paye',
-            timeline_paiements: [
-              {
-                id: `pay-express-${Date.now()}`,
-                libelle: 'Encaissement Express Direction (Comptant)',
-                montant: montantToPay,
-                date: dateStr,
-                methode: 'especes',
-                statut: 'regle',
-                recu_ref: recuRef,
-              },
-              ...item.timeline_paiements,
-            ],
-          };
-        }
-        return item;
-      })
-    );
+      // Génération du reçu PDF avec le vrai numéro de reçu
+      generateReceiptPdf(
+        {
+          recuRef: res.numeroRecu,
+          datePaiement: `${dateStr} à ${heureStr}`,
+          eleveNom: paymentModalEleve.nom,
+          elevePrenom: paymentModalEleve.prenom,
+          matricule: paymentModalEleve.matricule,
+          classe: paymentModalEleve.classe,
+          libelleEcheance: `${modalActiveEcheance.libelle}${res.statut === 'en_attente' ? ' (EN ATTENTE)' : ''}`,
+          montant: payMontant,
+          methodePaiement: paymentMethod,
+          caissierNom: `${encaisseurNom} (Direction)`,
+          ecoleNom: nomEtablissement,
+        },
+        'download'
+      );
 
-    showToast(
-      `✓ Solde de ${eleve.prenom} ${eleve.nom} réglé (${formatMRU(montantToPay)}). Reçu PDF officiel téléchargé.`,
-      'success'
-    );
-    setTimeout(() => setJustPaidEleveId(null), 1400);
+      const targetId = paymentModalEleve.id;
+      setJustPaidEleveId(targetId);
+      setTimeout(() => setJustPaidEleveId(null), 1400);
+
+      if (res.statut === 'en_attente') {
+        showToast(
+          `Paiement enregistré [EN ATTENTE] (Reçu ${res.numeroRecu}) de ${formatMRU(payMontant)} pour ${paymentModalEleve.prenom} ${paymentModalEleve.nom}.`,
+          'info'
+        );
+      } else {
+        showToast(
+          `✓ Paiement enregistré (Reçu ${res.numeroRecu}) : ${formatMRU(payMontant)} pour ${paymentModalEleve.prenom} ${paymentModalEleve.nom}.`,
+          'success'
+        );
+      }
+
+      setPaymentModalEleve(null);
+      await fetchRealData();
+    } catch (err: any) {
+      showToast(err?.message || 'Erreur lors de l’encaissement.', 'error');
+    } finally {
+      setIsSubmittingPayment(false);
+    }
   };
 
   // Export & Relance modal state
@@ -869,13 +877,14 @@ export const DirectorDashboard: React.FC<DirectorDashboardProps> = ({
                               <>
                                 <button
                                   onClick={(e) => {
+                                    e.stopPropagation();
                                     setOpenMenuRowId(null);
-                                    triggerMarquerPayeExpress(eleve, e);
+                                    setPaymentModalEleve(eleve);
                                   }}
                                   className="w-full flex items-center gap-2.5 px-3 py-2 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/50 font-semibold"
                                 >
-                                  <Zap className="h-3.5 w-3.5 text-emerald-600 fill-emerald-600" />
-                                  <span>Encaisser express</span>
+                                  <CreditCard className="h-3.5 w-3.5 text-emerald-600" />
+                                  <span>Encaisser un paiement</span>
                                 </button>
 
                                 <button
@@ -969,7 +978,10 @@ export const DirectorDashboard: React.FC<DirectorDashboardProps> = ({
       <StudentDetailDrawer
         eleve={selectedEleveModal}
         onClose={() => setSelectedEleveModal(null)}
-        onQuickPay={triggerMarquerPayeExpress}
+        onQuickPay={(el) => {
+          setSelectedEleveModal(null);
+          setPaymentModalEleve(el);
+        }}
         onQuickRelance={triggerRelance}
       />
 
@@ -985,6 +997,199 @@ export const DirectorDashboard: React.FC<DirectorDashboardProps> = ({
           setSelectedEleveIds([]);
         }}
       />
+
+      {/* Modale d'Encaissement Réel (RPC Supabase) */}
+      {paymentModalEleve && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 dark:bg-slate-950/75 backdrop-blur-xs p-4 animate-in fade-in">
+          <div className="w-full max-w-md rounded-2xl bg-white dark:bg-slate-900 p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+              <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <PlusCircle className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                Encaisser un paiement
+              </h3>
+              <button
+                onClick={() => setPaymentModalEleve(null)}
+                disabled={isSubmittingPayment}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer disabled:opacity-50"
+                aria-label="Fermer"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="text-xs space-y-1 bg-slate-50 dark:bg-slate-800/60 p-3 rounded-xl border border-slate-100 dark:border-slate-700">
+              <p className="font-bold text-slate-900 dark:text-white">
+                Élève : {paymentModalEleve.prenom} {paymentModalEleve.nom}
+              </p>
+              <p className="text-slate-500 dark:text-slate-400 font-mono">
+                Matricule : {paymentModalEleve.matricule} • Classe : {paymentModalEleve.classe}
+              </p>
+            </div>
+
+            {/* Échéance active */}
+            {isLoadingModalEcheance ? (
+              <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/40 flex items-center justify-center gap-2 text-xs text-slate-500">
+                <Loader2 className="h-4 w-4 animate-spin text-amber-600" />
+                <span>Recherche de la plus ancienne échéance non soldée...</span>
+              </div>
+            ) : modalActiveEcheance ? (
+              <div className="rounded-xl border border-blue-200 dark:border-blue-900/60 bg-blue-50/50 dark:bg-blue-950/20 p-3.5 space-y-1.5 text-xs animate-scale-in">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-blue-900 dark:text-blue-200 flex items-center gap-1.5">
+                    <Receipt className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+                    Échéance ciblée
+                  </span>
+                  <span className="text-[11px] font-mono text-blue-700 dark:text-blue-300">
+                    {modalActiveEcheance.date_echeance
+                      ? new Date(modalActiveEcheance.date_echeance).toLocaleDateString('fr-FR')
+                      : 'Sans date'}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between pt-1 border-t border-blue-200/60 dark:border-blue-900/40">
+                  <span className="font-semibold text-slate-800 dark:text-slate-200">
+                    {modalActiveEcheance.libelle || 'Scolarité'}
+                  </span>
+                  <div className="text-right">
+                    <span className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 block">
+                      Solde restant
+                    </span>
+                    <span className="text-sm font-extrabold font-mono text-blue-700 dark:text-blue-300">
+                      {formatMRU(modalActiveEcheance.solde_restant)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ) : hasLoadedModalEcheance ? (
+              <div className="p-3.5 rounded-xl border border-amber-300 dark:border-amber-800/80 bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 flex items-start gap-2.5 text-xs animate-scale-in">
+                <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                <span className="font-medium">
+                  Aucune échéance pour cet élève. Demandez au directeur de les générer.
+                </span>
+              </div>
+            ) : null}
+
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Montant encaissé (MRU)
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    min="1"
+                    max={modalActiveEcheance?.solde_restant || 0}
+                    value={payMontant === 0 ? '' : payMontant}
+                    onChange={(e) => {
+                      const val = parseFloat(e.target.value) || 0;
+                      const max = modalActiveEcheance ? modalActiveEcheance.solde_restant : val;
+                      setPayMontant(Math.min(val, max));
+                    }}
+                    placeholder="0"
+                    disabled={!modalActiveEcheance || isSubmittingPayment}
+                    className="w-full h-10 px-3 pr-14 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm font-mono font-bold focus:ring-2 focus:ring-blue-600 focus:outline-none disabled:opacity-50"
+                  />
+                  <span className="absolute right-3 top-2.5 text-xs font-bold font-mono text-slate-400">
+                    MRU
+                  </span>
+                </div>
+                {modalActiveEcheance && modalActiveEcheance.solde_restant > 0 && (
+                  <div className="mt-1 flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
+                    <span>
+                      Solde restant :{' '}
+                      <button
+                        type="button"
+                        onClick={() => setPayMontant(modalActiveEcheance.solde_restant)}
+                        className="font-bold font-mono text-amber-700 dark:text-amber-400 hover:underline cursor-pointer"
+                      >
+                        {formatMRU(modalActiveEcheance.solde_restant)}
+                      </button>
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                  Mode de règlement
+                </label>
+                <Select
+                  value={paymentMethod}
+                  onChange={setPaymentMethod}
+                  disabled={!modalActiveEcheance || isSubmittingPayment}
+                  options={[
+                    { value: 'especes', label: 'Espèces (Comptant)' },
+                    { value: 'bankily', label: 'Bankily (BPM)' },
+                    { value: 'masrvi', label: 'Masrvi (BMCI)' },
+                    { value: 'cheque', label: 'Chèque' },
+                  ]}
+                  triggerClassName="w-full h-10 rounded-lg text-xs"
+                />
+              </div>
+
+              {paymentMethod !== 'especes' && (
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    Référence opérateur / N° Chèque (Optionnel)
+                  </label>
+                  <input
+                    type="text"
+                    value={referenceOperateur}
+                    onChange={(e) => setReferenceOperateur(e.target.value)}
+                    placeholder="Ex: TX-123456"
+                    disabled={isSubmittingPayment}
+                    className="w-full h-9 px-3 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-mono text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-600"
+                  />
+                </div>
+              )}
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Note / Motif (Optionnel)
+                </label>
+                <input
+                  type="text"
+                  value={payNote}
+                  onChange={(e) => setPayNote(e.target.value)}
+                  placeholder="Remarque éventuelle..."
+                  disabled={isSubmittingPayment}
+                  className="w-full h-9 px-3 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-600"
+                />
+              </div>
+            </div>
+
+            <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2.5 sm:gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full sm:w-auto justify-center"
+                disabled={isSubmittingPayment}
+                onClick={() => setPaymentModalEleve(null)}
+              >
+                Annuler (Échap)
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                className="w-full sm:w-auto justify-center gap-1.5"
+                disabled={isSubmittingPayment || !modalActiveEcheance || payMontant <= 0}
+                onClick={handleConfirmPayment}
+              >
+                {isSubmittingPayment ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Enregistrement…
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="h-4 w-4" />
+                    Confirmer l'Encaissement
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
