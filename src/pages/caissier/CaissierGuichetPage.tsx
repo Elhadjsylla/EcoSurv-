@@ -15,6 +15,7 @@ import { formatMRU } from '../../lib/utils';
 import { generateReceiptPdf } from '../../lib/pdf/generateReceiptPdf';
 import { useCaisseStore } from '../../store/useCaisseStore';
 import { supabase } from '../../lib/supabase';
+import { formatRpcError } from '../../lib/paiements';
 import {
   CreditCard,
   Search,
@@ -276,38 +277,6 @@ export const CaissierGuichetPage: React.FC<CaissierGuichetPageProps> = ({
       document.body.style.overflow = '';
     }
   }, [printedReceipt]);
-
-  const formatRpcError = (err: any): string => {
-    const raw = `${err?.message || ''} ${err?.details || ''} ${err?.hint || ''}`;
-    if (raw.includes('NON_AUTHENTIFIE')) {
-      return 'Votre session est absente ou expirée. Veuillez vous reconnecter.';
-    }
-    if (raw.includes('ACCES_REFUSE')) {
-      return 'Accès refusé : votre profil n’est pas autorisé à enregistrer des paiements.';
-    }
-    if (raw.includes('MONTANT_INVALIDE')) {
-      return 'Montant invalide : le montant doit être strictement supérieur à 0 MRU.';
-    }
-    if (raw.includes('ECHEANCE_INTROUVABLE')) {
-      return 'Échéance introuvable dans la base de données.';
-    }
-    if (raw.includes('ACCES_INTERDIT_ECOLE')) {
-      return 'Accès interdit : vous ne pouvez pas enregistrer un paiement pour une autre école.';
-    }
-    if (raw.includes('REFERENCE_DEJA_UTILISEE')) {
-      return 'Référence opérateur déjà utilisée : cette référence de transaction a déjà été enregistrée pour cette école.';
-    }
-    if (raw.includes('ECHEANCE_DEJA_SOLDEE')) {
-      return 'Échéance déjà soldée : cette échéance est déjà intégralement payée.';
-    }
-    if (raw.includes('DEPASSEMENT_SOLDE')) {
-      return 'Dépassement de solde : le montant saisi excède le solde restant dû.';
-    }
-    if (err?.code === '42501' || raw.includes('row-level security')) {
-      return 'Accès refusé par la politique de sécurité (RLS).';
-    }
-    return err?.message || 'Une erreur inattendue est survenue lors de l’enregistrement du paiement.';
-  };
 
   const handleProcessPayment = async () => {
     if (isSubmitting) return;
