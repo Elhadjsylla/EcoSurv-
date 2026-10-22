@@ -140,9 +140,16 @@ export const Header: React.FC<HeaderProps> = ({
   const authEcole = useAuthStore((s) => s.ecole);
   const storeEcole = useEcoleStore((s) => s.ecole);
 
-  // Détection du mode simulation : interdit par défaut pour un compte réel en production
+  // Détection du mode simulation : réservée au directeur sur les comptes autorisés
   const isRealAccount = Boolean(authProfile?.ecole_id && authProfile.ecole_id !== 'ecole-demo');
-  const showRoleSimulator = isRoleSimulatorAllowed(isRealAccount);
+  const showRoleSimulator = authProfile?.role === 'directeur' && isRoleSimulatorAllowed(isRealAccount);
+
+  // Rôle réel de l'utilisateur comme source de vérité
+  const realRole: PortalRole = (authProfile?.role && authProfile.role in rolesConfig)
+    ? (authProfile.role as PortalRole)
+    : 'directeur';
+  const realConfig = rolesConfig[realRole];
+  const isSimulating = Boolean(showRoleSimulator && currentRole && currentRole !== realRole);
 
   const ecole = {
     ...storeEcole,
@@ -151,7 +158,7 @@ export const Header: React.FC<HeaderProps> = ({
     code_ecole: authEcole?.nom ? authEcole.nom.slice(0, 4).toUpperCase() : storeEcole.code_ecole,
   };
 
-  const defaultUser = currentConfig?.user || { id: '', nom: 'Direction', prenom: '', email: '', telephone: '', role: 'directeur' };
+  const defaultUser = realConfig?.user || { id: '', nom: 'Direction', prenom: '', email: '', telephone: '', role: 'directeur' };
 
   // Utilisateur réel prioritaire sur le mock
   const activeUser = authProfile
@@ -162,6 +169,7 @@ export const Header: React.FC<HeaderProps> = ({
         prenom: authProfile.prenom,
         email: authProfile.email || defaultUser.email,
         telephone: authProfile.telephone || defaultUser.telephone,
+        role: authProfile.role,
       }
     : defaultUser;
 
@@ -328,9 +336,12 @@ export const Header: React.FC<HeaderProps> = ({
                   {activeUser.prenom}
                 </span>
               </Tooltip>
-              <Tooltip content={currentConfig.roleTitle} side="bottom" className="flex min-w-0">
+              <Tooltip content={isSimulating ? `${realConfig.roleTitle} (Simulation : ${currentConfig.label})` : realConfig.roleTitle} side="bottom" className="flex min-w-0">
                 <span className="text-xs font-medium text-muted truncate">
-                  {currentConfig.label}
+                  {realConfig.label}
+                  {isSimulating && (
+                    <span className="ml-1 text-[10px] text-amber-600 dark:text-amber-400 font-bold uppercase">(simul.)</span>
+                  )}
                 </span>
               </Tooltip>
             </div>
@@ -340,8 +351,10 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Floating Profile Panel */}
           <UserProfileDropdown
             user={activeUser}
-            roleTitle={currentConfig.roleTitle}
-            roleBadge={currentConfig.label}
+            roleTitle={realConfig.roleTitle}
+            roleBadge={realConfig.label}
+            isSimulating={isSimulating}
+            simulationRole={isSimulating ? currentConfig.label : undefined}
             isOpen={isProfileOpen}
             onClose={() => setIsProfileOpen(false)}
             onNavigateTab={onNavigateTab}

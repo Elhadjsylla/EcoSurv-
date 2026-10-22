@@ -27,6 +27,8 @@ interface UserProfileDropdownProps {
   };
   roleTitle: string;
   roleBadge: string;
+  isSimulating?: boolean;
+  simulationRole?: string;
   isOpen: boolean;
   onClose: () => void;
   onNavigateTab?: (tab: string) => void;
@@ -36,6 +38,8 @@ export const UserProfileDropdown: React.FC<UserProfileDropdownProps> = ({
   user,
   roleTitle,
   roleBadge,
+  isSimulating,
+  simulationRole,
   isOpen,
   onClose,
   onNavigateTab,
@@ -94,16 +98,21 @@ export const UserProfileDropdown: React.FC<UserProfileDropdownProps> = ({
           <div className="flex items-center gap-3 pb-3 border-b border-subtle">
             <StudentInitials nom={user.nom} prenom={user.prenom} size="lg" />
             <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <h4 className="text-sm font-extrabold text-main truncate">
                   {user.prenom} {user.nom}
                 </h4>
                 <span className="rounded-sm bg-surface-subtle border border-subtle px-2 py-0.5 text-xs font-bold text-primary-text">
                   {roleBadge}
                 </span>
+                {isSimulating && (
+                  <span className="rounded-sm bg-warning-surface border border-warning-border px-1.5 py-0.5 text-[10px] font-bold text-warning-text uppercase tracking-wider">
+                    Simulation {simulationRole ? `(${simulationRole})` : ''}
+                  </span>
+                )}
               </div>
               <p className="text-xs text-muted truncate mt-0.5">
-                {roleTitle}
+                {roleTitle} {isSimulating && simulationRole ? `• Portail simulé : ${simulationRole}` : ''}
               </p>
             </div>
           </div>

@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { UserRole, PortalRole } from './useAuthStore';
+import { useAuthStore, type UserRole, type PortalRole } from './useAuthStore';
 import type { NavTab } from '../components/ui/Sidebar';
 import type { TeacherNavTab } from '../components/enseignant/TeacherSidebar';
 import type { CaissierNavTab } from '../components/caissier/CaissierSidebar';
@@ -98,10 +98,16 @@ export const useNavigationStore = create<NavigationState>((set) => ({
 
   launchAppWithPortal: (portal) =>
     set(() => {
-      const targetRole: PortalRole = (portal && portal !== 'super_admin') ? portal : 'directeur';
+      const authProfile = useAuthStore.getState().profile;
+      const realRole = authProfile?.role;
+      let targetRole: PortalRole = (portal && portal !== 'super_admin') ? portal : 'directeur';
+      if (realRole && realRole !== 'super_admin' && realRole !== 'directeur') {
+        targetRole = realRole as PortalRole;
+      }
+      const effectiveUserRole = (realRole && realRole !== 'super_admin') ? (realRole as PortalRole) : targetRole;
       return {
         viewMode: 'app',
-        userRole: targetRole,
+        userRole: effectiveUserRole,
         portal: targetRole,
         isMobileMenuOpen: false,
         ...positionAt([PORTAL_HOME[targetRole]], 0),
@@ -116,11 +122,25 @@ export const useNavigationStore = create<NavigationState>((set) => ({
           isMobileMenuOpen: false,
         };
       }
-      const targetRole: PortalRole = (portal as PortalRole) || 'directeur';
-      const targetRoute = route || PORTAL_HOME[targetRole];
+      const authProfile = useAuthStore.getState().profile;
+      const realRole = authProfile?.role;
+
+      let targetRole: PortalRole = (portal as PortalRole) || 'directeur';
+
+      // Règle stricte : si le profil connecté est caissier, enseignant ou parent,
+      // le portail cible NE PEUT PAS être différent de son rôle réel
+      if (realRole && realRole !== 'super_admin' && realRole !== 'directeur') {
+        targetRole = realRole as PortalRole;
+      }
+
+      const effectiveUserRole = (realRole && realRole !== 'super_admin') ? (realRole as PortalRole) : targetRole;
+      const targetRoute = (route && isRouteAllowedForRole(targetRole, route))
+        ? route
+        : PORTAL_HOME[targetRole];
+
       return {
         viewMode: 'app',
-        userRole: targetRole,
+        userRole: effectiveUserRole,
         portal: targetRole,
         isMobileMenuOpen: false,
         ...positionAt([targetRoute], 0),
@@ -149,10 +169,15 @@ export const useNavigationStore = create<NavigationState>((set) => ({
     set((state) => {
       // Cloisonnement strict pour les rôles non-directeur :
       // Si l'utilisateur n'est pas directeur, il ne peut naviguer hors des routes autorisées pour son rôle
+      const authProfile = useAuthStore.getState().profile;
+      const effectiveRole = (authProfile?.role && authProfile.role !== 'super_admin')
+        ? (authProfile.role as PortalRole)
+        : state.userRole;
+
       let targetRoute = route;
-      if (state.userRole !== 'directeur') {
-        if (!isRouteAllowedForRole(state.userRole, route)) {
-          targetRoute = PORTAL_HOME[state.userRole];
+      if (effectiveRole !== 'directeur') {
+        if (!isRouteAllowedForRole(effectiveRole, route)) {
+          targetRoute = PORTAL_HOME[effectiveRole];
         }
       }
 
@@ -171,8 +196,13 @@ export const useNavigationStore = create<NavigationState>((set) => ({
 
   switchPortal: (portal) =>
     set((state) => {
+      const authProfile = useAuthStore.getState().profile;
+      const realRole = (authProfile?.role && authProfile.role !== 'super_admin')
+        ? (authProfile.role as PortalRole)
+        : state.userRole;
+
       // Seul le DIRECTEUR peut basculer de portail ("voir en tant que")
-      if (state.userRole !== 'directeur') {
+      if (realRole !== 'directeur') {
         return { isMobileMenuOpen: false };
       }
       return state.portal === portal

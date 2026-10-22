@@ -38,7 +38,7 @@ import { ErrorBoundary } from './components/ui/ErrorBoundary';
 import { isRoleSimulatorAllowed } from './config/features';
 import { supabase } from './lib/supabase';
 import { parsePath, getPathForState } from './lib/router';
-import { PORTAL_HOME } from './store/useNavigationStore';
+import { PORTAL_HOME, isRouteAllowedForRole } from './store/useNavigationStore';
 import type { UserRole, PortalRole, UserProfile } from './store/useAuthStore';
 
 const queryClient = new QueryClient({
@@ -76,7 +76,7 @@ export function AppContent() {
 
   const authProfile = useAuthStore((s) => s.profile);
   const isRealAccount = Boolean(authProfile?.ecole_id && authProfile.ecole_id !== 'ecole-demo');
-  const allowSimulation = isRoleSimulatorAllowed(isRealAccount);
+  const allowSimulation = authProfile?.role === 'directeur' && isRoleSimulatorAllowed(isRealAccount);
 
   // 1. Résolution de la session Supabase au démarrage / rafraîchissement (F5)
   useEffect(() => {
@@ -218,19 +218,42 @@ export function AppContent() {
         const portalRole: PortalRole = role;
         useNavigationStore.getState().setUserRole(portalRole);
 
-        if (match.viewMode === 'app' && match.route) {
-          const targetPortal = match.portal || portalRole;
-          useNavigationStore.getState().launchAppWithRoute(targetPortal, match.route);
-        } else if (match.viewMode === 'set_password') {
-          useNavigationStore.getState().navigateToSetPassword();
-        } else if (match.viewMode === 'landing') {
-          // Si l'utilisateur connecté est sur la landing page, on le laisse sur la landing page
-          useNavigationStore.getState().setViewMode('landing');
+        if (portalRole !== 'directeur') {
+          // Pour un profil caissier, enseignant ou parent : si l'URL demande un autre portail que le sien,
+          // ne change PAS le portail ; redirige vers PORTAL_HOME du rôle réel avec history.replaceState.
+          if (match.viewMode === 'app' && match.route && match.portal === portalRole && isRouteAllowedForRole(portalRole, match.route)) {
+            useNavigationStore.getState().launchAppWithRoute(portalRole, match.route);
+          } else if (match.viewMode === 'set_password') {
+            useNavigationStore.getState().navigateToSetPassword();
+          } else if (match.viewMode === 'landing') {
+            useNavigationStore.getState().setViewMode('landing');
+          } else {
+            const homeRoute = PORTAL_HOME[portalRole];
+            useNavigationStore.getState().launchAppWithRoute(portalRole, homeRoute);
+            window.history.replaceState(null, '', getPathForState('app', homeRoute));
+          }
         } else {
-          // Si l'utilisateur était sur '/login' alors qu'il est déjà connecté -> redirection vers son portail
-          useNavigationStore.getState().launchAppWithPortal(portalRole);
-          const homePath = getPathForState('app', PORTAL_HOME[portalRole]);
-          window.history.replaceState(null, '', homePath);
+          // Rôle directeur
+          if (match.viewMode === 'app' && match.route) {
+            const targetPortal = (match.portal && match.portal !== 'directeur' && !allowSimulation)
+              ? 'directeur'
+              : (match.portal || portalRole);
+            const targetRoute = (targetPortal === 'directeur' && !isRouteAllowedForRole('directeur', match.route))
+              ? PORTAL_HOME.directeur
+              : match.route;
+            useNavigationStore.getState().launchAppWithRoute(targetPortal, targetRoute);
+            if (targetPortal !== match.portal || targetRoute !== match.route) {
+              window.history.replaceState(null, '', getPathForState('app', targetRoute));
+            }
+          } else if (match.viewMode === 'set_password') {
+            useNavigationStore.getState().navigateToSetPassword();
+          } else if (match.viewMode === 'landing') {
+            useNavigationStore.getState().setViewMode('landing');
+          } else {
+            useNavigationStore.getState().launchAppWithPortal(portalRole);
+            const homePath = getPathForState('app', PORTAL_HOME[portalRole]);
+            window.history.replaceState(null, '', homePath);
+          }
         }
       } catch (err) {
         console.error('[EcoSurv Auth] Erreur vérification session:', err);
@@ -282,6 +305,17 @@ export function AppContent() {
       if (match.viewMode === 'login' && currentProfile) {
         useNavigationStore.getState().navigateToUserPortal(currentProfile.role);
       } else if (match.viewMode === 'app' && match.route) {
+        if (currentProfile && currentProfile.role !== 'super_admin') {
+          const uRole = currentProfile.role as PortalRole;
+          if (uRole !== 'directeur') {
+            if (match.portal !== uRole || !isRouteAllowedForRole(uRole, match.route)) {
+              const homeRoute = PORTAL_HOME[uRole];
+              navigate(homeRoute);
+              window.history.replaceState(null, '', getPathForState('app', homeRoute));
+              return;
+            }
+          }
+        }
         navigate(match.route);
       } else {
         setViewMode(match.viewMode);
@@ -573,23 +607,28 @@ export function AppContent() {
     );
   }
 
+  // Rôle effectif : la source de vérité absolue est authProfile.role.
+  // Pour un profil caissier, enseignant ou parent, le portail visible ne peut JAMAIS dépasser ce que ce rôle autorise.
+  const realUserRole = (authProfile && authProfile.role !== 'super_admin') ? (authProfile.role as PortalRole) : userRole;
+  const effectiveRole: PortalRole = (realUserRole !== 'directeur') ? realUserRole : currentRole;
+
   return (
     <div key="app-view" className="flex h-screen overflow-hidden bg-slate-50 dark:bg-slate-950 font-['Plus_Jakarta_Sans',sans-serif] text-slate-900 dark:text-slate-100 antialiased animate-page-enter">
       {/* Dynamic Sidebar based on current role with ErrorBoundary */}
       <ErrorBoundary name="Barre latérale">
-        {currentRole === 'enseignant' && (
+        {effectiveRole === 'enseignant' && (
           <TeacherSidebar
             activeTab={activeTeacherTab}
             onTabChange={navigate}
           />
         )}
-        {currentRole === 'caissier' && (
+        {effectiveRole === 'caissier' && (
           <CaissierSidebar
             activeTab={activeCaissierTab}
             onTabChange={navigate}
           />
         )}
-        {currentRole === 'parent' && (
+        {effectiveRole === 'parent' && (
           <ParentSidebar
             activeTab={activeParentTab}
             onTabChange={navigate}
@@ -597,7 +636,7 @@ export function AppContent() {
             onSelectChild={setSelectedParentChildId}
           />
         )}
-        {currentRole === 'directeur' && (
+        {effectiveRole === 'directeur' && (
           <Sidebar
             activeTab={activeDirectorTab}
             onTabChange={navigate}
@@ -608,17 +647,17 @@ export function AppContent() {
       {/* Main Area with ErrorBoundary */}
       <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
         <Header
-          currentRole={currentRole}
+          currentRole={effectiveRole}
           onRoleChange={switchPortal}
           onNavigateTab={handleHeaderNavigate}
           onReturnToLanding={() => setViewMode('landing')}
         />
         <main className="flex-1 overflow-y-auto overflow-x-hidden">
           <ErrorBoundary name="Contenu principal">
-            {currentRole === 'enseignant' && renderTeacherContent()}
-            {currentRole === 'caissier' && renderCaissierContent()}
-            {currentRole === 'parent' && renderParentContent()}
-            {currentRole === 'directeur' && renderDirectorContent()}
+            {effectiveRole === 'enseignant' && renderTeacherContent()}
+            {effectiveRole === 'caissier' && renderCaissierContent()}
+            {effectiveRole === 'parent' && renderParentContent()}
+            {effectiveRole === 'directeur' && renderDirectorContent()}
           </ErrorBoundary>
         </main>
       </div>
