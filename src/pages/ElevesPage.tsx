@@ -198,7 +198,7 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
       .then((ech) => {
         if (isCancelled) return;
         setModalActiveEcheance(ech);
-        setPayMontant(ech ? ech.solde_restant : 0);
+        setPayMontant(ech ? ech.soldeDisponible : 0);
         setHasLoadedModalEcheance(true);
       })
       .catch((err) => {
@@ -412,8 +412,8 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
       return;
     }
 
-    if (payMontant > modalActiveEcheance.solde_restant) {
-      showToast(`Le montant ne peut pas excéder le solde restant (${formatMRU(modalActiveEcheance.solde_restant)}).`, 'warning');
+    if (payMontant > modalActiveEcheance.soldeDisponible) {
+      showToast(`Le montant dépasse le solde disponible (${formatMRU(modalActiveEcheance.soldeDisponible)}).`, 'error');
       return;
     }
 
@@ -1218,12 +1218,11 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
                   <input
                     type="number"
                     min="1"
-                    max={modalActiveEcheance?.solde_restant || 0}
+                    max={modalActiveEcheance?.soldeDisponible || 0}
                     value={payMontant === 0 ? '' : payMontant}
                     onChange={(e) => {
-                      const val = parseFloat(e.target.value) || 0;
-                      const max = modalActiveEcheance ? modalActiveEcheance.solde_restant : val;
-                      setPayMontant(Math.min(val, max));
+                      const val = e.target.value === '' ? 0 : parseFloat(e.target.value);
+                      setPayMontant(isNaN(val) ? 0 : val);
                     }}
                     placeholder="0"
                     disabled={!modalActiveEcheance || isSubmittingPayment}
@@ -1233,17 +1232,32 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
                     MRU
                   </span>
                 </div>
-                {modalActiveEcheance && modalActiveEcheance.solde_restant > 0 && (
-                  <div className="mt-1 flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
+                {modalActiveEcheance && payMontant > modalActiveEcheance.soldeDisponible && (
+                  <p className="text-[11px] font-semibold text-rose-600 dark:text-rose-400 mt-1">
+                    Le montant dépasse le solde disponible ({formatMRU(modalActiveEcheance.soldeDisponible)})
+                  </p>
+                )}
+                {modalActiveEcheance && payMontant <= 0 && (
+                  <p className="text-[11px] font-semibold text-rose-600 dark:text-rose-400 mt-1">
+                    Le montant doit être supérieur à 0 MRU
+                  </p>
+                )}
+                {modalActiveEcheance && (
+                  <div className="mt-1 flex flex-wrap items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
                     <span>
                       Solde restant :{' '}
                       <button
                         type="button"
-                        onClick={() => setPayMontant(modalActiveEcheance.solde_restant)}
+                        onClick={() => setPayMontant(modalActiveEcheance.soldeDisponible)}
                         className="font-bold font-mono text-amber-700 dark:text-amber-400 hover:underline cursor-pointer"
                       >
                         {formatMRU(modalActiveEcheance.solde_restant)}
                       </button>
+                      {modalActiveEcheance.montant_en_attente > 0 && (
+                        <span className="text-amber-600 dark:text-amber-400 font-medium ml-1">
+                          dont {formatMRU(modalActiveEcheance.montant_en_attente)} en attente de confirmation
+                        </span>
+                      )}
                     </span>
                   </div>
                 )}
@@ -1312,7 +1326,12 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
                 variant="primary"
                 size="sm"
                 className="w-full sm:w-auto justify-center gap-1.5"
-                disabled={isSubmittingPayment || !modalActiveEcheance || payMontant <= 0}
+                disabled={
+                  isSubmittingPayment ||
+                  !modalActiveEcheance ||
+                  payMontant <= 0 ||
+                  payMontant > modalActiveEcheance.soldeDisponible
+                }
                 onClick={handleConfirmPayment}
               >
                 {isSubmittingPayment ? (

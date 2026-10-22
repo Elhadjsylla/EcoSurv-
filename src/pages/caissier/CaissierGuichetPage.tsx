@@ -15,7 +15,7 @@ import { formatMRU } from '../../lib/utils';
 import { generateReceiptPdf } from '../../lib/pdf/generateReceiptPdf';
 import { useCaisseStore } from '../../store/useCaisseStore';
 import { supabase } from '../../lib/supabase';
-import { formatRpcError } from '../../lib/paiements';
+import { formatRpcError, getEcheanceActive, ActiveEcheance } from '../../lib/paiements';
 import {
   CreditCard,
   Search,
@@ -34,15 +34,6 @@ import { useAuthStore } from '../../store/useAuthStore';
 
 interface CaissierGuichetPageProps {
   preselectedEleveId?: string;
-}
-
-interface ActiveEcheance {
-  id: string;
-  libelle: string;
-  montant: number;
-  montant_paye: number;
-  date_echeance: string;
-  solde_restant: number;
 }
 
 export const CaissierGuichetPage: React.FC<CaissierGuichetPageProps> = ({
@@ -191,41 +182,10 @@ export const CaissierGuichetPage: React.FC<CaissierGuichetPageProps> = ({
     const loadActiveEcheance = async () => {
       setIsLoadingEcheance(true);
       try {
-        const { data, error } = await supabase
-          .from('echeances')
-          .select('id, libelle, montant, montant_paye, date_echeance')
-          .eq('eleve_id', selectedEleveId)
-          .neq('statut', 'paye')
-          .order('date_echeance', { ascending: true })
-          .limit(1);
-
+        const ech = await getEcheanceActive(selectedEleveId);
         if (isCancelled) return;
-
-        if (error) {
-          setActiveToast({
-            message: `Erreur lors de la récupération de l'échéance : ${error.message}`,
-            type: 'error',
-          });
-          setActiveEcheance(null);
-          setMontant(0);
-        } else if (data && data.length > 0) {
-          const ech = data[0];
-          const m = Number(ech.montant || 0);
-          const mp = Number(ech.montant_paye || 0);
-          const solde = Math.max(0, m - mp);
-          setActiveEcheance({
-            id: ech.id,
-            libelle: ech.libelle,
-            montant: m,
-            montant_paye: mp,
-            date_echeance: ech.date_echeance,
-            solde_restant: solde,
-          });
-          setMontant(solde);
-        } else {
-          setActiveEcheance(null);
-          setMontant(0);
-        }
+        setActiveEcheance(ech);
+        setMontant(ech ? ech.soldeDisponible : 0);
       } catch (err: any) {
         if (!isCancelled) {
           setActiveToast({
@@ -332,6 +292,18 @@ export const CaissierGuichetPage: React.FC<CaissierGuichetPageProps> = ({
         setActiveToast({
           message: 'Aucune échéance pour cet élève. Demandez au directeur de les générer.',
           type: 'warning',
+        });
+        return;
+      }
+
+      if (!activeEcheance || montant <= 0 || montant > activeEcheance.soldeDisponible) {
+        setActiveToast({
+          message: !activeEcheance
+            ? 'Aucune échéance active.'
+            : montant <= 0
+            ? 'Le montant doit être supérieur à 0 MRU.'
+            : `Le montant dépasse le solde disponible (${formatMRU(activeEcheance.soldeDisponible)}).`,
+          type: 'error',
         });
         return;
       }
@@ -740,9 +712,13 @@ export const CaissierGuichetPage: React.FC<CaissierGuichetPageProps> = ({
                   <input
                     type="number"
                     min="1"
+                    max={activeEcheance?.soldeDisponible || 0}
                     step="500"
                     value={montant === 0 ? '' : montant}
-                    onChange={(e) => setMontant(parseFloat(e.target.value) || 0)}
+                    onChange={(e) => {
+                      const val = e.target.value === '' ? 0 : parseFloat(e.target.value);
+                      setMontant(isNaN(val) ? 0 : val);
+                    }}
                     placeholder="0"
                     className="w-full h-12 pl-4 pr-16 text-xl font-extrabold font-mono text-slate-900 dark:text-white bg-white dark:bg-slate-800 rounded-xl border border-slate-300 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-amber-600 focus:border-transparent"
                   />
@@ -750,17 +726,32 @@ export const CaissierGuichetPage: React.FC<CaissierGuichetPageProps> = ({
                     MRU
                   </span>
                 </div>
-                {activeEcheance && activeEcheance.solde_restant > 0 && (
-                  <div className="mt-1.5 flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
+                {activeEcheance && montant > activeEcheance.soldeDisponible && (
+                  <p className="text-[11px] font-semibold text-rose-600 dark:text-rose-400 mt-1">
+                    Le montant dépasse le solde disponible ({formatMRU(activeEcheance.soldeDisponible)})
+                  </p>
+                )}
+                {activeEcheance && montant <= 0 && (
+                  <p className="text-[11px] font-semibold text-rose-600 dark:text-rose-400 mt-1">
+                    Le montant doit être supérieur à 0 MRU
+                  </p>
+                )}
+                {activeEcheance && (
+                  <div className="mt-1.5 flex flex-wrap items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
                     <span>
-                      Suggestion (solde échéance) :{' '}
+                      Solde restant :{' '}
                       <button
                         type="button"
-                        onClick={() => setMontant(activeEcheance.solde_restant)}
+                        onClick={() => setMontant(activeEcheance.soldeDisponible)}
                         className="font-bold font-mono text-amber-700 dark:text-amber-400 hover:underline cursor-pointer"
                       >
                         {formatMRU(activeEcheance.solde_restant)}
                       </button>
+                      {activeEcheance.montant_en_attente > 0 && (
+                        <span className="text-amber-600 dark:text-amber-400 font-medium ml-1">
+                          dont {formatMRU(activeEcheance.montant_en_attente)} en attente de confirmation
+                        </span>
+                      )}
                     </span>
                   </div>
                 )}
@@ -834,11 +825,11 @@ export const CaissierGuichetPage: React.FC<CaissierGuichetPageProps> = ({
                 className={`w-full justify-center gap-2 font-bold text-sm shadow-sm py-3 ${
                   isCaisseCloturee
                     ? 'bg-slate-400 dark:bg-slate-700 text-slate-200 cursor-not-allowed'
-                    : isSubmitting || !selectedEleve || !activeEcheance || montant <= 0
+                    : isSubmitting || !selectedEleve || !activeEcheance || montant <= 0 || (activeEcheance && montant > activeEcheance.soldeDisponible)
                     ? 'opacity-60 cursor-not-allowed'
                     : 'bg-amber-600 hover:bg-amber-700 text-white'
                 }`}
-                disabled={isCaisseCloturee || !selectedEleve || isSubmitting || !activeEcheance || montant <= 0}
+                disabled={isCaisseCloturee || !selectedEleve || isSubmitting || !activeEcheance || montant <= 0 || (activeEcheance && montant > activeEcheance.soldeDisponible)}
                 onClick={handleProcessPayment}
               >
                 {isSubmitting ? (
