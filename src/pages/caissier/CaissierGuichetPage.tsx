@@ -1,7 +1,6 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import {
-  CURRENT_CAISSIER,
   EleveWithStats,
   MethodePaiement,
   CaisseTransaction,
@@ -376,7 +375,7 @@ export const CaissierGuichetPage: React.FC<CaissierGuichetPageProps> = ({
         heure: heureStr,
         methode,
         recu_ref: numeroRecu,
-        encaisse_par: authProfile ? `${authProfile.prenom} ${authProfile.nom}` : `${CURRENT_CAISSIER.prenom} ${CURRENT_CAISSIER.nom}`,
+        encaisse_par: authProfile ? `${authProfile.prenom} ${authProfile.nom}`.trim() : 'Opérateur caisse',
         statut: returnedStatut,
       };
 
@@ -391,6 +390,7 @@ export const CaissierGuichetPage: React.FC<CaissierGuichetPageProps> = ({
       await fetchStudentsAndEcheances();
 
       // 6. Déclenchement automatique du téléchargement du reçu PDF avec le vrai numero_recu
+      const currentEcole = useAuthStore.getState().ecole;
       generateReceiptPdf(
         {
           recuRef: numeroRecu,
@@ -402,8 +402,10 @@ export const CaissierGuichetPage: React.FC<CaissierGuichetPageProps> = ({
           libelleEcheance: receiptMotif,
           montant,
           methodePaiement: methode,
-          caissierNom: authProfile ? `${authProfile.prenom} ${authProfile.nom}` : `${CURRENT_CAISSIER.prenom} ${CURRENT_CAISSIER.nom}`,
-          ecoleNom: useAuthStore.getState().ecole?.nom,
+          caissierNom: authProfile ? `${authProfile.prenom} ${authProfile.nom}`.trim() : 'Opérateur caisse',
+          ecoleNom: currentEcole?.nom,
+          ecoleCode: currentEcole?.nom ? currentEcole.nom.slice(0, 4).toUpperCase() : undefined,
+          ecoleVille: currentEcole?.ville || undefined,
           statut: returnedStatut,
           nouveauSoldeRestant: rpcResult.nouveau_solde_restant !== undefined && rpcResult.nouveau_solde_restant !== null ? Number(rpcResult.nouveau_solde_restant) : undefined,
           montantEnAttente: rpcResult.montant_en_attente !== undefined && rpcResult.montant_en_attente !== null ? Number(rpcResult.montant_en_attente) : undefined,
@@ -463,9 +465,9 @@ export const CaissierGuichetPage: React.FC<CaissierGuichetPageProps> = ({
             <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
               Guichet d'Encaissement & Paiements
             </h1>
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 dark:bg-amber-950/60 px-3 py-1 text-xs font-bold text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60">
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
-              {CURRENT_CAISSIER.guichet}
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 px-3 py-1 text-xs font-bold text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+              Guichet Ouvert
             </span>
           </div>
           <p className="text-sm text-slate-500 dark:text-slate-400 font-medium mt-1.5">
@@ -477,7 +479,7 @@ export const CaissierGuichetPage: React.FC<CaissierGuichetPageProps> = ({
           <span className="text-xs font-bold text-slate-500 dark:text-slate-400">Opérateur :</span>
           <span className="text-xs font-bold text-slate-900 dark:text-white bg-slate-100 dark:bg-slate-800 px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 flex items-center gap-2">
             <Building className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-            {authProfile ? `${authProfile.prenom} ${authProfile.nom}` : `${CURRENT_CAISSIER.prenom} ${CURRENT_CAISSIER.nom}`}
+            {authProfile ? `${authProfile.prenom} ${authProfile.nom}`.trim() : 'Opérateur non identifié'}
           </span>
         </div>
       </div>
@@ -979,6 +981,8 @@ export const CaissierGuichetPage: React.FC<CaissierGuichetPageProps> = ({
                         methodePaiement: printedReceipt.methode,
                         caissierNom: printedReceipt.encaisse_par,
                         ecoleNom: useAuthStore.getState().ecole?.nom,
+                        ecoleCode: useAuthStore.getState().ecole?.nom ? useAuthStore.getState().ecole!.nom.slice(0, 4).toUpperCase() : undefined,
+                        ecoleVille: useAuthStore.getState().ecole?.ville || undefined,
                         statut: printedReceipt.statut,
                       },
                       'download'

@@ -2,7 +2,6 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import {
   CaisseTransaction,
-  CURRENT_CAISSIER,
   MethodePaiement,
 } from '../../lib/mockData';
 import { CLAIMS_CONFIG } from '../../config/claims';
@@ -42,7 +41,6 @@ import { useAuthStore } from '../../store/useAuthStore';
 export const CaissierJournalPage: React.FC = () => {
   const authProfile = useAuthStore((s) => s.profile);
   const authEcole = useAuthStore((s) => s.ecole);
-  const isRealAccount = Boolean(authProfile?.ecole_id);
 
   const [transactions, setTransactions] = useState<CaisseTransaction[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -386,13 +384,7 @@ export const CaissierJournalPage: React.FC = () => {
             Journal de Caisse
           </h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Historique complet des quittances émises au {isRealAccount ? 'Guichet Principal' : CURRENT_CAISSIER.guichet} par{' '}
-            <span className="font-semibold text-slate-700 dark:text-slate-300">
-              {isRealAccount
-                ? (authProfile?.prenom ? `${authProfile.prenom} ${authProfile.nom}` : (authProfile?.nom || 'Agent Comptable'))
-                : `${CURRENT_CAISSIER.prenom} ${CURRENT_CAISSIER.nom}`}
-            </span>
-            .
+            Historique complet des quittances émises{authProfile ? ` par ${authProfile.prenom} ${authProfile.nom}`.trim() : ''}.
           </p>
         </div>
 
@@ -798,6 +790,8 @@ export const CaissierJournalPage: React.FC = () => {
                       methodePaiement: selectedReceipt.methode,
                       caissierNom: selectedReceipt.encaisse_par,
                       ecoleNom: authEcole?.nom,
+                      ecoleCode: authEcole?.nom ? authEcole.nom.slice(0, 4).toUpperCase() : undefined,
+                      ecoleVille: authEcole?.ville || undefined,
                     }, 'download');
                     setActiveToast({
                       message: `Reçu #${selectedReceipt.recu_ref} téléchargé en PDF.`,

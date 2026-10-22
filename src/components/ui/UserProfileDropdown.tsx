@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useThemeStore } from '../../store/useThemeStore';
-import { useEcoleStore } from '../../store/useEcoleStore';
 import { supabase } from '../../lib/supabase';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useNavigationStore } from '../../store/useNavigationStore';
@@ -46,7 +45,7 @@ export const UserProfileDropdown: React.FC<UserProfileDropdownProps> = ({
 }) => {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { theme, toggleTheme } = useThemeStore();
-  const ecole = useEcoleStore((s) => s.ecole);
+  const ecole = useAuthStore((s) => s.ecole);
 
   // Sub-view navigation ('main' | 'language')
   const [currentView, setCurrentView] = useState<'main' | 'language'>('main');
@@ -125,16 +124,18 @@ export const UserProfileDropdown: React.FC<UserProfileDropdownProps> = ({
               </div>
               <div className="min-w-0">
                 <div className="text-xs font-bold text-main truncate">
-                  {ecole.nom}
+                  {ecole ? ecole.nom : 'Établissement…'}
                 </div>
                 <div className="text-xs text-muted tabular-nums truncate">
-                  {ecole.ville} • {ecole.code_ecole}
+                  {ecole ? (ecole.ville ? `${ecole.ville} • ${ecole.nom.slice(0, 4).toUpperCase()}` : ecole.nom.slice(0, 4).toUpperCase()) : 'Chargement…'}
                 </div>
               </div>
             </div>
-            <span className="text-xs font-bold uppercase tracking-wider text-success-text bg-success-surface border border-success-border px-2 py-0.5 rounded-sm shrink-0">
-              Actif
-            </span>
+            {ecole && (
+              <span className="text-xs font-bold uppercase tracking-wider text-success-text bg-success-surface border border-success-border px-2 py-0.5 rounded-sm shrink-0">
+                {ecole.statut_activation === 'active' ? 'Actif' : ecole.statut_activation}
+              </span>
+            )}
           </div>
 
           {/* Action Links */}

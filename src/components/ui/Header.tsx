@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
 // Rôles et profils réels Supabase
-import { useEcoleStore } from '../../store/useEcoleStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import { StudentInitials } from './StudentInitials';
 import { Select } from './Select';
@@ -138,7 +137,6 @@ export const Header: React.FC<HeaderProps> = ({
   const currentConfig = rolesConfig[portalKey];
   const authProfile = useAuthStore((s) => s.profile);
   const authEcole = useAuthStore((s) => s.ecole);
-  const storeEcole = useEcoleStore((s) => s.ecole);
 
   // Détection du mode simulation : réservée au directeur sur les comptes autorisés
   const isRealAccount = Boolean(authProfile?.ecole_id && authProfile.ecole_id !== 'ecole-demo');
@@ -150,13 +148,6 @@ export const Header: React.FC<HeaderProps> = ({
     : 'directeur';
   const realConfig = rolesConfig[realRole];
   const isSimulating = Boolean(showRoleSimulator && currentRole && currentRole !== realRole);
-
-  const ecole = {
-    ...storeEcole,
-    nom: authEcole?.nom || storeEcole.nom,
-    ville: authEcole?.ville || storeEcole.ville,
-    code_ecole: authEcole?.nom ? authEcole.nom.slice(0, 4).toUpperCase() : storeEcole.code_ecole,
-  };
 
   const defaultUser = realConfig?.user || { id: '', nom: 'Direction', prenom: '', email: '', telephone: '', role: 'directeur' };
 
@@ -205,18 +196,24 @@ export const Header: React.FC<HeaderProps> = ({
             <Building2 className="h-4.5 w-4.5" />
           </div>
           <div className="min-w-0 hidden md:block max-w-[130px] lg:max-w-[170px] xl:max-w-[210px] 2xl:max-w-[260px]">
-            <Tooltip content={ecole.nom} side="bottom" as="div" className="block min-w-0">
-              <h2 className="text-xs sm:text-sm font-bold text-main leading-tight truncate">
-                {ecole.nom}
-              </h2>
-            </Tooltip>
-            <p className="text-xs text-muted flex items-center gap-1 font-medium truncate mt-0.5">
-              <span className="truncate">{ecole.ville}</span>
-              <span className="shrink-0">•</span>
-              <span className="font-semibold text-secondary tabular-nums shrink-0">
-                {ecole.code_ecole}
-              </span>
-            </p>
+            {authEcole ? (
+              <>
+                <Tooltip content={authEcole.nom} side="bottom" as="div" className="block min-w-0">
+                  <h2 className="text-xs sm:text-sm font-bold text-main leading-tight truncate">
+                    {authEcole.nom}
+                  </h2>
+                </Tooltip>
+                <p className="text-xs text-muted flex items-center gap-1 font-medium truncate mt-0.5">
+                  {authEcole.ville && <span className="truncate">{authEcole.ville}</span>}
+                  {authEcole.ville && <span className="shrink-0">•</span>}
+                  <span className="font-semibold text-secondary tabular-nums shrink-0">
+                    {authEcole.nom.slice(0, 4).toUpperCase()}
+                  </span>
+                </p>
+              </>
+            ) : (
+              <span className="text-xs text-muted font-medium italic">Chargement…</span>
+            )}
           </div>
         </div>
 
@@ -256,7 +253,7 @@ export const Header: React.FC<HeaderProps> = ({
         {/* Academic Year pill (desktop) */}
         <div className="hidden xl:flex items-center gap-1.5 h-9 rounded-sm bg-surface-subtle px-2.5 text-xs font-medium text-secondary border border-subtle shrink-0 tabular-nums">
           <Calendar className="h-3.5 w-3.5 text-muted shrink-0" />
-          <span>{ecole.annee_scolaire}</span>
+          <span>2025-2026</span>
         </div>
 
         {/* Sélecteur de langue (FR / AR / EN) */}

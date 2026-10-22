@@ -16,6 +16,7 @@ export interface ReceiptData {
   caissierNom?: string;
   ecoleNom?: string;
   ecoleCode?: string;
+  ecoleVille?: string;
   statut?: 'confirme' | 'en_attente' | string;
   nouveauSoldeRestant?: number | null;
   montantEnAttente?: number | null;
@@ -41,11 +42,18 @@ export function generateReceiptPdf(data: ReceiptData, action: 'download' | 'prin
   doc.setFontSize(11);
   doc.text(data.ecoleNom || 'Établissement Privé EcoSurv', pageWidth / 2, y, { align: 'center' });
 
-  y += 5;
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(7.5);
-  doc.setTextColor(100, 100, 100);
-  doc.text(`Code établissement : ${data.ecoleCode || 'RIM-ECO-001'} • Nouakchott`, pageWidth / 2, y, { align: 'center' });
+  // Ligne établissement secondaire (code et/ou ville si présents, sinon omise)
+  const ecoleMetaParts: string[] = [];
+  if (data.ecoleCode) ecoleMetaParts.push(`Code établissement : ${data.ecoleCode}`);
+  if (data.ecoleVille) ecoleMetaParts.push(data.ecoleVille);
+
+  if (ecoleMetaParts.length > 0) {
+    y += 5;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7.5);
+    doc.setTextColor(100, 100, 100);
+    doc.text(ecoleMetaParts.join(' • '), pageWidth / 2, y, { align: 'center' });
+  }
 
   y += 4;
   doc.setDrawColor(200, 200, 200);

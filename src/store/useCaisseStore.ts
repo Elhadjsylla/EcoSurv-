@@ -1,7 +1,8 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { supabase } from '../lib/supabase';
-import { CURRENT_CAISSIER, CaisseTransaction } from '../lib/mockData';
+import { CaisseTransaction } from '../lib/mockData';
+import { useAuthStore } from './useAuthStore';
 
 export interface ClotureCaisseData {
   id?: string;
@@ -72,12 +73,14 @@ export const useCaisseStore = create<CaisseStoreState>()(
 
       cloturerCaisseDuJour: async (montantTotal: number, nbTransactions: number) => {
         const today = getTodayDateStr();
-        const caissierId = CURRENT_CAISSIER.id || 'usr-cais-001';
-        const caissierNom = `${CURRENT_CAISSIER.prenom} ${CURRENT_CAISSIER.nom}`;
+        const authProfile = useAuthStore.getState().profile;
+        const caissierId = authProfile?.id || '';
+        const caissierNom = authProfile ? `${authProfile.prenom} ${authProfile.nom}`.trim() : 'Caissier';
+        const ecoleId = authProfile?.ecole_id || '';
 
         const clotureRecord: ClotureCaisseData = {
           id: `clot-${Date.now()}`,
-          ecole_id: 'ecole-demo-001',
+          ecole_id: ecoleId,
           caissier_id: caissierId,
           caissier_nom: caissierNom,
           date_cloture: today,
@@ -88,22 +91,24 @@ export const useCaisseStore = create<CaisseStoreState>()(
         };
 
         // 1. Tenter l'écriture réelle dans Supabase (table clotures_caisse)
-        try {
-          const { error } = await supabase.from('clotures_caisse').insert([
-            {
-              ecole_id: 'ecole-demo-001',
-              caissier_id: caissierId,
-              date_cloture: today,
-              montant_total: montantTotal,
-              nb_transactions: nbTransactions,
-              statut: 'cloture',
-            },
-          ]);
-          if (error) {
-            console.warn('[EcoSurv Caisse] Supabase fallback local:', error.message);
+        if (ecoleId && caissierId) {
+          try {
+            const { error } = await supabase.from('clotures_caisse').insert([
+              {
+                ecole_id: ecoleId,
+                caissier_id: caissierId,
+                date_cloture: today,
+                montant_total: montantTotal,
+                nb_transactions: nbTransactions,
+                statut: 'cloture',
+              },
+            ]);
+            if (error) {
+              console.warn('[EcoSurv Caisse] Supabase fallback local:', error.message);
+            }
+          } catch (err) {
+            console.warn('[EcoSurv Caisse] Mode hors-ligne / fallback local:', err);
           }
-        } catch (err) {
-          console.warn('[EcoSurv Caisse] Mode hors-ligne / fallback local:', err);
         }
 
         // 2. Persister dans l'état applicatif frontend
