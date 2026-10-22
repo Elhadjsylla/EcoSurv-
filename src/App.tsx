@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useThemeStore } from './store/useThemeStore';
 import { useAuthStore } from './store/useAuthStore';
@@ -35,6 +36,7 @@ import { SetPasswordPage } from './pages/SetPasswordPage';
 import { AdaptiveTableDemo } from './components/ui/AdaptiveTableDemo';
 import { DesignPreviewPage } from './pages/dev/DesignPreviewPage';
 import { ErrorBoundary } from './components/ui/ErrorBoundary';
+import { ToastNotification } from './components/ui/ToastNotification';
 import { isRoleSimulatorAllowed } from './config/features';
 import { supabase } from './lib/supabase';
 import { parsePath, getPathForState } from './lib/router';
@@ -77,6 +79,21 @@ export function AppContent() {
   const authProfile = useAuthStore((s) => s.profile);
   const isRealAccount = Boolean(authProfile?.ecole_id && authProfile.ecole_id !== 'ecole-demo');
   const allowSimulation = authProfile?.role === 'directeur' && isRoleSimulatorAllowed(isRealAccount);
+
+  // État propre au portail Directeur
+  const [elevesStatutFilter, setElevesStatutFilter] = useState<string>('all');
+
+  // État propre au portail Caissier
+  const [preselectedEleveForGuichet, setPreselectedEleveForGuichet] = useState<string | undefined>(undefined);
+
+  // État propre au portail Parent
+  const [selectedParentChildId, setSelectedParentChildId] = useState<string>('');
+
+  // Notification inter-onglets
+  const [sessionChangedNotice, setSessionChangedNotice] = useState<string | null>(null);
+
+  const isInitialResolvingRef = useRef<boolean>(true);
+  const isSyncingRef = useRef<boolean>(false);
 
   // 1. Résolution de la session Supabase au démarrage / rafraîchissement (F5)
   useEffect(() => {
@@ -261,22 +278,129 @@ export function AppContent() {
         useNavigationStore.getState().setViewMode('login');
       } finally {
         if (isMounted) setIsAuthResolving(false);
+        isInitialResolvingRef.current = false;
       }
     };
 
     resolveSession();
 
-    // Écoute des événements d'authentification dynamiques (ex: lien de récupération mot de passe cliqué en direct)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event) => {
+    // Écoute des événements d'authentification dynamiques et synchronisation inter-onglets
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (!isMounted) return;
+
+      // Conserver la logique PASSWORD_RECOVERY telle quelle
       if (event === 'PASSWORD_RECOVERY') {
         useNavigationStore.getState().navigateToSetPassword();
         window.history.replaceState(null, '', '/set-password');
-      } else if (event === 'SIGNED_IN') {
+        return;
+      }
+
+      // Conserver la logique invite/recovery telle quelle sur SIGNED_IN
+      if (event === 'SIGNED_IN') {
         const hash = typeof window !== 'undefined' ? window.location.hash : '';
         if (hash.includes('type=invite') || hash.includes('type=recovery')) {
           useNavigationStore.getState().navigateToSetPassword();
           window.history.replaceState(null, '', '/set-password');
+          return;
+        }
+      }
+
+      // SIGNED_OUT : vide useAuthStore, remets la navigation à l'accueil de connexion, sans rechargement forcé
+      if (event === 'SIGNED_OUT') {
+        useAuthStore.getState().logout();
+        useNavigationStore.getState().setViewMode('login');
+        window.history.replaceState(null, '', '/login');
+        // Vider les états locaux sensibles
+        setPreselectedEleveForGuichet(undefined);
+        setSelectedParentChildId('');
+        setElevesStatutFilter('all');
+        return;
+      }
+
+      // SIGNED_IN et TOKEN_REFRESHED :
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        if (!session?.user) return;
+
+        const currentProfile = useAuthStore.getState().profile;
+
+        // Compare session.user.id avec useAuthStore.profile?.id.
+        // S'ils sont identiques, ne fais RIEN (pas de rechargement, car l'événement peut se déclencher au simple retour sur l'onglet).
+        if (currentProfile && currentProfile.id === session.user.id) {
+          return;
+        }
+
+        // Si la résolution initiale est encore en cours sans profil chargé, ne pas doubler l'exécution
+        if (!currentProfile && isInitialResolvingRef.current) {
+          return;
+        }
+
+        // S'ils diffèrent : resynchroniser
+        if (isSyncingRef.current) return;
+        isSyncingRef.current = true;
+
+        try {
+          const { data: profile, error: profileError } = await supabase
+            .from('profils')
+            .select('*')
+            .eq('id', session.user.id)
+            .maybeSingle();
+
+          if (profileError || !profile || !profile.actif) {
+            console.warn('[EcoSurv Auth] Profil introuvable ou désactivé suite au changement de session.');
+            useAuthStore.getState().logout();
+            useNavigationStore.getState().setViewMode('login');
+            window.history.replaceState(null, '', '/login');
+            return;
+          }
+
+          useAuthStore.getState().setUser(session.user);
+          useAuthStore.getState().setProfile(profile as UserProfile);
+
+          if (profile.ecole_id) {
+            const { data: ecoleData } = await supabase
+              .from('ecoles')
+              .select('id, nom, ville, telephone, email, statut_activation, statut_abonnement')
+              .eq('id', profile.ecole_id)
+              .maybeSingle();
+
+            if (ecoleData) {
+              useAuthStore.getState().setEcole(ecoleData);
+              if (ecoleData.statut_activation !== 'active') {
+                useNavigationStore.getState().navigateToPendingActivation();
+                window.history.replaceState(null, '', '/activation');
+                return;
+              }
+            } else {
+              useAuthStore.getState().setEcole(null);
+            }
+          } else {
+            useAuthStore.getState().setEcole(null);
+          }
+
+          // Vider les états locaux sensibles (élève sélectionné, reçu, échéance ciblée)
+          setPreselectedEleveForGuichet(undefined);
+          setSelectedParentChildId('');
+          setElevesStatutFilter('all');
+
+          // Réinitialise la navigation sur l'accueil du nouveau rôle
+          const newRole = profile.role as UserRole;
+          if (newRole === 'super_admin') {
+            useNavigationStore.getState().navigateToAdminConsole();
+            window.history.replaceState(null, '', getPathForState('admin_console'));
+          } else {
+            const newPortalRole: PortalRole = newRole;
+            useNavigationStore.getState().setUserRole(newPortalRole);
+            const homeRoute = PORTAL_HOME[newPortalRole];
+            useNavigationStore.getState().launchAppWithRoute(newPortalRole, homeRoute);
+            window.history.replaceState(null, '', getPathForState('app', homeRoute));
+          }
+
+          // Affiche une notification claire : « Votre session a changé dans un autre onglet. »
+          setSessionChangedNotice('Votre session a changé dans un autre onglet.');
+        } catch (err) {
+          console.error('[EcoSurv Auth] Erreur lors de la resynchronisation de session inter-onglets:', err);
+        } finally {
+          isSyncingRef.current = false;
         }
       }
     });
@@ -393,15 +517,6 @@ export function AppContent() {
   const activeTeacherTab = currentRoute as TeacherNavTab;
   const activeCaissierTab = currentRoute as CaissierNavTab;
   const activeParentTab = currentRoute as ParentNavTab;
-
-  // État propre au portail Directeur
-  const [elevesStatutFilter, setElevesStatutFilter] = useState<string>('all');
-
-  // État propre au portail Caissier
-  const [preselectedEleveForGuichet, setPreselectedEleveForGuichet] = useState<string | undefined>(undefined);
-
-  // État propre au portail Parent
-  const [selectedParentChildId, setSelectedParentChildId] = useState<string>('');
 
   const handleNavigateToElevesWithFilter = (statut: string) => {
     setElevesStatutFilter(statut);
@@ -563,6 +678,19 @@ export function AppContent() {
     );
   }
 
+  const renderNotice = () => {
+    if (!sessionChangedNotice) return null;
+    return createPortal(
+      <ToastNotification
+        message={sessionChangedNotice}
+        type="warning"
+        duration={6000}
+        onClose={() => setSessionChangedNotice(null)}
+      />,
+      document.body
+    );
+  };
+
   if (viewMode === 'login') {
     if (authProfile) {
       useNavigationStore.getState().navigateToUserPortal(authProfile.role);
@@ -570,6 +698,7 @@ export function AppContent() {
     }
     return (
       <div key="login-page" className="animate-page-enter">
+        {renderNotice()}
         <LoginPage onReturnToLanding={() => setViewMode('landing')} />
       </div>
     );
@@ -602,6 +731,7 @@ export function AppContent() {
   if (viewMode === 'admin_console') {
     return (
       <div key="admin-console-page" className="animate-page-enter">
+        {renderNotice()}
         <SuperAdminConsole onReturnToLanding={() => setViewMode('landing')} />
       </div>
     );
@@ -614,6 +744,7 @@ export function AppContent() {
 
   return (
     <div key="app-view" className="flex h-screen overflow-hidden bg-slate-50 dark:bg-slate-950 font-['Plus_Jakarta_Sans',sans-serif] text-slate-900 dark:text-slate-100 antialiased animate-page-enter">
+      {renderNotice()}
       {/* Dynamic Sidebar based on current role with ErrorBoundary */}
       <ErrorBoundary name="Barre latérale">
         {effectiveRole === 'enseignant' && (
@@ -645,7 +776,7 @@ export function AppContent() {
       </ErrorBoundary>
 
       {/* Main Area with ErrorBoundary */}
-      <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
+      <div key={authProfile?.id || 'anon'} className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
         <Header
           currentRole={effectiveRole}
           onRoleChange={switchPortal}
