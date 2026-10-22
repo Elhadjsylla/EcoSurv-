@@ -7,7 +7,6 @@ import {
 } from 'lucide-react';
 import { AdminEcoleItem } from './AdminEcolesPage';
 import { AdminUserRow } from './AdminUsersPage';
-import { formatMRU } from '../../lib/utils';
 import { SchoolDistributionDonut } from '../../components/admin/SchoolDistributionDonut';
 import { LiveAuditFeed } from '../../components/admin/LiveAuditFeed';
 import { SchoolComparisonTable } from '../../components/admin/SchoolComparisonTable';
@@ -33,8 +32,6 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
   const activeAbonnements = ecoles.filter((e) => e.statut_abonnement === 'actif').length;
   const trialAbonnements = ecoles.filter((e) => e.statut_abonnement === 'essai').length;
 
-  // Option A MRR calculation: only schools with statut_abonnement = 'actif'
-  const mrrContractuel = activeAbonnements * 15000;
 
   const totalUsers = users.length;
   const activeUsers = users.filter((u) => u.actif).length;
@@ -200,10 +197,10 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
                 Revenu Mensuel Récurrent Contractuel (MRR)
               </div>
               <div className="text-2xl font-black text-slate-900 dark:text-white mt-1">
-                {formatMRU(mrrContractuel)} <span className="text-xs font-normal text-slate-400">/ mois</span>
+                À définir
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">
-                Calculé uniquement sur les <strong>{activeAbonnements} école(s)</strong> disposant d'un abonnement actif (15 000 MRU / mois). Les {trialAbonnements} école(s) en période d'essai gratuit comptent pour 0 MRU.
+                Suivi des <strong>{activeAbonnements} école(s)</strong> disposant d'un abonnement actif. Tarification contractuelle par école à définir. Les {trialAbonnements} école(s) en période d'essai gratuit comptent pour 0 MRU.
               </p>
             </div>
 

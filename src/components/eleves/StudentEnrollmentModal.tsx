@@ -356,7 +356,7 @@ export const StudentEnrollmentModal: React.FC<StudentEnrollmentModalProps> = ({
       statut: eleveToEdit?.statut ?? 'a_jour',
       derniere_echeance_date: eleveToEdit?.derniere_echeance_date || '2026-03-01',
       prochaine_echeance_date: eleveToEdit?.prochaine_echeance_date || '2026-03-01',
-      prochaine_echeance_montant: eleveToEdit?.prochaine_echeance_montant ?? 15000,
+      prochaine_echeance_montant: eleveToEdit?.prochaine_echeance_montant,
       nb_absences: eleveToEdit?.nb_absences ?? 0,
       timeline_paiements: eleveToEdit?.timeline_paiements ?? [],
     };

@@ -166,15 +166,21 @@ export const StudentDetailPanel: React.FC<StudentDetailPanelProps> = ({
             Prochaine Échéance
           </span>
           <div className="mt-1.5 min-w-0">
-            <Tooltip content={formatMRU(eleve.prochaine_echeance_montant || 15000)} as="div" className="block min-w-0">
-              <span className="text-xl font-extrabold font-mono text-slate-900 dark:text-white truncate block cursor-help">
-                {formatCompactMRU(eleve.prochaine_echeance_montant || 15000)}
+            {eleve.prochaine_echeance_montant ? (
+              <Tooltip content={formatMRU(eleve.prochaine_echeance_montant)} as="div" className="block min-w-0">
+                <span className="text-xl font-extrabold font-mono text-slate-900 dark:text-white truncate block cursor-help">
+                  {formatCompactMRU(eleve.prochaine_echeance_montant)}
+                </span>
+              </Tooltip>
+            ) : (
+              <span className="text-sm font-semibold text-slate-400 dark:text-slate-500 truncate block">
+                Aucune échéance
               </span>
-            </Tooltip>
+            )}
           </div>
           <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 mt-1.5 flex items-center gap-1 truncate">
             <Calendar className="h-3 w-3 text-slate-400 shrink-0" />
-            <span className="truncate">{eleve.prochaine_echeance_date || '05/03/2026'}</span>
+            <span className="truncate">{eleve.prochaine_echeance_date || 'Aucune date'}</span>
           </span>
         </div>
       </div>

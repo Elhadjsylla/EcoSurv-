@@ -66,7 +66,7 @@ export const CaissierImpayesPage: React.FC<CaissierImpayesPageProps> = ({
               const totalPaid = studentEch.reduce((sum: number, ech: any) => sum + Number(ech.montant_paye || 0), 0);
               const remaining = Math.max(0, totalDue - totalPaid);
               const pendingEch = studentEch.find((ech: any) => ech.statut !== 'paye');
-              const nextDueAmount = pendingEch ? Math.max(0, Number(pendingEch.montant) - Number(pendingEch.montant_paye || 0)) : 15000;
+              const nextDueAmount = pendingEch ? Math.max(0, Number(pendingEch.montant) - Number(pendingEch.montant_paye || 0)) : 0;
               const hasOverdue = studentEch.some((ech: any) => ech.statut === 'en_retard');
               const derniereEcheanceDate = studentEch
                 .map((ech: any) => String(ech.date_echeance || ''))
