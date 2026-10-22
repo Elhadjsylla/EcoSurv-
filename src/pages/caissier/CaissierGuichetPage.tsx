@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import {
   EleveWithStats,
@@ -55,6 +55,7 @@ export const CaissierGuichetPage: React.FC<CaissierGuichetPageProps> = ({
 
   // Reçu émis et modal
   const [printedReceipt, setPrintedReceipt] = useState<CaisseTransaction | null>(null);
+  const paymentSuccessJustHappenedRef = useRef<boolean>(false);
   const [activeToast, setActiveToast] = useState<{
     message: string;
     type: 'success' | 'info' | 'warning' | 'error';
@@ -157,6 +158,24 @@ export const CaissierGuichetPage: React.FC<CaissierGuichetPageProps> = ({
   const [selectedEleveId, setSelectedEleveId] = useState<string>(
     preselectedEleveId || ''
   );
+
+  // Synchronisation de preselectedEleveId vers selectedEleveId quand la page est déjà montée
+  useEffect(() => {
+    if (preselectedEleveId && preselectedEleveId !== selectedEleveId) {
+      setSelectedEleveId(preselectedEleveId);
+      setActiveEcheance(null);
+      setPrintedReceipt(null);
+    }
+  }, [preselectedEleveId]);
+
+  // Réinitialisation du reçu si l'élève sélectionné change par un autre moyen que le paiement
+  useEffect(() => {
+    if (paymentSuccessJustHappenedRef.current) {
+      paymentSuccessJustHappenedRef.current = false;
+      return;
+    }
+    setPrintedReceipt(null);
+  }, [selectedEleveId]);
 
   // État de clôture de caisse du jour
   const isDateCloturee = useCaisseStore((s) => s.isDateCloturee);
@@ -414,6 +433,7 @@ export const CaissierGuichetPage: React.FC<CaissierGuichetPageProps> = ({
       );
 
       // 7. Modal de quittance et Toast de succès différencié
+      paymentSuccessJustHappenedRef.current = true;
       setPrintedReceipt(newTx);
 
       if (isEnAttente) {
@@ -544,6 +564,7 @@ export const CaissierGuichetPage: React.FC<CaissierGuichetPageProps> = ({
                       onClick={() => {
                         setSelectedEleveId(el.id);
                         setSearchQuery('');
+                        setPrintedReceipt(null);
                       }}
                       className="p-2.5 rounded-lg hover:bg-white dark:hover:bg-slate-800 hover:shadow-2xs cursor-pointer transition-all flex items-center justify-between border border-transparent hover:border-slate-200 dark:hover:border-slate-700"
                     >
@@ -594,7 +615,10 @@ export const CaissierGuichetPage: React.FC<CaissierGuichetPageProps> = ({
 
                     <Tooltip content="Changer d'élève">
                       <button
-                        onClick={() => setSelectedEleveId('')}
+                        onClick={() => {
+                          setSelectedEleveId('');
+                          setPrintedReceipt(null);
+                        }}
                         className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 rounded-md hover:bg-white dark:hover:bg-slate-800 cursor-pointer"
                         aria-label="Changer d'élève"
                       >
@@ -861,14 +885,27 @@ export const CaissierGuichetPage: React.FC<CaissierGuichetPageProps> = ({
       {/* Modal Reçu de Caisse Officiel Imprimable (Portail centré) */}
       {printedReceipt &&
         createPortal(
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 animate-in fade-in">
-            <div className="w-full max-w-lg rounded-2xl bg-white dark:bg-slate-900 p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-6 animate-scale-in">
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 animate-in fade-in"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) {
+                setPrintedReceipt(null);
+              }
+            }}
+          >
+            <div
+              className="w-full max-w-lg rounded-2xl bg-white dark:bg-slate-900 p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-6 animate-scale-in"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="receipt-dialog-title"
+              onClick={(e) => e.stopPropagation()}
+            >
               {/* Header Reçu */}
               <div className="flex items-start justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
                 <div>
                   <div className="flex items-center gap-2">
                     <Receipt className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-                    <span className="text-sm font-extrabold text-slate-900 dark:text-white">
+                    <span id="receipt-dialog-title" className="text-sm font-extrabold text-slate-900 dark:text-white">
                       Reçu Officiel d'Encaissement
                     </span>
                   </div>
