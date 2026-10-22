@@ -405,6 +405,8 @@ export const CaissierGuichetPage: React.FC<CaissierGuichetPageProps> = ({
           caissierNom: authProfile ? `${authProfile.prenom} ${authProfile.nom}` : `${CURRENT_CAISSIER.prenom} ${CURRENT_CAISSIER.nom}`,
           ecoleNom: useAuthStore.getState().ecole?.nom,
           statut: returnedStatut,
+          nouveauSoldeRestant: rpcResult.nouveau_solde_restant !== undefined && rpcResult.nouveau_solde_restant !== null ? Number(rpcResult.nouveau_solde_restant) : undefined,
+          montantEnAttente: rpcResult.montant_en_attente !== undefined && rpcResult.montant_en_attente !== null ? Number(rpcResult.montant_en_attente) : undefined,
         },
         'download'
       );

@@ -363,6 +363,9 @@ export const DirectorDashboard: React.FC<DirectorDashboardProps> = ({
           methodePaiement: paymentMethod,
           caissierNom: `${encaisseurNom} (Direction)`,
           ecoleNom: nomEtablissement,
+          statut: res.statut,
+          nouveauSoldeRestant: res.nouveauSoldeRestant,
+          montantEnAttente: res.montantEnAttente,
         },
         'download'
       );

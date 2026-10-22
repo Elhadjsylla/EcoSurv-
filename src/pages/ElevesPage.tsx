@@ -450,6 +450,8 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
           caissierNom: authProfile ? `${authProfile.prenom} ${authProfile.nom}` : 'Administration',
           ecoleNom: ecoleNom,
           statut: res.statut,
+          nouveauSoldeRestant: res.nouveauSoldeRestant,
+          montantEnAttente: res.montantEnAttente,
         },
         'download'
       );

@@ -17,6 +17,8 @@ export interface ReceiptData {
   ecoleNom?: string;
   ecoleCode?: string;
   statut?: 'confirme' | 'en_attente' | string;
+  nouveauSoldeRestant?: number | null;
+  montantEnAttente?: number | null;
 }
 
 /**
@@ -24,11 +26,11 @@ export interface ReceiptData {
  * et déclenche son téléchargement direct ou son impression propre.
  */
 export function generateReceiptPdf(data: ReceiptData, action: 'download' | 'print' = 'download'): jsPDF {
-  // Format ticket : largeur 80mm, hauteur 160mm
+  // Format ticket : largeur 80mm, hauteur 170mm
   const doc = new jsPDF({
     orientation: 'portrait',
     unit: 'mm',
-    format: [80, 160],
+    format: [80, 170],
   });
 
   const pageWidth = 80;
@@ -59,7 +61,9 @@ export function generateReceiptPdf(data: ReceiptData, action: 'download' | 'prin
     doc.text('REÇU PROVISOIRE DE PAIEMENT', pageWidth / 2, y, { align: 'center' });
     y += 3.5;
     doc.setFontSize(7);
-    doc.text('EN ATTENTE DE CONFIRMATION', pageWidth / 2, y, { align: 'center' });
+    const attenteLines = doc.splitTextToSize('EN ATTENTE DE CONFIRMATION', pageWidth - 12);
+    doc.text(attenteLines, pageWidth / 2, y, { align: 'center' });
+    y += (attenteLines.length - 1) * 3;
   } else {
     doc.setFontSize(9.5);
     doc.setTextColor(15, 23, 42);
@@ -90,13 +94,18 @@ export function generateReceiptPdf(data: ReceiptData, action: 'download' | 'prin
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8);
   doc.setTextColor(50, 50, 50);
-  doc.text(`Nom : ${data.elevePrenom} ${data.eleveNom}`, 6, y);
+  const nomLines = doc.splitTextToSize(`Nom : ${data.elevePrenom} ${data.eleveNom}`, pageWidth - 12);
+  doc.text(nomLines, 6, y);
+  y += nomLines.length * 4;
 
-  y += 4;
   doc.text(`Matricule : ${data.matricule}`, 6, y);
-  doc.text(`Classe : ${data.classe}`, 45, y);
+  y += 4;
 
-  y += 5;
+  const classeLines = doc.splitTextToSize(`Classe : ${data.classe}`, pageWidth - 12);
+  doc.text(classeLines, 6, y);
+  y += classeLines.length * 4;
+
+  y += 1;
   doc.line(6, y, pageWidth - 6, y);
 
   // Détail du règlement
@@ -108,9 +117,10 @@ export function generateReceiptPdf(data: ReceiptData, action: 'download' | 'prin
   y += 4.5;
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(7.5);
-  doc.text(`Motif : ${data.libelleEcheance}`, 6, y);
+  const motifLines = doc.splitTextToSize(`Motif : ${data.libelleEcheance}`, pageWidth - 12);
+  doc.text(motifLines, 6, y);
+  y += motifLines.length * 3.5 + 1;
 
-  y += 4;
   const methodeLabels: Record<string, string> = {
     especes: 'Espèces (Caisse Guichet)',
     bankily: 'Bankily (Paiement Mobile)',
@@ -142,8 +152,22 @@ export function generateReceiptPdf(data: ReceiptData, action: 'download' | 'prin
   }
   doc.text(formatMRU(data.montant), pageWidth / 2, y + 10.5, { align: 'center' });
 
+  y += 18;
+
+  // Ligne de solde restant ou montant en attente
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(7.5);
+  if (!isEnAttente && data.nouveauSoldeRestant !== undefined && data.nouveauSoldeRestant !== null) {
+    doc.setTextColor(70, 70, 70);
+    doc.text(`Reste à payer sur cette échéance : ${formatMRU(data.nouveauSoldeRestant)}`, pageWidth / 2, y, { align: 'center' });
+    y += 5;
+  } else if (isEnAttente && data.montantEnAttente !== undefined && data.montantEnAttente !== null) {
+    doc.setTextColor(180, 83, 9);
+    doc.text(`Montant en attente cumulé : ${formatMRU(data.montantEnAttente)}`, pageWidth / 2, y, { align: 'center' });
+    y += 5;
+  }
+
   // Pied de page ticket
-  y += 20;
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(6.5);
   doc.setTextColor(120, 120, 120);
@@ -155,9 +179,10 @@ export function generateReceiptPdf(data: ReceiptData, action: 'download' | 'prin
     : (CLAIMS_CONFIG.documentOfficiel
       ? 'Quittance informatisée - Document officiel'
       : 'Quittance de versement informatisée');
-  doc.text(mentionRecu, pageWidth / 2, y, { align: 'center' });
+  const mentionLines = doc.splitTextToSize(mentionRecu, pageWidth - 12);
+  doc.text(mentionLines, pageWidth / 2, y, { align: 'center' });
+  y += mentionLines.length * 3.5;
 
-  y += 3.5;
   doc.text(
     isEnAttente
       ? 'Conservez ce reçu jusqu’à la confirmation de votre règlement'
