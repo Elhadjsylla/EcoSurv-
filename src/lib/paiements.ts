@@ -8,6 +8,9 @@ export interface ActiveEcheance {
   montant: number;
   montant_paye: number;
   solde_restant: number;
+  montant_en_attente: number;
+  soldeDisponible: number;
+  solde_disponible?: number;
 }
 
 export interface EncaisserParams {
@@ -22,6 +25,8 @@ export interface EncaisserResult {
   numeroRecu: string;
   statut: 'confirme' | 'en_attente';
   paiementId?: string;
+  nouveauSoldeRestant?: number;
+  montantEnAttente?: number;
 }
 
 /**
@@ -50,8 +55,11 @@ export function formatRpcError(err: any): string {
   if (raw.includes('ECHEANCE_DEJA_SOLDEE')) {
     return 'Échéance déjà soldée : cette échéance est déjà intégralement payée.';
   }
+  if (raw.includes('SOLDE_COUVERT_PAR_ATTENTE')) {
+    return 'Des paiements en attente de confirmation couvrent déjà le solde de cette échéance. Confirmez-les ou attendez leur rapprochement.';
+  }
   if (raw.includes('DEPASSEMENT_SOLDE')) {
-    return 'Dépassement de solde : le montant saisi excède le solde restant dû.';
+    return 'Le montant dépasse le solde disponible.';
   }
   if (err?.code === '42501' || raw.includes('row-level security')) {
     return 'Accès refusé par la politique de sécurité (RLS).';
@@ -60,7 +68,8 @@ export function formatRpcError(err: any): string {
 }
 
 /**
- * Récupère l'échéance non soldée la plus ancienne pour un élève donné.
+ * Récupère l'échéance non soldée la plus ancienne pour un élève donné,
+ * en déduisant les paiements actuellement en attente pour calculer le solde disponible réel.
  */
 export async function getEcheanceActive(eleveId: string): Promise<ActiveEcheance | null> {
   const { data, error } = await supabase
@@ -84,6 +93,22 @@ export async function getEcheanceActive(eleveId: string): Promise<ActiveEcheance
   const mp = Number(ech.montant_paye || 0);
   const solde = Math.max(0, m - mp);
 
+  // Lire la somme des paiements 'en_attente' sur cette échéance
+  let montantEnAttente = 0;
+  const { data: paiementsAttente, error: pError } = await supabase
+    .from('paiements')
+    .select('montant')
+    .eq('echeance_id', ech.id)
+    .eq('statut', 'en_attente');
+
+  if (pError) {
+    console.warn('[paiements] Erreur lecture paiements en attente:', pError);
+  } else if (paiementsAttente) {
+    montantEnAttente = paiementsAttente.reduce((sum, p: any) => sum + Number(p.montant || 0), 0);
+  }
+
+  const soldeDisponible = Math.max(0, solde - montantEnAttente);
+
   return {
     id: ech.id,
     libelle: ech.libelle,
@@ -91,6 +116,9 @@ export async function getEcheanceActive(eleveId: string): Promise<ActiveEcheance
     montant: m,
     montant_paye: mp,
     solde_restant: solde,
+    montant_en_attente: montantEnAttente,
+    soldeDisponible: soldeDisponible,
+    solde_disponible: soldeDisponible,
   };
 }
 
@@ -124,9 +152,19 @@ export async function encaisser(params: EncaisserParams): Promise<EncaisserResul
     throw new Error('Réponse inattendue du serveur (statut de paiement invalide).');
   }
 
+  const nouveauSolde = rpcResult.nouveau_solde_restant !== undefined && rpcResult.nouveau_solde_restant !== null
+    ? Number(rpcResult.nouveau_solde_restant)
+    : undefined;
+
+  const attenteCumul = rpcResult.montant_en_attente !== undefined && rpcResult.montant_en_attente !== null
+    ? Number(rpcResult.montant_en_attente)
+    : undefined;
+
   return {
     numeroRecu: rpcResult.numero_recu.trim(),
     statut: rpcResult.statut as 'confirme' | 'en_attente',
     paiementId: rpcResult.paiement_id,
+    nouveauSoldeRestant: nouveauSolde,
+    montantEnAttente: attenteCumul,
   };
 }
