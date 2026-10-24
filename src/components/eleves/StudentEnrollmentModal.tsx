@@ -9,7 +9,7 @@ import { supabase } from '../../lib/supabase';
 import { generateEcheancesForNewStudent } from '../../lib/echeancesHelper';
 import { parseEdgeFunctionError } from '../../lib/functionsHelper';
 import { TestActivationLinkBanner } from '../ui/TestActivationLinkBanner';
-import { X, UserPlus, ShieldAlert, CheckCircle, Loader2, HeartHandshake } from 'lucide-react';
+import { X, UserPlus, ShieldAlert, CheckCircle, Loader2, HeartHandshake, AlertTriangle, Info } from 'lucide-react';
 
 // Schéma Zod de validation stricte pour l'inscription d'un élève
 export const studentEnrollmentSchema = z.object({
@@ -73,6 +73,10 @@ export const StudentEnrollmentModal: React.FC<StudentEnrollmentModalProps> = ({
   const [isEnrolling, setIsEnrolling] = useState(false);
   const [createdParentLink, setCreatedParentLink] = useState<string | null>(null);
   const [parentInviteNotice, setParentInviteNotice] = useState<string | null>(null);
+  const [echeancesNotice, setEcheancesNotice] = useState<{
+    type: 'warning' | 'info';
+    message: string;
+  } | null>(null);
   const [enrolledEleve, setEnrolledEleve] = useState<EleveWithStats | null>(null);
 
   React.useEffect(() => {
@@ -113,6 +117,7 @@ export const StudentEnrollmentModal: React.FC<StudentEnrollmentModalProps> = ({
     setIsSuccess(false);
     setCreatedParentLink(null);
     setParentInviteNotice(null);
+    setEcheancesNotice(null);
     setErrors({});
   }, [isOpen, eleveToEdit, classesList]);
 
@@ -146,6 +151,7 @@ export const StudentEnrollmentModal: React.FC<StudentEnrollmentModalProps> = ({
     let finalEleveId = newId;
     let inviteNotice = '';
     let testActionLink: string | null = null;
+    let localEcheancesNotice: { type: 'warning' | 'info'; message: string } | null = null;
 
     setIsEnrolling(true);
 
@@ -156,8 +162,8 @@ export const StudentEnrollmentModal: React.FC<StudentEnrollmentModalProps> = ({
           // CAS MODIFICATION D'UN ÉLÈVE EXISTANT
           // =========================================================================
           const coreUpdate = {
-            nom: validData.nom.toUpperCase(),
-            prenom: validData.prenom,
+            nom: validData.nom.trim().toUpperCase(),
+            prenom: validData.prenom.trim(),
             date_naissance: validData.date_naissance,
             lieu_naissance: validData.lieu_naissance,
             sexe: validData.sexe,
@@ -237,8 +243,8 @@ export const StudentEnrollmentModal: React.FC<StudentEnrollmentModalProps> = ({
           const corePayload = {
             ecole_id: authProfile.ecole_id,
             matricule: realMatricule,
-            nom: validData.nom.toUpperCase(),
-            prenom: validData.prenom,
+            nom: validData.nom.trim().toUpperCase(),
+            prenom: validData.prenom.trim(),
             date_naissance: validData.date_naissance,
             lieu_naissance: validData.lieu_naissance,
             sexe: validData.sexe,
@@ -288,9 +294,19 @@ export const StudentEnrollmentModal: React.FC<StudentEnrollmentModalProps> = ({
             );
             if (nbGen > 0) {
               console.log(`[StudentEnrollmentModal] ${nbGen} échéance(s) générée(s) selon le barème de ${validData.classe}`);
+            } else {
+              localEcheancesNotice = {
+                type: 'info',
+                message: 'Aucun barème pour cette classe : aucune échéance générée',
+              };
             }
-          } catch (echGenErr) {
+          } catch (echGenErr: any) {
             console.warn('[StudentEnrollmentModal] Erreur auto-génération échéances nouvel élève:', echGenErr);
+            const errDetail = echGenErr?.message || 'Erreur inattendue';
+            localEcheancesNotice = {
+              type: 'warning',
+              message: `Élève créé, mais les échéances n'ont pas pu être générées : ${errDetail}. Elles pourront être régénérées depuis la page Échéances.`,
+            };
           }
 
           // Si le tuteur a un email, déclencher l'invitation / rattachement parent
@@ -338,8 +354,8 @@ export const StudentEnrollmentModal: React.FC<StudentEnrollmentModalProps> = ({
       id: finalEleveId,
       ecole_id: authProfile?.ecole_id || 'ecole-active',
       matricule: realMatricule,
-      nom: validData.nom.toUpperCase(),
-      prenom: validData.prenom,
+      nom: validData.nom.trim().toUpperCase(),
+      prenom: validData.prenom.trim(),
       date_naissance: validData.date_naissance,
       lieu_naissance: validData.lieu_naissance,
       sexe: validData.sexe,
@@ -364,6 +380,7 @@ export const StudentEnrollmentModal: React.FC<StudentEnrollmentModalProps> = ({
     setEnrolledEleve(savedEleve);
     setCreatedParentLink(testActionLink);
     setParentInviteNotice(inviteNotice);
+    setEcheancesNotice(localEcheancesNotice);
     setIsEnrolling(false);
     setIsSuccess(true);
   };
@@ -412,6 +429,28 @@ export const StudentEnrollmentModal: React.FC<StudentEnrollmentModalProps> = ({
               </p>
             </div>
 
+            {echeancesNotice && (
+              <div
+                className={`p-3.5 rounded-xl border text-xs max-w-lg mx-auto text-left flex items-start gap-2.5 ${
+                  echeancesNotice.type === 'warning'
+                    ? 'bg-amber-50 dark:bg-amber-950/40 border-amber-300 dark:border-amber-800 text-amber-900 dark:text-amber-200'
+                    : 'bg-blue-50 dark:bg-blue-950/40 border-blue-200 dark:border-blue-800 text-blue-900 dark:text-blue-200'
+                }`}
+              >
+                {echeancesNotice.type === 'warning' ? (
+                  <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                ) : (
+                  <Info className="h-4 w-4 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
+                )}
+                <div className="space-y-0.5">
+                  <div className="font-bold">
+                    {echeancesNotice.type === 'warning' ? 'Avertissement échéances :' : 'Échéances de scolarité :'}
+                  </div>
+                  <div>{echeancesNotice.message}</div>
+                </div>
+              </div>
+            )}
+
             {parentInviteNotice && (
               <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs text-slate-700 dark:text-slate-300 max-w-lg mx-auto text-left flex items-start gap-2.5">
                 <HeartHandshake className="h-4 w-4 text-purple-600 dark:text-purple-400 shrink-0 mt-0.5" />
@@ -444,6 +483,7 @@ export const StudentEnrollmentModal: React.FC<StudentEnrollmentModalProps> = ({
                   setIsSuccess(false);
                   setCreatedParentLink(null);
                   setParentInviteNotice(null);
+                  setEcheancesNotice(null);
                   onClose();
                 }}
                 className="px-8 shadow-sm"

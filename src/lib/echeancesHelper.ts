@@ -230,7 +230,12 @@ export async function generateEcheancesForNewStudent(
     .eq('ecole_id', ecoleId)
     .eq('classe', classe);
 
-  if (bErr || !baremes || baremes.length === 0) {
+  if (bErr) {
+    console.error('[echeancesHelper] Erreur chargement barèmes pour nouvel élève:', bErr);
+    throw new Error(`Erreur lors de la lecture des barèmes pour la classe ${classe}: ${bErr.message}`);
+  }
+
+  if (!baremes || baremes.length === 0) {
     return 0;
   }
 
