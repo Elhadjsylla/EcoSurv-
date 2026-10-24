@@ -7,20 +7,44 @@ export function computeTrancheDates(
   nbTranches: number
 ): string[] {
   const dates: string[] = [];
-  const baseDate = new Date(startDateStr);
-  const validBase = isNaN(baseDate.getTime()) ? new Date() : baseDate;
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(startDateStr);
+  let startYear: number;
+  let startMonth: number;
+  let targetDay: number;
+
+  if (match) {
+    startYear = parseInt(match[1], 10);
+    startMonth = parseInt(match[2], 10) - 1;
+    targetDay = parseInt(match[3], 10);
+  } else {
+    const fallback = new Date(startDateStr);
+    const valid = isNaN(fallback.getTime()) ? new Date() : fallback;
+    startYear = valid.getUTCFullYear();
+    startMonth = valid.getUTCMonth();
+    targetDay = valid.getUTCDate();
+  }
 
   for (let i = 0; i < nbTranches; i++) {
-    const d = new Date(validBase);
+    let deltaMonths = 0;
     if (frequence === 'mensuel') {
-      d.setMonth(d.getMonth() + i);
+      deltaMonths = i;
     } else if (frequence === 'trimestriel') {
-      d.setMonth(d.getMonth() + i * 3);
+      deltaMonths = i * 3;
     } else {
-      // Annuel
-      d.setFullYear(d.getFullYear() + i);
+      deltaMonths = i * 12;
     }
-    dates.push(d.toISOString().split('T')[0]);
+
+    const totalMonths = startMonth + deltaMonths;
+    const targetYear = startYear + Math.floor(totalMonths / 12);
+    const targetMonth = ((totalMonths % 12) + 12) % 12;
+
+    const daysInMonth = new Date(Date.UTC(targetYear, targetMonth + 1, 0)).getUTCDate();
+    const actualDay = Math.min(targetDay, daysInMonth);
+
+    const yStr = String(targetYear).padStart(4, '0');
+    const mStr = String(targetMonth + 1).padStart(2, '0');
+    const dStr = String(actualDay).padStart(2, '0');
+    dates.push(`${yStr}-${mStr}-${dStr}`);
   }
   return dates;
 }
