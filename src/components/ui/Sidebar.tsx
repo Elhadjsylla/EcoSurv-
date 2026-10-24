@@ -9,9 +9,12 @@ import {
   BellRing,
   BarChart3,
   SlidersHorizontal,
+  Clock,
 } from 'lucide-react';
+import { useAuthStore } from '../../store/useAuthStore';
+import { supabase } from '../../lib/supabase';
 
-export type NavTab = 'dashboard' | 'eleves' | 'echeances' | 'relances' | 'rapports' | 'config';
+export type NavTab = 'dashboard' | 'eleves' | 'echeances' | 'paiements_attente' | 'relances' | 'rapports' | 'config';
 
 interface SidebarProps {
   activeTab: NavTab;
@@ -35,6 +38,44 @@ import { translations } from '../../i18n/translations';
 export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange, className }) => {
   const storeT = useLanguageStore((s) => s.t);
   const t = storeT?.nav ? storeT : translations.fr;
+  const authProfile = useAuthStore((s) => s.profile);
+  const [pendingCount, setPendingCount] = React.useState<number>(0);
+
+  React.useEffect(() => {
+    if (!authProfile?.ecole_id) return;
+    let isSubscribed = true;
+
+    const fetchPendingCount = async () => {
+      try {
+        const { count, error } = await supabase
+          .from('paiements')
+          .select('id', { count: 'exact', head: true })
+          .eq('ecole_id', authProfile.ecole_id)
+          .eq('statut', 'en_attente');
+
+        if (!error && typeof count === 'number' && isSubscribed) {
+          setPendingCount(count);
+        }
+      } catch {
+        // Ignorer en cas d'erreur réseau
+      }
+    };
+
+    fetchPendingCount();
+
+    const handleCountChanged = () => {
+      fetchPendingCount();
+    };
+
+    window.addEventListener('ecosurv:pending-payments-changed', handleCountChanged);
+    const interval = setInterval(fetchPendingCount, 30000);
+
+    return () => {
+      isSubscribed = false;
+      window.removeEventListener('ecosurv:pending-payments-changed', handleCountChanged);
+      clearInterval(interval);
+    };
+  }, [authProfile?.ecole_id, activeTab]);
 
   const sections: NavSection[] = [
     {
@@ -53,6 +94,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange, classN
       label: 'FINANCES',
       items: [
         { id: 'echeances', label: t.nav?.schedule || 'Échéances', icon: <CalendarDays className="h-4 w-4 shrink-0" /> },
+        {
+          id: 'paiements_attente',
+          label: 'Paiements en attente',
+          icon: <Clock className="h-4 w-4 shrink-0" />,
+          badge: pendingCount > 0 ? String(pendingCount) : undefined,
+        },
         { id: 'relances', label: t.nav?.reminders || 'Relances', icon: <BellRing className="h-4 w-4 shrink-0" /> },
         { id: 'rapports', label: t.nav?.reports || 'Rapports', icon: <BarChart3 className="h-4 w-4 shrink-0" /> },
       ],

@@ -20,6 +20,7 @@ export const ROUTE_TO_PATH: Record<string, string> = {
   dashboard: '/dashboard',
   eleves: '/eleves',
   echeances: '/echeances',
+  paiements_attente: '/paiements-en-attente',
   relances: '/relances',
   rapports: '/rapports',
   config: '/configuration',
@@ -60,6 +61,7 @@ export function parsePath(pathname: string): RouteMatch {
   if (clean === '/dashboard' || clean === '/directeur') return { viewMode: 'app', portal: 'directeur', route: 'dashboard' };
   if (clean === '/eleves') return { viewMode: 'app', portal: 'directeur', route: 'eleves' };
   if (clean === '/echeances') return { viewMode: 'app', portal: 'directeur', route: 'echeances' };
+  if (clean === '/paiements-en-attente' || clean === '/paiements-attente') return { viewMode: 'app', portal: 'directeur', route: 'paiements_attente' };
   if (clean === '/relances') return { viewMode: 'app', portal: 'directeur', route: 'relances' };
   if (clean === '/rapports') return { viewMode: 'app', portal: 'directeur', route: 'rapports' };
   if (clean === '/configuration' || clean === '/config') return { viewMode: 'app', portal: 'directeur', route: 'config' };

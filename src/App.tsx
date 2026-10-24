@@ -13,6 +13,7 @@ import { useSwipeNavigation } from './hooks/useSwipeNavigation';
 import { DirectorDashboard } from './components/dashboard/DirectorDashboard';
 import { ElevesPage } from './pages/ElevesPage';
 import { EcheancesPage } from './pages/EcheancesPage';
+import { PaiementsAttentePage } from './pages/PaiementsAttentePage';
 import { RelancesPage } from './pages/RelancesPage';
 import { RapportsPage } from './pages/RapportsPage';
 import { ConfigPage } from './pages/ConfigPage';
@@ -548,6 +549,8 @@ export function AppContent() {
         );
       case 'echeances':
         return <EcheancesPage />;
+      case 'paiements_attente':
+        return <PaiementsAttentePage />;
       case 'relances':
         return <RelancesPage />;
       case 'rapports':

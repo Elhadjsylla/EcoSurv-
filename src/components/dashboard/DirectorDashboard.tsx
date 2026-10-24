@@ -129,6 +129,15 @@ export const DirectorDashboard: React.FC<DirectorDashboardProps> = ({
 
   useEffect(() => {
     fetchRealData();
+    const handleRefresh = () => {
+      fetchRealData();
+    };
+    window.addEventListener('ecosurv:pending-payments-changed', handleRefresh);
+    window.addEventListener('ecosurv:finances-updated', handleRefresh);
+    return () => {
+      window.removeEventListener('ecosurv:pending-payments-changed', handleRefresh);
+      window.removeEventListener('ecosurv:finances-updated', handleRefresh);
+    };
   }, [fetchRealData]);
 
   const [searchQuery, setSearchQuery] = useState('');

@@ -21,7 +21,7 @@ export const MAX_HISTORY_ENTRIES = 50;
 export type ViewMode = 'landing' | 'login' | 'register' | 'pending_activation' | 'set_password' | 'app' | 'admin_console';
 
 export const PORTAL_ROUTES: Record<PortalRole, AppRoute[]> = {
-  directeur: ['dashboard', 'eleves', 'echeances', 'relances', 'rapports', 'config'],
+  directeur: ['dashboard', 'eleves', 'echeances', 'paiements_attente', 'relances', 'rapports', 'config'],
   enseignant: ['teacher_dashboard', 'teacher_classes', 'teacher_absences', 'teacher_grades'],
   caissier: ['caissier_guichet', 'caissier_journal', 'caissier_impayes'],
   parent: ['parent_dashboard', 'parent_paiements', 'parent_pedagogie', 'parent_assiduite'],
