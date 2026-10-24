@@ -296,3 +296,82 @@ export async function deleteBareme(ecoleId: string, baremeId: string): Promise<b
 
   return true;
 }
+
+export interface ClasseSansBaremeInfo {
+  classe: string;
+  eleves: number;
+}
+
+export interface GenererEcheancesManquantesResult {
+  success: boolean;
+  echeancesCreees: number;
+  elevesConcernes: number;
+  classesSansBareme: ClasseSansBaremeInfo[];
+}
+
+export interface GenererEcheancesManquantesParams {
+  eleveId?: string;
+  classe?: string;
+}
+
+/**
+ * Traduit les erreurs de la fonction PostgreSQL `generer_echeances_manquantes` en messages français clairs.
+ */
+export function formatGenererEcheancesError(err: any): string {
+  const raw = `${err?.message || ''} ${err?.details || ''} ${err?.hint || ''}`;
+  if (raw.includes('NON_AUTHENTIFIE')) {
+    return 'Vous devez être connecté pour effectuer cette action.';
+  }
+  if (raw.includes('ACCES_REFUSE')) {
+    return 'Accès refusé. Cette action est réservée au directeur et au super-administrateur.';
+  }
+  if (raw.includes('ECOLE_INTROUVABLE')) {
+    return 'Établissement introuvable ou compte non rattaché à une école.';
+  }
+  if (raw.includes('BAREME_INCOHERENT')) {
+    const match = /BAREME_INCOHERENT[:\s\-]+(.*)/i.exec(err?.message || raw);
+    const detail = match && match[1] ? match[1].trim() : (err?.message || '');
+    return `Le barème configuré est incohérent : ${detail}`;
+  }
+  if (err?.code === '42501' || raw.includes('row-level security')) {
+    return 'Accès refusé par la politique de sécurité (RLS).';
+  }
+  return err?.message || 'Une erreur inattendue est survenue lors de la génération des échéances.';
+}
+
+/**
+ * Appelle la RPC `generer_echeances_manquantes` (directeur / super_admin).
+ * Génère les tranches manquantes sans toucher aux échéances existantes ni aux paiements.
+ */
+export async function genererEcheancesManquantes(
+  params?: GenererEcheancesManquantesParams
+): Promise<GenererEcheancesManquantesResult> {
+  const { data: rpcResult, error: rpcError } = await supabase.rpc('generer_echeances_manquantes', {
+    p_eleve_id: params?.eleveId || null,
+    p_classe: params?.classe ? params.classe.trim() : null,
+  });
+
+  if (rpcError) {
+    throw new Error(formatGenererEcheancesError(rpcError));
+  }
+
+  if (!rpcResult || rpcResult.success === false) {
+    throw new Error('Échec de la génération des échéances : réponse inattendue du serveur.');
+  }
+
+  const rawClasses = Array.isArray(rpcResult.classes_sans_bareme)
+    ? rpcResult.classes_sans_bareme
+    : [];
+
+  const classesSansBareme: ClasseSansBaremeInfo[] = rawClasses.map((c: any) => ({
+    classe: String(c.classe || ''),
+    eleves: Number(c.eleves || 0),
+  }));
+
+  return {
+    success: true,
+    echeancesCreees: Number(rpcResult.echeances_creees ?? 0),
+    elevesConcernes: Number(rpcResult.eleves_concernes ?? 0),
+    classesSansBareme,
+  };
+}
