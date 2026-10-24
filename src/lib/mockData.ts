@@ -920,6 +920,7 @@ export interface CaisseTransaction {
   heure: string;
   methode: MethodePaiement;
   recu_ref: string;
+  reference_transaction?: string | null;
   encaisse_par: string;
   statut: 'confirme' | 'en_attente' | 'annule';
 }

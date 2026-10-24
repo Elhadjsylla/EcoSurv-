@@ -13,6 +13,8 @@ export interface ReceiptData {
   libelleEcheance: string;
   montant: number;
   methodePaiement: string;
+  referenceTransaction?: string | null;
+  referenceOperateur?: string | null;
   caissierNom?: string;
   ecoleNom?: string;
   ecoleCode?: string;
@@ -138,6 +140,14 @@ export function generateReceiptPdf(data: ReceiptData, action: 'download' | 'prin
     virement: 'Virement Bancaire',
   };
   doc.text(`Mode : ${methodeLabels[data.methodePaiement] || data.methodePaiement}`, 6, y);
+
+  const refTx = (data.referenceTransaction || data.referenceOperateur || '').trim();
+  if (refTx) {
+    y += 4;
+    const refLines = doc.splitTextToSize(`Réf. transaction : ${refTx}`, pageWidth - 12);
+    doc.text(refLines, 6, y);
+    y += (refLines.length - 1) * 3.5;
+  }
 
   // Encadré Montant réglé
   y += 6;

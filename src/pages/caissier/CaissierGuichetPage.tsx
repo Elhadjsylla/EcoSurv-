@@ -275,6 +275,14 @@ export const CaissierGuichetPage: React.FC<CaissierGuichetPageProps> = ({
       return;
     }
 
+    if (methode !== 'especes' && !referenceOperateur.trim()) {
+      setActiveToast({
+        message: 'La référence de transaction est obligatoire pour les règlements hors espèces.',
+        type: 'warning',
+      });
+      return;
+    }
+
     if (!authProfile?.ecole_id) {
       setActiveToast({
         message: 'Votre session utilisateur est incomplète (école manquante). Veuillez vous reconnecter.',
@@ -394,6 +402,7 @@ export const CaissierGuichetPage: React.FC<CaissierGuichetPageProps> = ({
         heure: heureStr,
         methode,
         recu_ref: numeroRecu,
+        reference_transaction: referenceOperateur.trim() || null,
         encaisse_par: authProfile ? `${authProfile.prenom} ${authProfile.nom}`.trim() : 'Opérateur caisse',
         statut: returnedStatut,
       };
@@ -421,6 +430,7 @@ export const CaissierGuichetPage: React.FC<CaissierGuichetPageProps> = ({
           libelleEcheance: receiptMotif,
           montant,
           methodePaiement: methode,
+          referenceTransaction: referenceOperateur.trim() || undefined,
           caissierNom: authProfile ? `${authProfile.prenom} ${authProfile.nom}`.trim() : 'Opérateur caisse',
           ecoleNom: currentEcole?.nom,
           ecoleCode: currentEcole?.nom ? currentEcole.nom.slice(0, 4).toUpperCase() : undefined,
@@ -830,17 +840,26 @@ export const CaissierGuichetPage: React.FC<CaissierGuichetPageProps> = ({
 
               {/* Référence de transaction pour mobile money ou chèque */}
               {methode !== 'especes' && (
-                <div className="animate-scale-in">
-                  <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
-                    Référence de Transaction / N° Chèque (Optionnel)
+                <div className="animate-scale-in space-y-1">
+                  <label className="font-bold text-slate-700 dark:text-slate-300 block text-xs">
+                    Référence de la transaction <span className="text-red-500 font-bold">*</span> (Obligatoire)
                   </label>
                   <input
                     type="text"
                     value={referenceOperateur}
                     onChange={(e) => setReferenceOperateur(e.target.value)}
                     placeholder="Ex: TX-992144, N° Chèque 004812..."
-                    className="w-full h-10 px-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-mono text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-600"
+                    className={`w-full h-10 px-3 rounded-xl border bg-white dark:bg-slate-800 text-xs font-mono text-slate-900 dark:text-white focus:outline-none focus:ring-2 ${
+                      !referenceOperateur.trim()
+                        ? 'border-red-300 dark:border-red-800 focus:ring-red-500'
+                        : 'border-slate-300 dark:border-slate-700 focus:ring-amber-600'
+                    }`}
                   />
+                  {!referenceOperateur.trim() && (
+                    <p className="text-[11px] text-red-600 dark:text-red-400 font-medium">
+                      La référence de transaction est obligatoire pour ce mode de paiement.
+                    </p>
+                  )}
                 </div>
               )}
             </div>
@@ -853,11 +872,11 @@ export const CaissierGuichetPage: React.FC<CaissierGuichetPageProps> = ({
                 className={`w-full justify-center gap-2 font-bold text-sm shadow-sm py-3 ${
                   isCaisseCloturee
                     ? 'bg-slate-400 dark:bg-slate-700 text-slate-200 cursor-not-allowed'
-                    : isSubmitting || !selectedEleve || !activeEcheance || montant <= 0 || (activeEcheance && montant > activeEcheance.soldeDisponible)
+                    : isSubmitting || !selectedEleve || !activeEcheance || montant <= 0 || (activeEcheance && montant > activeEcheance.soldeDisponible) || (methode !== 'especes' && !referenceOperateur.trim())
                     ? 'opacity-60 cursor-not-allowed'
                     : 'bg-amber-600 hover:bg-amber-700 text-white'
                 }`}
-                disabled={isCaisseCloturee || !selectedEleve || isSubmitting || !activeEcheance || montant <= 0 || (activeEcheance && montant > activeEcheance.soldeDisponible)}
+                disabled={isCaisseCloturee || !selectedEleve || isSubmitting || !activeEcheance || montant <= 0 || (activeEcheance && montant > activeEcheance.soldeDisponible) || (methode !== 'especes' && !referenceOperateur.trim())}
                 onClick={handleProcessPayment}
               >
                 {isSubmitting ? (
@@ -1016,6 +1035,7 @@ export const CaissierGuichetPage: React.FC<CaissierGuichetPageProps> = ({
                         libelleEcheance: printedReceipt.echeance_libelle,
                         montant: printedReceipt.montant,
                         methodePaiement: printedReceipt.methode,
+                        referenceTransaction: printedReceipt.reference_transaction || undefined,
                         caissierNom: printedReceipt.encaisse_par,
                         ecoleNom: useAuthStore.getState().ecole?.nom,
                         ecoleCode: useAuthStore.getState().ecole?.nom ? useAuthStore.getState().ecole!.nom.slice(0, 4).toUpperCase() : undefined,

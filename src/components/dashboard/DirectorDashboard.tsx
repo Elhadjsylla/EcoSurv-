@@ -342,6 +342,11 @@ export const DirectorDashboard: React.FC<DirectorDashboardProps> = ({
       return;
     }
 
+    if (paymentMethod !== 'especes' && !referenceOperateur.trim()) {
+      showToast('La référence de transaction est obligatoire pour les règlements hors espèces.', 'error');
+      return;
+    }
+
     setIsSubmittingPayment(true);
     try {
       const res = await encaisser({
@@ -370,6 +375,7 @@ export const DirectorDashboard: React.FC<DirectorDashboardProps> = ({
           libelleEcheance: `${modalActiveEcheance.libelle}${res.statut === 'en_attente' ? ' (EN ATTENTE)' : ''}`,
           montant: payMontant,
           methodePaiement: paymentMethod,
+          referenceTransaction: referenceOperateur.trim() || undefined,
           caissierNom: `${encaisseurNom} (Direction)`,
           ecoleNom: nomEtablissement,
           statut: res.statut,
@@ -1158,18 +1164,27 @@ export const DirectorDashboard: React.FC<DirectorDashboardProps> = ({
               </div>
 
               {paymentMethod !== 'especes' && (
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                    Référence opérateur / N° Chèque (Optionnel)
+                <div className="space-y-1">
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                    Référence de la transaction <span className="text-red-500 font-bold">*</span> (Obligatoire)
                   </label>
                   <input
                     type="text"
                     value={referenceOperateur}
                     onChange={(e) => setReferenceOperateur(e.target.value)}
-                    placeholder="Ex: TX-123456"
+                    placeholder="Ex: TX-123456, N° Chèque..."
                     disabled={isSubmittingPayment}
-                    className="w-full h-9 px-3 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-mono text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-600"
+                    className={`w-full h-9 px-3 rounded-lg border bg-white dark:bg-slate-800 text-xs font-mono text-slate-900 dark:text-white focus:outline-none focus:ring-2 ${
+                      !referenceOperateur.trim()
+                        ? 'border-red-300 dark:border-red-800 focus:ring-red-500'
+                        : 'border-slate-300 dark:border-slate-700 focus:ring-blue-600'
+                    }`}
                   />
+                  {!referenceOperateur.trim() && (
+                    <p className="text-[11px] text-red-600 dark:text-red-400 font-medium">
+                      La référence de transaction est obligatoire pour ce mode de paiement.
+                    </p>
+                  )}
                 </div>
               )}
 
@@ -1206,7 +1221,8 @@ export const DirectorDashboard: React.FC<DirectorDashboardProps> = ({
                   isSubmittingPayment ||
                   !modalActiveEcheance ||
                   payMontant <= 0 ||
-                  payMontant > modalActiveEcheance.soldeDisponible
+                  payMontant > modalActiveEcheance.soldeDisponible ||
+                  (paymentMethod !== 'especes' && !referenceOperateur.trim())
                 }
                 onClick={handleConfirmPayment}
               >
