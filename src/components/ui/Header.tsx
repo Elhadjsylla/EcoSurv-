@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { useNavigationStore } from '../../store/useNavigationStore';
 import { LanguageSelector } from './LanguageSelector';
+import { ANNEE_SCOLAIRE_ACTIVE } from '../../lib/constants/scolaire';
 import { useLanguageStore } from '../../i18n/useLanguageStore';
 import { isRoleSimulatorAllowed } from '../../config/features';
 import type { UserRole, PortalRole } from '../../store/useAuthStore';
@@ -253,7 +254,7 @@ export const Header: React.FC<HeaderProps> = ({
         {/* Academic Year pill (desktop) */}
         <div className="hidden xl:flex items-center gap-1.5 h-9 rounded-sm bg-surface-subtle px-2.5 text-xs font-medium text-secondary border border-subtle shrink-0 tabular-nums">
           <Calendar className="h-3.5 w-3.5 text-muted shrink-0" />
-          <span>2025-2026</span>
+          <span>{ANNEE_SCOLAIRE_ACTIVE}</span>
         </div>
 
         {/* Sélecteur de langue (FR / AR / EN) */}

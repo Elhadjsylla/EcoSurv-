@@ -11,6 +11,7 @@ import {
 import { formatMRU } from '../lib/utils';
 import { useAuthStore } from '../store/useAuthStore';
 import { DEFAULT_CLASSES_MAURITANIE } from '../lib/constants/classes';
+import { ANNEE_SCOLAIRE_ACTIVE } from '../lib/constants/scolaire';
 import {
   fetchBaremes,
   createBaremeAndGenerateEcheances,
@@ -45,14 +46,24 @@ export const EcheancesPage: React.FC = () => {
   const [openMenuRowId, setOpenMenuRowId] = useState<string | null>(null);
   const [availableClasses, setAvailableClasses] = useState<string[]>(DEFAULT_CLASSES_MAURITANIE);
 
-  // Form state
+  // Form state : champs vides sans valeurs inventées par défaut
   const [newLibelle, setNewLibelle] = useState('');
-  const [newClasse, setNewClasse] = useState('Terminales C');
-  const [newMontantTotal, setNewMontantTotal] = useState<number>(30000);
+  const [newClasse, setNewClasse] = useState('');
+  const [newMontantTotal, setNewMontantTotal] = useState<number | ''>('');
   const [newFrequence, setNewFrequence] = useState<FrequenceEcheance>('mensuel');
   const [newNombreTranches, setNewNombreTranches] = useState<number>(3);
-  const [newDateLimite, setNewDateLimite] = useState('2026-04-05');
+  const [newDateLimite, setNewDateLimite] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Validation : le bouton est désactivé tant que les champs obligatoires ne sont pas remplis
+  const isFormValid = Boolean(
+    newLibelle.trim() &&
+    newClasse.trim() &&
+    typeof newMontantTotal === 'number' &&
+    newMontantTotal > 0 &&
+    newDateLimite.trim() &&
+    newNombreTranches >= 1
+  );
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -83,9 +94,6 @@ export const EcheancesPage: React.FC = () => {
             const schoolClasses = Array.from(new Set(eleves.map((e: any) => e.classe).filter(Boolean)));
             const merged = Array.from(new Set([...schoolClasses, ...DEFAULT_CLASSES_MAURITANIE]));
             setAvailableClasses(merged);
-            if (merged.length > 0 && !merged.includes(newClasse)) {
-              setNewClasse(merged[0]);
-            }
           }
         } catch (err: any) {
           console.error('[EcheancesPage] Erreur chargement barèmes:', err);
@@ -105,12 +113,12 @@ export const EcheancesPage: React.FC = () => {
 
   const handleCreateEcheancier = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newLibelle.trim()) return;
+    if (!isFormValid || typeof newMontantTotal !== 'number') return;
 
     if (!authProfile?.ecole_id) {
       const newEcheancier: EcheancierConfig = {
         id: `ech-${Date.now()}`,
-        libelle: newLibelle,
+        libelle: newLibelle.trim(),
         classe: newClasse,
         montant_total: Number(newMontantTotal),
         frequence: newFrequence,
@@ -123,6 +131,9 @@ export const EcheancesPage: React.FC = () => {
       showToast(`Échéancier "${newLibelle}" créé.`);
       setIsModalOpen(false);
       setNewLibelle('');
+      setNewClasse('');
+      setNewMontantTotal('');
+      setNewDateLimite('');
       return;
     }
 
@@ -137,7 +148,8 @@ export const EcheancesPage: React.FC = () => {
           frequence: newFrequence,
           nombre_tranches: Number(newNombreTranches),
           date_limite_prochaine: newDateLimite,
-        }
+        },
+        ANNEE_SCOLAIRE_ACTIVE
       );
 
       setEcheanciers((prev) => [bareme, ...prev.filter((b) => b.id !== bareme.id)]);
@@ -154,6 +166,9 @@ export const EcheancesPage: React.FC = () => {
 
       setIsModalOpen(false);
       setNewLibelle('');
+      setNewClasse('');
+      setNewMontantTotal('');
+      setNewDateLimite('');
     } catch (err: any) {
       console.error('[EcheancesPage] Erreur création barème:', err);
       const msg = err.message || 'Erreur inconnue';
@@ -211,7 +226,7 @@ export const EcheancesPage: React.FC = () => {
               Échéances & Tarifs de Scolarité
             </h1>
             <span className="rounded-full bg-blue-100 dark:bg-blue-950/60 px-2.5 py-0.5 text-xs font-bold text-blue-700 dark:text-blue-300 border border-blue-200/50 dark:border-blue-800/60">
-              Année 2025–2026
+              Année {ANNEE_SCOLAIRE_ACTIVE}
             </span>
           </div>
           <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">
@@ -225,6 +240,10 @@ export const EcheancesPage: React.FC = () => {
           className="gap-2 h-10 px-4"
           onClick={() => {
             setErrorMessage(null);
+            setNewLibelle('');
+            setNewClasse('');
+            setNewMontantTotal('');
+            setNewDateLimite('');
             setIsModalOpen(true);
           }}
         >
@@ -539,6 +558,7 @@ export const EcheancesPage: React.FC = () => {
                   value={newClasse}
                   onChange={setNewClasse}
                   options={availableClasses.map((cls) => ({ value: cls, label: cls }))}
+                  placeholder="Sélectionner une classe..."
                   size="sm"
                   triggerClassName="w-full h-9 rounded-lg font-semibold"
                 />
@@ -552,9 +572,13 @@ export const EcheancesPage: React.FC = () => {
                   <input
                     type="number"
                     required
-                    min={100}
+                    min={1}
+                    placeholder="Ex: 30000"
                     value={newMontantTotal}
-                    onChange={(e) => setNewMontantTotal(Number(e.target.value))}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setNewMontantTotal(val === '' ? '' : Number(val));
+                    }}
                     className="w-full h-9 px-3 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-mono font-bold focus:ring-2 focus:ring-blue-600 focus:outline-none"
                   />
                 </div>
@@ -616,7 +640,13 @@ export const EcheancesPage: React.FC = () => {
                 >
                   Annuler
                 </Button>
-                <Button type="submit" variant="primary" size="sm" className="gap-1.5" disabled={isSubmitting}>
+                <Button
+                  type="submit"
+                  variant="primary"
+                  size="sm"
+                  className="gap-1.5"
+                  disabled={isSubmitting || !isFormValid}
+                >
                   {isSubmitting ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin" />

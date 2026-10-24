@@ -2,6 +2,7 @@ import { jsPDF } from 'jspdf';
 import { ParentMatiereNote } from '../mockData';
 import { downloadFile } from '../downloadFile';
 import { CLAIMS_CONFIG } from '../../config/claims';
+import { ANNEE_SCOLAIRE_ACTIVE } from '../constants/scolaire';
 
 export interface BulletinData {
   enfantNom: string;
@@ -72,7 +73,7 @@ export function generateBulletinPdf(data: BulletinData): jsPDF {
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8.5);
   doc.setTextColor(71, 85, 105);
-  doc.text(`Année Scolaire ${data.anneeScolaire || '2025-2026'} • Session Trimestrielle`, pageWidth / 2, y, { align: 'center' });
+  doc.text(`Année Scolaire ${data.anneeScolaire || ANNEE_SCOLAIRE_ACTIVE} • Session Trimestrielle`, pageWidth / 2, y, { align: 'center' });
 
   // Cadre Identification de l'élève
   y += 7;

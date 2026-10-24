@@ -12,6 +12,7 @@ import {
 } from '../lib/financialReportsHelper';
 import { supabase } from '../lib/supabase';
 import { useAuthStore } from '../store/useAuthStore';
+import { ANNEE_SCOLAIRE_ACTIVE } from '../lib/constants/scolaire';
 import {
   FileText,
   FileSpreadsheet,
@@ -269,7 +270,7 @@ export const RapportsPage: React.FC = () => {
       <div className="rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xs overflow-hidden">
         <div className="py-4 px-5 sm:px-6 bg-slate-50/80 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
           <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-            Tableau Récapitulatif par Mois (Exercice 2025-2026)
+            Tableau Récapitulatif par Mois (Exercice {ANNEE_SCOLAIRE_ACTIVE})
           </h3>
           <span className="text-xs text-slate-500 dark:text-slate-400 font-medium hidden sm:inline">
             Données comptables réelles agrégées par date d'exigibilité

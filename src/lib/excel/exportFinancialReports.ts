@@ -2,6 +2,7 @@ import * as XLSX from 'xlsx';
 import { MonthlyFinancialReport } from '../mockData';
 import { downloadFile } from '../downloadFile';
 import { ATTACHMENT_RULE_DESCRIPTION } from '../financialReportsHelper';
+import { ANNEE_SCOLAIRE_ACTIVE } from '../constants/scolaire';
 
 export function exportFinancialReportsToExcel(
   reports: MonthlyFinancialReport[],
@@ -22,7 +23,7 @@ export function exportFinancialReportsToExcel(
   const sheetData: (string | number)[][] = [
     ['ECOSURV — SYSTÈME DE GESTION DE SCOLARITÉ DES ÉCOLES PRIVÉES'],
     ['RAPPORT FINANCIER & ÉTAT DE RECOUVREMENT DE SCOLARITÉ'],
-    [`Exercice Scolaire : 2025-2026 | Date d'exportation : ${new Date().toLocaleDateString('fr-FR')}`],
+    [`Exercice Scolaire : ${ANNEE_SCOLAIRE_ACTIVE} | Date d'exportation : ${new Date().toLocaleDateString('fr-FR')}`],
     [ATTACHMENT_RULE_DESCRIPTION],
     [], // ligne vide
     [

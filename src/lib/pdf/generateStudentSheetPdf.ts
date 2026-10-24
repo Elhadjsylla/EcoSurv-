@@ -3,6 +3,7 @@ import { EleveWithStats } from '../mockData';
 import { formatMRU } from '../utils';
 import { downloadFile } from '../downloadFile';
 import { CLAIMS_CONFIG } from '../../config/claims';
+import { ANNEE_SCOLAIRE_ACTIVE } from '../constants/scolaire';
 
 export function generateStudentSheetPdf(eleve: EleveWithStats, action: 'download' | 'print' = 'download'): jsPDF {
   const doc = new jsPDF({
@@ -48,7 +49,7 @@ export function generateStudentSheetPdf(eleve: EleveWithStats, action: 'download
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9);
   doc.setTextColor(71, 85, 105);
-  doc.text(`Année scolaire 2025-2026 • Document généré le ${new Date().toLocaleDateString('fr-FR')}`, pageWidth / 2, y, { align: 'center' });
+  doc.text(`Année scolaire ${ANNEE_SCOLAIRE_ACTIVE} • Document généré le ${new Date().toLocaleDateString('fr-FR')}`, pageWidth / 2, y, { align: 'center' });
 
   // Cadre État Civil
   y += 10;

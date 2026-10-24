@@ -15,6 +15,7 @@ import {
   RoleUtilisateur,
 } from '../lib/mockData';
 import { DEFAULT_CLASSES_MAURITANIE } from '../lib/constants/classes';
+import { ANNEE_SCOLAIRE_ACTIVE } from '../lib/constants/scolaire';
 import {
   Save,
   Building2,
@@ -482,10 +483,10 @@ export const ConfigPage: React.FC = () => {
                 Année Scolaire Active <span className="text-red-500">*</span>
               </label>
               <Select
-                value={formData.annee_scolaire || '2025-2026'}
+                value={formData.annee_scolaire || ANNEE_SCOLAIRE_ACTIVE}
                 onChange={(val) => setFormData({ ...formData, annee_scolaire: String(val) })}
                 options={[
-                  { value: '2025-2026', label: '2025–2026 (Active)' },
+                  { value: ANNEE_SCOLAIRE_ACTIVE, label: `${ANNEE_SCOLAIRE_ACTIVE} (Active)` },
                   { value: '2024-2025', label: '2024–2025 (Archivée)' },
                 ]}
                 triggerClassName="w-full h-11 rounded-xl font-bold"

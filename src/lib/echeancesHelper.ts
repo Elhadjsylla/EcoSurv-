@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import { EcheancierConfig, FrequenceEcheance } from './mockData';
+import { ANNEE_SCOLAIRE_ACTIVE } from './constants/scolaire';
 
 export function computeTrancheDates(
   startDateStr: string,
@@ -118,7 +119,7 @@ export async function createBaremeAndGenerateEcheances(
     nombre_tranches: number;
     date_limite_prochaine: string;
   },
-  anneeScolaire = '2025-2026'
+  anneeScolaire = ANNEE_SCOLAIRE_ACTIVE
 ): Promise<{ bareme: EcheancierConfig; generatedEcheancesCount: number }> {
   const montantParTranche = Math.round(bareme.montant_total / bareme.nombre_tranches);
 
@@ -220,7 +221,7 @@ export async function generateEcheancesForNewStudent(
   ecoleId: string,
   eleveId: string,
   classe: string,
-  anneeScolaire = '2025-2026'
+  anneeScolaire = ANNEE_SCOLAIRE_ACTIVE
 ): Promise<number> {
   if (!ecoleId || !eleveId || !classe) return 0;
 

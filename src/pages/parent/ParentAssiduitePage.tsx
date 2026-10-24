@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { AbsenceRecord } from '../../lib/mockData';
+import { ANNEE_SCOLAIRE_ACTIVE } from '../../lib/constants/scolaire';
 import { supabase } from '../../lib/supabase';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -250,7 +251,7 @@ export const ParentAssiduitePage: React.FC<ParentAssiduitePageProps> = ({
             </div>
           </div>
           <span className="text-xs px-2.5 py-1 rounded-full font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
-            Année 2025-2026
+            Année {ANNEE_SCOLAIRE_ACTIVE}
           </span>
         </div>
 

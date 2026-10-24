@@ -103,6 +103,8 @@ export interface MonthlyFinancialReport {
   taux: number;
 }
 
+import { ANNEE_SCOLAIRE_ACTIVE } from './constants/scolaire';
+
 export const CURRENT_ECOLE: EcoleMock = {
   id: 'ecole-demo-001',
   nom: 'Établissement Scolaire',
@@ -111,7 +113,7 @@ export const CURRENT_ECOLE: EcoleMock = {
   adresse: 'Avenue Moktar Ould Daddah',
   telephone: '+222 45 25 12 34',
   email: 'contact@ecosurv.mr',
-  annee_scolaire: '2025-2026',
+  annee_scolaire: ANNEE_SCOLAIRE_ACTIVE,
   statut_abonnement: 'actif',
 };
 

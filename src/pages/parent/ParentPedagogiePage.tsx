@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import {
   ParentMatiereNote,
 } from '../../lib/mockData';
+import { ANNEE_SCOLAIRE_ACTIVE } from '../../lib/constants/scolaire';
 import { Button } from '../../components/ui/Button';
 import { generateBulletinPdf } from '../../lib/pdf/generateBulletinPdf';
 import { ToastNotification } from '../../components/ui/ToastNotification';
@@ -140,7 +141,7 @@ export const ParentPedagogiePage: React.FC<ParentPedagogiePageProps> = ({
             Bulletin de Notes — {enfant.prenom} {enfant.nom}
           </h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Classe de {enfant.classe} • Année scolaire 2025-2026
+            Classe de {enfant.classe} • Année scolaire {ANNEE_SCOLAIRE_ACTIVE}
           </p>
         </div>
 
