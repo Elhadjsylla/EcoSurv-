@@ -935,7 +935,7 @@ export const ConfigPage: React.FC = () => {
                   type="email"
                   required
                   disabled={isInviting}
-                  placeholder="nom@ecosurv.test"
+                  placeholder="contact@ecole.mr"
                   value={newEmail}
                   onChange={(e) => setNewEmail(e.target.value)}
                   className="w-full h-9 px-3 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-blue-600 focus:outline-none placeholder:text-slate-400 dark:placeholder:text-slate-500 disabled:opacity-50"

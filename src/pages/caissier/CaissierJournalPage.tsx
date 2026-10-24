@@ -706,7 +706,7 @@ export const CaissierJournalPage: React.FC = () => {
                     {authEcole?.nom || 'Établissement Scolaire'}
                   </div>
                   <div className="text-slate-500 dark:text-slate-400 text-[11px] mt-0.5">
-                    {authEcole?.ville || 'Nouakchott'}, Mauritanie
+                    {authEcole?.ville ? `${authEcole.ville}, Mauritanie` : 'Mauritanie'}
                   </div>
                   <div className="mt-2 inline-block px-3 py-1 bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 font-mono font-bold text-xs rounded-lg border border-amber-200 dark:border-amber-800/60">
                     {selectedReceipt.recu_ref}

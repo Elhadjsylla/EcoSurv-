@@ -165,7 +165,7 @@ export const NotificationsDropdown: React.FC<NotificationsDropdownProps> = ({
       {/* Footer */}
       <div className="p-2.5 bg-surface-subtle border-t border-subtle text-center">
         <span className="text-xs text-muted font-medium">
-          Synchronisé avec la table Supabase • notifications
+          Notifications en temps réel
         </span>
       </div>
     </div>

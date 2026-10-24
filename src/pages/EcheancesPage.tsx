@@ -28,7 +28,6 @@ import {
   X,
   PlusCircle,
   CheckCircle,
-  Layers,
   Clock,
   MoreHorizontal,
   FileText,
@@ -52,7 +51,26 @@ export const EcheancesPage: React.FC = () => {
   const [isConfirmManquantesOpen, setIsConfirmManquantesOpen] = useState(false);
   const [classesSansBaremeNotice, setClassesSansBaremeNotice] = useState<ClasseSansBaremeInfo[]>([]);
 
+  // Données réelles issues de la base
+  const [elevesCouvertsCount, setElevesCouvertsCount] = useState<number>(0);
+  const [prochaineEcheance, setProchaineEcheance] = useState<{ date: string; libelle: string } | null>(null);
+
   const canManage = authProfile?.role === 'directeur' || authProfile?.role === 'super_admin';
+
+  const formatProchaineDate = (dateStr?: string) => {
+    if (!dateStr) return '—';
+    const parts = dateStr.split('-');
+    if (parts.length === 3) {
+      const months = [
+        'Jan.', 'Fév.', 'Mars', 'Avril', 'Mai', 'Juin',
+        'Juil.', 'Août', 'Sept.', 'Oct.', 'Nov.', 'Déc.'
+      ];
+      const day = parseInt(parts[2], 10);
+      const mIdx = parseInt(parts[1], 10) - 1;
+      return `${day} ${months[mIdx] || ''}`;
+    }
+    return dateStr;
+  };
 
   // Form state : champs vides sans valeurs inventées par défaut
   const [newLibelle, setNewLibelle] = useState('');
@@ -89,11 +107,7 @@ export const EcheancesPage: React.FC = () => {
 
       if (res.echeancesCreees > 0) {
         showToast(`${res.echeancesCreees} échéances créées pour ${res.elevesConcernes} élèves`);
-        // Recharger les données de la page
-        if (authProfile?.ecole_id) {
-          const list = await fetchBaremes(authProfile.ecole_id);
-          setEcheanciers(list);
-        }
+        await loadData();
       } else {
         showToast('Aucune échéance manquante.');
       }
@@ -113,46 +127,70 @@ export const EcheancesPage: React.FC = () => {
     }
   };
 
-  // Chargement persistant des barèmes au montage
-  useEffect(() => {
-    if (authProfile?.ecole_id) {
-      const ecoleId = authProfile.ecole_id;
-      let isMounted = true;
-      const loadData = async () => {
-        setIsLoading(true);
-        setErrorMessage(null);
-        try {
-          const list = await fetchBaremes(ecoleId);
-          if (isMounted) {
-            setEcheanciers(list);
-          }
+  const loadData = React.useCallback(async () => {
+    if (!authProfile?.ecole_id) return;
+    const ecoleId = authProfile.ecole_id;
+    setIsLoading(true);
+    setErrorMessage(null);
+    try {
+      const list = await fetchBaremes(ecoleId);
+      setEcheanciers(list);
 
-          // Charger également les classes réelles existantes dans l'école
-          const { data: eleves } = await supabase
-            .from('eleves')
-            .select('classe')
-            .eq('ecole_id', authProfile.ecole_id);
+      // Charger également les classes réelles existantes dans l'école
+      const { data: eleves } = await supabase
+        .from('eleves')
+        .select('classe')
+        .eq('ecole_id', ecoleId);
 
-          if (isMounted && eleves) {
-            const schoolClasses = Array.from(new Set(eleves.map((e: any) => e.classe).filter(Boolean)));
-            const merged = Array.from(new Set([...schoolClasses, ...DEFAULT_CLASSES_MAURITANIE]));
-            setAvailableClasses(merged);
-          }
-        } catch (err: any) {
-          console.error('[EcheancesPage] Erreur chargement barèmes:', err);
-          if (isMounted) {
-            setErrorMessage(err.message || 'Erreur lors du chargement des barèmes');
-          }
-        } finally {
-          if (isMounted) setIsLoading(false);
-        }
-      };
-      loadData();
-      return () => {
-        isMounted = false;
-      };
+      if (eleves) {
+        const schoolClasses = Array.from(new Set(eleves.map((e: any) => e.classe).filter(Boolean)));
+        const merged = Array.from(new Set([...schoolClasses, ...DEFAULT_CLASSES_MAURITANIE]));
+        setAvailableClasses(merged);
+      }
+
+      // 1. Décompte réel des élèves ayant au moins une échéance enregistrée en base
+      const { data: echRows } = await supabase
+        .from('echeances')
+        .select('eleve_id')
+        .eq('ecole_id', ecoleId);
+
+      if (echRows) {
+        const uniqueCount = new Set(echRows.map((r: any) => r.eleve_id).filter(Boolean)).size;
+        setElevesCouvertsCount(uniqueCount);
+      }
+
+      // 2. Prochaine échéance réelle (première date_echeance >= aujourd'hui parmi les échéances non soldées)
+      const todayStr = new Date().toISOString().split('T')[0];
+      const { data: nextEch } = await supabase
+        .from('echeances')
+        .select('libelle, date_echeance')
+        .eq('ecole_id', ecoleId)
+        .neq('statut', 'paye')
+        .gte('date_echeance', todayStr)
+        .order('date_echeance', { ascending: true })
+        .limit(1)
+        .maybeSingle();
+
+      if (nextEch && nextEch.date_echeance) {
+        setProchaineEcheance({
+          date: nextEch.date_echeance,
+          libelle: nextEch.libelle || 'Échéance à venir',
+        });
+      } else {
+        setProchaineEcheance(null);
+      }
+    } catch (err: any) {
+      console.error('[EcheancesPage] Erreur chargement barèmes:', err);
+      setErrorMessage(err.message || 'Erreur lors du chargement des barèmes');
+    } finally {
+      setIsLoading(false);
     }
   }, [authProfile?.ecole_id]);
+
+  // Chargement persistant au montage
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const handleCreateEcheancier = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -242,8 +280,6 @@ export const EcheancesPage: React.FC = () => {
       showToast(`Erreur : ${err.message}`);
     }
   };
-
-  const totalElevesCouverts = echeanciers.reduce((sum, e) => sum + e.nb_eleves_concernes, 0);
 
   return (
     <div className="p-6 sm:p-8 lg:p-10 max-w-[1600px] mx-auto space-y-8 sm:space-y-10 relative" aria-busy={isLoading}>
@@ -362,8 +398,8 @@ export const EcheancesPage: React.FC = () => {
         </div>
       )}
 
-      {/* Metric Tiles (Pastel KpiCard Style) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      {/* Metric Tiles (100% données réelles Supabase) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         <KpiCard
           staggerIndex={0}
           title="Échéanciers Actifs"
@@ -377,9 +413,9 @@ export const EcheancesPage: React.FC = () => {
         <KpiCard
           staggerIndex={1}
           title="Élèves Couverts"
-          amount={totalElevesCouverts}
+          amount={elevesCouvertsCount}
           unit="count"
-          subtitle="✓ Échéancier individuel actif"
+          subtitle="Élèves avec au moins une échéance"
           icon={<Users className="h-5 w-5" />}
           variant="success"
         />
@@ -395,33 +431,12 @@ export const EcheancesPage: React.FC = () => {
               </div>
             </div>
             <div className="mt-3 sm:mt-4 text-2xl sm:text-3xl font-black tracking-tight text-slate-900 dark:text-white font-mono truncate">
-              05 Avril
+              {prochaineEcheance ? formatProchaineDate(prochaineEcheance.date) : '—'}
             </div>
           </div>
           <div className="mt-4">
             <span className="text-xs font-semibold text-amber-700 dark:text-amber-400 block truncate">
-              Tranche 3 / Mensualité
-            </span>
-          </div>
-        </Card>
-
-        <Card className="p-5 sm:p-6 rounded-2xl border border-indigo-200/70 dark:border-indigo-900/50 bg-indigo-50/75 dark:bg-indigo-950/35 flex flex-col justify-between shadow-2xs hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 min-w-0">
-          <div>
-            <div className="flex items-start justify-between gap-3">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 leading-snug">
-                Modes de Règlement
-              </span>
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/90 dark:bg-slate-800/90 border border-white/80 dark:border-slate-700/60 text-indigo-600 dark:text-indigo-400 shrink-0 shadow-2xs">
-                <Layers className="h-5 w-5 stroke-[1.75]" />
-              </div>
-            </div>
-            <div className="mt-3 sm:mt-4 text-2xl sm:text-3xl font-black tracking-tight text-slate-900 dark:text-white font-mono truncate">
-              3 types
-            </div>
-          </div>
-          <div className="mt-4">
-            <span className="text-xs font-medium text-slate-600 dark:text-slate-400 block truncate">
-              Mensuel, Trimestriel, Annuel
+              {prochaineEcheance ? prochaineEcheance.libelle : 'Aucune échéance à venir'}
             </span>
           </div>
         </Card>
@@ -436,7 +451,7 @@ export const EcheancesPage: React.FC = () => {
             </h3>
           </div>
           <span className="text-xs text-slate-500 dark:text-slate-400 font-medium hidden sm:inline">
-            Conforme au schéma backend Supabase (<code className="font-mono text-[11px] text-blue-600 dark:text-blue-400">echeances</code>)
+            Calendrier officiel des paiements par classe
           </span>
         </div>
 

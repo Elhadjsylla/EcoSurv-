@@ -39,13 +39,13 @@ export const SuperAdminConsole: React.FC<SuperAdminConsoleProps> = ({ onReturnTo
           return {
             id: e.id,
             nom: e.nom,
-            ville: e.ville || 'Nouakchott',
+            ville: e.ville || '—',
             telephone: e.telephone,
             email: e.email,
             statut_activation: e.statut_activation || 'active',
             statut_abonnement: e.statut_abonnement || 'essai',
             created_at: e.created_at,
-            directeur_nom: directeur ? `${directeur.prenom} ${directeur.nom}` : 'Directeur',
+            directeur_nom: directeur ? `${directeur.prenom} ${directeur.nom}` : 'Non assigné',
             directeur_email: directeur?.email || e.email,
           };
         });

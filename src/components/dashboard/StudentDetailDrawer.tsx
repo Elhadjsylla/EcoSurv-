@@ -413,7 +413,7 @@ export const StudentDetailDrawer: React.FC<StudentDetailDrawerProps> = ({
 
               <div className="flex items-center gap-2.5 text-slate-600 dark:text-slate-300">
                 <MapPin className="h-4 w-4 text-slate-400 shrink-0" />
-                <span>{eleve.adresse_tuteur || 'Nouakchott'}</span>
+                <span>{eleve.adresse_tuteur || 'Non renseignée'}</span>
               </div>
 
               <div className="pt-2 border-t border-slate-200/60 dark:border-slate-700/60 flex items-center justify-between">

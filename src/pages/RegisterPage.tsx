@@ -153,20 +153,20 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
         if (msg.includes('already registered') || msg.includes('user already exists')) {
           setError('Un compte existe déjà avec cette adresse email. Veuillez vous connecter.');
         } else if (msg.includes('api key') || msg.includes('invalid api key')) {
-          setError("Erreur d'authentification Supabase : clé API anon invalide ou non configurée en local. Vérifiez VITE_SUPABASE_ANON_KEY.");
+          setError("Erreur d'authentification : clé API invalide ou non configurée. Contactez le support technique.");
         } else if (msg.includes('rate limit')) {
           setError("Trop de tentatives d'inscription. Veuillez patienter quelques minutes avant de réessayer.");
         } else if (msg.includes('database error saving new user')) {
-          setError("Erreur backend lors de l'enregistrement de l'école (vérifiez les informations renseignées).");
+          setError("Erreur lors de l'enregistrement de l'établissement (veuillez vérifier les informations renseignées).");
         } else {
-          setError(signUpError.message || "Erreur lors de l'enregistrement de l'école.");
+          setError(signUpError.message || "Erreur lors de l'enregistrement de l'établissement.");
         }
         setSubmitting(false);
         return;
       }
 
       if (!signUpData?.user) {
-        setError("Erreur : aucun compte utilisateur n'a été retourné par Supabase. Veuillez réessayer.");
+        setError("Erreur : aucun compte utilisateur créé. Veuillez réessayer.");
         setSubmitting(false);
         return;
       }
