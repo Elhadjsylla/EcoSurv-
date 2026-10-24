@@ -16,6 +16,8 @@ import {
   fetchBaremes,
   createBaremeAndGenerateEcheances,
   deleteBareme,
+  genererEcheancesManquantes,
+  ClasseSansBaremeInfo,
 } from '../lib/echeancesHelper';
 import { supabase } from '../lib/supabase';
 import {
@@ -34,6 +36,7 @@ import {
   Trash2,
   Loader2,
   AlertCircle,
+  Sparkles,
 } from 'lucide-react';
 
 export const EcheancesPage: React.FC = () => {
@@ -45,6 +48,11 @@ export const EcheancesPage: React.FC = () => {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [openMenuRowId, setOpenMenuRowId] = useState<string | null>(null);
   const [availableClasses, setAvailableClasses] = useState<string[]>(DEFAULT_CLASSES_MAURITANIE);
+  const [isGeneratingManquantes, setIsGeneratingManquantes] = useState(false);
+  const [isConfirmManquantesOpen, setIsConfirmManquantesOpen] = useState(false);
+  const [classesSansBaremeNotice, setClassesSansBaremeNotice] = useState<ClasseSansBaremeInfo[]>([]);
+
+  const canManage = authProfile?.role === 'directeur' || authProfile?.role === 'super_admin';
 
   // Form state : champs vides sans valeurs inventées par défaut
   const [newLibelle, setNewLibelle] = useState('');
@@ -68,6 +76,41 @@ export const EcheancesPage: React.FC = () => {
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 5000);
+  };
+
+  const handleGenererManquantes = async () => {
+    if (isGeneratingManquantes) return;
+    setIsGeneratingManquantes(true);
+    setErrorMessage(null);
+    setIsConfirmManquantesOpen(false);
+
+    try {
+      const res = await genererEcheancesManquantes();
+
+      if (res.echeancesCreees > 0) {
+        showToast(`${res.echeancesCreees} échéances créées pour ${res.elevesConcernes} élèves`);
+        // Recharger les données de la page
+        if (authProfile?.ecole_id) {
+          const list = await fetchBaremes(authProfile.ecole_id);
+          setEcheanciers(list);
+        }
+      } else {
+        showToast('Aucune échéance manquante.');
+      }
+
+      if (res.classesSansBareme && res.classesSansBareme.length > 0) {
+        setClassesSansBaremeNotice(res.classesSansBareme);
+      } else {
+        setClassesSansBaremeNotice([]);
+      }
+    } catch (err: any) {
+      console.error('[EcheancesPage] Erreur genererEcheancesManquantes:', err);
+      const msg = err.message || 'Erreur lors de la génération des échéances manquantes';
+      setErrorMessage(msg);
+      showToast(`Erreur : ${msg}`);
+    } finally {
+      setIsGeneratingManquantes(false);
+    }
   };
 
   // Chargement persistant des barèmes au montage
@@ -234,23 +277,73 @@ export const EcheancesPage: React.FC = () => {
           </p>
         </div>
 
-        <Button
-          variant="primary"
-          size="sm"
-          className="gap-2 h-10 px-4"
-          onClick={() => {
-            setErrorMessage(null);
-            setNewLibelle('');
-            setNewClasse('');
-            setNewMontantTotal('');
-            setNewDateLimite('');
-            setIsModalOpen(true);
-          }}
-        >
-          <Plus className="h-4 w-4" />
-          + Nouvelle Échéance
-        </Button>
+        <div className="flex flex-wrap items-center gap-3">
+          {canManage && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2 h-10 px-4 font-semibold text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-800 hover:bg-blue-50 dark:hover:bg-blue-950/40"
+              disabled={isGeneratingManquantes}
+              onClick={() => setIsConfirmManquantesOpen(true)}
+            >
+              {isGeneratingManquantes ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin text-blue-600 dark:text-blue-400" />
+                  <span>Génération en cours...</span>
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                  <span>Générer les échéances manquantes</span>
+                </>
+              )}
+            </Button>
+          )}
+
+          <Button
+            variant="primary"
+            size="sm"
+            className="gap-2 h-10 px-4"
+            onClick={() => {
+              setErrorMessage(null);
+              setNewLibelle('');
+              setNewClasse('');
+              setNewMontantTotal('');
+              setNewDateLimite('');
+              setIsModalOpen(true);
+            }}
+          >
+            <Plus className="h-4 w-4" />
+            + Nouvelle Échéance
+          </Button>
+        </div>
       </div>
+
+      {/* Classes Sans Barème Notice */}
+      {classesSansBaremeNotice.length > 0 && (
+        <div className="flex items-start justify-between gap-3 bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 p-4 rounded-xl border border-amber-200 dark:border-amber-800/60 animate-in fade-in">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+            <div className="space-y-1 text-xs">
+              <span className="font-bold block">Classes sans barème :</span>
+              <ul className="list-disc list-inside space-y-0.5">
+                {classesSansBaremeNotice.map((c, i) => (
+                  <li key={i}>
+                    Classes sans barème : <span className="font-semibold">{c.classe}</span> ({c.eleves} élève{c.eleves > 1 ? 's' : ''}). Créez un barème pour ces classes.
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+          <button
+            onClick={() => setClassesSansBaremeNotice([])}
+            className="text-amber-500 hover:text-amber-700 dark:hover:text-amber-300 ml-2"
+            title="Fermer"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
 
       {/* Error Alert */}
       {errorMessage && (
@@ -661,6 +754,63 @@ export const EcheancesPage: React.FC = () => {
                 </Button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Confirmation Dialog Génération des échéances manquantes */}
+      {isConfirmManquantesOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 dark:bg-slate-950/75 backdrop-blur-xs p-4 animate-in fade-in">
+          <div className="w-full max-w-md rounded-2xl bg-white dark:bg-slate-900 p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+              <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <Sparkles className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                Générer les échéances manquantes
+              </h3>
+              <button
+                onClick={() => setIsConfirmManquantesOpen(false)}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                disabled={isGeneratingManquantes}
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+              Crée les tranches manquantes pour les élèves qui n'en ont pas, selon les barèmes existants. Les échéances et paiements déjà enregistrés ne sont jamais modifiés.
+            </p>
+
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setIsConfirmManquantesOpen(false)}
+                disabled={isGeneratingManquantes}
+              >
+                Annuler
+              </Button>
+              <Button
+                type="button"
+                variant="primary"
+                size="sm"
+                className="gap-1.5"
+                disabled={isGeneratingManquantes}
+                onClick={handleGenererManquantes}
+              >
+                {isGeneratingManquantes ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span>Génération...</span>
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="h-4 w-4" />
+                    <span>Confirmer la génération</span>
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
         </div>
       )}

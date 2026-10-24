@@ -1128,6 +1128,7 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
           setEleveToEdit(el);
           setIsEnrollModalOpen(true);
         }}
+        onEcheancesUpdated={fetchRealEleves}
       />
 
       {/* Modale d'Inscription Élève */}
