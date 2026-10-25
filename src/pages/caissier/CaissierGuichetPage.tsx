@@ -409,9 +409,6 @@ export const CaissierGuichetPage: React.FC<CaissierGuichetPageProps> = ({
 
       // 4. Synchronisation de l'état local caisse
       useCaisseStore.getState().addTransaction(newTx);
-      if (!isEnAttente) {
-        useCaisseStore.getState().deductEleveBalance(selectedEleve.id, montant);
-      }
       useCaisseStore.getState().triggerRefresh();
 
       // 5. Recharger depuis la base les élèves et échéances

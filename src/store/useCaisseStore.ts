@@ -20,14 +20,11 @@ interface CaisseStoreState {
   clotures: Record<string, ClotureCaisseData>; // indexées par date YYYY-MM-DD
   transactions: CaisseTransaction[];
   refreshKey: number;
-  elevePaymentDeductions: Record<string, number>;
   addTransaction: (tx: CaisseTransaction) => void;
   triggerRefresh: () => void;
-  deductEleveBalance: (eleveId: string, amount: number) => void;
   isDateCloturee: (dateStr?: string) => boolean;
   getClotureForDate: (dateStr?: string) => ClotureCaisseData | null;
   cloturerCaisseDuJour: (montantTotal: number, nbTransactions: number) => Promise<boolean>;
-  reouvrirCaisseDemo: (dateStr?: string) => void;
 }
 
 const getTodayDateStr = () => new Date().toISOString().split('T')[0];
@@ -38,7 +35,6 @@ export const useCaisseStore = create<CaisseStoreState>()(
       clotures: {},
       transactions: [],
       refreshKey: 1,
-      elevePaymentDeductions: {},
 
       addTransaction: (tx: CaisseTransaction) => {
         set((state) => ({
@@ -49,16 +45,6 @@ export const useCaisseStore = create<CaisseStoreState>()(
 
       triggerRefresh: () => {
         set((state) => ({ refreshKey: state.refreshKey + 1 }));
-      },
-
-      deductEleveBalance: (eleveId: string, amount: number) => {
-        set((state) => ({
-          elevePaymentDeductions: {
-            ...state.elevePaymentDeductions,
-            [eleveId]: (state.elevePaymentDeductions[eleveId] || 0) + amount,
-          },
-          refreshKey: state.refreshKey + 1,
-        }));
       },
 
       isDateCloturee: (dateStr) => {
@@ -120,15 +106,6 @@ export const useCaisseStore = create<CaisseStoreState>()(
         }));
 
         return true;
-      },
-
-      reouvrirCaisseDemo: (dateStr) => {
-        const d = dateStr || getTodayDateStr();
-        set((state) => {
-          const updated = { ...state.clotures };
-          delete updated[d];
-          return { clotures: updated };
-        });
       },
     }),
     {
