@@ -166,8 +166,10 @@ export const Header: React.FC<HeaderProps> = ({
     : defaultUser;
 
   useEffect(() => {
-    loadNotificationsForUser(activeUser.id || 'usr-default', currentRole);
-  }, [currentRole, loadNotificationsForUser, activeUser.id]);
+    if (activeUser.id) {
+      loadNotificationsForUser(activeUser.id);
+    }
+  }, [loadNotificationsForUser, activeUser.id]);
 
   return (
     <header className="sticky top-0 z-30 h-16 w-full border-b border-subtle bg-surface/95 backdrop-blur-xs px-3.5 sm:px-5 lg:px-6 flex items-center justify-between gap-3 sm:gap-4 shadow-xs transition-colors duration-150">

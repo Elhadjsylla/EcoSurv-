@@ -8,12 +8,37 @@ import {
   Info,
   CheckCheck,
   ChevronRight,
+  AlertCircle,
+  Loader2,
 } from 'lucide-react';
 
 interface NotificationsDropdownProps {
   isOpen: boolean;
   onClose: () => void;
   onNavigateTab?: (tab: string) => void;
+}
+
+function formatNotificationDate(dateStr: string): string {
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
+    const now = new Date();
+    const diffMs = now.getTime() - d.getTime();
+    const diffMins = Math.floor(diffMs / (1000 * 60));
+    if (diffMins < 1) return "À l'instant";
+    if (diffMins < 60) return `Il y a ${diffMins} min`;
+    const diffHours = Math.floor(diffMins / 60);
+    if (diffHours < 24 && d.getDate() === now.getDate()) {
+      return `Aujourd'hui à ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
+    }
+    const day = d.getDate().toString().padStart(2, '0');
+    const month = (d.getMonth() + 1).toString().padStart(2, '0');
+    const hours = d.getHours().toString().padStart(2, '0');
+    const minutes = d.getMinutes().toString().padStart(2, '0');
+    return `${day}/${month} à ${hours}:${minutes}`;
+  } catch {
+    return dateStr;
+  }
 }
 
 export const NotificationsDropdown: React.FC<NotificationsDropdownProps> = ({
@@ -23,6 +48,8 @@ export const NotificationsDropdown: React.FC<NotificationsDropdownProps> = ({
 }) => {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const notifications = useNotificationsStore((s) => s.notifications);
+  const isLoading = useNotificationsStore((s) => s.isLoading);
+  const error = useNotificationsStore((s) => s.error);
   const markAsRead = useNotificationsStore((s) => s.markAsRead);
   const markAllAsRead = useNotificationsStore((s) => s.markAllAsRead);
   const unreadCount = useNotificationsStore((s) => s.unreadCount());
@@ -50,10 +77,12 @@ export const NotificationsDropdown: React.FC<NotificationsDropdownProps> = ({
 
   if (!isOpen) return null;
 
-  const getIcon = (type: NotificationItem['type']) => {
+  const getIcon = (type: string) => {
     switch (type) {
+      case 'paiement_confirme':
       case 'paiement':
         return <CheckCircle2 className="h-4 w-4 text-success" />;
+      case 'echeance_retard':
       case 'alerte':
         return <AlertTriangle className="h-4 w-4 text-danger" />;
       case 'rappel':
@@ -63,11 +92,35 @@ export const NotificationsDropdown: React.FC<NotificationsDropdownProps> = ({
     }
   };
 
+  const getTypeTitle = (type: string) => {
+    switch (type) {
+      case 'paiement_confirme':
+        return 'Paiement confirmé';
+      case 'echeance_retard':
+        return 'Échéance en retard';
+      case 'nouvelle_note':
+        return 'Nouvelle note';
+      case 'rappel':
+        return 'Rappel';
+      case 'alerte':
+        return 'Alerte';
+      case 'info':
+        return 'Information';
+      default:
+        return 'Notification';
+    }
+  };
+
   const handleNotificationClick = (item: NotificationItem) => {
     markAsRead(item.id);
-    if (item.lien_onglet && onNavigateTab) {
-      onNavigateTab(item.lien_onglet);
-      onClose();
+    if (onNavigateTab) {
+      if (item.type === 'echeance_retard') {
+        onNavigateTab('relances');
+        onClose();
+      } else if (item.type === 'paiement_confirme') {
+        onNavigateTab('paiements_attente');
+        onClose();
+      }
     }
   };
 
@@ -104,12 +157,25 @@ export const NotificationsDropdown: React.FC<NotificationsDropdownProps> = ({
         )}
       </div>
 
+      {/* RLS or fetch error alert */}
+      {error && (
+        <div className="p-3 bg-red-50 dark:bg-red-950/40 border-b border-red-200 dark:border-red-800 text-xs text-red-800 dark:text-red-200 flex items-start gap-2">
+          <AlertCircle className="h-4 w-4 text-red-600 dark:text-red-400 shrink-0 mt-0.5" />
+          <span className="leading-snug">{error}</span>
+        </div>
+      )}
+
       {/* Notifications List */}
       <div className="max-h-[380px] overflow-y-auto divide-y divide-subtle">
-        {notifications.length === 0 ? (
+        {isLoading ? (
+          <div className="p-8 text-center text-muted text-xs space-y-2">
+            <Loader2 className="h-6 w-6 animate-spin mx-auto text-primary" />
+            <p className="font-medium">Chargement des notifications...</p>
+          </div>
+        ) : notifications.length === 0 ? (
           <div className="p-8 text-center text-muted text-xs space-y-1">
             <Bell className="h-8 w-8 mx-auto text-muted mb-2" />
-            <p className="font-semibold text-main">Aucune notification</p>
+            <p className="font-semibold text-main">Aucune notification.</p>
             <p className="text-xs">Vous êtes à jour dans vos alertes.</p>
           </div>
         ) : (
@@ -143,10 +209,10 @@ export const NotificationsDropdown: React.FC<NotificationsDropdownProps> = ({
               <div className="flex-1 min-w-0 space-y-0.5">
                 <div className="flex items-center justify-between gap-1">
                   <h4 className={`text-xs font-bold truncate ${!item.lu ? 'text-main' : 'text-secondary'}`}>
-                    {item.titre}
+                    {getTypeTitle(item.type)}
                   </h4>
                   <span className="text-xs text-muted shrink-0 font-medium tabular-nums">
-                    {item.created_at}
+                    {formatNotificationDate(item.created_at)}
                   </span>
                 </div>
                 <p className="text-xs text-muted leading-snug line-clamp-2">
@@ -154,9 +220,7 @@ export const NotificationsDropdown: React.FC<NotificationsDropdownProps> = ({
                 </p>
               </div>
 
-              {item.lien_onglet && (
-                <ChevronRight className="h-4 w-4 text-muted shrink-0 self-center" />
-              )}
+              <ChevronRight className="h-4 w-4 text-muted shrink-0 self-center" />
             </div>
           ))
         )}
