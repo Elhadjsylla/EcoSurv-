@@ -263,7 +263,7 @@ export const TeacherClassesPage: React.FC = () => {
                                   </div>
                                   <div className="text-[11px] text-slate-400 dark:text-slate-500 font-mono mt-0.5 truncate">
                                     #{el.matricule}
-                                    {el.genre ? ` • ${el.genre === 'M' ? 'Garçon' : el.genre === 'F' ? 'Fille' : el.genre}` : ''}
+                                    {el.sexe ? ` • ${el.sexe === 'M' ? 'Garçon' : el.sexe === 'F' ? 'Fille' : el.sexe}` : ''}
                                   </div>
                                 </div>
                               </div>

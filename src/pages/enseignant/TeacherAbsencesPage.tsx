@@ -32,13 +32,13 @@ interface StudentAttendanceState {
 
 interface RealAbsenceRecord {
   id: string;
+  ecole_id: string;
   eleve_id: string;
   date_absence: string;
   type: 'absence' | 'retard';
   justifiee: boolean;
   motif?: string | null;
   saisie_par?: string | null;
-  created_at: string;
   // Données enrichies côté client
   eleve_nom: string;
   eleve_prenom: string;
@@ -98,15 +98,19 @@ export const TeacherAbsencesPage: React.FC = () => {
     try {
       const { data, error } = await supabase
         .from('absences')
-        .select('id, eleve_id, date_absence, type, justifiee, motif, saisie_par, created_at')
+        .select('id, ecole_id, eleve_id, date_absence, type, justifiee, motif, saisie_par')
         .eq('ecole_id', authProfile.ecole_id)
         .in('eleve_id', eleveIds)
         .order('date_absence', { ascending: false })
-        .order('created_at', { ascending: false })
         .limit(50);
 
       if (error) {
-        console.error('[TeacherAbsencesPage] Erreur lecture absences:', error);
+        console.error(
+          '[TeacherAbsencesPage] Erreur lecture absences:',
+          error.code,
+          error.message,
+          error.details
+        );
         return;
       }
 
@@ -242,9 +246,14 @@ export const TeacherAbsencesPage: React.FC = () => {
         .upsert(recordsToUpsert, { onConflict: 'eleve_id,date_absence,type' });
 
       if (error) {
-        console.error('[TeacherAbsencesPage] Erreur enregistrement absences:', error);
+        console.error(
+          '[TeacherAbsencesPage] Erreur enregistrement absences:',
+          error.code,
+          error.message,
+          error.details
+        );
         setActiveToast({
-          message: `Échec d'enregistrement : ${error.message}`,
+          message: `Échec d'enregistrement (${error.code || 'ERR'}) : ${error.message}`,
           type: 'error',
         });
         return;
@@ -472,7 +481,7 @@ export const TeacherAbsencesPage: React.FC = () => {
                                 </div>
                                 <div className="text-[11px] text-slate-400 dark:text-slate-500 font-mono mt-0.5 truncate">
                                   #{el.matricule}
-                                  {el.genre ? ` • ${el.genre === 'M' ? 'Garçon' : el.genre === 'F' ? 'Fille' : el.genre}` : ''}
+                                  {el.sexe ? ` • ${el.sexe === 'M' ? 'Garçon' : el.sexe === 'F' ? 'Fille' : el.sexe}` : ''}
                                 </div>
                               </div>
                             </div>

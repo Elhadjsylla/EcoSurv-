@@ -9,13 +9,14 @@ export interface TeacherStudent {
   prenom: string;
   classe: string;
   date_naissance?: string | null;
-  genre?: string | null;
+  lieu_naissance?: string | null;
+  sexe?: string | null;
   nom_tuteur?: string | null;
   telephone_tuteur?: string | null;
   email_tuteur?: string | null;
   adresse_tuteur?: string | null;
   lien_parente?: string | null;
-  statut?: string | null;
+  actif?: boolean | null;
 }
 
 export function useTeacherData() {
@@ -45,8 +46,15 @@ export function useTeacherData() {
         .order('classe', { ascending: true });
 
       if (affectationsError) {
-        console.error('[useTeacherData] Erreur affectations_enseignants:', affectationsError);
-        setErrorMessage("Impossible de charger les classes affectées.");
+        console.error(
+          '[useTeacherData] Erreur affectations_enseignants:',
+          affectationsError.code,
+          affectationsError.message,
+          affectationsError.details
+        );
+        setErrorMessage(
+          `Impossible de charger les classes affectées (${affectationsError.code || 'ERR'} : ${affectationsError.message}).`
+        );
         setClasses([]);
         setEleves([]);
         return;
@@ -62,7 +70,7 @@ export function useTeacherData() {
         return;
       }
 
-      // 2. Charger les élèves réels de ces classes (la RLS vérifie l'accès)
+      // 2. Charger les élèves réels de ces classes avec colonnes confirmées de public.eleves
       const { data: elevesData, error: elevesError } = await supabase
         .from('eleves')
         .select(`
@@ -72,13 +80,14 @@ export function useTeacherData() {
           prenom,
           classe,
           date_naissance,
-          genre,
+          lieu_naissance,
+          sexe,
           nom_tuteur,
           telephone_tuteur,
           email_tuteur,
           adresse_tuteur,
           lien_parente,
-          statut
+          actif
         `)
         .eq('ecole_id', authProfile.ecole_id)
         .in('classe', assignedClasses)
@@ -86,16 +95,26 @@ export function useTeacherData() {
         .order('prenom', { ascending: true });
 
       if (elevesError) {
-        console.error('[useTeacherData] Erreur chargement eleves:', elevesError);
-        setErrorMessage("Impossible de charger les élèves de vos classes.");
+        console.error(
+          '[useTeacherData] Erreur chargement eleves:',
+          elevesError.code,
+          elevesError.message,
+          elevesError.details
+        );
+        setErrorMessage(
+          `Impossible de charger les élèves de vos classes (${elevesError.code || 'ERR'} : ${elevesError.message}).`
+        );
         setEleves([]);
         return;
       }
 
       setEleves((elevesData as TeacherStudent[]) || []);
-    } catch (err) {
-      console.error('[useTeacherData] Erreur inattendue:', err);
-      setErrorMessage("Une erreur est survenue lors de la récupération des données.");
+    } catch (err: any) {
+      console.error(
+        '[useTeacherData] Erreur inattendue:',
+        err?.message || err
+      );
+      setErrorMessage("Une erreur inattendue est survenue lors de la récupération des données.");
       setClasses([]);
       setEleves([]);
     } finally {
