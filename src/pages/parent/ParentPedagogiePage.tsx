@@ -1,7 +1,5 @@
 import React, { useState } from 'react';
-import {
-  ParentMatiereNote,
-} from '../../lib/mockData';
+import { ParentMatiereNote } from '../../types';
 import { ANNEE_SCOLAIRE_ACTIVE } from '../../lib/constants/scolaire';
 import { Button } from '../../components/ui/Button';
 import { generateBulletinPdf } from '../../lib/pdf/generateBulletinPdf';

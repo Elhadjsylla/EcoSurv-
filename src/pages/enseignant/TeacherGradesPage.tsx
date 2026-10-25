@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import confetti from 'canvas-confetti';
-import { EvaluationRecord, CURRENT_ENSEIGNANT } from '../../lib/mockData';
+import { EvaluationRecord } from '../../types';
+import { CURRENT_ENSEIGNANT } from '../../lib/mockData';
 import { Button } from '../../components/ui/Button';
 import { StudentInitials } from '../../components/ui/StudentInitials';
 import { ToastNotification } from '../../components/ui/ToastNotification';

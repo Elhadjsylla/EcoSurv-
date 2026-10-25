@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import { MethodePaiement } from './mockData';
+import { MethodePaiement } from '../types';
 import { useAuthStore } from '../store/useAuthStore';
 
 export interface ActiveEcheance {

@@ -4,7 +4,7 @@ import {
   EleveWithStats,
   MethodePaiement,
   CaisseTransaction,
-} from '../../lib/mockData';
+} from '../../types';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { StudentInitials } from '../../components/ui/StudentInitials';

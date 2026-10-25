@@ -13,7 +13,7 @@ import { TestActivationLinkBanner } from '../components/ui/TestActivationLinkBan
 import {
   StaffMember,
   RoleUtilisateur,
-} from '../lib/mockData';
+} from '../types';
 import { DEFAULT_CLASSES_MAURITANIE } from '../lib/constants/classes';
 import { ANNEE_SCOLAIRE_ACTIVE } from '../lib/constants/scolaire';
 import {

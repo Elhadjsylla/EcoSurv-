@@ -1,5 +1,5 @@
 import { jsPDF } from 'jspdf';
-import { MonthlyFinancialReport } from '../mockData';
+import { MonthlyFinancialReport } from '../../types';
 import { formatMRU } from '../utils';
 import { downloadFile } from '../downloadFile';
 import { CLAIMS_CONFIG } from '../../config/claims';

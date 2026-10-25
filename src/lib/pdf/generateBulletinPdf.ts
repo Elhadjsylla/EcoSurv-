@@ -1,5 +1,5 @@
 import { jsPDF } from 'jspdf';
-import { ParentMatiereNote } from '../mockData';
+import { ParentMatiereNote } from '../../types';
 import { downloadFile } from '../downloadFile';
 import { CLAIMS_CONFIG } from '../../config/claims';
 import { ANNEE_SCOLAIRE_ACTIVE } from '../constants/scolaire';

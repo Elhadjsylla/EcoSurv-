@@ -1,5 +1,5 @@
 import * as XLSX from 'xlsx';
-import { EleveWithStats } from '../mockData';
+import { EleveWithStats } from '../../types';
 import { downloadFile } from '../downloadFile';
 
 export function exportElevesToExcel(

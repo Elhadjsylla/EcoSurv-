@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { supabase } from '../lib/supabase';
-import { CaisseTransaction } from '../lib/mockData';
+import { CaisseTransaction } from '../types';
 import { useAuthStore } from './useAuthStore';
 
 export interface ClotureCaisseData {

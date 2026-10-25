@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { EcoleMock } from '../lib/mockData';
+import { EcoleMock } from '../types';
 
 export const INITIAL_ECOLE: EcoleMock = {
   id: '',

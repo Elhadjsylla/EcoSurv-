@@ -1,5 +1,5 @@
 import * as XLSX from 'xlsx';
-import { MonthlyFinancialReport } from '../mockData';
+import { MonthlyFinancialReport } from '../../types';
 import { downloadFile } from '../downloadFile';
 import { ATTACHMENT_RULE_DESCRIPTION } from '../financialReportsHelper';
 import { ANNEE_SCOLAIRE_ACTIVE } from '../constants/scolaire';

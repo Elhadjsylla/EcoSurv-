@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { EleveWithStats } from '../../lib/mockData';
+import { EleveWithStats } from '../../types';
 import { StudentInitials } from '../ui/StudentInitials';
 import { StatusBadge } from '../ui/StatusBadge';
 import { Button } from '../ui/Button';

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { AbsenceRecord } from '../../lib/mockData';
+import { AbsenceRecord } from '../../types';
 import { ANNEE_SCOLAIRE_ACTIVE } from '../../lib/constants/scolaire';
 import { supabase } from '../../lib/supabase';
 import { Card } from '../../components/ui/Card';

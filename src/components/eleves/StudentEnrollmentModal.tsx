@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { Button } from '../ui/Button';
 import { Select } from '../ui/Select';
 import { DatePicker } from '../ui/DatePicker';
-import { EleveWithStats, LienParente } from '../../lib/mockData';
+import { EleveWithStats, LienParente } from '../../types';
 import { useAuthStore } from '../../store/useAuthStore';
 import { supabase } from '../../lib/supabase';
 import { generateEcheancesForNewStudent } from '../../lib/echeancesHelper';

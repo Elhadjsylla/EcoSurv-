@@ -7,7 +7,7 @@ import { Tooltip } from '../components/ui/Tooltip';
 import {
   EcheancierConfig,
   FrequenceEcheance,
-} from '../lib/mockData';
+} from '../types';
 import { formatMRU } from '../lib/utils';
 import { useAuthStore } from '../store/useAuthStore';
 import { DEFAULT_CLASSES_MAURITANIE } from '../lib/constants/classes';

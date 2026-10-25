@@ -1,9 +1,9 @@
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import {
-  getDashboardKpis,
   EleveWithStats,
   MonthlyFinancialReport,
-} from '../../lib/mockData';
+} from '../../types';
+import { getDashboardKpis } from '../../lib/kpiHelper';
 import { computeMonthlyFinancialReports } from '../../lib/financialReportsHelper';
 import { KpiCard } from '../ui/KpiCard';
 import { StatusBadge } from '../ui/StatusBadge';

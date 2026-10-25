@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { EleveWithStats } from '../../lib/mockData';
+import { EleveWithStats } from '../../types';
 import { Button } from '../../components/ui/Button';
 import { Select } from '../../components/ui/Select';
 import { StudentInitials } from '../../components/ui/StudentInitials';

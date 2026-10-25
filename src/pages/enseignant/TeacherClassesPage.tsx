@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { ElevePedagogique, CURRENT_ENSEIGNANT } from '../../lib/mockData';
+import { ElevePedagogique } from '../../types';
+import { CURRENT_ENSEIGNANT } from '../../lib/mockData';
 import { StudentInitials } from '../../components/ui/StudentInitials';
 import { Tooltip } from '../../components/ui/Tooltip';
 import {

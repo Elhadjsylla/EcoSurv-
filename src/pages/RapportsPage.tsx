@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { KpiCard } from '../components/ui/KpiCard';
-import { MonthlyFinancialReport } from '../lib/mockData';
+import { MonthlyFinancialReport } from '../types';
 import { formatMRU } from '../lib/utils';
 import { exportFinancialReportsToExcel } from '../lib/excel/exportFinancialReports';
 import { generateFinancialReportPdf } from '../lib/pdf/generateFinancialReportPdf';

@@ -4,7 +4,7 @@ import { Button } from '../ui/Button';
 import { Tooltip } from '../ui/Tooltip';
 import { formatMRU } from '../../lib/utils';
 import { formatCompactMRU } from '../../lib/formatCompactMRU';
-import { EleveWithStats } from '../../lib/mockData';
+import { EleveWithStats } from '../../types';
 import {
   MessageCircle,
   Copy,

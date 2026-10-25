@@ -4,7 +4,7 @@ import { StatusBadge } from '../components/ui/StatusBadge';
 import { StudentInitials } from '../components/ui/StudentInitials';
 import { KpiCard } from '../components/ui/KpiCard';
 import { StudentDetailDrawer } from '../components/dashboard/StudentDetailDrawer';
-import { EleveWithStats } from '../lib/mockData';
+import { EleveWithStats } from '../types';
 import { formatMRU } from '../lib/utils';
 import { useAuthStore } from '../store/useAuthStore';
 import { supabase } from '../lib/supabase';

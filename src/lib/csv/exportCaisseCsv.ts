@@ -1,4 +1,4 @@
-import { CaisseTransaction } from '../mockData';
+import { CaisseTransaction } from '../../types';
 import { downloadFile } from '../downloadFile';
 
 export function exportCaisseCsv(transactions: CaisseTransaction[], filename?: string) {

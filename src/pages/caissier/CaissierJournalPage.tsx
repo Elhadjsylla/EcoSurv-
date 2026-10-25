@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import {
   CaisseTransaction,
   MethodePaiement,
-} from '../../lib/mockData';
+} from '../../types';
 import { CLAIMS_CONFIG } from '../../config/claims';
 import { Button } from '../../components/ui/Button';
 import { ToastNotification } from '../../components/ui/ToastNotification';

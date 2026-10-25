@@ -3,8 +3,8 @@ import {
   EleveWithStats,
   LienParente,
   StatutEcheance,
-  getDashboardKpis,
-} from '../lib/mockData';
+} from '../types';
+import { getDashboardKpis } from '../lib/kpiHelper';
 import { useAuthStore } from '../store/useAuthStore';
 import { useEcoleStore } from '../store/useEcoleStore';
 import { exportElevesToExcel } from '../lib/excel/exportElevesToExcel';

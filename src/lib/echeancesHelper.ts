@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import { EcheancierConfig, FrequenceEcheance } from './mockData';
+import { EcheancierConfig, FrequenceEcheance } from '../types';
 import { ANNEE_SCOLAIRE_ACTIVE } from './constants/scolaire';
 
 export function computeTrancheDates(
