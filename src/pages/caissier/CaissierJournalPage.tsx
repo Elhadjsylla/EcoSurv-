@@ -92,7 +92,6 @@ export const CaissierJournalPage: React.FC = () => {
 
         const echeancesMap = new Map<string, any>();
         const elevesMap = new Map<string, any>();
-        const classesMap = new Map<string, string>();
 
         if (echeanceIds.length > 0) {
           const { data: echs } = await supabase
@@ -115,21 +114,6 @@ export const CaissierJournalPage: React.FC = () => {
 
               if (els) {
                 els.forEach((el) => elevesMap.set(el.id, el));
-
-                const classeIds = Array.from(
-                  new Set(els.map((el) => el.classe_id).filter(Boolean))
-                );
-
-                if (classeIds.length > 0) {
-                  const { data: cls } = await supabase
-                    .from('classes')
-                    .select('id, nom')
-                    .in('id', classeIds);
-
-                  if (cls) {
-                    cls.forEach((c) => classesMap.set(c.id, c.nom));
-                  }
-                }
               }
             }
           }
@@ -157,9 +141,7 @@ export const CaissierJournalPage: React.FC = () => {
         const mapped: CaisseTransaction[] = paiementsData.map((p) => {
           const ech = echeancesMap.get(p.echeance_id);
           const eleve = ech ? elevesMap.get(ech.eleve_id) : null;
-          const classeNom = eleve?.classe_id
-            ? classesMap.get(eleve.classe_id) || 'Classe'
-            : 'Générale';
+          const classeNom = eleve?.classe?.trim() || 'Générale';
 
           const d = new Date(p.paye_le || p.created_at);
           const dateStr = d.toLocaleDateString('fr-FR');
