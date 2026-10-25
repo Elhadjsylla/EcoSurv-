@@ -302,7 +302,14 @@ export const CaissierJournalPage: React.FC = () => {
   );
 
   const handleCloture = async () => {
-    await cloturerCaisseDuJour(totalGeneral, transactions.length);
+    const res = await cloturerCaisseDuJour(totalGeneral, transactions.length);
+    if (!res.success) {
+      setActiveToast({
+        message: res.error || 'Échec de la clôture de caisse.',
+        type: 'error',
+      });
+      return;
+    }
     setActiveToast({
       message: `Clôture de caisse du ${new Date().toLocaleDateString('fr-FR')} effectuée avec succès (${formatMRU(totalGeneral)} certifiés). Enregistré dans clotures_caisse.`,
       type: 'success',

@@ -24,7 +24,10 @@ interface CaisseStoreState {
   triggerRefresh: () => void;
   isDateCloturee: (dateStr?: string) => boolean;
   getClotureForDate: (dateStr?: string) => ClotureCaisseData | null;
-  cloturerCaisseDuJour: (montantTotal: number, nbTransactions: number) => Promise<boolean>;
+  cloturerCaisseDuJour: (
+    montantTotal: number,
+    nbTransactions: number
+  ) => Promise<{ success: boolean; error?: string }>;
 }
 
 const getTodayDateStr = () => new Date().toISOString().split('T')[0];
@@ -47,12 +50,12 @@ export const useCaisseStore = create<CaisseStoreState>()(
         set((state) => ({ refreshKey: state.refreshKey + 1 }));
       },
 
-      isDateCloturee: (dateStr) => {
+      isDateCloturee: (dateStr?: string) => {
         const d = dateStr || getTodayDateStr();
         return !!get().clotures[d];
       },
 
-      getClotureForDate: (dateStr) => {
+      getClotureForDate: (dateStr?: string) => {
         const d = dateStr || getTodayDateStr();
         return get().clotures[d] || null;
       },
@@ -77,6 +80,8 @@ export const useCaisseStore = create<CaisseStoreState>()(
         };
 
         // 1. Tenter l'écriture réelle dans Supabase (table clotures_caisse)
+        // Colonnes réelles non calculées : ecole_id, caissier_id, date_cloture
+        // montant_total_encaisse et nombre_operations sont calculés automatiquement par le trigger clotures_caisse_calcul
         if (ecoleId && caissierId) {
           try {
             const { error } = await supabase.from('clotures_caisse').insert([
@@ -84,20 +89,37 @@ export const useCaisseStore = create<CaisseStoreState>()(
                 ecole_id: ecoleId,
                 caissier_id: caissierId,
                 date_cloture: today,
-                montant_total: montantTotal,
-                nb_transactions: nbTransactions,
-                statut: 'cloture',
               },
             ]);
             if (error) {
-              console.warn('[EcoSurv Caisse] Supabase fallback local:', error.message);
+              console.error(
+                '[EcoSurv Caisse] Erreur insertion clotures_caisse:',
+                error.code,
+                error.message,
+                error.details
+              );
+              return {
+                success: false,
+                error: `Échec de clôture (${error.code || 'ERR'}) : ${error.message}`,
+              };
             }
-          } catch (err) {
-            console.warn('[EcoSurv Caisse] Mode hors-ligne / fallback local:', err);
+          } catch (err: any) {
+            console.error('[EcoSurv Caisse] Erreur inattendue clotures_caisse:', err);
+            return {
+              success: false,
+              error: `Erreur inattendue : ${err?.message || err}`,
+            };
           }
+        } else {
+          const errMsg = "Identifiants d'école ou de caissier introuvables.";
+          console.error('[EcoSurv Caisse]', errMsg);
+          return {
+            success: false,
+            error: errMsg,
+          };
         }
 
-        // 2. Persister dans l'état applicatif frontend
+        // 2. Persister dans l'état applicatif frontend uniquement en cas de succès
         set((state) => ({
           clotures: {
             ...state.clotures,
@@ -105,7 +127,7 @@ export const useCaisseStore = create<CaisseStoreState>()(
           },
         }));
 
-        return true;
+        return { success: true };
       },
     }),
     {
