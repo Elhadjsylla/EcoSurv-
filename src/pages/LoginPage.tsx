@@ -153,7 +153,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onReturnToLanding }) => {
       if (profile.ecole_id) {
         const { data: ecoleData } = await supabase
           .from('ecoles')
-          .select('id, nom, ville, telephone, email, statut_activation, statut_abonnement')
+          .select('id, nom, ville, adresse, telephone, email, annee_scolaire, statut_activation, statut_abonnement')
           .eq('id', profile.ecole_id)
           .maybeSingle();
 
@@ -161,12 +161,15 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onReturnToLanding }) => {
           useAuthStore.getState().setEcole(ecoleData);
           useEcoleStore.getState().updateEcole({
             id: ecoleData.id,
-            nom: ecoleData.nom,
-            ville: ecoleData.ville || 'Mauritanie',
+            nom: ecoleData.nom || '',
+            ville: ecoleData.ville || '',
+            adresse: ecoleData.adresse || '',
             telephone: ecoleData.telephone || '',
             email: ecoleData.email || '',
+            annee_scolaire: ecoleData.annee_scolaire || '',
             statut_activation: ecoleData.statut_activation,
-            code_ecole: ecoleData.nom.slice(0, 4).toUpperCase(),
+            statut_abonnement: ecoleData.statut_abonnement as any,
+            code_ecole: ecoleData.nom ? ecoleData.nom.slice(0, 4).toUpperCase() : '',
           });
 
           if (ecoleData.statut_activation !== 'active') {

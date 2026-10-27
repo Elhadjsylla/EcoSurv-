@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useThemeStore } from './store/useThemeStore';
 import { useAuthStore } from './store/useAuthStore';
+import { useEcoleStore } from './store/useEcoleStore';
 import { Sidebar, NavTab } from './components/ui/Sidebar';
 import { TeacherSidebar, TeacherNavTab } from './components/enseignant/TeacherSidebar';
 import { CaissierSidebar, CaissierNavTab } from './components/caissier/CaissierSidebar';
@@ -152,10 +153,24 @@ export function AppContent() {
             if (profile.ecole_id) {
               const { data: ecoleData } = await supabase
                 .from('ecoles')
-                .select('id, nom, ville, telephone, email, statut_activation, statut_abonnement')
+                .select('id, nom, ville, adresse, telephone, email, annee_scolaire, statut_activation, statut_abonnement')
                 .eq('id', profile.ecole_id)
                 .maybeSingle();
-              if (ecoleData) useAuthStore.getState().setEcole(ecoleData);
+              if (ecoleData) {
+                useAuthStore.getState().setEcole(ecoleData);
+                useEcoleStore.getState().updateEcole({
+                  id: ecoleData.id,
+                  nom: ecoleData.nom || '',
+                  ville: ecoleData.ville || '',
+                  adresse: ecoleData.adresse || '',
+                  telephone: ecoleData.telephone || '',
+                  email: ecoleData.email || '',
+                  annee_scolaire: ecoleData.annee_scolaire || '',
+                  statut_activation: ecoleData.statut_activation,
+                  statut_abonnement: ecoleData.statut_abonnement as any,
+                  code_ecole: ecoleData.nom ? ecoleData.nom.slice(0, 4).toUpperCase() : '',
+                });
+              }
             }
           }
           useNavigationStore.getState().navigateToSetPassword();
@@ -189,12 +204,24 @@ export function AppContent() {
         if (profile.ecole_id) {
           const { data: ecoleData } = await supabase
             .from('ecoles')
-            .select('id, nom, ville, telephone, email, statut_activation, statut_abonnement')
+            .select('id, nom, ville, adresse, telephone, email, annee_scolaire, statut_activation, statut_abonnement')
             .eq('id', profile.ecole_id)
             .maybeSingle();
 
           if (ecoleData) {
             useAuthStore.getState().setEcole(ecoleData);
+            useEcoleStore.getState().updateEcole({
+              id: ecoleData.id,
+              nom: ecoleData.nom || '',
+              ville: ecoleData.ville || '',
+              adresse: ecoleData.adresse || '',
+              telephone: ecoleData.telephone || '',
+              email: ecoleData.email || '',
+              annee_scolaire: ecoleData.annee_scolaire || '',
+              statut_activation: ecoleData.statut_activation,
+              statut_abonnement: ecoleData.statut_abonnement as any,
+              code_ecole: ecoleData.nom ? ecoleData.nom.slice(0, 4).toUpperCase() : '',
+            });
             if (ecoleData.statut_activation !== 'active') {
               useNavigationStore.getState().navigateToPendingActivation();
               window.history.replaceState(null, '', '/activation');
@@ -360,12 +387,24 @@ export function AppContent() {
           if (profile.ecole_id) {
             const { data: ecoleData } = await supabase
               .from('ecoles')
-              .select('id, nom, ville, telephone, email, statut_activation, statut_abonnement')
+              .select('id, nom, ville, adresse, telephone, email, annee_scolaire, statut_activation, statut_abonnement')
               .eq('id', profile.ecole_id)
               .maybeSingle();
 
             if (ecoleData) {
               useAuthStore.getState().setEcole(ecoleData);
+              useEcoleStore.getState().updateEcole({
+                id: ecoleData.id,
+                nom: ecoleData.nom || '',
+                ville: ecoleData.ville || '',
+                adresse: ecoleData.adresse || '',
+                telephone: ecoleData.telephone || '',
+                email: ecoleData.email || '',
+                annee_scolaire: ecoleData.annee_scolaire || '',
+                statut_activation: ecoleData.statut_activation,
+                statut_abonnement: ecoleData.statut_abonnement as any,
+                code_ecole: ecoleData.nom ? ecoleData.nom.slice(0, 4).toUpperCase() : '',
+              });
               if (ecoleData.statut_activation !== 'active') {
                 useNavigationStore.getState().navigateToPendingActivation();
                 window.history.replaceState(null, '', '/activation');

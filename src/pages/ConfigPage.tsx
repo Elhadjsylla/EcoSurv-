@@ -15,7 +15,7 @@ import {
   RoleUtilisateur,
 } from '../types';
 import { DEFAULT_CLASSES_MAURITANIE } from '../lib/constants/classes';
-import { ANNEE_SCOLAIRE_ACTIVE } from '../lib/constants/scolaire';
+import { getAnneeScolaireOptions } from '../lib/constants/scolaire';
 import {
   Save,
   Building2,
@@ -40,8 +40,10 @@ import {
 export const ConfigPage: React.FC = () => {
   const { ecole, updateEcole } = useEcoleStore();
   const authProfile = useAuthStore((s) => s.profile);
+  const canEditSchool = authProfile?.role === 'directeur' || authProfile?.role === 'super_admin';
   const [formData, setFormData] = useState(ecole);
   const [isSaving, setIsSaving] = useState(false);
+
   const [staffList, setStaffList] = useState<StaffMember[]>([]);
   const [isLoadingStaff, setIsLoadingStaff] = useState(false);
   const [staffError, setStaffError] = useState<string | null>(null);
@@ -87,7 +89,7 @@ export const ConfigPage: React.FC = () => {
           role: p.role as RoleUtilisateur,
           classe_assignee: affectationMap.get(p.id),
           actif: Boolean(p.actif),
-          date_ajout: p.created_at ? new Date(p.created_at).toISOString().split('T')[0] : '2026-09-22',
+          date_ajout: p.created_at ? new Date(p.created_at).toISOString().split('T')[0] : '',
         }));
         setStaffList(mapped);
       } else {
@@ -147,14 +149,78 @@ export const ConfigPage: React.FC = () => {
     setTimeout(() => setToastMessage(null), 4000);
   };
 
-  const handleSaveEcoleInfo = (e: React.FormEvent) => {
+  const handleSaveEcoleInfo = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!canEditSchool) {
+      showToast("Seuls le directeur et le super administrateur peuvent modifier les paramètres de l'établissement.");
+      return;
+    }
+
+    const ecoleId = authProfile?.ecole_id || ecole.id;
+    if (!ecoleId) {
+      showToast("Erreur : identifiant de l'établissement introuvable.");
+      return;
+    }
+
+    const nomTrimmed = (formData.nom || '').trim();
+    if (!nomTrimmed) {
+      showToast("Le nom officiel de l'école est obligatoire.");
+      return;
+    }
+
     setIsSaving(true);
-    setTimeout(() => {
-      updateEcole(formData);
+    try {
+      const payload = {
+        nom: nomTrimmed,
+        ville: (formData.ville || '').trim() || null,
+        adresse: (formData.adresse || '').trim() || null,
+        telephone: (formData.telephone || '').trim() || null,
+        email: (formData.email || '').trim() || null,
+        annee_scolaire: (formData.annee_scolaire || '').trim() || null,
+      };
+
+      const { data, error } = await supabase
+        .from('ecoles')
+        .update(payload)
+        .eq('id', ecoleId)
+        .select('id, nom, ville, adresse, telephone, email, annee_scolaire, statut_activation, statut_abonnement')
+        .single();
+
+      if (error) {
+        console.error('[ConfigPage] Erreur mise à jour école:', error.code, error.message, error.details);
+        showToast(`Erreur (${error.code || 'BDD'}) : ${error.message || 'Impossible de mettre à jour le profil de l’établissement'}`);
+      } else if (data) {
+        useAuthStore.getState().setEcole(data);
+        updateEcole({
+          id: data.id,
+          nom: data.nom || '',
+          ville: data.ville || '',
+          adresse: data.adresse || '',
+          telephone: data.telephone || '',
+          email: data.email || '',
+          annee_scolaire: data.annee_scolaire || '',
+          statut_activation: data.statut_activation,
+          statut_abonnement: data.statut_abonnement as any,
+          code_ecole: data.nom ? data.nom.slice(0, 4).toUpperCase() : '',
+        });
+        setFormData((prev) => ({
+          ...prev,
+          nom: data.nom || '',
+          ville: data.ville || '',
+          adresse: data.adresse || '',
+          telephone: data.telephone || '',
+          email: data.email || '',
+          annee_scolaire: data.annee_scolaire || '',
+        }));
+        showToast("✓ Coordonnées et paramètres de l'établissement enregistrés avec succès !");
+      }
+    } catch (err: any) {
+      console.error('[ConfigPage] Exception mise à jour école:', err);
+      showToast(`Erreur inattendue : ${err?.message || 'Échec de la sauvegarde'}`);
+    } finally {
       setIsSaving(false);
-      showToast("✓ Coordonnées et paramètres de l'établissement mis à jour et synchronisés en direct !");
-    }, 600);
+    }
   };
 
   const handleInviteStaff = async (e: React.FormEvent) => {
@@ -440,8 +506,8 @@ export const ConfigPage: React.FC = () => {
 
         <KpiCard
           title="Année & Licence"
-          customValue={formData.annee_scolaire}
-          subtitle={`Tenant: ${formData.code_ecole}`}
+          customValue={formData.annee_scolaire || 'Non configurée'}
+          subtitle={`Tenant: ${formData.code_ecole || 'N/A'}`}
           icon={<School className="w-5 h-5 text-amber-600 dark:text-amber-400" />}
           variant="warning"
         />
@@ -455,11 +521,16 @@ export const ConfigPage: React.FC = () => {
             <h3 className="text-lg font-bold text-slate-900 dark:text-white">
               Profil de l'Établissement Client
             </h3>
+            {!canEditSchool && (
+              <span className="text-[11px] font-semibold bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 px-2 py-0.5 rounded border border-amber-200 dark:border-amber-800/60">
+                Lecture seule
+              </span>
+            )}
           </div>
           <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
             Code Tenant:{' '}
             <span className="font-bold text-blue-700 dark:text-blue-400 font-mono bg-blue-50 dark:bg-blue-950/50 px-2 py-0.5 rounded-md border border-blue-100 dark:border-blue-900/40">
-              {formData.code_ecole}
+              {formData.code_ecole || 'N/A'}
             </span>
           </span>
         </div>
@@ -472,9 +543,10 @@ export const ConfigPage: React.FC = () => {
               </label>
               <input
                 type="text"
-                value={formData.nom}
+                value={formData.nom || ''}
+                disabled={!canEditSchool}
                 onChange={(e) => setFormData({ ...formData, nom: e.target.value })}
-                className="w-full h-11 px-3.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-600 focus:outline-none"
+                className="w-full h-11 px-3.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-600 focus:outline-none disabled:opacity-60 disabled:cursor-not-allowed"
               />
             </div>
 
@@ -483,12 +555,11 @@ export const ConfigPage: React.FC = () => {
                 Année Scolaire Active <span className="text-red-500">*</span>
               </label>
               <Select
-                value={formData.annee_scolaire || ANNEE_SCOLAIRE_ACTIVE}
+                value={formData.annee_scolaire || ''}
                 onChange={(val) => setFormData({ ...formData, annee_scolaire: String(val) })}
-                options={[
-                  { value: ANNEE_SCOLAIRE_ACTIVE, label: `${ANNEE_SCOLAIRE_ACTIVE} (Active)` },
-                  { value: '2024-2025', label: '2024–2025 (Archivée)' },
-                ]}
+                options={getAnneeScolaireOptions(formData.annee_scolaire)}
+                placeholder="Sélectionner une année scolaire..."
+                disabled={!canEditSchool}
                 triggerClassName="w-full h-11 rounded-xl font-bold"
               />
             </div>
@@ -501,9 +572,10 @@ export const ConfigPage: React.FC = () => {
               </label>
               <input
                 type="text"
-                value={formData.ville}
+                value={formData.ville || ''}
+                disabled={!canEditSchool}
                 onChange={(e) => setFormData({ ...formData, ville: e.target.value })}
-                className="w-full h-11 px-3.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-600 focus:outline-none"
+                className="w-full h-11 px-3.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-600 focus:outline-none disabled:opacity-60 disabled:cursor-not-allowed"
               />
             </div>
 
@@ -513,9 +585,10 @@ export const ConfigPage: React.FC = () => {
               </label>
               <input
                 type="text"
-                value={formData.telephone}
+                value={formData.telephone || ''}
+                disabled={!canEditSchool}
                 onChange={(e) => setFormData({ ...formData, telephone: e.target.value })}
-                className="w-full h-11 px-3.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-mono text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-600 focus:outline-none"
+                className="w-full h-11 px-3.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-mono text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-600 focus:outline-none disabled:opacity-60 disabled:cursor-not-allowed"
               />
             </div>
 
@@ -525,9 +598,10 @@ export const ConfigPage: React.FC = () => {
               </label>
               <input
                 type="email"
-                value={formData.email}
+                value={formData.email || ''}
+                disabled={!canEditSchool}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="w-full h-11 px-3.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-600 focus:outline-none"
+                className="w-full h-11 px-3.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-600 focus:outline-none disabled:opacity-60 disabled:cursor-not-allowed"
               />
             </div>
           </div>
@@ -538,25 +612,32 @@ export const ConfigPage: React.FC = () => {
             </label>
             <input
               type="text"
-              value={formData.adresse}
+              value={formData.adresse || ''}
+              disabled={!canEditSchool}
               onChange={(e) => setFormData({ ...formData, adresse: e.target.value })}
-              className="w-full h-11 px-3.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-600 focus:outline-none"
+              className="w-full h-11 px-3.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-600 focus:outline-none disabled:opacity-60 disabled:cursor-not-allowed"
             />
           </div>
 
-          <div className="flex justify-end pt-2">
-            <Button
-              type="submit"
-              variant="primary"
-              size="sm"
-              className="gap-2"
-              loading={isSaving}
-              loadingText="Enregistrement..."
-            >
-              <Save className="h-4 w-4" />
-              Enregistrer les modifications
-            </Button>
-          </div>
+          {canEditSchool ? (
+            <div className="flex justify-end pt-2">
+              <Button
+                type="submit"
+                variant="primary"
+                size="sm"
+                className="gap-2"
+                loading={isSaving}
+                loadingText="Enregistrement..."
+              >
+                <Save className="h-4 w-4" />
+                Enregistrer les modifications
+              </Button>
+            </div>
+          ) : (
+            <div className="pt-2 text-xs text-slate-500 italic">
+              Modification réservée au directeur ou au super administrateur de l'établissement.
+            </div>
+          )}
         </form>
       </Card>
 

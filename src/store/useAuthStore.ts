@@ -24,8 +24,10 @@ export interface EcoleInfo {
   id: string;
   nom: string;
   ville?: string | null;
+  adresse?: string | null;
   telephone?: string | null;
   email?: string | null;
+  annee_scolaire?: string | null;
   statut_activation: 'en_attente' | 'active' | 'suspendue';
   statut_abonnement?: string;
 }
