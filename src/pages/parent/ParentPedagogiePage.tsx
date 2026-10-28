@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { ParentMatiereNote } from '../../types';
-import { ANNEE_SCOLAIRE_ACTIVE } from '../../lib/constants/scolaire';
+import { useAnneeScolaire } from '../../hooks/useAnneeScolaire';
 import { Button } from '../../components/ui/Button';
 import { generateBulletinPdf } from '../../lib/pdf/generateBulletinPdf';
 import { ToastNotification } from '../../components/ui/ToastNotification';
@@ -27,6 +27,7 @@ export const ParentPedagogiePage: React.FC<ParentPedagogiePageProps> = ({
   onSelectChild,
 }) => {
   const authEcole = useAuthStore((s) => s.ecole);
+  const anneeScolaire = useAnneeScolaire();
   const ecoleNom = authEcole?.nom || 'Établissement Scolaire';
   const { activeChild, errorMessage: childrenError } = useParentChildren(selectedChildId, onSelectChild || (() => {}));
 
@@ -139,7 +140,7 @@ export const ParentPedagogiePage: React.FC<ParentPedagogiePageProps> = ({
             Bulletin de Notes — {enfant.prenom} {enfant.nom}
           </h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Classe de {enfant.classe} • Année scolaire {ANNEE_SCOLAIRE_ACTIVE}
+            Classe de {enfant.classe}{anneeScolaire ? ` • Année scolaire ${anneeScolaire}` : ''}
           </p>
         </div>
 
@@ -194,6 +195,7 @@ export const ParentPedagogiePage: React.FC<ParentPedagogiePageProps> = ({
                 matricule: enfant.matricule,
                 classe: enfant.classe,
                 trimestre: selectedTrimestre,
+                anneeScolaire,
                 rang: enfant.rang,
                 effectif: 0,
                 moyenneGenerale: moyenneCalculee,

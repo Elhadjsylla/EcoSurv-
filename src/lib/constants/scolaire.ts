@@ -48,9 +48,3 @@ export function getAnneeScolaireOptions(
   }));
 }
 
-/**
- * @deprecated Remplacé par l'année scolaire de l'établissement (authProfile.ecole.annee_scolaire).
- * Conservé temporairement pour compatibilité avec les composants en cours de refactorisation.
- */
-export const ANNEE_SCOLAIRE_ACTIVE = anneeScolaireSuggeree();
-export const ANNEE_SCOLAIRE_PAR_DEFAUT = ANNEE_SCOLAIRE_ACTIVE;

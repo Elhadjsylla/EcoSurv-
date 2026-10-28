@@ -3,7 +3,7 @@ import { Button } from '../../components/ui/Button';
 import { KpiCard } from '../../components/ui/KpiCard';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useTeacherData } from '../../hooks/useTeacherData';
-import { ANNEE_SCOLAIRE_ACTIVE } from '../../lib/constants/scolaire';
+import { useAnneeScolaire } from '../../hooks/useAnneeScolaire';
 import {
   Users,
   CalendarCheck,
@@ -20,6 +20,7 @@ interface TeacherDashboardProps {
 export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ onNavigateToTab }) => {
   const authProfile = useAuthStore((s) => s.profile);
   const isAuthLoading = useAuthStore((s) => s.isLoading);
+  const anneeScolaire = useAnneeScolaire();
   const { classes: teacherClasses, eleves: teacherStudents, isLoading: isTeacherDataLoading } = useTeacherData();
 
   if (isAuthLoading || isTeacherDataLoading) {
@@ -53,9 +54,11 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ onNavigateTo
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
               Espace Pédagogique
             </span>
-            <span className="text-xs text-slate-500 dark:text-slate-400 font-semibold">
-              Année {ANNEE_SCOLAIRE_ACTIVE}
-            </span>
+            {anneeScolaire && (
+              <span className="text-xs text-slate-500 dark:text-slate-400 font-semibold">
+                Année {anneeScolaire}
+              </span>
+            )}
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
             Bonjour, {teacherName}

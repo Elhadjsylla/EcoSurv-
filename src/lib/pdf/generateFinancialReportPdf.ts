@@ -8,6 +8,7 @@ import { ATTACHMENT_RULE_DESCRIPTION } from '../financialReportsHelper';
 export function generateFinancialReportPdf(
   reports: MonthlyFinancialReport[],
   ecoleNom?: string,
+  anneeScolaire?: string | null,
   filename?: string
 ): jsPDF | null {
   if (!reports || reports.length === 0) {
@@ -70,7 +71,10 @@ export function generateFinancialReportPdf(
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8.5);
   doc.setTextColor(100, 116, 139);
-  doc.text(`Exercice Scolaire 2025–2026 • Arrêté au ${new Date().toLocaleDateString('fr-FR')}`, pageWidth / 2, y, { align: 'center' });
+  const anneeTrimmed = anneeScolaire?.trim();
+  const arreteStr = `Arrêté au ${new Date().toLocaleDateString('fr-FR')}`;
+  const sousTitreExercice = anneeTrimmed ? `Exercice Scolaire ${anneeTrimmed} • ${arreteStr}` : arreteStr;
+  doc.text(sousTitreExercice, pageWidth / 2, y, { align: 'center' });
 
   // Règle de rattachement comptable affichée explicitement
   y += 4.5;

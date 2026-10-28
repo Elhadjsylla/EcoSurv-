@@ -2,10 +2,10 @@ import * as XLSX from 'xlsx';
 import { MonthlyFinancialReport } from '../../types';
 import { downloadFile } from '../downloadFile';
 import { ATTACHMENT_RULE_DESCRIPTION } from '../financialReportsHelper';
-import { ANNEE_SCOLAIRE_ACTIVE } from '../constants/scolaire';
 
 export function exportFinancialReportsToExcel(
   reports: MonthlyFinancialReport[],
+  anneeScolaire: string | null | undefined,
   filename?: string
 ) {
   if (!reports || reports.length === 0) {
@@ -19,11 +19,17 @@ export function exportFinancialReportsToExcel(
   const totalImpayes = reports.reduce((sum, r) => sum + r.impayes, 0);
   const tauxGlobal = totalAttendu > 0 ? Math.round((totalEncaisse / totalAttendu) * 100) : 0;
 
+  const anneeTrimmed = anneeScolaire?.trim();
+  const dateExportStr = `Date d'exportation : ${new Date().toLocaleDateString('fr-FR')}`;
+  const metaLine = anneeTrimmed
+    ? `Exercice Scolaire : ${anneeTrimmed} | ${dateExportStr}`
+    : dateExportStr;
+
   // Données de la feuille sous forme de tableau 2D
   const sheetData: (string | number)[][] = [
     ['ECOSURV — SYSTÈME DE GESTION DE SCOLARITÉ DES ÉCOLES PRIVÉES'],
     ['RAPPORT FINANCIER & ÉTAT DE RECOUVREMENT DE SCOLARITÉ'],
-    [`Exercice Scolaire : ${ANNEE_SCOLAIRE_ACTIVE} | Date d'exportation : ${new Date().toLocaleDateString('fr-FR')}`],
+    [metaLine],
     [ATTACHMENT_RULE_DESCRIPTION],
     [], // ligne vide
     [

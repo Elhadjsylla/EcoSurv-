@@ -12,7 +12,7 @@ import {
 } from '../lib/financialReportsHelper';
 import { supabase } from '../lib/supabase';
 import { useAuthStore } from '../store/useAuthStore';
-import { ANNEE_SCOLAIRE_ACTIVE } from '../lib/constants/scolaire';
+import { useAnneeScolaire } from '../hooks/useAnneeScolaire';
 import {
   FileText,
   FileSpreadsheet,
@@ -31,6 +31,7 @@ import { CollectionChart } from '../components/ui/CollectionChart';
 export const RapportsPage: React.FC = () => {
   const authProfile = useAuthStore((s) => s.profile);
   const authEcole = useAuthStore((s) => s.ecole);
+  const anneeScolaire = useAnneeScolaire();
 
   const [reports, setReports] = useState<MonthlyFinancialReport[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -89,7 +90,7 @@ export const RapportsPage: React.FC = () => {
     }
     setIsExportingExcel(true);
     try {
-      exportFinancialReportsToExcel(reports);
+      exportFinancialReportsToExcel(reports, anneeScolaire);
       showToast('✓ Rapport Financier annuel exporté au format Excel (.xlsx) avec succès.');
     } catch (err) {
       console.error(err);
@@ -108,10 +109,12 @@ export const RapportsPage: React.FC = () => {
     }
     setIsGeneratingPdf(true);
     try {
+      const anneeSuffix = anneeScolaire ? `_${anneeScolaire}` : '';
       generateFinancialReportPdf(
         reports,
         ecoleNom,
-        `Rapport_Financier_Annuel_${new Date().getFullYear()}.pdf`
+        anneeScolaire,
+        `Rapport_Financier_Annuel${anneeSuffix}.pdf`
       );
       showToast('✓ Rapport Financier annuel exporté en PDF avec succès.');
     } catch (err) {
@@ -153,9 +156,11 @@ export const RapportsPage: React.FC = () => {
             <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
               Rapports Financiers & Comptabilité
             </h1>
-            <span className="rounded-full bg-blue-100 dark:bg-blue-950/60 px-2.5 py-0.5 text-xs font-bold text-blue-700 dark:text-blue-300 border border-blue-200/50 dark:border-blue-800/60">
-              Exercice 2025–2026
-            </span>
+            {anneeScolaire && (
+              <span className="rounded-full bg-blue-100 dark:bg-blue-950/60 px-2.5 py-0.5 text-xs font-bold text-blue-700 dark:text-blue-300 border border-blue-200/50 dark:border-blue-800/60">
+                Exercice {anneeScolaire}
+              </span>
+            )}
           </div>
           <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">
             Historique analytique des flux de scolarité, taux de recouvrement mensuels et prévisions comptables.
@@ -270,7 +275,7 @@ export const RapportsPage: React.FC = () => {
       <div className="rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xs overflow-hidden">
         <div className="py-4 px-5 sm:px-6 bg-slate-50/80 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
           <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-            Tableau Récapitulatif par Mois (Exercice {ANNEE_SCOLAIRE_ACTIVE})
+            Tableau Récapitulatif par Mois{anneeScolaire ? ` (Exercice ${anneeScolaire})` : ''}
           </h3>
           <span className="text-xs text-slate-500 dark:text-slate-400 font-medium hidden sm:inline">
             Données comptables réelles agrégées par date d'exigibilité
@@ -319,9 +324,11 @@ export const RapportsPage: React.FC = () => {
                         <div className="font-bold text-slate-900 dark:text-white text-sm">
                           {r.mois}
                         </div>
-                        <div className="text-[11px] text-slate-400 dark:text-slate-500 font-mono mt-0.5">
-                          Exercice 2025–2026
-                        </div>
+                        {anneeScolaire && (
+                          <div className="text-[11px] text-slate-400 dark:text-slate-500 font-mono mt-0.5">
+                            Exercice {anneeScolaire}
+                          </div>
+                        )}
                       </td>
 
                       <td className="py-4.5 px-5 text-right font-bold text-slate-900 dark:text-white">
@@ -384,7 +391,12 @@ export const RapportsPage: React.FC = () => {
                             <button
                               onClick={() => {
                                 setOpenMenuRowId(null);
-                                exportFinancialReportsToExcel([r], `Rapport_Financier_${r.mois.replace(/\s+/g, '_')}_2026.xlsx`);
+                                const suffix = anneeScolaire ? `_${anneeScolaire}` : '';
+                                exportFinancialReportsToExcel(
+                                  [r],
+                                  anneeScolaire,
+                                  `Rapport_Financier_${r.mois.replace(/\s+/g, '_')}${suffix}.xlsx`
+                                );
                                 showToast(`État financier de ${r.mois} exporté en Excel (.xlsx) avec succès.`);
                               }}
                               className="w-full flex items-center gap-2.5 px-3 py-2 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/60 font-semibold"
@@ -396,10 +408,12 @@ export const RapportsPage: React.FC = () => {
                             <button
                               onClick={() => {
                                 setOpenMenuRowId(null);
+                                const suffix = anneeScolaire ? `_${anneeScolaire}` : '';
                                 generateFinancialReportPdf(
                                   [r],
                                   ecoleNom,
-                                  `Rapport_Financier_${r.mois.replace(/\s+/g, '_')}_2026.pdf`
+                                  anneeScolaire,
+                                  `Rapport_Financier_${r.mois.replace(/\s+/g, '_')}${suffix}.pdf`
                                 );
                                 showToast(`État financier de ${r.mois} exporté en PDF avec succès.`);
                               }}
