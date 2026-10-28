@@ -261,7 +261,6 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
         telephone: telephone.trim(),
         email: email.trim(),
         statut_activation: 'en_attente',
-        code_ecole: nomEnregistre.slice(0, 4).toUpperCase(),
       });
 
       // 5. Générer le code d'activation OTP et l'expédier par email via Resend

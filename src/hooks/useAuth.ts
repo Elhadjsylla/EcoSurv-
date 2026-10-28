@@ -66,7 +66,6 @@ export function useAuth() {
             annee_scolaire: ecoleData.annee_scolaire || '',
             statut_activation: ecoleData.statut_activation,
             statut_abonnement: ecoleData.statut_abonnement as any,
-            code_ecole: ecoleData.nom ? ecoleData.nom.slice(0, 4).toUpperCase() : '',
           });
           if (ecoleData.statut_activation !== 'active') {
             useNavigationStore.getState().navigateToPendingActivation();

@@ -23,7 +23,7 @@ import {
 } from 'lucide-react';
 import { useNavigationStore } from '../../store/useNavigationStore';
 import { LanguageSelector } from './LanguageSelector';
-import { ANNEE_SCOLAIRE_ACTIVE } from '../../lib/constants/scolaire';
+import { useAnneeScolaire } from '../../hooks/useAnneeScolaire';
 import { useLanguageStore } from '../../i18n/useLanguageStore';
 import { isRoleSimulatorAllowed } from '../../config/features';
 import type { UserRole, PortalRole } from '../../store/useAuthStore';
@@ -51,6 +51,7 @@ export const Header: React.FC<HeaderProps> = ({
   const searchInputRef = useRef<HTMLInputElement>(null);
   const toggleMobileMenu = useNavigationStore((s) => s.toggleMobileMenu);
   const userRole = useNavigationStore((s) => s.userRole);
+  const anneeScolaire = useAnneeScolaire();
 
   const unreadCount = useNotificationsStore((s) => s.unreadCount());
   const loadNotificationsForUser = useNotificationsStore((s) => s.loadForUser);
@@ -206,13 +207,11 @@ export const Header: React.FC<HeaderProps> = ({
                     {authEcole.nom}
                   </h2>
                 </Tooltip>
-                <p className="text-xs text-muted flex items-center gap-1 font-medium truncate mt-0.5">
-                  {authEcole.ville && <span className="truncate">{authEcole.ville}</span>}
-                  {authEcole.ville && <span className="shrink-0">•</span>}
-                  <span className="font-semibold text-secondary tabular-nums shrink-0">
-                    {authEcole.nom.slice(0, 4).toUpperCase()}
-                  </span>
-                </p>
+                {authEcole.ville && (
+                  <p className="text-xs text-muted flex items-center gap-1 font-medium truncate mt-0.5">
+                    <span className="truncate">{authEcole.ville}</span>
+                  </p>
+                )}
               </>
             ) : (
               <span className="text-xs text-muted font-medium italic">Chargement…</span>
@@ -254,10 +253,12 @@ export const Header: React.FC<HeaderProps> = ({
         )}
 
         {/* Academic Year pill (desktop) */}
-        <div className="hidden xl:flex items-center gap-1.5 h-9 rounded-sm bg-surface-subtle px-2.5 text-xs font-medium text-secondary border border-subtle shrink-0 tabular-nums">
-          <Calendar className="h-3.5 w-3.5 text-muted shrink-0" />
-          <span>{ANNEE_SCOLAIRE_ACTIVE}</span>
-        </div>
+        {anneeScolaire && (
+          <div className="hidden xl:flex items-center gap-1.5 h-9 rounded-sm bg-surface-subtle px-2.5 text-xs font-medium text-secondary border border-subtle shrink-0 tabular-nums">
+            <Calendar className="h-3.5 w-3.5 text-muted shrink-0" />
+            <span>{anneeScolaire}</span>
+          </div>
+        )}
 
         {/* Sélecteur de langue (FR / AR / EN) */}
         <LanguageSelector />

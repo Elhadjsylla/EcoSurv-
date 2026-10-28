@@ -15,7 +15,7 @@ import {
   RoleUtilisateur,
 } from '../types';
 import { DEFAULT_CLASSES_MAURITANIE } from '../lib/constants/classes';
-import { getAnneeScolaireOptions } from '../lib/constants/scolaire';
+import { anneeScolaireSuggeree, getAnneeScolaireOptions } from '../lib/constants/scolaire';
 import {
   Save,
   Building2,
@@ -41,7 +41,10 @@ export const ConfigPage: React.FC = () => {
   const { ecole, updateEcole } = useEcoleStore();
   const authProfile = useAuthStore((s) => s.profile);
   const canEditSchool = authProfile?.role === 'directeur' || authProfile?.role === 'super_admin';
-  const [formData, setFormData] = useState(ecole);
+  const [formData, setFormData] = useState(() => ({
+    ...ecole,
+    annee_scolaire: ecole.annee_scolaire || anneeScolaireSuggeree(),
+  }));
   const [isSaving, setIsSaving] = useState(false);
 
   const [staffList, setStaffList] = useState<StaffMember[]>([]);
@@ -120,7 +123,10 @@ export const ConfigPage: React.FC = () => {
 
   // Synchronise le formulaire si le store change
   useEffect(() => {
-    setFormData(ecole);
+    setFormData({
+      ...ecole,
+      annee_scolaire: ecole.annee_scolaire || anneeScolaireSuggeree(),
+    });
   }, [ecole]);
 
   // Fermer le menu contextuel si clic extérieur
@@ -202,7 +208,6 @@ export const ConfigPage: React.FC = () => {
           annee_scolaire: data.annee_scolaire || '',
           statut_activation: data.statut_activation,
           statut_abonnement: data.statut_abonnement as any,
-          code_ecole: data.nom ? data.nom.slice(0, 4).toUpperCase() : '',
         });
         setFormData((prev) => ({
           ...prev,
@@ -506,8 +511,8 @@ export const ConfigPage: React.FC = () => {
 
         <KpiCard
           title="Année & Licence"
-          customValue={formData.annee_scolaire || 'Non configurée'}
-          subtitle={`Tenant: ${formData.code_ecole || 'N/A'}`}
+          customValue={ecole.annee_scolaire || 'Non configurée'}
+          subtitle="Exercice scolaire de l'établissement"
           icon={<School className="w-5 h-5 text-amber-600 dark:text-amber-400" />}
           variant="warning"
         />
@@ -527,12 +532,6 @@ export const ConfigPage: React.FC = () => {
               </span>
             )}
           </div>
-          <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-            Code Tenant:{' '}
-            <span className="font-bold text-blue-700 dark:text-blue-400 font-mono bg-blue-50 dark:bg-blue-950/50 px-2 py-0.5 rounded-md border border-blue-100 dark:border-blue-900/40">
-              {formData.code_ecole || 'N/A'}
-            </span>
-          </span>
         </div>
 
         <form onSubmit={handleSaveEcoleInfo} className="space-y-6 text-xs">

@@ -126,9 +126,11 @@ export const UserProfileDropdown: React.FC<UserProfileDropdownProps> = ({
                 <div className="text-xs font-bold text-main truncate">
                   {ecole ? ecole.nom : 'Établissement…'}
                 </div>
-                <div className="text-xs text-muted tabular-nums truncate">
-                  {ecole ? (ecole.ville ? `${ecole.ville} • ${ecole.nom.slice(0, 4).toUpperCase()}` : ecole.nom.slice(0, 4).toUpperCase()) : 'Chargement…'}
-                </div>
+                {(!ecole || ecole.ville) && (
+                  <div className="text-xs text-muted tabular-nums truncate">
+                    {ecole ? ecole.ville : 'Chargement…'}
+                  </div>
+                )}
               </div>
             </div>
             {ecole && (

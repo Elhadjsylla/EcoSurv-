@@ -779,7 +779,6 @@ export const CaissierJournalPage: React.FC = () => {
                       methodePaiement: selectedReceipt.methode,
                       caissierNom: selectedReceipt.encaisse_par,
                       ecoleNom: authEcole?.nom,
-                      ecoleCode: authEcole?.nom ? authEcole.nom.slice(0, 4).toUpperCase() : undefined,
                       ecoleVille: authEcole?.ville || undefined,
                     }, 'download');
                     setActiveToast({

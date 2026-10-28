@@ -3,7 +3,6 @@ import { RoleUtilisateur } from './common';
 export interface EcoleMock {
   id: string;
   nom: string;
-  code_ecole?: string;
   ville: string;
   adresse: string;
   telephone: string;
