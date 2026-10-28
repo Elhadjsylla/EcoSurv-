@@ -9,6 +9,7 @@ import { TeacherSidebar, TeacherNavTab } from './components/enseignant/TeacherSi
 import { CaissierSidebar, CaissierNavTab } from './components/caissier/CaissierSidebar';
 import { ParentSidebar, ParentNavTab } from './components/parent/ParentSidebar';
 import { Header } from './components/ui/Header';
+import { Logo } from './components/ui/Logo';
 import { useNavigationStore, selectCurrentRoute } from './store/useNavigationStore';
 import { useSwipeNavigation } from './hooks/useSwipeNavigation';
 import { DirectorDashboard } from './components/dashboard/DirectorDashboard';
@@ -684,11 +685,8 @@ export function AppContent() {
     return (
       <div key="auth-resolving" className="flex flex-col items-center justify-center min-h-screen bg-slate-900 text-white font-['Plus_Jakarta_Sans',sans-serif]">
         <div className="flex flex-col items-center space-y-4 animate-in fade-in duration-300">
-          <div className="h-14 w-14 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center shadow-lg shadow-blue-500/25 ring-4 ring-white/10">
-            <span className="text-xl font-black text-white tracking-wider">ECO</span>
-          </div>
+          <Logo variant="inverse" height={40} />
           <div className="space-y-1 text-center">
-            <h2 className="text-base font-bold tracking-tight text-white">EcoSurv Mauritanie</h2>
             <p className="text-xs text-slate-400 font-medium">Chargement sécurisé de votre session...</p>
           </div>
           <div className="w-6 h-6 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin mt-2"></div>

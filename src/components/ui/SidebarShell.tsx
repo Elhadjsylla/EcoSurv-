@@ -4,6 +4,8 @@ import { cn } from '../../lib/utils';
 import type { UserRole } from './Header';
 import { Tooltip } from './Tooltip';
 import { useNavigationStore } from '../../store/useNavigationStore';
+import { useThemeStore } from '../../store/useThemeStore';
+import { Logo, LogoIcone } from './Logo';
 
 // Couleurs d'accent unifiées sur le design system EcoSurv (Palette A)
 const accent: Record<UserRole, { logo: string; subtitle: string; toggle: string }> = {
@@ -36,7 +38,7 @@ const accent: Record<UserRole, { logo: string; subtitle: string; toggle: string 
 
 interface SidebarShellProps {
   role: UserRole;
-  logoIcon: React.ReactNode;
+  logoIcon?: React.ReactNode;
   subtitle?: string;
   className?: string;
   children: (isCollapsed: boolean) => React.ReactNode;
@@ -48,12 +50,14 @@ interface SidebarShellProps {
  *   et s'ouvre sous forme de tiroir (drawer) coulissant avec fond flouté.
  * - Sur desktop (>= md) : sidebar permanente repliable / dépliable.
  */
-export const SidebarShell: React.FC<SidebarShellProps> = ({ role, logoIcon, subtitle, className, children }) => {
+export const SidebarShell: React.FC<SidebarShellProps> = ({ role, subtitle, className, children }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const colors = accent[role];
   const toggleLabel = isCollapsed ? 'Déplier' : 'Replier';
   const isMobileMenuOpen = useNavigationStore((s) => s.isMobileMenuOpen);
   const setMobileMenuOpen = useNavigationStore((s) => s.setMobileMenuOpen);
+  const theme = useThemeStore((s) => s.theme);
+  const logoVariant = theme === 'dark' ? 'inverse' : 'couleur';
 
   return (
     <>
@@ -75,25 +79,13 @@ export const SidebarShell: React.FC<SidebarShellProps> = ({ role, logoIcon, subt
       >
         {/* En-tête mobile avec bouton fermer */}
         <div className="flex h-16 shrink-0 items-center justify-between border-b border-subtle px-5">
-          <div className="flex items-center gap-3">
-            <div
-              className={cn(
-                'flex h-10 w-10 min-h-10 min-w-10 shrink-0 items-center justify-center rounded-md',
-                colors.logo
-              )}
-            >
-              {logoIcon}
-            </div>
-            <div className="flex min-w-0 flex-1 flex-col">
-              <span className="truncate text-lg font-bold leading-none tracking-tight text-main">
-                EcoSurv
+          <div className="flex min-w-0 flex-1 flex-col">
+            <Logo variant={logoVariant} height={26} />
+            {subtitle && (
+              <span className={cn('mt-1 truncate text-xs font-bold uppercase tracking-wider', colors.subtitle)}>
+                {subtitle}
               </span>
-              {subtitle && (
-                <span className={cn('mt-1 truncate text-xs font-bold uppercase tracking-wider', colors.subtitle)}>
-                  {subtitle}
-                </span>
-              )}
-            </div>
+            )}
           </div>
 
           <button
@@ -124,33 +116,21 @@ export const SidebarShell: React.FC<SidebarShellProps> = ({ role, logoIcon, subt
         <div
           className={cn(
             'flex shrink-0 border-b border-subtle px-5',
-            isCollapsed ? 'flex-col items-start gap-2 py-3' : 'h-16 items-center gap-3'
+            isCollapsed ? 'flex-col items-center gap-2 py-3' : 'h-16 items-center justify-between gap-3'
           )}
         >
-          <div
-            className={cn(
-              'flex h-10 w-10 min-h-10 min-w-10 shrink-0 items-center justify-center rounded-md',
-              colors.logo
-            )}
-          >
-            {logoIcon}
-          </div>
-
-          {!isCollapsed &&
-            (subtitle ? (
-              <div className="flex min-w-0 flex-1 flex-col">
-                <span className="truncate text-lg font-bold leading-none tracking-tight text-main">
-                  EcoSurv
-                </span>
+          {isCollapsed ? (
+            <LogoIcone size={36} />
+          ) : (
+            <div className="flex min-w-0 flex-1 flex-col">
+              <Logo variant={logoVariant} height={26} />
+              {subtitle && (
                 <span className={cn('mt-1 truncate text-xs font-bold uppercase tracking-wider', colors.subtitle)}>
                   {subtitle}
                 </span>
-              </div>
-            ) : (
-              <span className="min-w-0 flex-1 truncate text-lg font-bold tracking-tight text-main">
-                EcoSurv
-              </span>
-            ))}
+              )}
+            </div>
+          )}
 
           <Tooltip content={toggleLabel} side="right" className="shrink-0">
             <button

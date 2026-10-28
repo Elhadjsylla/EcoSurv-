@@ -7,7 +7,6 @@ import { CONTACT_CONFIG, getWhatsAppUrl } from '../config/contact';
 import { HonestProductDemo } from '../components/landing/HonestProductDemo';
 import {
   CreditCard,
-  GraduationCap,
   CheckCircle2,
   ArrowRight,
   Sun,
@@ -31,6 +30,7 @@ import {
   BarChart3,
 } from 'lucide-react';
 import { LanguageSelector } from '../components/ui/LanguageSelector';
+import { Logo } from '../components/ui/Logo';
 import { useLanguageStore } from '../i18n/useLanguageStore';
 import { Language } from '../i18n/translations';
 
@@ -184,13 +184,8 @@ export const LandingPage: React.FC = () => {
       <header className="sticky top-0 z-40 w-full border-b border-slate-200/80 dark:border-slate-800/80 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl shadow-xs transition-all">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           {/* Brand Logo épuré sur une seule ligne */}
-          <a href="#" className="flex items-center gap-2.5 group">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-indigo-700 text-white shadow-md shadow-blue-500/20 group-hover:scale-105 transition-transform shrink-0">
-              <GraduationCap className="h-5 w-5" />
-            </div>
-            <span className="text-xl font-extrabold tracking-tight text-slate-900 dark:text-white">
-              Eco<span className="text-blue-600 dark:text-blue-400">Surv</span>
-            </span>
+          <a href="#" className="flex items-center shrink-0">
+            <Logo variant={theme === 'dark' ? 'inverse' : 'couleur'} height={30} />
           </a>
 
           {/* Liens de navigation essentiels */}
@@ -1127,10 +1122,7 @@ export const LandingPage: React.FC = () => {
             {/* Colonne Marque */}
             <div className="lg:col-span-2 space-y-4">
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-600 text-white font-black text-sm">
-                  ES
-                </div>
-                <span className="text-lg font-black text-white tracking-tight">EcoSurv Mauritanie</span>
+                <Logo variant="inverse" height={32} />
               </div>
               <p className="text-slate-400 leading-relaxed max-w-sm">
                 Solution logicielle souveraine de pilotage des recouvrements scolaires et universitaires en République Islamique de Mauritanie.

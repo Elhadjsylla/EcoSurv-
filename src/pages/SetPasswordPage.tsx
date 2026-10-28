@@ -5,6 +5,7 @@ import { useAuthStore } from '../store/useAuthStore';
 import { useNavigationStore } from '../store/useNavigationStore';
 import { useEcoleStore } from '../store/useEcoleStore';
 import { LanguageSelector } from '../components/ui/LanguageSelector';
+import { Logo } from '../components/ui/Logo';
 import type { UserRole } from '../components/ui/Header';
 
 export const SetPasswordPage: React.FC = () => {
@@ -199,14 +200,7 @@ export const SetPasswordPage: React.FC = () => {
     <div className="min-h-screen flex flex-col justify-between bg-slate-50 dark:bg-slate-950 px-4 py-8 font-['Plus_Jakarta_Sans',sans-serif] text-slate-900 dark:text-slate-100 antialiased selection:bg-blue-600 selection:text-white">
       {/* Top Header */}
       <div className="max-w-md w-full mx-auto flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-600 text-white font-black text-xs shadow-md shadow-blue-600/20">
-            ES
-          </div>
-          <span className="font-extrabold text-sm tracking-tight text-slate-900 dark:text-white">
-            EcoSurv
-          </span>
-        </div>
+        <Logo height={28} />
         <LanguageSelector />
       </div>
 

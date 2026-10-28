@@ -8,6 +8,7 @@ import { NotificationsDropdown } from './NotificationsDropdown';
 import { useNotificationsStore } from '../../store/useNotificationsStore';
 import { NavigationControls } from './NavigationControls';
 import { Tooltip } from './Tooltip';
+import { Logo } from './Logo';
 import {
   Building2,
   Calendar,
@@ -186,6 +187,11 @@ export const Header: React.FC<HeaderProps> = ({
           <Menu className="h-4.5 w-4.5" />
         </button>
 
+        {/* Mobile Brand Logo (sidebar is hidden on mobile) */}
+        <div className="md:hidden shrink-0">
+          <Logo height={24} />
+        </div>
+
         {/* Back / Forward navigation (hidden on mobile, visible from sm:) */}
         <div className="hidden sm:flex items-center gap-2 sm:gap-2.5 shrink-0">
           <NavigationControls role={currentRole} />
@@ -193,7 +199,7 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
 
         {/* School identity badge with fluid truncation and tooltip */}
-        <div className="flex items-center gap-2.5 min-w-0 shrink">
+        <div className="hidden md:flex items-center gap-2.5 min-w-0 shrink">
           <div
             className={`flex h-9 w-9 items-center justify-center rounded-sm border shrink-0 ${currentConfig.colorTheme}`}
           >

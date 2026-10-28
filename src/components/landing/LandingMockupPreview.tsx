@@ -14,6 +14,7 @@ import {
   Printer,
   Clock,
 } from 'lucide-react';
+import { LogoIcone } from '../ui/Logo';
 
 type MockupTab = 'directeur' | 'guichet' | 'whatsapp' | 'recu';
 
@@ -407,9 +408,7 @@ export const LandingMockupPreview: React.FC = () => {
             {/* Realistic WhatsApp Chat Card */}
             <div className="rounded-2xl bg-[#0b141a] p-4 text-white shadow-inner max-w-md mx-auto font-sans border border-slate-800">
               <div className="flex items-center gap-2.5 pb-3 border-b border-slate-800">
-                <div className="h-8 w-8 rounded-full bg-emerald-700 flex items-center justify-center font-bold text-xs">
-                  ES
-                </div>
+                <LogoIcone size={32} />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1">
                     <span className="text-xs font-bold truncate">EcoSurv • Groupe Scolaire Al-Baraka</span>

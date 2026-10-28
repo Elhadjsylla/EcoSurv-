@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Menu, School } from 'lucide-react';
+import { Menu } from 'lucide-react';
 import { AdminSidebar, AdminTab } from '../../components/admin/AdminSidebar';
 import { AdminDashboardPage } from './AdminDashboardPage';
 import { AdminEcolesPage, AdminEcoleItem } from './AdminEcolesPage';
@@ -7,6 +7,8 @@ import { AdminUsersPage, AdminUserRow } from './AdminUsersPage';
 import { AdminAbonnementsPage } from './AdminAbonnementsPage';
 import { AdminAuditPage } from './AdminAuditPage';
 import { supabase } from '../../lib/supabase';
+import { Logo } from '../../components/ui/Logo';
+import { useThemeStore } from '../../store/useThemeStore';
 
 interface SuperAdminConsoleProps {
   onReturnToLanding?: () => void;
@@ -18,6 +20,7 @@ export const SuperAdminConsole: React.FC<SuperAdminConsoleProps> = ({ onReturnTo
   const [users, setUsers] = useState<AdminUserRow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const theme = useThemeStore((s) => s.theme);
 
   const fetchAdminData = async () => {
     setIsLoading(true);
@@ -104,12 +107,7 @@ export const SuperAdminConsole: React.FC<SuperAdminConsoleProps> = ({ onReturnTo
               <Menu className="h-5 w-5" />
             </button>
             <div className="flex items-center gap-2">
-              <div className="h-8 w-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center shadow-xs">
-                <School className="h-4 w-4" />
-              </div>
-              <span className="font-extrabold text-sm text-slate-900 dark:text-white">
-                EcoSurv Admin
-              </span>
+              <Logo variant={theme === 'dark' ? 'inverse' : 'couleur'} height={24} />
             </div>
           </div>
           <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">

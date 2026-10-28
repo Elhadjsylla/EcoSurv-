@@ -20,6 +20,7 @@ import { useEcoleStore } from '../store/useEcoleStore';
 import { useNavigationStore } from '../store/useNavigationStore';
 import { Select } from '../components/ui/Select';
 import { LanguageSelector } from '../components/ui/LanguageSelector';
+import { Logo } from '../components/ui/Logo';
 import { generateOtp, hashOtp, sendActivationEmail } from '../lib/email/sendActivationEmail';
 import type { UserRole } from '../components/ui/Header';
 
@@ -349,9 +350,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
           >
             Déjà un compte ? Se connecter
           </button>
-          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-600 text-white font-black text-xs shadow-md shadow-blue-600/20">
-            ES
-          </div>
+          <Logo height={28} />
         </div>
       </div>
 

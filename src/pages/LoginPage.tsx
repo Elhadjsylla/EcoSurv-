@@ -6,6 +6,7 @@ import { useEcoleStore } from '../store/useEcoleStore';
 import { useNavigationStore } from '../store/useNavigationStore';
 import { CONTACT_CONFIG, getWhatsAppUrl } from '../config/contact';
 import { LanguageSelector } from '../components/ui/LanguageSelector';
+import { Logo } from '../components/ui/Logo';
 import { logLoginSuccess } from '../lib/auditLogger';
 import type { UserRole } from '../components/ui/Header';
 
@@ -208,14 +209,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onReturnToLanding }) => {
 
         <div className="flex items-center gap-2.5">
           <LanguageSelector />
-          <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-600 text-white font-black text-xs shadow-md shadow-blue-600/20">
-              ES
-            </div>
-            <span className="font-extrabold text-sm tracking-tight text-slate-900 dark:text-white">
-              EcoSurv
-            </span>
-          </div>
+          <Logo height={28} />
         </div>
       </div>
 
