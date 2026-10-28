@@ -5,6 +5,8 @@ import { Select } from '../ui/Select';
 import { DatePicker } from '../ui/DatePicker';
 import { EleveWithStats, LienParente } from '../../types';
 import { useAuthStore } from '../../store/useAuthStore';
+import { useNavigationStore } from '../../store/useNavigationStore';
+import { useAnneeScolaire } from '../../hooks/useAnneeScolaire';
 import { supabase } from '../../lib/supabase';
 import { generateEcheancesForNewStudent } from '../../lib/echeancesHelper';
 import { parseEdgeFunctionError } from '../../lib/functionsHelper';
@@ -52,6 +54,8 @@ export const StudentEnrollmentModal: React.FC<StudentEnrollmentModalProps> = ({
   eleveToEdit,
 }) => {
   const isEditing = Boolean(eleveToEdit);
+  const anneeScolaire = useAnneeScolaire();
+  const navigate = useNavigationStore((s) => s.navigate);
 
   const [formData, setFormData] = useState<Partial<StudentEnrollmentFormData>>({
     nom: '',
@@ -127,6 +131,11 @@ export const StudentEnrollmentModal: React.FC<StudentEnrollmentModalProps> = ({
     e.preventDefault();
     setErrors({});
 
+    if (!isEditing && !anneeScolaire) {
+      setErrors({ submit: "Définissez l'année scolaire dans Configuration avant de continuer" });
+      return;
+    }
+
     const result = studentEnrollmentSchema.safeParse(formData);
 
     if (!result.success) {
@@ -142,11 +151,9 @@ export const StudentEnrollmentModal: React.FC<StudentEnrollmentModalProps> = ({
 
     const validData = result.data;
     const authProfile = useAuthStore.getState().profile;
-    const authEcole = useAuthStore.getState().ecole;
 
     const newId = eleveToEdit?.id || `el-${Date.now().toString().slice(-6)}`;
-    const code = authEcole?.nom ? authEcole.nom.slice(0, 4).toUpperCase().replace(/[^A-Z]/g, '') : 'ECO';
-    const realMatricule = eleveToEdit?.matricule || `${code}-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+    const realMatricule = eleveToEdit?.matricule || `MAT-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
 
     let finalEleveId = newId;
     let inviteNotice = '';
@@ -290,7 +297,8 @@ export const StudentEnrollmentModal: React.FC<StudentEnrollmentModalProps> = ({
             const nbGen = await generateEcheancesForNewStudent(
               authProfile.ecole_id,
               finalEleveId,
-              validData.classe
+              validData.classe,
+              anneeScolaire
             );
             if (nbGen > 0) {
               console.log(`[StudentEnrollmentModal] ${nbGen} échéance(s) générée(s) selon le barème de ${validData.classe}`);
@@ -494,6 +502,26 @@ export const StudentEnrollmentModal: React.FC<StudentEnrollmentModalProps> = ({
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Garde année scolaire vide */}
+            {!isEditing && !anneeScolaire && (
+              <div className="p-4 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-xs text-amber-900 dark:text-amber-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div className="flex items-center gap-2.5 font-semibold">
+                  <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0" />
+                  <span>Définissez l'année scolaire dans Configuration avant de continuer</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    navigate('config');
+                  }}
+                  className="font-bold text-amber-800 dark:text-amber-300 underline hover:text-amber-950 shrink-0 cursor-pointer"
+                >
+                  Aller dans Configuration
+                </button>
+              </div>
+            )}
+
             {/* Bannière d'erreur générale d'enregistrement */}
             {errors.submit && (
               <div className="p-4 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-xs text-red-800 dark:text-red-200 flex items-start gap-2.5 animate-in fade-in">
@@ -766,7 +794,13 @@ export const StudentEnrollmentModal: React.FC<StudentEnrollmentModalProps> = ({
               <Button type="button" variant="outline" size="sm" onClick={onClose} disabled={isEnrolling} className="w-full sm:w-auto justify-center">
                 Annuler
               </Button>
-              <Button type="submit" variant="primary" size="sm" className="gap-2 w-full sm:w-auto justify-center" disabled={isEnrolling}>
+              <Button
+                type="submit"
+                variant="primary"
+                size="sm"
+                className="gap-2 w-full sm:w-auto justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={isEnrolling || (!isEditing && !anneeScolaire)}
+              >
                 {isEnrolling ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />

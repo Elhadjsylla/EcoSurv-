@@ -45,6 +45,8 @@ import { ConfirmBulkRelanceModal } from './ConfirmBulkRelanceModal';
 import { StudentDetailDrawer } from './StudentDetailDrawer';
 import { Tooltip } from '../ui/Tooltip';
 import { useAuthStore } from '../../store/useAuthStore';
+import { useNavigationStore } from '../../store/useNavigationStore';
+import { useAnneeScolaire } from '../../hooks/useAnneeScolaire';
 import { supabase } from '../../lib/supabase';
 
 interface DirectorDashboardProps {
@@ -56,6 +58,8 @@ export const DirectorDashboard: React.FC<DirectorDashboardProps> = ({
 }) => {
   const authProfile = useAuthStore((s) => s.profile);
   const authEcole = useAuthStore((s) => s.ecole);
+  const anneeScolaire = useAnneeScolaire();
+  const navigate = useNavigationStore((s) => s.navigate);
 
   const [elevesList, setElevesList] = useState<EleveWithStats[]>([]);
   const [monthlyReports, setMonthlyReports] = useState<MonthlyFinancialReport[]>([]);
@@ -391,12 +395,12 @@ export const DirectorDashboard: React.FC<DirectorDashboardProps> = ({
 
       if (res.statut === 'en_attente') {
         showToast(
-          `Paiement enregistré [EN ATTENTE] (Reçu ${res.numeroRecu}) de ${formatMRU(payMontant)} pour ${paymentModalEleve.prenom} ${paymentModalEleve.nom}.`,
+          `Paiement de ${formatMRU(payMontant)} enregistré en attente de confirmation (Reçu #${res.numeroRecu}).`,
           'info'
         );
       } else {
         showToast(
-          `✓ Paiement enregistré (Reçu ${res.numeroRecu}) : ${formatMRU(payMontant)} pour ${paymentModalEleve.prenom} ${paymentModalEleve.nom}.`,
+          `Paiement de ${formatMRU(payMontant)} encaissé pour ${paymentModalEleve.prenom} ${paymentModalEleve.nom} (Reçu #${res.numeroRecu}).`,
           'success'
         );
       }
@@ -423,7 +427,11 @@ export const DirectorDashboard: React.FC<DirectorDashboardProps> = ({
     }
     setIsExportingPdf(true);
     try {
-      generateFinancialReportPdf(monthlyReports, authEcole?.nom || 'Établissement Scolaire');
+      generateFinancialReportPdf(
+        monthlyReports,
+        authEcole?.nom || 'Établissement Scolaire',
+        anneeScolaire
+      );
       showToast('✓ Rapport de synthèse PDF généré et téléchargé avec succès !', 'success');
     } catch (err) {
       console.error('Erreur export PDF :', err);
@@ -622,11 +630,31 @@ export const DirectorDashboard: React.FC<DirectorDashboardProps> = ({
               Votre établissement est actif et prêt. Vous pouvez dès maintenant inscrire vos premiers élèves ou configurer vos classes et tarifs.
             </p>
           </div>
+          {!anneeScolaire && (
+            <div className="max-w-lg mx-auto p-3.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-xs text-amber-900 dark:text-amber-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div className="flex items-center gap-2 font-semibold">
+                <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                <span>Définissez l'année scolaire dans Configuration avant de continuer</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => navigate('config')}
+                className="font-bold text-amber-800 dark:text-amber-300 underline hover:text-amber-950 shrink-0 cursor-pointer"
+              >
+                Aller dans Configuration
+              </button>
+            </div>
+          )}
           <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
             <Button
               variant="primary"
-              onClick={() => onNavigateToEleves && onNavigateToEleves('all')}
-              className="gap-2"
+              disabled={!anneeScolaire}
+              title={!anneeScolaire ? "Définissez l'année scolaire dans Configuration avant de continuer" : undefined}
+              onClick={() => {
+                if (!anneeScolaire) return;
+                if (onNavigateToEleves) onNavigateToEleves('all');
+              }}
+              className="gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <UserPlus className="h-4 w-4" />
               Inscrire un premier élève

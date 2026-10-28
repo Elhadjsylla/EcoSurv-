@@ -1,6 +1,6 @@
 import { supabase } from './supabase';
 import { EcheancierConfig, FrequenceEcheance } from '../types';
-import { ANNEE_SCOLAIRE_ACTIVE } from './constants/scolaire';
+import { getAnneeScolaire } from '../hooks/useAnneeScolaire';
 
 export function computeTrancheDates(
   startDateStr: string,
@@ -119,8 +119,13 @@ export async function createBaremeAndGenerateEcheances(
     nombre_tranches: number;
     date_limite_prochaine: string;
   },
-  anneeScolaire = ANNEE_SCOLAIRE_ACTIVE
+  anneeScolaire: string | null | undefined
 ): Promise<{ bareme: EcheancierConfig; generatedEcheancesCount: number }> {
+  const annee = anneeScolaire?.trim();
+  if (!annee) {
+    throw new Error("Définissez l'année scolaire dans Configuration avant de continuer.");
+  }
+
   const montantParTranche = Math.round(bareme.montant_total / bareme.nombre_tranches);
 
   // 1. Insertion stricte dans Supabase baremes_echeances
@@ -135,7 +140,7 @@ export async function createBaremeAndGenerateEcheances(
       nombre_tranches: bareme.nombre_tranches,
       montant_par_tranche: montantParTranche,
       date_limite_prochaine: bareme.date_limite_prochaine,
-      annee_scolaire: anneeScolaire,
+      annee_scolaire: annee,
     })
     .select('id')
     .single();
@@ -184,7 +189,7 @@ export async function createBaremeAndGenerateEcheances(
           libelle: `${bareme.libelle} - Tranche ${i + 1}/${bareme.nombre_tranches}`,
           montant: montantTranche,
           date_echeance: dates[i] || bareme.date_limite_prochaine,
-          annee_scolaire: anneeScolaire,
+          annee_scolaire: annee,
         });
       }
     }
@@ -221,8 +226,12 @@ export async function generateEcheancesForNewStudent(
   ecoleId: string,
   eleveId: string,
   classe: string,
-  anneeScolaire = ANNEE_SCOLAIRE_ACTIVE
+  anneeScolaire: string | null | undefined
 ): Promise<number> {
+  const annee = anneeScolaire?.trim();
+  if (!annee) {
+    throw new Error("Définissez l'année scolaire dans Configuration avant de continuer.");
+  }
   if (!ecoleId || !eleveId || !classe) return 0;
 
   const { data: baremes, error: bErr } = await supabase
@@ -264,7 +273,7 @@ export async function generateEcheancesForNewStudent(
       libelle: `${bareme.libelle} - Tranche ${i + 1}/${bareme.nombre_tranches}`,
       montant: montantTranche,
       date_echeance: dates[i] || bareme.date_limite_prochaine,
-      annee_scolaire: anneeScolaire,
+      annee_scolaire: annee,
     });
   }
 
@@ -312,6 +321,7 @@ export interface GenererEcheancesManquantesResult {
 export interface GenererEcheancesManquantesParams {
   eleveId?: string;
   classe?: string;
+  anneeScolaire?: string | null;
 }
 
 /**
@@ -346,6 +356,11 @@ export function formatGenererEcheancesError(err: any): string {
 export async function genererEcheancesManquantes(
   params?: GenererEcheancesManquantesParams
 ): Promise<GenererEcheancesManquantesResult> {
+  const annee = (params?.anneeScolaire !== undefined ? params.anneeScolaire : getAnneeScolaire())?.trim();
+  if (!annee) {
+    throw new Error("Définissez l'année scolaire dans Configuration avant de continuer.");
+  }
+
   const { data: rpcResult, error: rpcError } = await supabase.rpc('generer_echeances_manquantes', {
     p_eleve_id: params?.eleveId || null,
     p_classe: params?.classe ? params.classe.trim() : null,

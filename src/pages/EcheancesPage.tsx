@@ -10,8 +10,9 @@ import {
 } from '../types';
 import { formatMRU } from '../lib/utils';
 import { useAuthStore } from '../store/useAuthStore';
+import { useNavigationStore } from '../store/useNavigationStore';
+import { useAnneeScolaire } from '../hooks/useAnneeScolaire';
 import { DEFAULT_CLASSES_MAURITANIE } from '../lib/constants/classes';
-import { ANNEE_SCOLAIRE_ACTIVE } from '../lib/constants/scolaire';
 import {
   fetchBaremes,
   createBaremeAndGenerateEcheances,
@@ -40,6 +41,8 @@ import {
 
 export const EcheancesPage: React.FC = () => {
   const authProfile = useAuthStore((s) => s.profile);
+  const anneeScolaire = useAnneeScolaire();
+  const navigate = useNavigationStore((s) => s.navigate);
   const [echeanciers, setEcheanciers] = useState<EcheancierConfig[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -98,12 +101,16 @@ export const EcheancesPage: React.FC = () => {
 
   const handleGenererManquantes = async () => {
     if (isGeneratingManquantes) return;
+    if (!anneeScolaire) {
+      setErrorMessage("Définissez l'année scolaire dans Configuration avant de continuer");
+      return;
+    }
     setIsGeneratingManquantes(true);
     setErrorMessage(null);
     setIsConfirmManquantesOpen(false);
 
     try {
-      const res = await genererEcheancesManquantes();
+      const res = await genererEcheancesManquantes({ anneeScolaire });
 
       if (res.echeancesCreees > 0) {
         showToast(`${res.echeancesCreees} échéances créées pour ${res.elevesConcernes} élèves`);
@@ -194,27 +201,14 @@ export const EcheancesPage: React.FC = () => {
 
   const handleCreateEcheancier = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!anneeScolaire) {
+      setErrorMessage("Définissez l'année scolaire dans Configuration avant de continuer");
+      return;
+    }
     if (!isFormValid || typeof newMontantTotal !== 'number') return;
 
     if (!authProfile?.ecole_id) {
-      const newEcheancier: EcheancierConfig = {
-        id: `ech-${Date.now()}`,
-        libelle: newLibelle.trim(),
-        classe: newClasse,
-        montant_total: Number(newMontantTotal),
-        frequence: newFrequence,
-        nombre_tranches: Number(newNombreTranches),
-        montant_par_tranche: Math.round(Number(newMontantTotal) / Number(newNombreTranches)),
-        date_limite_prochaine: newDateLimite,
-        nb_eleves_concernes: 30,
-      };
-      setEcheanciers([newEcheancier, ...echeanciers]);
-      showToast(`Échéancier "${newLibelle}" créé.`);
-      setIsModalOpen(false);
-      setNewLibelle('');
-      setNewClasse('');
-      setNewMontantTotal('');
-      setNewDateLimite('');
+      setErrorMessage("Aucun établissement rattaché à votre profil.");
       return;
     }
 
@@ -230,7 +224,7 @@ export const EcheancesPage: React.FC = () => {
           nombre_tranches: Number(newNombreTranches),
           date_limite_prochaine: newDateLimite,
         },
-        ANNEE_SCOLAIRE_ACTIVE
+        anneeScolaire
       );
 
       setEcheanciers((prev) => [bareme, ...prev.filter((b) => b.id !== bareme.id)]);
@@ -304,9 +298,11 @@ export const EcheancesPage: React.FC = () => {
             <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
               Échéances & Tarifs de Scolarité
             </h1>
-            <span className="rounded-full bg-blue-100 dark:bg-blue-950/60 px-2.5 py-0.5 text-xs font-bold text-blue-700 dark:text-blue-300 border border-blue-200/50 dark:border-blue-800/60">
-              Année {ANNEE_SCOLAIRE_ACTIVE}
-            </span>
+            {anneeScolaire && (
+              <span className="rounded-full bg-blue-100 dark:bg-blue-950/60 px-2.5 py-0.5 text-xs font-bold text-blue-700 dark:text-blue-300 border border-blue-200/50 dark:border-blue-800/60">
+                Année {anneeScolaire}
+              </span>
+            )}
           </div>
           <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">
             Configuration des frais de scolarité, des mensualités et des calendriers d'échéances par classe.
@@ -318,9 +314,13 @@ export const EcheancesPage: React.FC = () => {
             <Button
               variant="outline"
               size="sm"
-              className="gap-2 h-10 px-4 font-semibold text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-800 hover:bg-blue-50 dark:hover:bg-blue-950/40"
-              disabled={isGeneratingManquantes}
-              onClick={() => setIsConfirmManquantesOpen(true)}
+              className="gap-2 h-10 px-4 font-semibold text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-800 hover:bg-blue-50 dark:hover:bg-blue-950/40 disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={isGeneratingManquantes || !anneeScolaire}
+              title={!anneeScolaire ? "Définissez l'année scolaire dans Configuration avant de continuer" : undefined}
+              onClick={() => {
+                if (!anneeScolaire) return;
+                setIsConfirmManquantesOpen(true);
+              }}
             >
               {isGeneratingManquantes ? (
                 <>
@@ -339,8 +339,11 @@ export const EcheancesPage: React.FC = () => {
           <Button
             variant="primary"
             size="sm"
-            className="gap-2 h-10 px-4"
+            className="gap-2 h-10 px-4 disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={!anneeScolaire}
+            title={!anneeScolaire ? "Définissez l'année scolaire dans Configuration avant de continuer" : undefined}
             onClick={() => {
+              if (!anneeScolaire) return;
               setErrorMessage(null);
               setNewLibelle('');
               setNewClasse('');
@@ -354,6 +357,23 @@ export const EcheancesPage: React.FC = () => {
           </Button>
         </div>
       </div>
+
+      {/* Garde année scolaire vide */}
+      {!anneeScolaire && (
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 p-4 rounded-xl border border-amber-200 dark:border-amber-800/60">
+          <div className="flex items-center gap-3 text-xs font-semibold">
+            <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0" />
+            <span>Définissez l'année scolaire dans Configuration avant de continuer</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => navigate('config')}
+            className="text-xs font-bold text-amber-800 dark:text-amber-300 underline hover:text-amber-950 dark:hover:text-white shrink-0 cursor-pointer"
+          >
+            Aller dans Configuration
+          </button>
+        </div>
+      )}
 
       {/* Classes Sans Barème Notice */}
       {classesSansBaremeNotice.length > 0 && (
@@ -473,7 +493,7 @@ export const EcheancesPage: React.FC = () => {
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
               {echeanciers.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-12 text-center">
+                  <td colSpan={9} className="py-12 text-center">
                     <div className="py-8 px-4 text-center space-y-3 max-w-md mx-auto">
                       <div className="h-12 w-12 rounded-2xl bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mx-auto shadow-sm">
                         <CreditCard className="h-6 w-6" />
@@ -486,8 +506,13 @@ export const EcheancesPage: React.FC = () => {
                       </p>
                       <Button
                         variant="primary"
-                        onClick={() => setIsModalOpen(true)}
-                        className="gap-2 mx-auto"
+                        disabled={!anneeScolaire}
+                        title={!anneeScolaire ? "Définissez l'année scolaire dans Configuration avant de continuer" : undefined}
+                        onClick={() => {
+                          if (!anneeScolaire) return;
+                          setIsModalOpen(true);
+                        }}
+                        className="gap-2 mx-auto disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <Plus className="h-4 w-4" />
                         Créer un premier barème
@@ -643,6 +668,24 @@ export const EcheancesPage: React.FC = () => {
               </button>
             </div>
 
+            {!anneeScolaire && (
+              <div className="flex flex-col gap-2 bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 p-3 rounded-xl border border-amber-200 dark:border-amber-800/60 text-xs">
+                <span className="font-semibold">
+                  Définissez l'année scolaire dans Configuration avant de continuer
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsModalOpen(false);
+                    navigate('config');
+                  }}
+                  className="text-left font-bold text-amber-800 dark:text-amber-300 underline hover:text-amber-950 cursor-pointer"
+                >
+                  Aller dans Configuration
+                </button>
+              </div>
+            )}
+
             <form onSubmit={handleCreateEcheancier} className="space-y-4 text-xs">
               <div>
                 <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
@@ -752,8 +795,8 @@ export const EcheancesPage: React.FC = () => {
                   type="submit"
                   variant="primary"
                   size="sm"
-                  className="gap-1.5"
-                  disabled={isSubmitting || !isFormValid}
+                  className="gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={isSubmitting || !isFormValid || !anneeScolaire}
                 >
                   {isSubmitting ? (
                     <>
@@ -810,7 +853,7 @@ export const EcheancesPage: React.FC = () => {
                 variant="primary"
                 size="sm"
                 className="gap-1.5"
-                disabled={isGeneratingManquantes}
+                disabled={isGeneratingManquantes || !anneeScolaire}
                 onClick={handleGenererManquantes}
               >
                 {isGeneratingManquantes ? (

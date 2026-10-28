@@ -26,6 +26,8 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { useAuthStore } from '../../store/useAuthStore';
+import { useNavigationStore } from '../../store/useNavigationStore';
+import { useAnneeScolaire } from '../../hooks/useAnneeScolaire';
 import { supabase } from '../../lib/supabase';
 import { genererEcheancesManquantes } from '../../lib/echeancesHelper';
 
@@ -53,6 +55,8 @@ export const StudentDetailDrawer: React.FC<StudentDetailDrawerProps> = ({
   const [generateError, setGenerateError] = useState<string | null>(null);
 
   const authProfile = useAuthStore((s) => s.profile);
+  const anneeScolaire = useAnneeScolaire();
+  const navigate = useNavigationStore((s) => s.navigate);
   const canManage = authProfile?.role === 'directeur' || authProfile?.role === 'super_admin';
 
   // Close on Escape & Lock body overflow
@@ -103,10 +107,18 @@ export const StudentDetailDrawer: React.FC<StudentDetailDrawerProps> = ({
 
   const handleGenererEcheances = async () => {
     if (!eleve?.id || isGenerating) return;
+    if (!anneeScolaire) {
+      setGenerateError("Définissez l'année scolaire dans Configuration avant de continuer");
+      return;
+    }
     setIsGenerating(true);
     setGenerateError(null);
     try {
-      const res = await genererEcheancesManquantes({ eleveId: eleve.id, classe: eleve.classe });
+      const res = await genererEcheancesManquantes({
+        eleveId: eleve.id,
+        classe: eleve.classe,
+        anneeScolaire,
+      });
       if (res.echeancesCreees > 0) {
         showActionToast(`${res.echeancesCreees} échéance(s) créée(s) pour cet élève.`);
         setNbEcheances(res.echeancesCreees);
@@ -260,7 +272,7 @@ export const StudentDetailDrawer: React.FC<StudentDetailDrawerProps> = ({
                 <button
                   type="button"
                   onClick={() => {
-                    generateStudentSheetPdf(eleve, 'download');
+                    generateStudentSheetPdf(eleve, anneeScolaire, 'download');
                     showActionToast('Fiche officielle PDF téléchargée');
                   }}
                   className="h-9 w-9 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-300 hover:bg-blue-50/50 flex items-center justify-center transition-all shadow-2xs"
@@ -329,6 +341,24 @@ export const StudentDetailDrawer: React.FC<StudentDetailDrawerProps> = ({
                 </div>
               </div>
 
+              {!anneeScolaire && (
+                <div className="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-xs text-amber-900 dark:text-amber-200 space-y-1">
+                  <span className="font-semibold block">
+                    Définissez l'année scolaire dans Configuration avant de continuer
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onClose();
+                      navigate('config');
+                    }}
+                    className="font-bold text-amber-800 dark:text-amber-300 underline hover:text-amber-950 cursor-pointer"
+                  >
+                    Aller dans Configuration
+                  </button>
+                </div>
+              )}
+
               {generateError && (
                 <div className="p-2.5 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-xs text-red-800 dark:text-red-200 flex items-start gap-2">
                   <AlertCircle className="h-4 w-4 text-red-600 shrink-0 mt-0.5" />
@@ -339,8 +369,9 @@ export const StudentDetailDrawer: React.FC<StudentDetailDrawerProps> = ({
               <Button
                 variant="primary"
                 size="sm"
-                className="w-full gap-2 justify-center h-9 font-semibold"
-                disabled={isGenerating}
+                className="w-full gap-2 justify-center h-9 font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={isGenerating || !anneeScolaire}
+                title={!anneeScolaire ? "Définissez l'année scolaire dans Configuration avant de continuer" : undefined}
                 onClick={handleGenererEcheances}
               >
                 {isGenerating ? (

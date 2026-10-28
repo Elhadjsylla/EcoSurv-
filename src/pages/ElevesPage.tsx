@@ -7,6 +7,8 @@ import {
 import { getDashboardKpis } from '../lib/kpiHelper';
 import { useAuthStore } from '../store/useAuthStore';
 import { useEcoleStore } from '../store/useEcoleStore';
+import { useNavigationStore } from '../store/useNavigationStore';
+import { useAnneeScolaire } from '../hooks/useAnneeScolaire';
 import { exportElevesToExcel } from '../lib/excel/exportElevesToExcel';
 import { supabase } from '../lib/supabase';
 import { StudentInitials } from '../components/ui/StudentInitials';
@@ -61,6 +63,8 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
   onFilterChange,
 }) => {
   const authProfile = useAuthStore((s) => s.profile);
+  const anneeScolaire = useAnneeScolaire();
+  const navigate = useNavigationStore((s) => s.navigate);
 
   const [elevesList, setElevesList] = useState<EleveWithStats[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -227,6 +231,7 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
   const [isImporting, setIsImporting] = useState(false);
 
   const handleImportClick = () => {
+    if (!anneeScolaire) return;
     setIsImporting(true);
     setTimeout(() => {
       setIsImporting(false);
@@ -545,9 +550,11 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
             <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
               Gestion des Élèves & Scolarités
             </h1>
-            <span className="rounded-full bg-blue-100 dark:bg-blue-950/60 px-2.5 py-0.5 text-xs font-bold text-blue-700 dark:text-blue-300 border border-blue-200/50 dark:border-blue-800/60">
-              Année 2025–2026
-            </span>
+            {anneeScolaire && (
+              <span className="rounded-full bg-blue-100 dark:bg-blue-950/60 px-2.5 py-0.5 text-xs font-bold text-blue-700 dark:text-blue-300 border border-blue-200/50 dark:border-blue-800/60">
+                Année {anneeScolaire}
+              </span>
+            )}
           </div>
           <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">
             Registre académique centralisé, facturation mensuelle et suivi des recouvrements en Ouguiya (MRU).
@@ -567,8 +574,10 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
           <Button
             variant="outline"
             size="sm"
-            className="gap-2 h-10 px-4"
+            className="gap-2 h-10 px-4 disabled:opacity-50 disabled:cursor-not-allowed"
             onClick={handleImportClick}
+            disabled={isImporting || !anneeScolaire}
+            title={!anneeScolaire ? "Définissez l'année scolaire dans Configuration avant de continuer" : undefined}
             loading={isImporting}
             loadingText="Lecture du fichier..."
           >
@@ -578,8 +587,11 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
           <Button
             variant="primary"
             size="sm"
-            className="gap-2 h-10 px-4"
+            className="gap-2 h-10 px-4 disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={!anneeScolaire}
+            title={!anneeScolaire ? "Définissez l'année scolaire dans Configuration avant de continuer" : undefined}
             onClick={() => {
+              if (!anneeScolaire) return;
               setEleveToEdit(null);
               setIsEnrollModalOpen(true);
             }}
@@ -589,6 +601,23 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
           </Button>
         </div>
       </div>
+
+      {/* Garde année scolaire vide */}
+      {!anneeScolaire && (
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 p-4 rounded-xl border border-amber-200 dark:border-amber-800/60">
+          <div className="flex items-center gap-3 text-xs font-semibold">
+            <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0" />
+            <span>Définissez l'année scolaire dans Configuration avant de continuer</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => navigate('config')}
+            className="text-xs font-bold text-amber-800 dark:text-amber-300 underline hover:text-amber-950 dark:hover:text-white shrink-0 cursor-pointer"
+          >
+            Aller dans Configuration
+          </button>
+        </div>
+      )}
 
       {/* Metric Quick Tiles (Nexoov Pastel Cards) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -818,8 +847,13 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
                 </p>
                 <Button
                   variant="primary"
-                  onClick={() => setIsEnrollModalOpen(true)}
-                  className="gap-2 mx-auto"
+                  disabled={!anneeScolaire}
+                  title={!anneeScolaire ? "Définissez l'année scolaire dans Configuration avant de continuer" : undefined}
+                  onClick={() => {
+                    if (!anneeScolaire) return;
+                    setIsEnrollModalOpen(true);
+                  }}
+                  className="gap-2 mx-auto disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <UserPlus className="h-4 w-4" />
                   Inscrire un premier élève
