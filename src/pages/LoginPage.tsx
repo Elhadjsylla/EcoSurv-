@@ -136,12 +136,12 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onReturnToLanding }) => {
         return;
       }
 
-      // Stocker l'utilisateur et le profil
+      // Stocker l'utilisateur
       useAuthStore.getState().setUser(authData.user);
-      useAuthStore.getState().setProfile(profile as UserProfile);
 
       // Si super_admin : accès direct à la Console Super Admin (style Sama Boutik)
       if (profile.role === 'super_admin') {
+        useAuthStore.getState().setProfile(profile as UserProfile);
         logLoginSuccess(profile.email || authData.user.email || 'superadmin@ecosurv.mr', 'super_admin', {
           nom: `${profile.prenom} ${profile.nom}`,
         });
@@ -149,7 +149,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onReturnToLanding }) => {
         return;
       }
 
-      // Pour les autres rôles, vérification et synchronisation de l'établissement réel
+      // Pour les autres rôles (directeur, caissier, enseignant, parent) :
+      // charger et synchroniser l'établissement AVANT setProfile pour éviter toute redirection prématurée sans ecole
       if (profile.ecole_id) {
         const { data: ecoleData } = await supabase
           .from('ecoles')
@@ -169,15 +170,17 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onReturnToLanding }) => {
             annee_scolaire: ecoleData.annee_scolaire || '',
             statut_activation: ecoleData.statut_activation,
             statut_abonnement: ecoleData.statut_abonnement as any,
-            code_ecole: ecoleData.nom ? ecoleData.nom.slice(0, 4).toUpperCase() : '',
           });
 
           if (ecoleData.statut_activation !== 'active') {
+            useAuthStore.getState().setProfile(profile as UserProfile);
             useNavigationStore.getState().navigateToPendingActivation();
             return;
           }
         }
       }
+
+      useAuthStore.getState().setProfile(profile as UserProfile);
 
       // Déduire le portail et lancer l'application avec les données réelles
       const role = profile.role as UserRole;

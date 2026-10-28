@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuthStore } from '../store/useAuthStore';
+import { useEcoleStore } from '../store/useEcoleStore';
 
 export interface ParentChild {
   id: string;
@@ -33,6 +34,7 @@ export function useParentChildren(selectedChildId: string, onSelectChild: (id: s
           .from('parents_eleves')
           .select(`
             eleve_id,
+            ecole_id,
             lien,
             eleves (
               id,
@@ -51,6 +53,33 @@ export function useParentChildren(selectedChildId: string, onSelectChild: (id: s
           );
           setChildren([]);
           return;
+        }
+
+        // Synchroniser l'école dans le store si elle n'est pas encore chargée pour ce parent
+        if (!useAuthStore.getState().ecole?.annee_scolaire) {
+          const targetEcoleId = authProfile.ecole_id || (linksData && linksData[0] ? (linksData[0] as any).ecole_id : null);
+          if (targetEcoleId) {
+            const { data: ecoleData } = await supabase
+              .from('ecoles')
+              .select('id, nom, ville, adresse, telephone, email, annee_scolaire, statut_activation, statut_abonnement')
+              .eq('id', targetEcoleId)
+              .maybeSingle();
+
+            if (ecoleData) {
+              useAuthStore.getState().setEcole(ecoleData);
+              useEcoleStore.getState().updateEcole({
+                id: ecoleData.id,
+                nom: ecoleData.nom || '',
+                ville: ecoleData.ville || '',
+                adresse: ecoleData.adresse || '',
+                telephone: ecoleData.telephone || '',
+                email: ecoleData.email || '',
+                annee_scolaire: ecoleData.annee_scolaire || '',
+                statut_activation: ecoleData.statut_activation,
+                statut_abonnement: ecoleData.statut_abonnement as any,
+              });
+            }
+          }
         }
 
         // Cas 1 : Aucun enfant rattaché (état vide normal, pas une erreur)

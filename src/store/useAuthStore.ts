@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { User } from '@supabase/supabase-js';
 import { useNavigationStore } from './useNavigationStore';
+import { useEcoleStore, INITIAL_ECOLE } from './useEcoleStore';
 
 export type UserRole = 'super_admin' | 'directeur' | 'enseignant' | 'parent' | 'caissier';
 
@@ -55,7 +56,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   setLoading: (isLoading) => set({ isLoading }),
   logout: () => {
     useNavigationStore.getState().reset();
+    useEcoleStore.getState().updateEcole(INITIAL_ECOLE);
     set({ user: null, profile: null, ecole: null, isLoading: false });
   },
 }));
-

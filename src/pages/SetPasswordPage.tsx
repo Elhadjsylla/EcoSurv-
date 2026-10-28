@@ -64,7 +64,6 @@ export const SetPasswordPage: React.FC = () => {
                     annee_scolaire: ecoleData.annee_scolaire || '',
                     statut_activation: ecoleData.statut_activation,
                     statut_abonnement: ecoleData.statut_abonnement as any,
-                    code_ecole: ecoleData.nom ? ecoleData.nom.slice(0, 4).toUpperCase() : '',
                   });
                 }
               }
@@ -154,6 +153,30 @@ export const SetPasswordPage: React.FC = () => {
           ...profile,
           actif: true,
         });
+
+        // Charger l'établissement maintenant que actif = true (autorisé par RLS mon_ecole_rattachement)
+        if (profile.ecole_id) {
+          const { data: ecoleData } = await supabase
+            .from('ecoles')
+            .select('id, nom, ville, adresse, telephone, email, annee_scolaire, statut_activation, statut_abonnement')
+            .eq('id', profile.ecole_id)
+            .maybeSingle();
+
+          if (ecoleData) {
+            useAuthStore.getState().setEcole(ecoleData);
+            useEcoleStore.getState().updateEcole({
+              id: ecoleData.id,
+              nom: ecoleData.nom || '',
+              ville: ecoleData.ville || '',
+              adresse: ecoleData.adresse || '',
+              telephone: ecoleData.telephone || '',
+              email: ecoleData.email || '',
+              annee_scolaire: ecoleData.annee_scolaire || '',
+              statut_activation: ecoleData.statut_activation,
+              statut_abonnement: ecoleData.statut_abonnement as any,
+            });
+          }
+        }
       }
 
       // 3. Nettoyer le hash de l'URL

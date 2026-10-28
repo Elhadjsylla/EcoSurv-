@@ -168,7 +168,6 @@ export function AppContent() {
                   annee_scolaire: ecoleData.annee_scolaire || '',
                   statut_activation: ecoleData.statut_activation,
                   statut_abonnement: ecoleData.statut_abonnement as any,
-                  code_ecole: ecoleData.nom ? ecoleData.nom.slice(0, 4).toUpperCase() : '',
                 });
               }
             }
@@ -220,7 +219,6 @@ export function AppContent() {
               annee_scolaire: ecoleData.annee_scolaire || '',
               statut_activation: ecoleData.statut_activation,
               statut_abonnement: ecoleData.statut_abonnement as any,
-              code_ecole: ecoleData.nom ? ecoleData.nom.slice(0, 4).toUpperCase() : '',
             });
             if (ecoleData.statut_activation !== 'active') {
               useNavigationStore.getState().navigateToPendingActivation();
@@ -352,8 +350,8 @@ export function AppContent() {
         const currentProfile = useAuthStore.getState().profile;
 
         // Compare session.user.id avec useAuthStore.profile?.id.
-        // S'ils sont identiques, ne fais RIEN (pas de rechargement, car l'événement peut se déclencher au simple retour sur l'onglet).
-        if (currentProfile && currentProfile.id === session.user.id) {
+        // S'ils sont identiques et que l'établissement rattaché est déjà chargé, ne fais RIEN.
+        if (currentProfile && currentProfile.id === session.user.id && (!currentProfile.ecole_id || useAuthStore.getState().ecole)) {
           return;
         }
 
@@ -403,7 +401,6 @@ export function AppContent() {
                 annee_scolaire: ecoleData.annee_scolaire || '',
                 statut_activation: ecoleData.statut_activation,
                 statut_abonnement: ecoleData.statut_abonnement as any,
-                code_ecole: ecoleData.nom ? ecoleData.nom.slice(0, 4).toUpperCase() : '',
               });
               if (ecoleData.statut_activation !== 'active') {
                 useNavigationStore.getState().navigateToPendingActivation();
