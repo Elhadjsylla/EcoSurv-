@@ -57,6 +57,12 @@ const HERO_LONGEST_PHRASE = HERO_TYPED_PHRASES.reduce<string>(
 
 const SMOOTH_EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
+// Carreau de 44 px de la grille de fond (trait de 1 px, opacité 3,5 % en clair, 4 % en sombre)
+const gridPattern = (color: string, opacity: number) =>
+  `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='44'%3E%3Cpath d='M 44 0 L 0 0 0 44' fill='none' stroke='%23${color}' stroke-opacity='${opacity}' stroke-width='1'/%3E%3C/svg%3E")`;
+const GRID_PATTERN_LIGHT = gridPattern('0F172A', 0.035);
+const GRID_PATTERN_DARK = gridPattern('F8FAFC', 0.04);
+
 // 3 cartes « Le constat » : titre court + UNE phrase de 15 mots maximum chacune
 const CONSTAT_CARDS = [
   {
@@ -301,6 +307,8 @@ const ScrollReveal: React.FC<ScrollRevealProps> = ({
  * Lumière douce : disque bleu uni (#1D4ED8, sans dégradé CSS) adouci par un
  * flou fixe. Immobile : animer un élément flouté oblige le navigateur à
  * recalculer le flou à chaque image, ce qui bloquait le défilement sur téléphone.
+ * Masquée sous 768 px : un flou de 100 px est très coûteux à dessiner sur les
+ * écrans denses des téléphones.
  */
 const SoftLight: React.FC<{
   className: string;
@@ -309,7 +317,7 @@ const SoftLight: React.FC<{
   <div
     aria-hidden="true"
     data-testid="soft-light"
-    className={`pointer-events-none absolute rounded-full bg-[#1D4ED8] blur-[100px] ${className}`}
+    className={`pointer-events-none absolute hidden md:block rounded-full bg-[#1D4ED8] blur-[100px] ${className}`}
     style={{ opacity }}
   />
 );
@@ -341,17 +349,12 @@ const Floating: React.FC<{
 /**
  * Seconde ligne du titre, frappée lettre par lettre en boucle. Dans son propre composant
  * pour que chaque lettre ne refasse le rendu que de cette ligne, et non de
- * toute la page. Sous 640 px ou en mouvement réduit : phrase finale affichée
- * directement, sans copie fantôme (la place réservée laissait un grand vide).
+ * toute la page. En mouvement réduit : phrase finale affichée directement,
+ * sans copie fantôme.
  */
 const HeroTypedLine: React.FC = () => {
   const shouldReduceMotion = Boolean(useReducedMotion());
-  const [isAnimated] = useState<boolean>(
-    () =>
-      !shouldReduceMotion &&
-      typeof window !== 'undefined' &&
-      window.matchMedia('(min-width: 640px)').matches
-  );
+  const [isAnimated] = useState<boolean>(() => !shouldReduceMotion);
   const [typedLine, setTypedLine] = useState<string>(
     isAnimated ? '' : HERO_TYPED_PHRASES[0]
   );
@@ -671,28 +674,21 @@ export const LandingPage: React.FC = () => {
 
   return (
     <div className="relative min-h-screen bg-page-bg text-main font-['Plus_Jakarta_Sans',sans-serif] antialiased overflow-x-clip">
-      {/* Motif de grille SVG très discret sur le fond gris-bleu très pâle (aucun dégradé CSS) */}
-      <svg
+      {/* Motif de grille SVG très discret (aucun dégradé CSS). En fond qui défile
+          avec la page et non en élément fixe : un calque fixe sous le contenu
+          obligeait le navigateur à copier toute la page dans un second calque
+          (environ 270 Mo au lieu de 128 Mo sur iPhone), d'où des zones vides
+          au défilement sur Safari. */}
+      <div
         aria-hidden="true"
-        className="pointer-events-none fixed inset-0 h-full w-full z-0 text-[#0F172A]/[0.035] dark:text-[#F8FAFC]/[0.04]"
-      >
-        <defs>
-          <pattern
-            id="ecosurv-subtle-grid"
-            width="44"
-            height="44"
-            patternUnits="userSpaceOnUse"
-          >
-            <path
-              d="M 44 0 L 0 0 0 44"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1"
-            />
-          </pattern>
-        </defs>
-        <rect width="100%" height="100%" fill="url(#ecosurv-subtle-grid)" />
-      </svg>
+        className="pointer-events-none absolute inset-0 z-0 dark:hidden"
+        style={{ backgroundImage: GRID_PATTERN_LIGHT }}
+      />
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 z-0 hidden dark:block"
+        style={{ backgroundImage: GRID_PATTERN_DARK }}
+      />
 
       {/* Lien d'évitement en tout premier */}
       <a
