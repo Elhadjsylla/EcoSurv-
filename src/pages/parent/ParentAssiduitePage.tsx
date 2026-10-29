@@ -1,9 +1,7 @@
 import React, { useState } from 'react';
-import {
-  MOCK_PARENT_ENFANTS_DETAILS,
-  AbsenceRecord,
-  MOCK_ABSENCES_INITIAL,
-} from '../../lib/mockData';
+import { AbsenceRecord } from '../../types';
+import { useAnneeScolaire } from '../../hooks/useAnneeScolaire';
+import { supabase } from '../../lib/supabase';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Select } from '../../components/ui/Select';
@@ -26,12 +24,62 @@ import { useParentChildren } from '../../hooks/useParentChildren';
 
 interface ParentAssiduitePageProps {
   selectedChildId: string;
+  onSelectChild?: (id: string) => void;
 }
 
 export const ParentAssiduitePage: React.FC<ParentAssiduitePageProps> = ({
   selectedChildId,
+  onSelectChild,
 }) => {
-  const { activeChild, errorMessage: childrenError } = useParentChildren(selectedChildId, () => {});
+  const anneeScolaire = useAnneeScolaire();
+  const { activeChild, errorMessage: childrenError } = useParentChildren(selectedChildId, onSelectChild || (() => {}));
+
+  // Récupération des absences de l'enfant depuis Supabase (tous les hooks appelés inconditionnellement)
+  const [absencesList, setAbsencesList] = useState<AbsenceRecord[]>([]);
+
+  React.useEffect(() => {
+    if (!activeChild?.id) return;
+    const fetchAbsences = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('absences')
+          .select('*')
+          .eq('eleve_id', activeChild.id)
+          .order('date_absence', { ascending: false });
+
+        if (!error && data) {
+          setAbsencesList(
+            data.map((a: any) => ({
+              id: a.id,
+              eleve_id: a.eleve_id,
+              eleve_nom: activeChild.nom,
+              eleve_prenom: activeChild.prenom,
+              classe: activeChild.classe,
+              date_absence: a.date_absence,
+              creneau: (a.creneau === 'matin' || a.creneau === 'apres_midi' ? a.creneau : 'matin') as 'matin' | 'apres_midi',
+              type: a.type || 'absence',
+              justifiee: Boolean(a.justifiee),
+              motif: a.motif || (a.justifiee ? 'Justifiée' : 'Non justifié'),
+            }))
+          );
+        }
+      } catch (err) {
+        console.warn('[ParentAssiduitePage] Erreur lecture absences:', err);
+      }
+    };
+    fetchAbsences();
+  }, [activeChild?.id, activeChild?.nom, activeChild?.prenom, activeChild?.classe]);
+
+  // Modal de déclaration
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [dateAbsence, setDateAbsence] = useState('2026-03-10');
+  const [creneau, setCreneau] = useState<'journee' | 'matin' | 'apres_midi'>('journee');
+  const [motif, setMotif] = useState('Rendez-vous médical');
+  const [commentaire, setCommentaire] = useState('');
+  const [activeToast, setActiveToast] = useState<{
+    message: string;
+    type: 'success' | 'info' | 'warning' | 'error';
+  } | null>(null);
 
   if (childrenError) {
     return (
@@ -69,15 +117,14 @@ export const ParentAssiduitePage: React.FC<ParentAssiduitePageProps> = ({
     );
   }
 
-  const mockEnfant = MOCK_PARENT_ENFANTS_DETAILS[activeChild.id];
-  const enfant = mockEnfant || {
+  const enfant = {
     id: activeChild.id,
     nom: activeChild.nom,
     prenom: activeChild.prenom,
     classe: activeChild.classe,
     matricule: activeChild.matricule,
     photo_initiales: activeChild.photo_initiales,
-    rang: 1,
+    rang: '-',
     moyenne_generale: 0,
     reste_a_payer: activeChild.remaining,
     statut_paiement: activeChild.remaining === 0 ? 'paye' : 'partiel',
@@ -87,42 +134,6 @@ export const ParentAssiduitePage: React.FC<ParentAssiduitePageProps> = ({
     nb_absences_total: 0,
     nb_retards_total: 0,
   };
-
-  // Récupération des absences de l'enfant
-  const [absencesList, setAbsencesList] = useState<AbsenceRecord[]>(() => {
-    const records = MOCK_ABSENCES_INITIAL.filter(
-      (a) => a.eleve_id === activeChild.id
-    );
-    if (records.length > 0) return records;
-    if (mockEnfant) {
-      return [
-        {
-          id: 'abs-1',
-          eleve_id: activeChild.id,
-          eleve_nom: enfant.nom,
-          eleve_prenom: enfant.prenom,
-          classe: enfant.classe,
-          date_absence: '2026-02-14',
-          creneau: 'matin' as const,
-          type: 'absence',
-          justifiee: false,
-          motif: 'Non justifié',
-        },
-      ];
-    }
-    return [];
-  });
-
-  // Modal de déclaration
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [dateAbsence, setDateAbsence] = useState('2026-03-10');
-  const [creneau, setCreneau] = useState<'journee' | 'matin' | 'apres_midi'>('journee');
-  const [motif, setMotif] = useState('Rendez-vous médical');
-  const [commentaire, setCommentaire] = useState('');
-  const [activeToast, setActiveToast] = useState<{
-    message: string;
-    type: 'success' | 'info' | 'warning' | 'error';
-  } | null>(null);
 
   const totalAbsences = absencesList.filter((a) => a.type === 'absence').length;
   const justifiees = absencesList.filter((a) => a.justifiee).length;
@@ -240,9 +251,11 @@ export const ParentAssiduitePage: React.FC<ParentAssiduitePageProps> = ({
               </p>
             </div>
           </div>
-          <span className="text-xs px-2.5 py-1 rounded-full font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
-            Année 2025-2026
-          </span>
+          {anneeScolaire && (
+            <span className="text-xs px-2.5 py-1 rounded-full font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
+              Année {anneeScolaire}
+            </span>
+          )}
         </div>
 
         <div className="space-y-3.5">

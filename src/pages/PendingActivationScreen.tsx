@@ -20,6 +20,7 @@ import {
   hashOtp,
   sendActivationEmail,
 } from '../lib/email/sendActivationEmail';
+import { Logo } from '../components/ui/Logo';
 import type { UserRole } from '../components/ui/Header';
 
 export const PendingActivationScreen: React.FC = () => {
@@ -338,18 +339,11 @@ export const PendingActivationScreen: React.FC = () => {
     <div className="min-h-screen flex flex-col justify-between bg-slate-50 dark:bg-slate-950 px-4 py-8 font-['Plus_Jakarta_Sans',sans-serif] text-slate-900 dark:text-slate-100 antialiased selection:bg-blue-600 selection:text-white">
       {/* Top Header */}
       <div className="max-w-md w-full mx-auto flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-600 text-white font-black text-xs shadow-md shadow-blue-600/20">
-            ES
-          </div>
-          <div>
-            <span className="font-extrabold text-sm tracking-tight text-slate-900 dark:text-white block">
-              EcoSurv Mauritanie
-            </span>
-            <span className="text-[10px] text-slate-400 font-semibold block -mt-0.5">
-              Activation Immédiate
-            </span>
-          </div>
+        <div className="flex flex-col gap-1">
+          <Logo height={28} />
+          <span className="text-[10px] text-slate-400 font-semibold block">
+            Activation Immédiate
+          </span>
         </div>
 
         <button
@@ -389,6 +383,25 @@ export const PendingActivationScreen: React.FC = () => {
             <Building2 className="h-4 w-4 text-blue-500 shrink-0" />
             <span className="truncate font-semibold">{ecoleNom}</span>
           </div>
+
+          {!user && (
+            <div className="p-3.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-200 text-xs space-y-2">
+              <div className="flex items-start gap-2">
+                <AlertCircle className="h-4 w-4 shrink-0 mt-0.5 text-amber-600 dark:text-amber-400" />
+                <span>Session requise : Pour activer votre établissement, connectez-vous avec les identifiants créés lors de l'inscription.</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  useNavigationStore.getState().setViewMode('login');
+                  window.history.pushState(null, '', '/login');
+                }}
+                className="w-full py-2 px-3 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-bold text-center block transition-colors"
+              >
+                Se connecter pour activer →
+              </button>
+            </div>
+          )}
 
           {/* Error Message */}
           {errorMessage && (

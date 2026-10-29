@@ -2,10 +2,9 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import {
   CaisseTransaction,
-  MOCK_CAISSE_TRANSACTIONS_INITIAL,
-  CURRENT_CAISSIER,
   MethodePaiement,
-} from '../../lib/mockData';
+} from '../../types';
+import { CLAIMS_CONFIG } from '../../config/claims';
 import { Button } from '../../components/ui/Button';
 import { ToastNotification } from '../../components/ui/ToastNotification';
 import { Select } from '../../components/ui/Select';
@@ -42,12 +41,8 @@ import { useAuthStore } from '../../store/useAuthStore';
 export const CaissierJournalPage: React.FC = () => {
   const authProfile = useAuthStore((s) => s.profile);
   const authEcole = useAuthStore((s) => s.ecole);
-  const isRealAccount = Boolean(authProfile?.ecole_id);
 
-  const [transactions, setTransactions] = useState<CaisseTransaction[]>(() => {
-    if (isRealAccount) return [];
-    return MOCK_CAISSE_TRANSACTIONS_INITIAL;
-  });
+  const [transactions, setTransactions] = useState<CaisseTransaction[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedMethod, setSelectedMethod] = useState<string>('all');
@@ -69,7 +64,7 @@ export const CaissierJournalPage: React.FC = () => {
   // Chargement réel des transactions depuis Supabase (tables paiements et echeances)
   const fetchJournalTransactions = async () => {
     if (!authProfile?.ecole_id) {
-      setTransactions(useCaisseStore.getState().transactions);
+      setTransactions([]);
       setIsLoading(false);
       return;
     }
@@ -97,7 +92,6 @@ export const CaissierJournalPage: React.FC = () => {
 
         const echeancesMap = new Map<string, any>();
         const elevesMap = new Map<string, any>();
-        const classesMap = new Map<string, string>();
 
         if (echeanceIds.length > 0) {
           const { data: echs } = await supabase
@@ -120,21 +114,6 @@ export const CaissierJournalPage: React.FC = () => {
 
               if (els) {
                 els.forEach((el) => elevesMap.set(el.id, el));
-
-                const classeIds = Array.from(
-                  new Set(els.map((el) => el.classe_id).filter(Boolean))
-                );
-
-                if (classeIds.length > 0) {
-                  const { data: cls } = await supabase
-                    .from('classes')
-                    .select('id, nom')
-                    .in('id', classeIds);
-
-                  if (cls) {
-                    cls.forEach((c) => classesMap.set(c.id, c.nom));
-                  }
-                }
               }
             }
           }
@@ -162,9 +141,7 @@ export const CaissierJournalPage: React.FC = () => {
         const mapped: CaisseTransaction[] = paiementsData.map((p) => {
           const ech = echeancesMap.get(p.echeance_id);
           const eleve = ech ? elevesMap.get(ech.eleve_id) : null;
-          const classeNom = eleve?.classe_id
-            ? classesMap.get(eleve.classe_id) || 'Classe'
-            : 'Générale';
+          const classeNom = eleve?.classe?.trim() || 'Générale';
 
           const d = new Date(p.paye_le || p.created_at);
           const dateStr = d.toLocaleDateString('fr-FR');
@@ -280,7 +257,7 @@ export const CaissierJournalPage: React.FC = () => {
 
   const totalMobile = useMemo(() => {
     return transactions
-      .filter((tx) => ['bankily', 'masrvi'].includes(tx.methode))
+      .filter((tx) => ['bankily', 'masrvi', 'sedad'].includes(tx.methode))
       .reduce((acc, tx) => acc + tx.montant, 0);
   }, [transactions]);
 
@@ -307,7 +284,14 @@ export const CaissierJournalPage: React.FC = () => {
   );
 
   const handleCloture = async () => {
-    await cloturerCaisseDuJour(totalGeneral, transactions.length);
+    const res = await cloturerCaisseDuJour(totalGeneral, transactions.length);
+    if (!res.success) {
+      setActiveToast({
+        message: res.error || 'Échec de la clôture de caisse.',
+        type: 'error',
+      });
+      return;
+    }
     setActiveToast({
       message: `Clôture de caisse du ${new Date().toLocaleDateString('fr-FR')} effectuée avec succès (${formatMRU(totalGeneral)} certifiés). Enregistré dans clotures_caisse.`,
       type: 'success',
@@ -343,6 +327,13 @@ export const CaissierJournalPage: React.FC = () => {
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-blue-50 dark:bg-blue-950/50 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800/60">
             <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
             Masrvi (BMCI)
+          </span>
+        );
+      case 'sedad':
+        return (
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-cyan-50 dark:bg-cyan-950/50 text-cyan-800 dark:text-cyan-300 border border-cyan-200 dark:border-cyan-800/60">
+            <span className="w-1.5 h-1.5 rounded-full bg-cyan-500"></span>
+            Sedad
           </span>
         );
       case 'cheque':
@@ -389,13 +380,7 @@ export const CaissierJournalPage: React.FC = () => {
             Journal de Caisse
           </h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Historique complet des quittances émises au {isRealAccount ? 'Guichet Principal' : CURRENT_CAISSIER.guichet} par{' '}
-            <span className="font-semibold text-slate-700 dark:text-slate-300">
-              {isRealAccount
-                ? (authProfile?.prenom ? `${authProfile.prenom} ${authProfile.nom}` : (authProfile?.nom || 'Agent Comptable'))
-                : `${CURRENT_CAISSIER.prenom} ${CURRENT_CAISSIER.nom}`}
-            </span>
-            .
+            Historique complet des quittances émises{authProfile ? ` par ${authProfile.prenom} ${authProfile.nom}`.trim() : ''}.
           </p>
         </div>
 
@@ -469,7 +454,7 @@ export const CaissierJournalPage: React.FC = () => {
           title="Paiements Mobiles"
           amount={totalMobile}
           unit="MRU"
-          subtitle="Bankily & Masrvi"
+          subtitle="Bankily, Masrvi & Sedad"
           icon={<Smartphone className="w-5 h-5 text-blue-600 dark:text-blue-400" />}
           variant="primary"
         />
@@ -478,7 +463,7 @@ export const CaissierJournalPage: React.FC = () => {
           title="Quittances Émises"
           amount={transactions.length}
           unit="count"
-          subtitle="Journal certifié conforme"
+          subtitle={CLAIMS_CONFIG.journalCertifieConforme ? "Journal certifié conforme" : "Journal de caisse validé"}
           icon={<FileCheck className="w-5 h-5 text-slate-600 dark:text-slate-300" />}
           variant="default"
         />
@@ -515,6 +500,7 @@ export const CaissierJournalPage: React.FC = () => {
               { value: 'especes', label: 'Espèces uniquement' },
               { value: 'bankily', label: 'Bankily (BPM)' },
               { value: 'masrvi', label: 'Masrvi (BMCI)' },
+              { value: 'sedad', label: 'Sedad' },
               { value: 'cheque', label: 'Chèque' },
             ]}
             size="sm"
@@ -697,7 +683,9 @@ export const CaissierJournalPage: React.FC = () => {
               <div className="bg-slate-900 text-white p-4 flex items-center justify-between border-b border-slate-800">
                 <div className="flex items-center gap-2">
                   <Receipt className="h-5 w-5 text-amber-400" />
-                  <span className="font-bold text-sm">Duplicata Quittance Officielle</span>
+                  <span className="font-bold text-sm">
+                    {CLAIMS_CONFIG.duplicataQuittanceOfficielle ? 'Duplicata Quittance Officielle' : 'Duplicata Quittance de Paiement'}
+                  </span>
                 </div>
                 <button
                   onClick={() => setSelectedReceipt(null)}
@@ -715,7 +703,7 @@ export const CaissierJournalPage: React.FC = () => {
                     {authEcole?.nom || 'Établissement Scolaire'}
                   </div>
                   <div className="text-slate-500 dark:text-slate-400 text-[11px] mt-0.5">
-                    {authEcole?.ville || 'Nouakchott'}, Mauritanie
+                    {authEcole?.ville ? `${authEcole.ville}, Mauritanie` : 'Mauritanie'}
                   </div>
                   <div className="mt-2 inline-block px-3 py-1 bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 font-mono font-bold text-xs rounded-lg border border-amber-200 dark:border-amber-800/60">
                     {selectedReceipt.recu_ref}
@@ -771,7 +759,7 @@ export const CaissierJournalPage: React.FC = () => {
                 <div className="text-[10px] text-slate-400 dark:text-slate-500 text-center border-t border-slate-100 dark:border-slate-800 pt-2">
                   Encaissé par {selectedReceipt.encaisse_par} • Guichet Central N°1
                   <br />
-                  Ce document certifie la libération de l'échéance susmentionnée.
+                  Ce document atteste le versement de l'échéance susmentionnée.
                 </div>
               </div>
 
@@ -799,6 +787,7 @@ export const CaissierJournalPage: React.FC = () => {
                       methodePaiement: selectedReceipt.methode,
                       caissierNom: selectedReceipt.encaisse_par,
                       ecoleNom: authEcole?.nom,
+                      ecoleVille: authEcole?.ville || undefined,
                     }, 'download');
                     setActiveToast({
                       message: `Reçu #${selectedReceipt.recu_ref} téléchargé en PDF.`,

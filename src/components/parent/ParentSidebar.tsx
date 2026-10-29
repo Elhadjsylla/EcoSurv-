@@ -8,7 +8,6 @@ import {
   Users,
   HeartHandshake,
 } from 'lucide-react';
-import { MOCK_PARENT_ENFANTS_DETAILS } from '../../lib/mockData';
 import { useParentChildren } from '../../hooks/useParentChildren';
 import { Tooltip, TooltipLabel } from '../ui/Tooltip';
 import { SidebarShell } from '../ui/SidebarShell';
@@ -56,10 +55,10 @@ export const ParentSidebar: React.FC<ParentSidebarProps> = ({
       id: 'parent_paiements',
       label: t.nav?.feesPayments || 'Frais & Paiements',
       icon: <WalletCards className="h-4 w-4 shrink-0" />,
-      badge:
-        selectedChildId && MOCK_PARENT_ENFANTS_DETAILS[selectedChildId]?.reste_a_payer > 0
-          ? 'À régler'
-          : undefined,
+      badge: (() => {
+        const currentChild = parentChildren.find((c) => c.id === selectedChildId);
+        return currentChild && currentChild.remaining > 0 ? 'À régler' : undefined;
+      })(),
     },
     {
       id: 'parent_pedagogie',

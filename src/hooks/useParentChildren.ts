@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuthStore } from '../store/useAuthStore';
-import { CURRENT_PARENT, MOCK_PARENT_ENFANTS_DETAILS } from '../lib/mockData';
+import { useEcoleStore } from '../store/useEcoleStore';
 
 export interface ParentChild {
   id: string;
@@ -34,6 +34,7 @@ export function useParentChildren(selectedChildId: string, onSelectChild: (id: s
           .from('parents_eleves')
           .select(`
             eleve_id,
+            ecole_id,
             lien,
             eleves (
               id,
@@ -52,6 +53,33 @@ export function useParentChildren(selectedChildId: string, onSelectChild: (id: s
           );
           setChildren([]);
           return;
+        }
+
+        // Synchroniser l'école dans le store si elle n'est pas encore chargée pour ce parent
+        if (!useAuthStore.getState().ecole?.annee_scolaire) {
+          const targetEcoleId = authProfile.ecole_id || (linksData && linksData[0] ? (linksData[0] as any).ecole_id : null);
+          if (targetEcoleId) {
+            const { data: ecoleData } = await supabase
+              .from('ecoles')
+              .select('id, nom, ville, adresse, telephone, email, annee_scolaire, statut_activation, statut_abonnement')
+              .eq('id', targetEcoleId)
+              .maybeSingle();
+
+            if (ecoleData) {
+              useAuthStore.getState().setEcole(ecoleData);
+              useEcoleStore.getState().updateEcole({
+                id: ecoleData.id,
+                nom: ecoleData.nom || '',
+                ville: ecoleData.ville || '',
+                adresse: ecoleData.adresse || '',
+                telephone: ecoleData.telephone || '',
+                email: ecoleData.email || '',
+                annee_scolaire: ecoleData.annee_scolaire || '',
+                statut_activation: ecoleData.statut_activation,
+                statut_abonnement: ecoleData.statut_abonnement as any,
+              });
+            }
+          }
         }
 
         // Cas 1 : Aucun enfant rattaché (état vide normal, pas une erreur)
@@ -91,11 +119,13 @@ export function useParentChildren(selectedChildId: string, onSelectChild: (id: s
             const totalPaid = studentEch.reduce((sum, ech) => sum + Number(ech.montant_paye || 0), 0);
             const remaining = Math.max(0, totalDue - totalPaid);
             const hasOverdue = studentEch.some((ech) => ech.statut === 'en_retard');
-            const statut = hasOverdue
+            const statut = studentEch.length === 0
+              ? 'aucun_frais'
+              : hasOverdue
               ? 'en_retard'
               : (totalDue > 0 && remaining === 0
                 ? 'a_jour'
-                : (totalPaid > 0 ? 'partiel' : 'a_jour'));
+                : (totalPaid > 0 ? 'partiel' : 'en_attente'));
 
             return {
               id: el.id,
@@ -131,38 +161,8 @@ export function useParentChildren(selectedChildId: string, onSelectChild: (id: s
         setIsLoading(false);
       }
     } else {
-      // Démo / simulateur
       setErrorMessage(null);
-      const demoChildren: ParentChild[] = CURRENT_PARENT.enfants_ids.map((id) => {
-        const item = MOCK_PARENT_ENFANTS_DETAILS[id] || {
-          prenom: 'Enfant',
-          nom: 'Démo',
-          classe: 'Classe',
-          matricule: 'DEMO',
-          reste_a_payer: 0,
-          montant_annuel: 0,
-          montant_deja_paye: 0,
-          photo_initiales: 'ED',
-        };
-        return {
-          id: id,
-          nom: item.nom || 'SOW',
-          prenom: item.prenom || 'Enfant',
-          classe: item.classe,
-          matricule: item.matricule,
-          lien: 'parent',
-          total_due: item.total_scolarite || 0,
-          total_paid: item.total_regle || 0,
-          remaining: item.reste_a_payer || 0,
-          statut: item.reste_a_payer > 0 ? 'en_retard' : 'a_jour',
-          photo_initiales: item.photo_initiales,
-        };
-      });
-
-      setChildren(demoChildren);
-      if (!selectedChildId && demoChildren[0]) {
-        onSelectChild(demoChildren[0].id);
-      }
+      setChildren([]);
     }
   }, [authProfile?.id, authProfile?.role, onSelectChild, selectedChildId]);
 

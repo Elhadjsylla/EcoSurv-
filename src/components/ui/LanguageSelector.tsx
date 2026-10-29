@@ -16,9 +16,6 @@ const LANGUAGES: LanguageOption[] = [
 ];
 
 export const LanguageSelector: React.FC<{ variant?: 'light' | 'dark' | 'header' }> = () => {
-  // Masquer le sélecteur si le projet multilingue est en pause
-  if (I18N_PAUSED) return null;
-
   const { language, setLanguage } = useLanguageStore();
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -26,6 +23,7 @@ export const LanguageSelector: React.FC<{ variant?: 'light' | 'dark' | 'header' 
   const currentLang = LANGUAGES.find((l) => l.code === language) || LANGUAGES[0];
 
   useEffect(() => {
+    if (I18N_PAUSED) return;
     const handleClickOutside = (e: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
         setIsOpen(false);
@@ -35,25 +33,28 @@ export const LanguageSelector: React.FC<{ variant?: 'light' | 'dark' | 'header' 
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Masquer le sélecteur si le projet multilingue est en pause
+  if (I18N_PAUSED) return null;
+
   return (
     <div ref={containerRef} className="relative inline-block text-left z-40">
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-1.5 h-9 px-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-100 text-xs font-bold transition-all shadow-2xs cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+        className="flex items-center gap-1.5 h-9 px-2.5 rounded-sm border border-subtle bg-surface hover:bg-surface-subtle text-main text-xs font-bold transition-all shadow-xs cursor-pointer focus-halo"
       >
         <span className="text-sm leading-none">{currentLang.flag}</span>
         <span className="hidden sm:inline font-semibold">{currentLang.label}</span>
         <span className="sm:hidden uppercase font-bold">{currentLang.code}</span>
         <ChevronDown
-          className={`h-3.5 w-3.5 text-slate-400 transition-transform duration-200 ${
+          className={`h-3.5 w-3.5 text-muted transition-transform duration-150 ${
             isOpen ? 'rotate-180' : ''
           }`}
         />
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-1.5 w-36 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-1.5 shadow-xl z-50 animate-in fade-in zoom-in-95 duration-150 focus:outline-none">
+        <div className="absolute right-0 mt-1.5 w-36 rounded-md border border-subtle bg-surface-elevated p-1.5 shadow-elevated z-50 animate-in fade-in zoom-in-95 duration-150">
           {LANGUAGES.map((lang) => {
             const isSelected = lang.code === language;
             return (
@@ -64,17 +65,17 @@ export const LanguageSelector: React.FC<{ variant?: 'light' | 'dark' | 'header' 
                   setLanguage(lang.code);
                   setIsOpen(false);
                 }}
-                className={`flex items-center justify-between w-full px-2.5 py-2 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
+                className={`flex items-center justify-between w-full px-2.5 py-2 rounded-sm text-xs font-semibold transition-colors cursor-pointer focus-halo ${
                   isSelected
-                    ? 'bg-blue-50 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 font-bold'
-                    : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
+                    ? 'bg-surface-subtle text-primary-text font-bold border border-subtle'
+                    : 'text-secondary hover:bg-surface-subtle hover:text-main'
                 }`}
               >
                 <div className="flex items-center gap-2">
                   <span className="text-sm">{lang.flag}</span>
                   <span>{lang.label}</span>
                 </div>
-                {isSelected && <Check className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />}
+                {isSelected && <Check className="h-3.5 w-3.5 text-primary-text" />}
               </button>
             );
           })}

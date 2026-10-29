@@ -1,541 +1,513 @@
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import {
-  TrendingUp,
-  AlertCircle,
   CheckCircle2,
-  Building2,
-  Smartphone,
-  Receipt,
-  MessageCircle,
-  CreditCard,
-  QrCode,
-  ShieldCheck,
-  Printer,
   Clock,
+  FileText,
+  Pause,
+  Play,
+  ShieldCheck,
+  Smartphone,
+  User,
 } from 'lucide-react';
+import { LogoIcone } from '../ui/Logo';
 
-type MockupTab = 'directeur' | 'guichet' | 'whatsapp' | 'recu';
+interface SceneStep {
+  id: number;
+  stepLabel: string;
+  roleBadge: string;
+  floatingPill: {
+    text: string;
+    tone: 'blue' | 'amber' | 'emerald';
+  };
+}
 
-export const LandingMockupPreview: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<MockupTab>('directeur');
-  const [paymentChannel, setPaymentChannel] = useState<'bankily' | 'masrvi' | 'especes'>('bankily');
+const SCENE_STEPS: SceneStep[] = [
+  {
+    id: 0,
+    stepLabel: '1. Guichet',
+    roleBadge: 'Accès Caissier • Guichet',
+    floatingPill: {
+      text: 'Référence Bankily saisie',
+      tone: 'blue',
+    },
+  },
+  {
+    id: 1,
+    stepLabel: '2. En attente',
+    roleBadge: 'Guichet • Statut du versement',
+    floatingPill: {
+      text: 'Paiement en attente',
+      tone: 'amber',
+    },
+  },
+  {
+    id: 2,
+    stepLabel: '3. Validation',
+    roleBadge: 'Accès Directeur • Validation',
+    floatingPill: {
+      text: 'Confirmé par le directeur',
+      tone: 'blue',
+    },
+  },
+  {
+    id: 3,
+    stepLabel: '4. Reçu PDF',
+    roleBadge: 'Dossier élève à jour',
+    floatingPill: {
+      text: 'Reçu généré',
+      tone: 'emerald',
+    },
+  },
+];
 
-  return (
-    <div className="relative w-full">
-      {/* Main Mockup Card Container */}
-      <div className="relative rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden transition-all duration-300">
-        {/* Top Window Chrome & Tab Switcher */}
-        <div className="border-b border-slate-200/80 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 px-4 py-3 flex flex-wrap items-center justify-between gap-3">
-          {/* Header indicator */}
-          <div className="flex items-center gap-2">
-            <span className="h-2 w-2 rounded-full bg-blue-600" />
-            <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
-              Démonstration de l'interface en situation réelle
+const SMOOTH_EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
+const STEP_DURATION_MS = 3000;
+
+const PILL_TONE_CLASSES = {
+  blue: 'bg-blue-50 dark:bg-slate-800 border-blue-200 dark:border-blue-800 text-[#1D4ED8] dark:text-blue-300',
+  amber: 'bg-warning-surface border-warning-border text-warning-text',
+  emerald: 'bg-success-surface border-success-border text-success-text',
+};
+
+// Copies invisibles des 4 étapes : placées dans la même cellule de grille que le
+// contenu visible, elles fixent la hauteur sur l'étape la plus haute, sans être
+// lues par les lecteurs d'écran ni recevoir le focus.
+const GHOST_CLASS = 'invisible pointer-events-none select-none [grid-area:1/1]';
+
+const ROLE_BADGE_CLASS =
+  'inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-surface-subtle border border-subtle text-xs font-bold text-secondary';
+const FLOATING_PILL_CLASS =
+  'inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full border text-xs font-bold shadow-[0_6px_16px_rgba(15,23,42,0.06)]';
+
+const STEP_BODY_CLASSES = [
+  'rounded-2xl border border-subtle bg-surface p-4 sm:p-5 space-y-3',
+  'rounded-2xl border border-warning-border bg-warning-surface p-4 sm:p-5 space-y-2.5',
+  'rounded-2xl border border-subtle bg-surface p-4 sm:p-5 space-y-3',
+  'rounded-2xl border border-success-border bg-success-surface p-4 sm:p-5 space-y-2.5',
+];
+
+const renderStepBody = (step: number): React.ReactNode => {
+  switch (step) {
+    case 0:
+      return (
+        <>
+          <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+            <span className="font-bold text-main flex items-center gap-1.5">
+              <Smartphone className="h-4 w-4 text-primary-text" />
+              Canal choisi au guichet
+            </span>
+            <div className="flex flex-wrap items-center gap-1.5">
+              {['Espèces', 'Bankily', 'Masrvi', 'Sedad', 'Chèque'].map(
+                (c) => (
+                  <span
+                    key={c}
+                    className={`px-3 py-0.5 rounded-full font-bold ${c === 'Bankily'
+                        ? 'bg-[#1D4ED8] text-white'
+                        : 'bg-surface-subtle text-muted border border-subtle'
+                      }`}
+                  >
+                    {c}
+                  </span>
+                )
+              )}
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 rounded-full bg-surface-subtle border border-subtle text-xs">
+            <span className="text-muted font-medium">
+              Référence de l'opérateur :
+            </span>
+            <span className="font-bold text-main tabular-nums">
+              TX-BKL-00412 (Exemple)
+            </span>
+          </div>
+        </>
+      );
+    case 1:
+      return (
+        <>
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-xs font-bold text-warning-text flex items-center gap-1.5">
+              <Clock className="h-4 w-4 shrink-0" />
+              Paiement hors espèces enregistré au guichet
+            </span>
+            <span className="text-xs font-bold text-warning-text tabular-nums">
+              15 000 MRU
+            </span>
+          </div>
+          <p className="text-sm text-main leading-relaxed">
+            Le règlement Bankily (référence{' '}
+            <strong className="tabular-nums">TX-BKL-00412</strong>) passe
+            en statut « en attente de confirmation » pour le directeur.
+          </p>
+        </>
+      );
+    case 2:
+      return (
+        <>
+          <div className="flex items-center justify-between gap-2 text-xs">
+            <span className="font-bold text-main flex items-center gap-1.5">
+              <ShieldCheck className="h-4 w-4 text-primary-text" />
+              Tableau du directeur • Paiements en attente
+            </span>
+            <span className="text-muted tabular-nums">
+              Réf : TX-BKL-00412
             </span>
           </div>
 
-          {/* Interactive Navigation Pills */}
-          <div className="flex items-center gap-1 p-1 bg-slate-200/70 dark:bg-slate-800/80 rounded-xl overflow-x-auto no-scrollbar">
-            <button
-              type="button"
-              onClick={() => setActiveTab('directeur')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0 ${
-                activeTab === 'directeur'
-                  ? 'bg-white dark:bg-blue-600 text-blue-700 dark:text-white shadow-sm'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-              }`}
-            >
-              <TrendingUp className="h-3.5 w-3.5" />
-              <span>Pilotage DAF</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setActiveTab('guichet')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0 ${
-                activeTab === 'guichet'
-                  ? 'bg-white dark:bg-blue-600 text-blue-700 dark:text-white shadow-sm'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-              }`}
-            >
-              <CreditCard className="h-3.5 w-3.5" />
-              <span>Guichet Bankily</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setActiveTab('whatsapp')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0 ${
-                activeTab === 'whatsapp'
-                  ? 'bg-white dark:bg-emerald-600 text-emerald-700 dark:text-white shadow-sm'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-              }`}
-            >
-              <MessageCircle className="h-3.5 w-3.5" />
-              <span>WhatsApp Auto</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setActiveTab('recu')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0 ${
-                activeTab === 'recu'
-                  ? 'bg-white dark:bg-blue-600 text-blue-700 dark:text-white shadow-sm'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-              }`}
-            >
-              <Receipt className="h-3.5 w-3.5" />
-              <span>Reçu DGI QR</span>
-            </button>
+          <div className="p-3.5 rounded-2xl bg-surface-subtle border border-subtle flex flex-wrap items-center justify-between gap-2 text-xs">
+            <div>
+              <p className="font-bold text-main text-sm">
+                Élève Test • Bankily • 15 000 MRU
+              </p>
+              <p className="text-muted">
+                Vérification de la référence de l'opérateur
+              </p>
+            </div>
+            <span className="px-4 py-1.5 rounded-full bg-[#1D4ED8] text-white font-bold inline-flex items-center gap-1.5">
+              <CheckCircle2 className="h-3.5 w-3.5" />
+              Confirmer le paiement
+            </span>
           </div>
+        </>
+      );
+    default:
+      return (
+        <>
+          <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+            <span className="font-bold text-success-text flex items-center gap-1.5">
+              <FileText className="h-4 w-4 shrink-0" />
+              Reçu PDF numéroté N° REC-DEMO-001
+            </span>
+            <span className="px-3 py-0.5 rounded-full bg-surface border border-subtle text-main font-bold tabular-nums">
+              15 000 MRU
+            </span>
+          </div>
+          <p className="text-sm text-main leading-relaxed">
+            Le paiement est confirmé, le solde de l'échéance est mis à
+            jour et le reçu PDF numéroté (exemple) est généré.
+          </p>
+        </>
+      );
+  }
+};
 
-          {/* Institutional Status Badge */}
-          <div className="hidden md:flex items-center gap-1.5 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
-            <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="font-mono">Nouakchott • En Direct</span>
+export const LandingMockupPreview: React.FC = () => {
+  const prefersReducedMotion = useReducedMotion();
+  const shouldReduceMotion = Boolean(prefersReducedMotion);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const prevReducedMotionRef = useRef<boolean>(shouldReduceMotion);
+
+  // En mouvement réduit, démarrer en pause sur l'état final (étape 4 : reçu PDF) avec le bouton « Lecture »
+  const [currentStep, setCurrentStep] = useState<number>(() =>
+    shouldReduceMotion ? 3 : 0
+  );
+  const [isPaused, setIsPaused] = useState<boolean>(() => shouldReduceMotion);
+  const [isInView, setIsInView] = useState<boolean>(true);
+
+  // Synchroniser uniquement si la préférence système change après le montage initial
+  useEffect(() => {
+    if (prevReducedMotionRef.current !== shouldReduceMotion) {
+      prevReducedMotionRef.current = shouldReduceMotion;
+      if (shouldReduceMotion) {
+        setCurrentStep(3);
+        setIsPaused(true);
+      } else {
+        setCurrentStep(0);
+        setIsPaused(false);
+      }
+    }
+  }, [shouldReduceMotion]);
+
+  // Lecture automatique dès que la scène est visible (seuil bas 5 % pour ne jamais bloquer sur petit écran)
+  useEffect(() => {
+    const node = containerRef.current;
+    if (!node || typeof IntersectionObserver === 'undefined') return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        if (entry) {
+          setIsInView(entry.isIntersecting);
+        }
+      },
+      { threshold: 0.05 }
+    );
+
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
+
+  // Boucle automatique de 3 secondes par temps tant que la scène n'est pas en pause et qu'elle est visible
+  useEffect(() => {
+    if (isPaused || !isInView) return;
+
+    const timer = window.setInterval(() => {
+      setCurrentStep((prev) => (prev + 1) % SCENE_STEPS.length);
+    }, STEP_DURATION_MS);
+
+    return () => window.clearInterval(timer);
+  }, [isPaused, isInView]);
+
+  const activeScene = SCENE_STEPS[currentStep] ?? SCENE_STEPS[3];
+
+  const pillToneClasses = PILL_TONE_CLASSES[activeScene.floatingPill.tone];
+
+  // En reduced-motion, remplacer les translations par un simple fondu d'opacité
+  const stepMotionProps = {
+    initial: shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: 14 },
+    animate: shouldReduceMotion ? { opacity: 1 } : { opacity: 1, y: 0 },
+    exit: shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: -10 },
+    transition: {
+      duration: 0.38,
+      ease: SMOOTH_EASE,
+    },
+  };
+
+  return (
+    <div
+      ref={containerRef}
+      data-testid="product-scene"
+      data-current-step={currentStep}
+      data-is-paused={String(isPaused)}
+      aria-label="Scène animée illustrant un encaissement dans EcoSurv (Exemple fictif)"
+      className="relative w-full max-w-[960px] mx-auto rounded-3xl border border-subtle bg-surface shadow-[0_10px_30px_rgba(15,23,42,0.06)] dark:shadow-[0_10px_30px_rgba(0,0,0,0.35)] overflow-hidden text-left"
+    >
+      {/* Barre supérieure du cadre d'écran */}
+      <div className="flex flex-wrap items-center justify-between gap-2 px-4 sm:px-6 py-3.5 border-b border-subtle bg-surface-subtle">
+        <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-1.5 mr-1" aria-hidden="true">
+            <span className="h-2.5 w-2.5 rounded-full bg-border-default" />
+            <span className="h-2.5 w-2.5 rounded-full bg-border-default" />
+            <span className="h-2.5 w-2.5 rounded-full bg-border-default" />
+          </div>
+          <LogoIcone size={22} />
+          <div>
+            <span className="text-sm font-bold text-main block leading-tight">
+              EcoSurv
+            </span>
+            <span className="text-xs text-muted block leading-tight">
+              Parcours d'un encaissement scolaire
+            </span>
           </div>
         </div>
 
-        {/* Content Wrapper for AnimatePresence */}
-        <div className="relative">
-          <AnimatePresence mode="wait">
-            {/* Tab Content 1: Pilotage DAF & Direction */}
-            {activeTab === 'directeur' && (
-              <motion.div 
-                key="directeur"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.2 }}
-                className="p-4 sm:p-6 space-y-4"
-              >
-            {/* Header School Info */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-800">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-950/80 dark:text-blue-400 border border-blue-200/60 dark:border-blue-800/80 shadow-2xs">
-                  <Building2 className="h-5 w-5" />
-                </div>
-                <div>
-                  <h4 className="text-sm font-extrabold text-slate-900 dark:text-white tracking-tight">
-                    Lycée d'Excellence El-Amel
-                  </h4>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
-                    Tevragh-Zeina • Année 2024-2025 • 482 élèves
-                  </p>
-                </div>
-              </div>
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800/80 text-[11px] font-bold self-start sm:self-auto">
-                <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                <span>Exercice Actif • RLS Isolé</span>
-              </div>
-            </div>
+        <div className="flex items-center gap-2">
+          <span className="inline-flex items-center px-3 py-1 rounded-full border border-subtle bg-surface text-xs font-semibold text-secondary">
+            Exemple fictif
+          </span>
 
-            {/* KPI Cards in MRU */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-              <div className="p-4 rounded-2xl bg-gradient-to-br from-slate-50 to-white dark:from-slate-800/80 dark:to-slate-800/40 border border-slate-100 dark:border-slate-800/80 shadow-2xs relative overflow-hidden">
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                    Recouvré ce mois (MRU)
-                  </span>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300">
-                    +18.4%
-                  </span>
-                </div>
-                <div className="mt-1.5 flex items-baseline gap-1.5">
-                  <span className="text-2xl sm:text-3xl font-black text-slate-950 dark:text-white font-mono tracking-tight">
-                    4 850 000
-                  </span>
-                  <span className="text-xs font-bold text-slate-500">MRU</span>
-                </div>
-                <div className="mt-2 flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
-                  <TrendingUp className="h-3.5 w-3.5" />
-                  <span>Rapprochement Mobile Money direct</span>
-                </div>
-              </div>
+          <button
+            type="button"
+            data-testid="scene-play-pause"
+            aria-pressed={isPaused}
+            aria-label={
+              isPaused
+                ? "Lancer la lecture de l'animation de démonstration"
+                : "Mettre en pause l'animation de démonstration"
+            }
+            onClick={() => setIsPaused((prev) => !prev)}
+            className="min-h-[36px] px-3.5 py-1.5 rounded-full border border-default bg-surface hover:bg-surface-subtle text-xs font-bold text-main inline-flex items-center gap-1.5 transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-[#1D4ED8]"
+          >
+            {isPaused ? (
+              <>
+                <Play className="h-3.5 w-3.5 text-[#1D4ED8]" />
+                <span>Lecture</span>
+              </>
+            ) : (
+              <>
+                <Pause className="h-3.5 w-3.5 text-secondary" />
+                <span>Pause</span>
+              </>
+            )}
+          </button>
+        </div>
+      </div>
 
-              <div className="p-4 rounded-2xl bg-gradient-to-br from-slate-50 to-white dark:from-slate-800/80 dark:to-slate-800/40 border border-slate-100 dark:border-slate-800/80 shadow-2xs relative overflow-hidden">
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                    Reste exigible en retard
-                  </span>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300">
-                    28 élèves
-                  </span>
-                </div>
-                <div className="mt-1.5 flex items-baseline gap-1.5">
-                  <span className="text-2xl sm:text-3xl font-black text-rose-600 dark:text-rose-400 font-mono tracking-tight">
-                    310 000
-                  </span>
-                  <span className="text-xs font-bold text-slate-500">MRU</span>
-                </div>
-                <div className="mt-2 flex items-center gap-1 text-[11px] font-semibold text-amber-600 dark:text-amber-400">
-                  <AlertCircle className="h-3.5 w-3.5" />
-                  <span>Relances WhatsApp auto programmées</span>
-                </div>
-              </div>
-            </div>
-
-            {/* SVG Weekly Evolution Chart */}
-            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800/80">
-              <div className="flex items-center justify-between mb-2.5">
-                <span className="text-xs font-bold text-slate-900 dark:text-white">
-                  Tendance des encaissements (Semaine 1 à 4)
-                </span>
-                <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold">
-                  94.8% d'objectifs atteints
-                </span>
-              </div>
-              <div className="h-20 w-full relative">
-                <svg className="h-full w-full text-blue-600 dark:text-blue-500" preserveAspectRatio="none" viewBox="0 0 400 80">
-                  <defs>
-                    <linearGradient id="gradMockupArt" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="currentColor" stopOpacity="0.3" />
-                      <stop offset="100%" stopColor="currentColor" stopOpacity="0.0" />
-                    </linearGradient>
-                  </defs>
-                  <path d="M0 65 Q 60 50, 120 42 T 240 28 T 320 18 T 400 8 L 400 80 L 0 80 Z" fill="url(#gradMockupArt)" />
-                  <path d="M0 65 Q 60 50, 120 42 T 240 28 T 320 18 T 400 8" fill="none" stroke="currentColor" strokeWidth="2.5" />
-                  <circle cx="120" cy="42" r="4" className="fill-blue-600 dark:fill-blue-400" />
-                  <circle cx="240" cy="28" r="4" className="fill-blue-600 dark:fill-blue-400" />
-                  <circle cx="320" cy="18" r="4" className="fill-blue-600 dark:fill-blue-400" />
-                  <circle cx="400" cy="8" r="5" className="fill-emerald-500 animate-pulse" />
-                </svg>
-              </div>
-            </div>
-
-            {/* Live Certified Transactions Feed */}
-            <div className="overflow-hidden rounded-2xl border border-slate-100 dark:border-slate-800">
-              <div className="px-4 py-2.5 bg-slate-100/80 dark:bg-slate-800/80 flex justify-between text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                <span>Dernières transactions certifiées</span>
-                <span>Canal / Montant</span>
-              </div>
-              <div className="divide-y divide-slate-100 dark:divide-slate-800 text-xs">
-                <div className="px-4 py-2.5 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
-                  <div className="flex items-center gap-2.5">
-                    <div className="h-8 w-8 rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/60 dark:text-blue-300 flex items-center justify-center font-bold text-xs">
-                      AB
-                    </div>
-                    <div>
-                      <p className="font-bold text-slate-900 dark:text-white">Ahmed Salem Bilal</p>
-                      <p className="text-[11px] text-slate-500">Terminale D • Reçu #2025-0981</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-mono font-bold text-slate-900 dark:text-white">45 000 MRU</p>
-                    <p className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1 justify-end">
-                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> Bankily Direct
-                    </p>
-                  </div>
-                </div>
-
-                <div className="px-4 py-2.5 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
-                  <div className="flex items-center gap-2.5">
-                    <div className="h-8 w-8 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-300 flex items-center justify-center font-bold text-xs">
-                      FD
-                    </div>
-                    <div>
-                      <p className="font-bold text-slate-900 dark:text-white">Fatimetou Diop</p>
-                      <p className="text-[11px] text-slate-500">3ème Année • Reçu #2025-0982</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-mono font-bold text-slate-900 dark:text-white">35 000 MRU</p>
-                    <p className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1 justify-end">
-                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> Masrvi BMCI
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-            </motion.div>
-          )}
-
-          {/* Tab Content 2: Guichet Bankily */}
-          {activeTab === 'guichet' && (
-            <motion.div 
-              key="guichet"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.2 }}
-              className="p-4 sm:p-6 space-y-4"
+      {/* Barre des 4 temps du scénario */}
+      <div
+        role="tablist"
+        aria-label="Étapes de la scène de démonstration"
+        className="grid grid-cols-2 sm:grid-cols-4 gap-2 p-3 bg-page-bg border-b border-subtle"
+      >
+        {SCENE_STEPS.map((step) => {
+          const isCurrent = currentStep === step.id;
+          const isDone = currentStep > step.id;
+          return (
+            <button
+              key={step.id}
+              type="button"
+              role="tab"
+              aria-selected={isCurrent}
+              onClick={() => {
+                setCurrentStep(step.id);
+                setIsPaused(true);
+              }}
+              className={`min-h-[38px] px-3 py-1.5 rounded-full text-xs font-bold transition-colors cursor-pointer flex items-center justify-center gap-1.5 focus-visible:outline-2 focus-visible:outline-[#1D4ED8] ${isCurrent
+                  ? 'bg-[#1D4ED8] text-white'
+                  : isDone
+                    ? 'bg-surface text-primary-text border border-subtle'
+                    : 'bg-surface-subtle text-muted hover:text-main'
+                }`}
             >
-            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
-              <div>
-                <span className="text-[11px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider">
-                  Guichet Caisse N°1 — Encaissement express
-                </span>
-                <h4 className="text-base font-extrabold text-slate-900 dark:text-white">
-                  Règlement Échéance Scolarité
-                </h4>
-              </div>
-              <span className="px-3 py-1 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 text-[11px] font-bold">
-                Rapprochement en 4s
+              <span>{step.stepLabel}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Corps de la scène animée avec pastille flottante */}
+      <div className="relative p-5 sm:p-7 bg-surface space-y-5">
+        {/* En-tête de contexte + pastille flottante qui apparaît à chaque temps */}
+        <div className="grid">
+          {SCENE_STEPS.map((s) => (
+            <div
+              key={`header-ghost-${s.id}`}
+              aria-hidden="true"
+              inert
+              className={`${GHOST_CLASS} flex flex-wrap items-center justify-between gap-2`}
+            >
+              <span className={ROLE_BADGE_CLASS}>
+                <User className="h-3.5 w-3.5" />
+                <span>{s.roleBadge}</span>
+              </span>
+              <span className={`${FLOATING_PILL_CLASS} ${PILL_TONE_CLASSES[s.floatingPill.tone]}`}>
+                <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
+                <span>{s.floatingPill.text}</span>
               </span>
             </div>
+          ))}
+        <div className="[grid-area:1/1] self-start flex flex-wrap items-center justify-between gap-2">
+          <span className={ROLE_BADGE_CLASS}>
+            <User className="h-3.5 w-3.5 text-primary-text" />
+            <span>{activeScene.roleBadge}</span>
+          </span>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
-                <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Élève au guichet</span>
-                <p className="text-sm font-bold text-slate-900 dark:text-white mt-0.5">
-                  Aminetou Mint Cheikh
-                </p>
-                <p className="text-xs text-slate-500">
-                  Matricule: <span className="font-mono font-bold text-slate-700 dark:text-slate-300">ES-2025-042</span> • 6ème A
-                </p>
-              </div>
-
-              <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
-                <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Échéance à régler</span>
-                <p className="text-sm font-bold text-slate-900 dark:text-white mt-0.5">
-                  Frais de scolarité — Mars 2025
-                </p>
-                <p className="text-xs font-mono font-extrabold text-blue-600 dark:text-blue-400">
-                  35 000 MRU <span className="text-[10px] font-normal text-slate-500">(Net sans commission)</span>
-                </p>
-              </div>
-            </div>
-
-            {/* Canal de réception */}
-            <div>
-              <label className="text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5 block">
-                Canal d'encaissement instantané
-              </label>
-              <div className="grid grid-cols-3 gap-2.5">
-                <button
-                  type="button"
-                  onClick={() => setPaymentChannel('bankily')}
-                  className={`p-3 rounded-2xl flex flex-col items-center justify-center text-center transition-all cursor-pointer ${
-                    paymentChannel === 'bankily'
-                      ? 'border-2 border-blue-600 bg-blue-50/80 dark:bg-blue-950/80 text-blue-900 dark:text-blue-100 shadow-xs ring-2 ring-blue-600/15 font-bold'
-                      : 'border border-slate-200 dark:border-slate-700/80 bg-white/90 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800'
-                  }`}
-                >
-                  <Smartphone className={`h-5 w-5 mb-1 ${paymentChannel === 'bankily' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500'}`} />
-                  <span className={`text-xs ${paymentChannel === 'bankily' ? 'font-bold text-blue-800 dark:text-blue-200' : 'font-semibold text-slate-700 dark:text-slate-300'}`}>
-                    Bankily
-                  </span>
-                  <span className={`text-[10px] font-mono ${paymentChannel === 'bankily' ? 'text-blue-600 dark:text-blue-400 font-semibold' : 'text-slate-400'}`}>
-                    BPM #98214
-                  </span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setPaymentChannel('masrvi')}
-                  className={`p-3 rounded-2xl flex flex-col items-center justify-center text-center transition-all cursor-pointer ${
-                    paymentChannel === 'masrvi'
-                      ? 'border-2 border-blue-600 bg-blue-50/80 dark:bg-blue-950/80 text-blue-900 dark:text-blue-100 shadow-xs ring-2 ring-blue-600/15 font-bold'
-                      : 'border border-slate-200 dark:border-slate-700/80 bg-white/90 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800'
-                  }`}
-                >
-                  <CreditCard className={`h-5 w-5 mb-1 ${paymentChannel === 'masrvi' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500'}`} />
-                  <span className={`text-xs ${paymentChannel === 'masrvi' ? 'font-bold text-blue-800 dark:text-blue-200' : 'font-semibold text-slate-700 dark:text-slate-300'}`}>
-                    Masrvi
-                  </span>
-                  <span className={`text-[10px] font-mono ${paymentChannel === 'masrvi' ? 'text-blue-600 dark:text-blue-400 font-semibold' : 'text-slate-400'}`}>
-                    BMCI #44012
-                  </span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setPaymentChannel('especes')}
-                  className={`p-3 rounded-2xl flex flex-col items-center justify-center text-center transition-all cursor-pointer ${
-                    paymentChannel === 'especes'
-                      ? 'border-2 border-blue-600 bg-blue-50/80 dark:bg-blue-950/80 text-blue-900 dark:text-blue-100 shadow-xs ring-2 ring-blue-600/15 font-bold'
-                      : 'border border-slate-200 dark:border-slate-700/80 bg-white/90 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800'
-                  }`}
-                >
-                  <Receipt className={`h-5 w-5 mb-1 ${paymentChannel === 'especes' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500'}`} />
-                  <span className={`text-xs ${paymentChannel === 'especes' ? 'font-bold text-blue-800 dark:text-blue-200' : 'font-semibold text-slate-700 dark:text-slate-300'}`}>
-                    Espèces
-                  </span>
-                  <span className={`text-[10px] ${paymentChannel === 'especes' ? 'text-blue-600 dark:text-blue-400 font-semibold' : 'text-slate-400'}`}>
-                    Caisse physique
-                  </span>
-                </button>
-              </div>
-            </div>
-
-            <div className="p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                <span className="text-xs font-semibold text-emerald-900 dark:text-emerald-200">
-                  {paymentChannel === 'bankily' && 'Paiement instantané Bankily BPM validé. Quittance officielle générée.'}
-                  {paymentChannel === 'masrvi' && 'Paiement certifié Masrvi BMCI reçu. Quittance officielle générée.'}
-                  {paymentChannel === 'especes' && 'Encaissement espèces validé à la caisse N°1. Quittance officielle générée.'}
-                </span>
-              </div>
-              <button
-                type="button"
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-colors shadow-xs"
-              >
-                <Printer className="h-3.5 w-3.5" />
-                Imprimer
-              </button>
-            </div>
-          </motion.div>
-        )}
-
-        {/* Tab Content 3: WhatsApp Auto */}
-        {activeTab === 'whatsapp' && (
-          <motion.div 
-            key="whatsapp"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.2 }}
-            className="p-4 sm:p-6 space-y-4"
-          >
-            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
-              <div>
-                <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
-                  Relance Éducative Automatisée
-                </span>
-                <h4 className="text-base font-extrabold text-slate-900 dark:text-white">
-                  Aperçu du message WhatsApp reçu par le parent
-                </h4>
-              </div>
-              <span className="px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-[11px] font-bold flex items-center gap-1">
-                <Clock className="h-3 w-3" />
-                Modèle de message préparé à J-3
-              </span>
-            </div>
-
-            {/* Realistic WhatsApp Chat Card */}
-            <div className="rounded-2xl bg-[#0b141a] p-4 text-white shadow-inner max-w-md mx-auto font-sans border border-slate-800">
-              <div className="flex items-center gap-2.5 pb-3 border-b border-slate-800">
-                <div className="h-8 w-8 rounded-full bg-emerald-700 flex items-center justify-center font-bold text-xs">
-                  ES
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1">
-                    <span className="text-xs font-bold truncate">EcoSurv • Groupe Scolaire Al-Baraka</span>
-                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
-                  </div>
-                  <p className="text-[10px] text-slate-400">Compte vérifié officiel</p>
-                </div>
-              </div>
-
-              <div className="mt-3.5 bg-[#1f2c34] p-3.5 rounded-2xl rounded-tl-xs text-xs text-slate-200 leading-relaxed shadow-sm space-y-2">
-                <p>
-                  <span className="font-bold text-white">Chers parents de Mariam Diallo (CM2),</span>
-                </p>
-                <p className="text-slate-300">
-                  Nous vous informons avec bienveillance que l'échéance de scolarité pour le mois de <strong className="text-white">Mars 2025</strong> (35 000 MRU) arrive à terme le <strong className="text-white">05 Mars</strong>.
-                </p>
-                <div className="p-2.5 rounded-xl bg-[#111b21] border border-slate-700/60 font-mono text-[11px] space-y-1">
-                  <p className="text-emerald-400 font-bold">Moyens de paiement directs :</p>
-                  <p>• Bankily : Code établissement <span className="text-white font-bold">44021</span></p>
-                  <p>• Masrvi : Tél caisse <span className="text-white font-bold">+222 45 25 00 00</span></p>
-                </div>
-                <p className="text-slate-300">
-                  Téléchargez votre quittance officielle dès validation : <span className="text-emerald-400 underline font-semibold">ecosurv.mr/r/2025-0492</span>
-                </p>
-                <div className="text-right text-[10px] text-slate-400 pt-1 flex items-center justify-end gap-1">
-                  <span>10:14</span>
-                  <span className="text-blue-400 font-bold">✓✓</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 pt-1">
-              <span className="flex items-center gap-1.5">
-                <ShieldCheck className="h-4 w-4 text-emerald-500" />
-                Réduit de 70% les impayés sans contact embarrassant
-              </span>
-              <span className="font-bold text-slate-700 dark:text-slate-300">
-                Français & Arabe
-              </span>
-            </div>
-          </motion.div>
-        )}
-
-        {/* Tab Content 4: Reçu DGI QR */}
-        {activeTab === 'recu' && (
-          <motion.div 
-            key="recu"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.2 }}
-            className="p-4 sm:p-6 space-y-4"
-          >
-            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
-              <div>
-                <span className="text-[11px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider">
-                  Sécurité Fiscale & Contrôle
-                </span>
-                <h4 className="text-base font-extrabold text-slate-900 dark:text-white">
-                  Quittance Scolaire Inaltérable Conforme DGI
-                </h4>
-              </div>
-              <span className="px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-[11px] font-bold">
-                Inviolable • Horodaté
-              </span>
-            </div>
-
-            {/* Receipt Card */}
-            <div className="rounded-2xl bg-slate-50 dark:bg-slate-800/80 p-4 border border-slate-200 dark:border-slate-700 shadow-sm relative overflow-hidden">
-              <div className="flex justify-between items-start border-b border-slate-200 dark:border-slate-700 pb-3">
-                <div>
-                  <p className="text-[10px] uppercase font-bold tracking-wider text-slate-400">
-                    RÉPUBLIQUE ISLAMIQUE DE MAURITANIE
-                  </p>
-                  <h5 className="text-sm font-extrabold text-slate-900 dark:text-white">
-                    Groupe Scolaire Al-Baraka — Tevragh-Zeina
-                  </h5>
-                  <p className="text-[11px] text-slate-500 font-mono">NIF: 00921448-B • Agrément MENESF N° 2019/41</p>
-                </div>
-                <div className="text-right">
-                  <span className="inline-block px-2.5 py-0.5 rounded-lg bg-blue-100 dark:bg-blue-900/60 text-blue-800 dark:text-blue-300 font-mono font-bold text-xs">
-                    REÇU N° 2025-0492
-                  </span>
-                  <p className="text-[10px] text-slate-400 mt-1">14 Mars 2025 à 11:32</p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3 py-3 text-xs border-b border-slate-200 dark:border-slate-700">
-                <div>
-                  <span className="text-[10px] text-slate-400 uppercase font-semibold">Élève & Classe</span>
-                  <p className="font-bold text-slate-900 dark:text-white">Cheikh Ould Souleymane</p>
-                  <p className="text-slate-500">Terminale C • Matricule ES-2024-118</p>
-                </div>
-                <div>
-                  <span className="text-[10px] text-slate-400 uppercase font-semibold">Paiement & Canal</span>
-                  <p className="font-bold text-emerald-600 dark:text-emerald-400 font-mono text-sm">45 000 MRU</p>
-                  <p className="text-slate-500">Bankily Direct • Réf TX #BKL-884129</p>
-                </div>
-              </div>
-
-              <div className="pt-3 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="h-12 w-12 rounded-xl bg-white p-1 border border-slate-200 shadow-2xs shrink-0 flex items-center justify-center">
-                    <QrCode className="h-10 w-10 text-slate-900" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-bold text-slate-900 dark:text-white">
-                      Signature Cryptographique DGI
-                    </p>
-                    <p className="text-[10px] text-slate-500 font-mono">
-                      SHA-256: 8f9b...a41c (Audit conforme)
-                    </p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1 justify-end">
-                    <CheckCircle2 className="h-4 w-4" /> Quittance archivée
-                  </span>
-                </div>
-              </div>
-            </div>
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={`pill-${activeScene.id}`}
+              data-testid="scene-floating-pill"
+              initial={
+                shouldReduceMotion
+                  ? { opacity: 0 }
+                  : { opacity: 0, y: 8, scale: 0.96 }
+              }
+              animate={
+                shouldReduceMotion
+                  ? { opacity: 1 }
+                  : { opacity: 1, y: 0, scale: 1 }
+              }
+              exit={
+                shouldReduceMotion
+                  ? { opacity: 0 }
+                  : { opacity: 0, y: -6, scale: 0.96 }
+              }
+              transition={{
+                duration: 0.32,
+                ease: SMOOTH_EASE,
+              }}
+              className={`${FLOATING_PILL_CLASS} ${pillToneClasses}`}
+            >
+              {activeScene.id === 1 ? (
+                <Clock className="h-3.5 w-3.5 shrink-0" />
+              ) : (
+                <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
+              )}
+              <span>{activeScene.floatingPill.text}</span>
             </motion.div>
-          )}
           </AnimatePresence>
+        </div>
+        </div>
+
+        {/* Fiche de l'élève générique commune aux 4 temps */}
+        <div className="rounded-2xl border border-subtle bg-page-bg p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-full bg-[#1D4ED8] text-white font-bold text-xs flex items-center justify-center shrink-0">
+              ET
+            </div>
+            <div>
+              <p className="text-sm font-bold text-main">
+                Élève Test (Exemple)
+              </p>
+              <p className="text-xs text-muted tabular-nums">
+                Classe Démo • Mensualité : 15 000 MRU
+              </p>
+            </div>
+          </div>
+
+          <div className="text-xs font-bold tabular-nums">
+            {currentStep === 0 && (
+              <span className="inline-flex items-center px-3.5 py-1 rounded-full bg-surface border border-default text-secondary">
+                Échéance à régler
+              </span>
+            )}
+            {currentStep === 1 && (
+              <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-warning-surface border border-warning-border text-warning-text">
+                <Clock className="h-3.5 w-3.5" />
+                En attente de confirmation
+              </span>
+            )}
+            {currentStep === 2 && (
+              <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-blue-50 dark:bg-slate-800 border border-blue-200 dark:border-blue-800 text-[#1D4ED8] dark:text-blue-300">
+                <ShieldCheck className="h-3.5 w-3.5" />
+                Validation directeur
+              </span>
+            )}
+            {currentStep === 3 && (
+              <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-success-surface border border-success-border text-success-text">
+                <CheckCircle2 className="h-3.5 w-3.5" />
+                Solde à jour : 0 MRU
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Zone centrale qui évolue selon le temps 1, 2, 3 ou 4 */}
+        <div className="min-h-[148px] grid items-center">
+          {SCENE_STEPS.map((s) => (
+            <div
+              key={`body-ghost-${s.id}`}
+              aria-hidden="true"
+              inert
+              className={`${GHOST_CLASS} ${STEP_BODY_CLASSES[s.id]}`}
+            >
+              {renderStepBody(s.id)}
+            </div>
+          ))}
+          <div className="[grid-area:1/1]">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={`scene-step-${currentStep}`}
+                {...stepMotionProps}
+                className={STEP_BODY_CLASSES[currentStep] ?? STEP_BODY_CLASSES[3]}
+              >
+                {renderStepBody(currentStep)}
+              </motion.div>
+            </AnimatePresence>
+          </div>
+        </div>
+
+        {/* Barre de progression basse entre les 4 étapes */}
+        <div className="pt-2 border-t border-subtle flex items-center justify-between gap-3 text-xs text-muted">
+          <span>
+            Étape {currentStep + 1} sur {SCENE_STEPS.length}
+          </span>
+          <div className="flex items-center gap-1.5" aria-hidden="true">
+            {SCENE_STEPS.map((s) => (
+              <span
+                key={s.id}
+                className={`h-1.5 rounded-full transition-all duration-300 ${currentStep === s.id
+                    ? 'w-6 bg-[#1D4ED8]'
+                    : 'w-2 bg-border-default'
+                  }`}
+              />
+            ))}
+          </div>
         </div>
       </div>
     </div>
   );
 };
+
+export default LandingMockupPreview;

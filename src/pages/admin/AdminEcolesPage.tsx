@@ -206,7 +206,7 @@ export const AdminEcolesPage: React.FC<AdminEcolesPageProps> = ({
                     <td className="py-4 px-4">
                       <div className="flex items-center gap-1.5 text-slate-700 dark:text-slate-300">
                         <MapPin className="h-3.5 w-3.5 text-slate-400 shrink-0" />
-                        <span>{ecole.ville || 'Nouakchott'}</span>
+                        <span>{ecole.ville || 'Non renseignée'}</span>
                       </div>
                       <div className="flex items-center gap-1.5 text-[11px] text-slate-500 mt-0.5">
                         <Phone className="h-3 w-3 text-slate-400 shrink-0" />

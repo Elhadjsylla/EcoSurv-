@@ -11,6 +11,7 @@ interface SendOtpRequest {
   nomDirecteur?: string;
   nomEcole: string;
   code: string;
+  redirect_to?: string;
 }
 
 Deno.serve(async (req: Request) => {
@@ -37,7 +38,7 @@ Deno.serve(async (req: Request) => {
     }
 
     const payload = (await req.json()) as SendOtpRequest;
-    const { to, nomDirecteur, nomEcole, code } = payload;
+    const { to, nomDirecteur, nomEcole, code, redirect_to } = payload;
 
     if (!to || !to.includes("@") || !code || code.length !== 6 || !nomEcole) {
       return new Response(
@@ -47,6 +48,11 @@ Deno.serve(async (req: Request) => {
     }
 
     const cleanEmail = to.trim();
+    const rawRedirect = redirect_to || "https://ecosurv.mr/activation";
+    const activationUrl = rawRedirect.endsWith('/activation')
+      ? rawRedirect
+      : `${rawRedirect.replace(/\/+$/, '')}/activation`;
+
     const htmlContent = `
       <!DOCTYPE html>
       <html lang="fr">
@@ -83,6 +89,12 @@ Deno.serve(async (req: Request) => {
               <div class="code-title">Code de vérification sécurisé</div>
               <p class="otp-number">${code}</p>
               <div class="expiry-badge">Expire dans 15 minutes</div>
+            </div>
+
+            <div style="text-align: center; margin: 24px 0 20px 0;">
+              <a href="${activationUrl}" style="display: inline-block; background-color: #2563eb; color: #ffffff; padding: 12px 28px; border-radius: 12px; font-weight: 700; text-decoration: none; font-size: 14px; box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.3);">
+                Accéder à l'écran d'activation →
+              </a>
             </div>
 
             <p style="font-size: 13px; color: #94a3b8; line-height: 1.5; margin: 0;">

@@ -262,7 +262,7 @@ export const SchoolDistributionDonut: React.FC<SchoolDistributionDonutProps> = (
       {/* Footer Info */}
       <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500">
         <span className="text-[11px]">
-          Source : Table Supabase <code className="font-mono text-blue-600 dark:text-blue-400">public.ecoles</code>
+          Source : Base officielle des établissements
         </span>
         {onNavigateTab && (
           <button

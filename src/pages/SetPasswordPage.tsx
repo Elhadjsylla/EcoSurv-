@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
-import { Lock, Eye, EyeOff, CheckCircle2, AlertCircle, ShieldCheck, GraduationCap } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Lock, Eye, EyeOff, CheckCircle2, AlertCircle, ShieldCheck, GraduationCap, Users } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuthStore } from '../store/useAuthStore';
 import { useNavigationStore } from '../store/useNavigationStore';
+import { useEcoleStore } from '../store/useEcoleStore';
 import { LanguageSelector } from '../components/ui/LanguageSelector';
+import { Logo } from '../components/ui/Logo';
 import type { UserRole } from '../components/ui/Header';
 
 export const SetPasswordPage: React.FC = () => {
@@ -14,16 +16,99 @@ export const SetPasswordPage: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  const roleLabel =
-    profile?.role === 'enseignant'
-      ? 'Espace Enseignant'
-      : profile?.role === 'caissier'
-      ? 'Espace Caissier'
-      : profile?.role === 'parent'
-      ? 'Espace Parent'
-      : 'Espace Collaborateur';
+  // Extraction d'une éventuelle erreur renvoyée par Supabase dans le hash ou la query (ex: token expiré)
+  const [error, setError] = useState<string | null>(() => {
+    const hash = typeof window !== 'undefined' ? window.location.hash : '';
+    if (hash.includes('error_description=')) {
+      const params = new URLSearchParams(hash.replace(/^#/, ''));
+      const desc = params.get('error_description');
+      if (desc) return decodeURIComponent(desc.replace(/\+/g, ' '));
+    }
+    const search = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+    const desc = search?.get('error_description');
+    if (desc) return decodeURIComponent(desc.replace(/\+/g, ' '));
+    return null;
+  });
+
+  // Chargement de secours du profil si non encore présent dans le store Zustand
+  useEffect(() => {
+    if (!profile) {
+      const fetchSessionProfile = async () => {
+        try {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            useAuthStore.getState().setUser(user);
+            const { data: userProf } = await supabase
+              .from('profils')
+              .select('*')
+              .eq('id', user.id)
+              .maybeSingle();
+
+            if (userProf) {
+              useAuthStore.getState().setProfile(userProf);
+              if (userProf.ecole_id) {
+                const { data: ecoleData } = await supabase
+                  .from('ecoles')
+                  .select('id, nom, ville, adresse, telephone, email, annee_scolaire, statut_activation, statut_abonnement')
+                  .eq('id', userProf.ecole_id)
+                  .maybeSingle();
+                if (ecoleData) {
+                  useAuthStore.getState().setEcole(ecoleData);
+                  useEcoleStore.getState().updateEcole({
+                    id: ecoleData.id,
+                    nom: ecoleData.nom || '',
+                    ville: ecoleData.ville || '',
+                    adresse: ecoleData.adresse || '',
+                    telephone: ecoleData.telephone || '',
+                    email: ecoleData.email || '',
+                    annee_scolaire: ecoleData.annee_scolaire || '',
+                    statut_activation: ecoleData.statut_activation,
+                    statut_abonnement: ecoleData.statut_abonnement as any,
+                  });
+                }
+              }
+            }
+          }
+        } catch (e) {
+          console.warn('[SetPassword] Note chargement profil:', e);
+        }
+      };
+      fetchSessionProfile();
+    }
+  }, [profile]);
+
+  const isRecoveryMode = (() => {
+    if (typeof window === 'undefined') return false;
+    const hash = window.location.hash || '';
+    const search = window.location.search || '';
+    const path = window.location.pathname.toLowerCase() || '';
+    return hash.includes('type=recovery') || search.includes('type=recovery') || path.includes('/reinitialisation');
+  })();
+
+  const roleLabel = isRecoveryMode
+    ? 'Réinitialisation de mot de passe'
+    : profile?.role === 'enseignant'
+    ? 'Espace Enseignant'
+    : profile?.role === 'caissier'
+    ? 'Espace Caissier'
+    : profile?.role === 'parent'
+    ? 'Espace Famille'
+    : profile?.role === 'directeur'
+    ? 'Espace Direction'
+    : 'Espace Collaborateur';
+
+  const roleSubtitle = isRecoveryMode
+    ? "Définissez votre nouveau mot de passe sécurisé pour retrouver l'accès à votre espace."
+    : profile?.role === 'parent'
+    ? "Votre invitation a été validée. Définissez votre mot de passe pour finaliser l'accès à votre Espace Famille."
+    : profile?.role === 'enseignant'
+    ? "Votre invitation a été validée. Définissez votre mot de passe pour finaliser l'activation de votre compte enseignant."
+    : profile?.role === 'caissier'
+    ? "Votre invitation a été validée. Définissez votre mot de passe pour finaliser l'activation de votre compte caissier."
+    : profile?.role === 'directeur'
+    ? "Définissez votre mot de passe pour finaliser l'accès à votre compte de direction."
+    : "Définissez votre mot de passe pour finaliser l'activation de votre compte.";
 
   const ecoleNom = ecole?.nom || 'Votre établissement';
 
@@ -69,6 +154,30 @@ export const SetPasswordPage: React.FC = () => {
           ...profile,
           actif: true,
         });
+
+        // Charger l'établissement maintenant que actif = true (autorisé par RLS mon_ecole_rattachement)
+        if (profile.ecole_id) {
+          const { data: ecoleData } = await supabase
+            .from('ecoles')
+            .select('id, nom, ville, adresse, telephone, email, annee_scolaire, statut_activation, statut_abonnement')
+            .eq('id', profile.ecole_id)
+            .maybeSingle();
+
+          if (ecoleData) {
+            useAuthStore.getState().setEcole(ecoleData);
+            useEcoleStore.getState().updateEcole({
+              id: ecoleData.id,
+              nom: ecoleData.nom || '',
+              ville: ecoleData.ville || '',
+              adresse: ecoleData.adresse || '',
+              telephone: ecoleData.telephone || '',
+              email: ecoleData.email || '',
+              annee_scolaire: ecoleData.annee_scolaire || '',
+              statut_activation: ecoleData.statut_activation,
+              statut_abonnement: ecoleData.statut_abonnement as any,
+            });
+          }
+        }
       }
 
       // 3. Nettoyer le hash de l'URL
@@ -91,14 +200,7 @@ export const SetPasswordPage: React.FC = () => {
     <div className="min-h-screen flex flex-col justify-between bg-slate-50 dark:bg-slate-950 px-4 py-8 font-['Plus_Jakarta_Sans',sans-serif] text-slate-900 dark:text-slate-100 antialiased selection:bg-blue-600 selection:text-white">
       {/* Top Header */}
       <div className="max-w-md w-full mx-auto flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-600 text-white font-black text-xs shadow-md shadow-blue-600/20">
-            ES
-          </div>
-          <span className="font-extrabold text-sm tracking-tight text-slate-900 dark:text-white">
-            EcoSurv
-          </span>
-        </div>
+        <Logo height={28} />
         <LanguageSelector />
       </div>
 
@@ -107,16 +209,16 @@ export const SetPasswordPage: React.FC = () => {
         <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 shadow-xl shadow-slate-200/50 dark:shadow-none border border-slate-200/80 dark:border-slate-800 space-y-6">
           <div className="text-center space-y-2">
             <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 border border-blue-200/60 dark:border-blue-800/60 mb-3">
-              <GraduationCap className="h-6 w-6" />
+              {profile?.role === 'parent' ? <Users className="h-6 w-6" /> : <GraduationCap className="h-6 w-6" />}
             </div>
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/60">
               {roleLabel} • {ecoleNom}
             </div>
             <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
-              Bienvenue, {profile?.prenom || ''} {profile?.nom || ''}
+              {isRecoveryMode ? 'Réinitialiser votre mot de passe' : `Bienvenue, ${profile?.prenom || ''} ${profile?.nom || ''}`}
             </h1>
             <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-              Votre invitation a été validée. Définissez votre mot de passe pour finaliser l'activation de votre compte professionnel.
+              {roleSubtitle}
             </p>
           </div>
 
@@ -185,7 +287,11 @@ export const SetPasswordPage: React.FC = () => {
                 className="w-full h-11 inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md shadow-blue-600/25 transition-all cursor-pointer disabled:opacity-50"
               >
                 <CheckCircle2 className="h-4 w-4" />
-                <span>{submitting ? 'Activation en cours...' : 'Activer mon compte et accéder'}</span>
+                <span>
+                  {submitting
+                    ? isRecoveryMode ? 'Enregistrement en cours...' : 'Activation en cours...'
+                    : isRecoveryMode ? 'Enregistrer mon nouveau mot de passe' : 'Activer mon compte et accéder'}
+                </span>
               </button>
             </div>
           </form>

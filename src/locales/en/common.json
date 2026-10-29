@@ -28,6 +28,7 @@
   "teacher": "Teacher",
   "parent": "Parent",
   "cashier": "Cashier",
+  "accessPortal": "Access My Portal",
   "currency": "MRU",
   "pagination": {
     "showing": "Showing {{start}} to {{end}} of {{total}}",

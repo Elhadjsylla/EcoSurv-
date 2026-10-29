@@ -5,9 +5,8 @@ import {
   ReceiptText,
   BadgeAlert,
   GraduationCap,
-  Building2,
 } from 'lucide-react';
-import { CURRENT_CAISSIER } from '../../lib/mockData';
+// Caissier Navigation
 import { useAuthStore } from '../../store/useAuthStore';
 import { Tooltip, TooltipLabel } from '../ui/Tooltip';
 import { SidebarShell } from '../ui/SidebarShell';
@@ -34,10 +33,9 @@ export const CaissierSidebar: React.FC<CaissierSidebarProps> = ({
   const storeT = useLanguageStore((s) => s.t);
   const t = storeT?.nav ? storeT : translations.fr;
   const authProfile = useAuthStore((s) => s.profile);
-  const isReal = Boolean(authProfile?.ecole_id);
   const caissierName = authProfile
     ? `${authProfile.prenom} ${authProfile.nom}`
-    : `${CURRENT_CAISSIER.prenom} ${CURRENT_CAISSIER.nom}`;
+    : 'Caissier';
 
   const navItems: Array<{
     id: CaissierNavTab;
@@ -83,18 +81,9 @@ export const CaissierSidebar: React.FC<CaissierSidebarProps> = ({
                     {caissierName}
                   </div>
                   <div className="text-[11px] text-amber-700 dark:text-amber-400 font-medium truncate">
-                    Agent Comptable
+                    {storeT.common?.cashier || translations.fr.common.cashier || 'Caissier'}
                   </div>
                 </div>
-              </div>
-              <div className="mt-2.5 pt-2 border-t border-amber-200/50 dark:border-amber-800/50 flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 font-medium">
-                <span className="flex items-center gap-1">
-                  <Building2 className="h-3 w-3 text-amber-600" />
-                  Poste :
-                </span>
-                <span className="font-bold text-slate-800 dark:text-slate-200">
-                  {isReal ? 'Guichet Principal' : CURRENT_CAISSIER.guichet}
-                </span>
               </div>
             </div>
           )}

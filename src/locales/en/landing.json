@@ -1,7 +1,7 @@
 {
   "heroBadge": "Sovereign School Fee Recovery Platform in Mauritania",
-  "heroTitle": "Zero Overdue.",
-  "heroSubtitle": "Manage student enrollment, Ouguiya (MRU) collection, automated WhatsApp notifications, and finances in real time with an all-in-one software built for Mauritanian schools.",
+  "heroTitle": "Every tuition payment, tracked from enrollment to receipt.",
+  "heroSubtitle": "Manage student enrollment, Ouguiya (MRU) collection, and finances in real time with an all-in-one software built for Mauritanian schools.",
   "ctaStart": "Create School",
   "ctaLogin": "Log In",
   "ctaAssistance": "WhatsApp Support 6d/7",
@@ -26,7 +26,7 @@
   },
   "finalCta": {
     "title": "Ready to secure your school's annual revenue?",
-    "subtitle": "Join Mauritanian school leaders who eliminated cash discrepancies, automated WhatsApp receipts, and divided defaults by three.",
+    "subtitle": "Join Mauritanian school leaders simplifying cash desk management and ensuring full traceability for every payment.",
     "badges": {
       "deployment": "Guaranteed deployment in 24h",
       "mobileMoney": "Integrated Bankily & Masrvi",

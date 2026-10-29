@@ -1,8 +1,8 @@
 import React, { ReactNode } from 'react';
+import { motion } from 'framer-motion';
+import { ArrowUpRight } from 'lucide-react';
 import { cn, formatMRU } from '../../lib/utils';
 import { formatCompactMRU } from '../../lib/formatCompactMRU';
-import { ArrowUpRight } from 'lucide-react';
-import { motion } from 'framer-motion';
 import { useCountUp } from '../../hooks/useCountUp';
 import { Tooltip } from './Tooltip';
 
@@ -13,8 +13,6 @@ import { Tooltip } from './Tooltip';
  */
 export type KpiUnit = 'MRU' | 'count';
 
-// `unit` est obligatoire dès qu'un `amount` est fourni : aucune unité par défaut,
-// pour qu'un comptage ne puisse plus s'afficher en MRU par oubli.
 type KpiValueProps =
   | { amount: number; unit: KpiUnit; customValue?: never }
   | { customValue: ReactNode; amount?: never; unit?: never }
@@ -52,32 +50,32 @@ export const KpiCard: React.FC<KpiCardProps> = ({
   const animatedAmount = useCountUp(amount ?? 0, 850);
   const animatedProgress = useCountUp(progress ?? 0, 850);
 
-  // Nexoov-inspired pastel color palettes for card background & border
-  const pastelStyles = {
-    default: 'bg-slate-50/80 dark:bg-slate-900/50 border-slate-200/80 dark:border-slate-800',
-    primary: 'bg-blue-50/75 dark:bg-blue-950/35 border-blue-200/70 dark:border-blue-900/50',
-    success: 'bg-emerald-50/75 dark:bg-emerald-950/35 border-emerald-200/70 dark:border-emerald-900/50',
-    danger: 'bg-rose-50/75 dark:bg-rose-950/35 border-rose-200/70 dark:border-rose-900/50',
-    warning: 'bg-amber-50/75 dark:bg-amber-950/35 border-amber-200/70 dark:border-amber-900/50',
-    purple: 'bg-purple-50/75 dark:bg-purple-950/35 border-purple-200/70 dark:border-purple-900/50',
+  // Styles de carte basés sur les tokens sémantiques (surfaces & bordures)
+  const cardVariantStyles = {
+    default: 'bg-surface border-subtle',
+    primary: 'bg-surface border-subtle',
+    success: 'bg-surface border-subtle',
+    danger: 'bg-surface border-subtle',
+    warning: 'bg-surface border-subtle',
+    purple: 'bg-surface border-subtle',
   };
 
   const iconTextColors = {
-    default: 'text-slate-600 dark:text-slate-300',
-    primary: 'text-blue-600 dark:text-blue-400',
-    success: 'text-emerald-600 dark:text-emerald-400',
-    danger: 'text-rose-600 dark:text-rose-400',
-    warning: 'text-amber-600 dark:text-amber-400',
-    purple: 'text-purple-600 dark:text-purple-400',
+    default: 'text-secondary',
+    primary: 'text-primary-text',
+    success: 'text-success-text',
+    danger: 'text-danger-text',
+    warning: 'text-warning-text',
+    purple: 'text-primary-text',
   };
 
-  const borderHoverGlow = {
-    default: 'hover:border-slate-300 dark:hover:border-slate-700',
-    primary: 'hover:border-blue-400 dark:hover:border-blue-700 hover:shadow-blue-500/5',
-    success: 'hover:border-emerald-400 dark:hover:border-emerald-700 hover:shadow-emerald-500/5',
-    danger: 'hover:border-rose-400 dark:hover:border-rose-700 hover:shadow-rose-500/5',
-    warning: 'hover:border-amber-400 dark:hover:border-amber-700 hover:shadow-amber-500/5',
-    purple: 'hover:border-purple-400 dark:hover:border-purple-700 hover:shadow-purple-500/5',
+  const borderHoverStyles = {
+    default: 'hover:border-default',
+    primary: 'hover:border-primary/60',
+    success: 'hover:border-success-border/60',
+    danger: 'hover:border-danger-border/60',
+    warning: 'hover:border-warning-border/60',
+    purple: 'hover:border-primary/60',
   };
 
   const formatValue = (value: number, abbreviated: boolean) =>
@@ -95,49 +93,59 @@ export const KpiCard: React.FC<KpiCardProps> = ({
     <>
       <span className="block">{title}</span>
       {amount !== undefined && fullAmountText !== formatValue(amount, compact) && (
-        <span className="block font-mono font-medium text-slate-300">{fullAmountText}</span>
+        <span className="block tabular-nums font-medium text-muted">{fullAmountText}</span>
       )}
     </>
   );
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20, scale: 0.98 }}
+      initial={{ opacity: 0, y: 16, scale: 0.99 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{
-        type: 'spring',
-        stiffness: 70,
-        damping: 15,
-        delay: staggerIndex !== undefined ? staggerIndex * 0.08 : 0,
+        duration: 0.25,
+        delay: staggerIndex !== undefined ? staggerIndex * 0.05 : 0,
       }}
-      whileHover={{ y: -2, transition: { duration: 0.2 } }}
+      whileHover={{ y: -2, transition: { duration: 0.15 } }}
       whileTap={onClick ? { scale: 0.99 } : undefined}
       onClick={onClick}
+      role={onClick ? 'button' : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      onKeyDown={
+        onClick
+          ? (e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                onClick();
+              }
+            }
+          : undefined
+      }
       className={cn(
-        'rounded-2xl border p-5 sm:p-6 shadow-2xs transition-colors duration-200 relative overflow-hidden flex flex-col justify-between min-w-0',
-        pastelStyles[variant],
+        'rounded-md border p-5 sm:p-6 shadow-xs transition-colors duration-150 relative overflow-hidden flex flex-col justify-between min-w-0',
+        cardVariantStyles[variant],
         active
-          ? 'border-blue-600 dark:border-blue-500 ring-2 ring-blue-600/20 dark:ring-blue-500/20 shadow-sm'
-          : borderHoverGlow[variant],
-        onClick && 'cursor-pointer group',
+          ? 'border-primary ring-2 ring-primary/20 shadow-xs'
+          : borderHoverStyles[variant],
+        onClick && 'cursor-pointer group focus-halo',
         className
       )}
     >
       <div>
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-1.5 min-w-0 flex-1">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 leading-snug break-words">
+            <span className="text-xs font-bold uppercase tracking-wider text-muted leading-snug break-words">
               {title}
             </span>
             {onClick && (
-              <ArrowUpRight className="h-3.5 w-3.5 text-slate-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors shrink-0" />
+              <ArrowUpRight className="h-4 w-4 text-muted group-hover:text-primary-text transition-colors shrink-0" />
             )}
           </div>
           {icon && (
             <Tooltip content={tooltipContent} className="shrink-0">
               <div
                 className={cn(
-                  'flex h-11 w-11 items-center justify-center rounded-2xl bg-white/90 dark:bg-slate-800/90 border border-white/80 dark:border-slate-700/60 shrink-0 transition-transform duration-200 group-hover:scale-105 shadow-2xs',
+                  'flex h-10 w-10 items-center justify-center rounded-md bg-surface-subtle border border-subtle shrink-0 transition-transform duration-150 group-hover:scale-105',
                   iconTextColors[variant]
                 )}
               >
@@ -149,15 +157,15 @@ export const KpiCard: React.FC<KpiCardProps> = ({
 
         <div className="mt-3 sm:mt-4 min-w-0">
           {customValue !== undefined ? (
-            <div className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 dark:text-white font-mono transition-colors truncate">
+            <div className="text-xl sm:text-2xl font-bold tracking-tight text-main tabular-nums transition-colors truncate">
               {customValue}
             </div>
           ) : displayAmount !== null ? (
-            <div className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 dark:text-white font-mono transition-colors truncate">
+            <div className="text-xl sm:text-2xl font-bold tracking-tight text-main tabular-nums transition-colors truncate">
               {displayAmount}
             </div>
           ) : (
-            <div className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 dark:text-white font-mono transition-colors truncate">
+            <div className="text-xl sm:text-2xl font-bold tracking-tight text-main tabular-nums transition-colors truncate">
               {progress !== undefined ? `${animatedProgress}%` : '--'}
             </div>
           )}
@@ -167,15 +175,15 @@ export const KpiCard: React.FC<KpiCardProps> = ({
       <div className="mt-4 min-w-0">
         {progress !== undefined && (
           <div className="space-y-1.5 mb-2.5">
-            <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-200/80 dark:bg-slate-700/60">
+            <div className="h-1.5 w-full overflow-hidden rounded-sm bg-surface-subtle border border-subtle">
               <div
                 className={cn(
-                  'h-full rounded-full transition-all duration-700 ease-out',
+                  'h-full rounded-sm transition-all duration-500 ease-out',
                   progress >= 80
-                    ? 'bg-emerald-600 dark:bg-emerald-500'
+                    ? 'bg-success'
                     : progress >= 50
-                    ? 'bg-blue-600 dark:bg-blue-500'
-                    : 'bg-amber-500 dark:bg-amber-400'
+                    ? 'bg-primary'
+                    : 'bg-warning'
                 )}
                 style={{ width: `${Math.min(100, Math.max(0, animatedProgress))}%` }}
               />
@@ -184,13 +192,12 @@ export const KpiCard: React.FC<KpiCardProps> = ({
         )}
 
         {subtitle && (
-          <p className="text-xs font-medium text-slate-600 dark:text-slate-400 flex items-center justify-between gap-2 min-w-0">
-            {/* Sous le texte : l'infobulle ne recouvre jamais le chiffre de la carte */}
+          <p className="text-xs font-medium text-muted flex items-center justify-between gap-2 min-w-0">
             <Tooltip content={subtitle} side="bottom" className="flex min-w-0">
               <span className="truncate min-w-0">{subtitle}</span>
             </Tooltip>
             {onClick && (
-              <span className="text-[11px] font-bold text-blue-600 dark:text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+              <span className="text-xs font-bold text-primary-text opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
                 Filtrer →
               </span>
             )}

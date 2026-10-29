@@ -1,6 +1,7 @@
 import { jsPDF } from 'jspdf';
-import { ParentMatiereNote } from '../mockData';
+import { ParentMatiereNote } from '../../types';
 import { downloadFile } from '../downloadFile';
+import { CLAIMS_CONFIG } from '../../config/claims';
 
 export interface BulletinData {
   enfantNom: string;
@@ -8,7 +9,7 @@ export interface BulletinData {
   matricule: string;
   classe: string;
   trimestre: string;
-  anneeScolaire?: string;
+  anneeScolaire: string | null | undefined;
   rang: number | string;
   effectif?: number;
   moyenneGenerale: number;
@@ -28,20 +29,26 @@ export function generateBulletinPdf(data: BulletinData): jsPDF {
   let y = 16;
 
   // En-tête national & scolaire
+  if (CLAIMS_CONFIG.republiqueIslamiqueMauritanie) {
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9.5);
+    doc.setTextColor(30, 41, 59);
+    doc.text('RÉPUBLIQUE ISLAMIQUE DE MAURITANIE', pageWidth / 2, y, { align: 'center' });
+    y += 4.5;
+  }
+
+  if (CLAIMS_CONFIG.ministereEducationNationale) {
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(100, 116, 139);
+    doc.text('MINISTÈRE DE L\'ÉDUCATION NATIONALE ET DE LA RÉFORME DU SYSTÈME ÉDUCATIF', pageWidth / 2, y, { align: 'center' });
+    y += 4;
+  }
+
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(9.5);
   doc.setTextColor(30, 41, 59);
-  doc.text('RÉPUBLIQUE ISLAMIQUE DE MAURITANIE', pageWidth / 2, y, { align: 'center' });
-
-  y += 4.5;
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8);
-  doc.setTextColor(100, 116, 139);
-  doc.text('MINISTÈRE DE L\'ÉDUCATION NATIONALE ET DE LA RÉFORME DU SYSTÈME ÉDUCATIF', pageWidth / 2, y, { align: 'center' });
-
-  y += 4;
-  doc.setFontSize(8);
-  doc.text(`${data.ecoleNom || 'Lycée Privé d\'Excellence EcoSurv'} • Direction des Études`, pageWidth / 2, y, { align: 'center' });
+  doc.text(`${data.ecoleNom || 'Établissement Scolaire'} • Direction des Études`, pageWidth / 2, y, { align: 'center' });
 
   y += 3.5;
   doc.setDrawColor(203, 213, 225);
@@ -65,7 +72,11 @@ export function generateBulletinPdf(data: BulletinData): jsPDF {
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8.5);
   doc.setTextColor(71, 85, 105);
-  doc.text(`Année Scolaire ${data.anneeScolaire || '2025-2026'} • Session Trimestrielle`, pageWidth / 2, y, { align: 'center' });
+  const anneeTrimmed = data.anneeScolaire?.trim();
+  const sousTitreBulletin = anneeTrimmed
+    ? `Année Scolaire ${anneeTrimmed} • Session Trimestrielle`
+    : 'Session Trimestrielle';
+  doc.text(sousTitreBulletin, pageWidth / 2, y, { align: 'center' });
 
   // Cadre Identification de l'élève
   y += 7;
@@ -221,26 +232,34 @@ export function generateBulletinPdf(data: BulletinData): jsPDF {
   doc.setFontSize(8);
   doc.setTextColor(71, 85, 105);
 
-  const mention =
-    data.moyenneGenerale >= 16
-      ? 'Très Bien — Félicitations du Conseil de Classe'
-      : data.moyenneGenerale >= 14
-      ? 'Bien — Tableau d\'Honneur avec Encouragements'
-      : data.moyenneGenerale >= 12
-      ? 'Assez Bien — Tableau d\'Honneur'
-      : data.moyenneGenerale >= 10
-      ? 'Passable — Travail à consolider'
-      : 'Insuffisant — Redoublement d\'efforts nécessaire';
+  const hasNotes = Boolean(data.matieres && data.matieres.length > 0);
+
+  const mention = !hasNotes
+    ? '—'
+    : data.moyenneGenerale >= 16
+    ? 'Très Bien — Félicitations du Conseil de Classe'
+    : data.moyenneGenerale >= 14
+    ? 'Bien — Tableau d\'Honneur avec Encouragements'
+    : data.moyenneGenerale >= 12
+    ? 'Assez Bien — Tableau d\'Honneur'
+    : data.moyenneGenerale >= 10
+    ? 'Passable — Travail à consolider'
+    : 'Insuffisant — Redoublement d\'efforts nécessaire';
 
   doc.text(`Moyenne Générale de l'élève : `, tableX + 5, y + 13);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(107, 33, 168);
-  doc.text(`${data.moyenneGenerale.toFixed(2)} / 20`, tableX + 48, y + 13);
+  doc.text(hasNotes ? `${data.moyenneGenerale.toFixed(2)} / 20` : '—', tableX + 48, y + 13);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(71, 85, 105);
 
-  doc.text(`Moyenne de la classe : ${data.moyenneClasse ? data.moyenneClasse.toFixed(1) : '12.4'} / 20`, tableX + 85, y + 13);
-  doc.text(`Rang : ${data.rang}e sur ${data.effectif || 32}`, tableX + 135, y + 13);
+  const moyClasseTxt = data.moyenneClasse && data.moyenneClasse > 0 ? `${data.moyenneClasse.toFixed(1)} / 20` : '—';
+  const rangTxt = !data.rang || data.rang === '-' || !hasNotes
+    ? '—'
+    : `${data.rang}${String(data.rang) === '1' ? 'er' : 'e'}${data.effectif && data.effectif > 0 ? ` sur ${data.effectif}` : ''}`;
+
+  doc.text(`Moyenne de la classe : ${moyClasseTxt}`, tableX + 85, y + 13);
+  doc.text(`Rang : ${rangTxt}`, tableX + 135, y + 13);
 
   doc.text(`Distinction & Mention accordée : `, tableX + 5, y + 20);
   doc.setFont('helvetica', 'bold');
@@ -270,7 +289,10 @@ export function generateBulletinPdf(data: BulletinData): jsPDF {
   doc.setFontSize(7);
   doc.setTextColor(148, 163, 184);
   doc.text('(Signature de visa)', tableX + 25, y, { align: 'center' });
-  doc.text('(Sceau officiel certifiant conforme)', tableX + tableW - 35, y, { align: 'center' });
+  const sealText = CLAIMS_CONFIG.documentOfficiel
+    ? '(Sceau officiel certifiant conforme)'
+    : '(Cachet et signature de l\'établissement)';
+  doc.text(sealText, tableX + tableW - 35, y, { align: 'center' });
 
   const pdfBlob = doc.output('blob');
   const cleanMatricule = data.matricule && !data.matricule.toUpperCase().startsWith('DEMO')

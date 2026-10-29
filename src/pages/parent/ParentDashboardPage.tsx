@@ -1,7 +1,5 @@
-import {
-  MOCK_PARENT_ENFANTS_DETAILS,
-  CURRENT_PARENT,
-} from '../../lib/mockData';
+import React, { useState, useEffect } from 'react';
+import { supabase } from '../../lib/supabase';
 import { useEcoleStore } from '../../store/useEcoleStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useParentChildren } from '../../hooks/useParentChildren';
@@ -14,7 +12,6 @@ import {
   GraduationCap,
   CalendarCheck,
   Clock,
-  MapPin,
   Calendar,
   School,
   Phone,
@@ -42,7 +39,7 @@ export const ParentDashboardPage: React.FC<ParentDashboardPageProps> = ({
 
   const parentName = authProfile
     ? `${authProfile.prenom} ${authProfile.nom}`
-    : `${CURRENT_PARENT.prenom} ${CURRENT_PARENT.nom}`;
+    : 'Parent';
 
   const {
     children: parentChildren,
@@ -52,9 +49,57 @@ export const ParentDashboardPage: React.FC<ParentDashboardPageProps> = ({
     refresh: refreshChildren,
   } = useParentChildren(selectedChildId, onSelectChild);
 
-  const mockDetails = activeChild && MOCK_PARENT_ENFANTS_DETAILS[activeChild.id]
-    ? MOCK_PARENT_ENFANTS_DETAILS[activeChild.id]
-    : null;
+  // Assiduité réelle de l'enfant sélectionné depuis Supabase
+  const [absencesState, setAbsencesState] = useState<{
+    status: 'idle' | 'loading' | 'success' | 'error';
+    total: number;
+    nonJustifiees: number;
+  }>({ status: 'idle', total: 0, nonJustifiees: 0 });
+
+  useEffect(() => {
+    if (!activeChild?.id) {
+      setAbsencesState({ status: 'idle', total: 0, nonJustifiees: 0 });
+      return;
+    }
+    let isCancelled = false;
+    setAbsencesState((prev) => ({ ...prev, status: 'loading' }));
+
+    const fetchAbsences = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('absences')
+          .select('id, type, justifiee')
+          .eq('eleve_id', activeChild.id);
+
+        if (error) {
+          console.error('[ParentDashboardPage] Erreur lecture absences:', error);
+          if (!isCancelled) {
+            setAbsencesState({ status: 'error', total: 0, nonJustifiees: 0 });
+          }
+          return;
+        }
+
+        if (data && !isCancelled) {
+          const total = data.filter((a: any) => a.type === 'absence').length;
+          const justifiees = data.filter((a: any) => a.justifiee).length;
+          setAbsencesState({
+            status: 'success',
+            total,
+            nonJustifiees: total - justifiees,
+          });
+        }
+      } catch (err) {
+        console.error('[ParentDashboardPage] Exception lecture absences:', err);
+        if (!isCancelled) {
+          setAbsencesState({ status: 'error', total: 0, nonJustifiees: 0 });
+        }
+      }
+    };
+    fetchAbsences();
+    return () => {
+      isCancelled = true;
+    };
+  }, [activeChild?.id]);
 
   return (
     <div className="p-6 sm:p-8 lg:p-10 max-w-6xl mx-auto space-y-8 sm:space-y-10 animate-stagger-rise relative">
@@ -196,19 +241,21 @@ export const ParentDashboardPage: React.FC<ParentDashboardPageProps> = ({
           amount={activeChild.remaining}
           unit="MRU"
           subtitle={
-            activeChild.remaining === 0
+            activeChild.total_due === 0
+              ? 'Aucun frais enregistré'
+              : activeChild.remaining === 0
               ? `Compte à jour (${formatMRU(activeChild.total_paid)} réglés)`
               : `Total scolarité : ${formatMRU(activeChild.total_due)}`
           }
           icon={<CreditCard className="w-5 h-5 text-purple-600 dark:text-purple-400" />}
-          variant={activeChild.remaining === 0 ? 'success' : 'purple'}
+          variant={activeChild.total_due > 0 && activeChild.remaining === 0 ? 'success' : 'purple'}
           onClick={() => onNavigateTab('parent_paiements')}
         />
 
         <KpiCard
-          title="Résultats Trimestre 2"
-          customValue={mockDetails ? `${mockDetails.moyenne_generale.toFixed(1)} / 20` : 'En attente'}
-          subtitle={mockDetails ? `Rang : ${mockDetails.rang} • Tableau d'Honneur` : 'Bulletins en cours de saisie'}
+          title="Résultats Scolaires"
+          customValue="—"
+          subtitle="Aucune note saisie ce trimestre"
           icon={<GraduationCap className="w-5 h-5 text-purple-600 dark:text-purple-400" />}
           variant="purple"
           onClick={() => onNavigateTab('parent_pedagogie')}
@@ -216,10 +263,32 @@ export const ParentDashboardPage: React.FC<ParentDashboardPageProps> = ({
 
         <KpiCard
           title="Assiduité & Présence"
-          customValue="Présent aujourd'hui"
-          subtitle={mockDetails ? `${mockDetails.nb_absences_total} absence(s), ${mockDetails.nb_retards_total} retard(s)` : '0 absence signalée'}
+          customValue={
+            absencesState.status === 'loading' || absencesState.status === 'idle'
+              ? '—'
+              : absencesState.status === 'error'
+              ? 'Indisponible'
+              : `${absencesState.total} absence${absencesState.total > 1 ? 's' : ''}`
+          }
+          subtitle={
+            absencesState.status === 'loading' || absencesState.status === 'idle'
+              ? "Chargement de l'assiduité..."
+              : absencesState.status === 'error'
+              ? "Erreur de chargement de l'assiduité"
+              : absencesState.total === 0
+              ? 'Aucune absence enregistrée'
+              : absencesState.nonJustifiees > 0
+              ? `${absencesState.nonJustifiees} non justifiée${absencesState.nonJustifiees > 1 ? 's' : ''}`
+              : 'Toutes justifiées'
+          }
           icon={<CalendarCheck className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />}
-          variant="success"
+          variant={
+            absencesState.status === 'error'
+              ? 'danger'
+              : absencesState.status === 'success' && absencesState.nonJustifiees > 0
+              ? 'warning'
+              : 'success'
+          }
           onClick={() => onNavigateTab('parent_assiduite')}
         />
       </div>
@@ -232,7 +301,7 @@ export const ParentDashboardPage: React.FC<ParentDashboardPageProps> = ({
             <div className="flex items-center gap-2">
               <Clock className="h-4 w-4 text-purple-600 dark:text-purple-400" />
               <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-                Emploi du Temps d'Aujourd'hui
+                Emploi du Temps
               </h3>
             </div>
             <span className="text-xs text-slate-400 font-medium">
@@ -240,31 +309,8 @@ export const ParentDashboardPage: React.FC<ParentDashboardPageProps> = ({
             </span>
           </div>
 
-          <div className="space-y-2.5">
-            {(mockDetails?.emploi_du_temps_aujourdhui || []).length === 0 ? (
-              <p className="text-xs text-slate-400 italic py-4 text-center">Aucun cours programmé aujourd'hui</p>
-            ) : (
-              mockDetails?.emploi_du_temps_aujourdhui.map((cours, idx) => (
-                <div
-                  key={idx}
-                  className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 hover:bg-purple-50/40 dark:hover:bg-purple-950/20 transition-colors"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="px-2.5 py-1 rounded-lg bg-purple-100 dark:bg-purple-950 text-purple-800 dark:text-purple-300 text-xs font-bold font-mono">
-                      {cours.heure}
-                    </div>
-                    <div>
-                      <div className="font-bold text-slate-900 dark:text-white text-sm">{cours.matiere}</div>
-                      <div className="text-xs text-slate-500 dark:text-slate-400">{cours.professeur}</div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1 text-xs text-slate-600 dark:text-slate-300 font-semibold bg-white dark:bg-slate-900 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700">
-                    <MapPin className="h-3 w-3 text-slate-400" />
-                    {cours.salle}
-                  </div>
-                </div>
-              ))
-            )}
+          <div className="py-8 text-center">
+            <p className="text-xs text-slate-400 italic">Aucun cours programmé aujourd'hui</p>
           </div>
         </Card>
 
@@ -285,36 +331,8 @@ export const ParentDashboardPage: React.FC<ParentDashboardPageProps> = ({
             </button>
           </div>
 
-          <div className="space-y-3">
-            {(mockDetails?.bulletin || []).length === 0 ? (
-              <p className="text-xs text-slate-400 italic py-4 text-center">Aucune note enregistrée ce trimestre</p>
-            ) : (
-              mockDetails?.bulletin.slice(0, 4).map((item, idx) => (
-                <div
-                  key={idx}
-                  className="flex items-center justify-between p-3 rounded-xl bg-slate-50/70 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700/60 shadow-2xs"
-                >
-                  <div>
-                    <div className="font-bold text-slate-900 dark:text-white text-sm">{item.matiere}</div>
-                    <div className="text-xs text-slate-400">
-                      Coef. {item.coefficient} • {item.professeur}
-                    </div>
-                    <div className="text-[11px] text-slate-600 dark:text-slate-300 italic mt-0.5 line-clamp-1">
-                      « {item.appreciation} »
-                    </div>
-                  </div>
-
-                  <div className="text-right shrink-0 pl-3">
-                    <div className="text-base font-black text-purple-600 dark:text-purple-400 font-mono">
-                      {item.moyenne.toFixed(1)} <span className="text-xs text-slate-400">/ 20</span>
-                    </div>
-                    <div className="text-[10px] text-slate-400">
-                      Classe: {item.moyenne_classe.toFixed(1)}
-                    </div>
-                  </div>
-                </div>
-              ))
-            )}
+          <div className="py-8 text-center">
+            <p className="text-xs text-slate-400 italic">Aucune note enregistrée ce trimestre</p>
           </div>
         </Card>
       </div>

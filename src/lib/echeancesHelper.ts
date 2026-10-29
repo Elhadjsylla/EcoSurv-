@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
-import { EcheancierConfig, FrequenceEcheance } from './mockData';
+import { EcheancierConfig, FrequenceEcheance } from '../types';
+import { getAnneeScolaire } from '../hooks/useAnneeScolaire';
 
 export function computeTrancheDates(
   startDateStr: string,
@@ -7,20 +8,44 @@ export function computeTrancheDates(
   nbTranches: number
 ): string[] {
   const dates: string[] = [];
-  const baseDate = new Date(startDateStr);
-  const validBase = isNaN(baseDate.getTime()) ? new Date() : baseDate;
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(startDateStr);
+  let startYear: number;
+  let startMonth: number;
+  let targetDay: number;
+
+  if (match) {
+    startYear = parseInt(match[1], 10);
+    startMonth = parseInt(match[2], 10) - 1;
+    targetDay = parseInt(match[3], 10);
+  } else {
+    const fallback = new Date(startDateStr);
+    const valid = isNaN(fallback.getTime()) ? new Date() : fallback;
+    startYear = valid.getUTCFullYear();
+    startMonth = valid.getUTCMonth();
+    targetDay = valid.getUTCDate();
+  }
 
   for (let i = 0; i < nbTranches; i++) {
-    const d = new Date(validBase);
+    let deltaMonths = 0;
     if (frequence === 'mensuel') {
-      d.setMonth(d.getMonth() + i);
+      deltaMonths = i;
     } else if (frequence === 'trimestriel') {
-      d.setMonth(d.getMonth() + i * 3);
+      deltaMonths = i * 3;
     } else {
-      // Annuel
-      d.setFullYear(d.getFullYear() + i);
+      deltaMonths = i * 12;
     }
-    dates.push(d.toISOString().split('T')[0]);
+
+    const totalMonths = startMonth + deltaMonths;
+    const targetYear = startYear + Math.floor(totalMonths / 12);
+    const targetMonth = ((totalMonths % 12) + 12) % 12;
+
+    const daysInMonth = new Date(Date.UTC(targetYear, targetMonth + 1, 0)).getUTCDate();
+    const actualDay = Math.min(targetDay, daysInMonth);
+
+    const yStr = String(targetYear).padStart(4, '0');
+    const mStr = String(targetMonth + 1).padStart(2, '0');
+    const dStr = String(actualDay).padStart(2, '0');
+    dates.push(`${yStr}-${mStr}-${dStr}`);
   }
   return dates;
 }
@@ -94,8 +119,13 @@ export async function createBaremeAndGenerateEcheances(
     nombre_tranches: number;
     date_limite_prochaine: string;
   },
-  anneeScolaire = '2025-2026'
+  anneeScolaire: string | null | undefined
 ): Promise<{ bareme: EcheancierConfig; generatedEcheancesCount: number }> {
+  const annee = anneeScolaire?.trim();
+  if (!annee) {
+    throw new Error("Définissez l'année scolaire dans Configuration avant de continuer.");
+  }
+
   const montantParTranche = Math.round(bareme.montant_total / bareme.nombre_tranches);
 
   // 1. Insertion stricte dans Supabase baremes_echeances
@@ -110,7 +140,7 @@ export async function createBaremeAndGenerateEcheances(
       nombre_tranches: bareme.nombre_tranches,
       montant_par_tranche: montantParTranche,
       date_limite_prochaine: bareme.date_limite_prochaine,
-      annee_scolaire: anneeScolaire,
+      annee_scolaire: annee,
     })
     .select('id')
     .single();
@@ -159,7 +189,7 @@ export async function createBaremeAndGenerateEcheances(
           libelle: `${bareme.libelle} - Tranche ${i + 1}/${bareme.nombre_tranches}`,
           montant: montantTranche,
           date_echeance: dates[i] || bareme.date_limite_prochaine,
-          annee_scolaire: anneeScolaire,
+          annee_scolaire: annee,
         });
       }
     }
@@ -196,8 +226,12 @@ export async function generateEcheancesForNewStudent(
   ecoleId: string,
   eleveId: string,
   classe: string,
-  anneeScolaire = '2025-2026'
+  anneeScolaire: string | null | undefined
 ): Promise<number> {
+  const annee = anneeScolaire?.trim();
+  if (!annee) {
+    throw new Error("Définissez l'année scolaire dans Configuration avant de continuer.");
+  }
   if (!ecoleId || !eleveId || !classe) return 0;
 
   const { data: baremes, error: bErr } = await supabase
@@ -206,7 +240,12 @@ export async function generateEcheancesForNewStudent(
     .eq('ecole_id', ecoleId)
     .eq('classe', classe);
 
-  if (bErr || !baremes || baremes.length === 0) {
+  if (bErr) {
+    console.error('[echeancesHelper] Erreur chargement barèmes pour nouvel élève:', bErr);
+    throw new Error(`Erreur lors de la lecture des barèmes pour la classe ${classe}: ${bErr.message}`);
+  }
+
+  if (!baremes || baremes.length === 0) {
     return 0;
   }
 
@@ -234,7 +273,7 @@ export async function generateEcheancesForNewStudent(
       libelle: `${bareme.libelle} - Tranche ${i + 1}/${bareme.nombre_tranches}`,
       montant: montantTranche,
       date_echeance: dates[i] || bareme.date_limite_prochaine,
-      annee_scolaire: anneeScolaire,
+      annee_scolaire: annee,
     });
   }
 
@@ -265,4 +304,89 @@ export async function deleteBareme(ecoleId: string, baremeId: string): Promise<b
   }
 
   return true;
+}
+
+export interface ClasseSansBaremeInfo {
+  classe: string;
+  eleves: number;
+}
+
+export interface GenererEcheancesManquantesResult {
+  success: boolean;
+  echeancesCreees: number;
+  elevesConcernes: number;
+  classesSansBareme: ClasseSansBaremeInfo[];
+}
+
+export interface GenererEcheancesManquantesParams {
+  eleveId?: string;
+  classe?: string;
+  anneeScolaire?: string | null;
+}
+
+/**
+ * Traduit les erreurs de la fonction PostgreSQL `generer_echeances_manquantes` en messages français clairs.
+ */
+export function formatGenererEcheancesError(err: any): string {
+  const raw = `${err?.message || ''} ${err?.details || ''} ${err?.hint || ''}`;
+  if (raw.includes('NON_AUTHENTIFIE')) {
+    return 'Vous devez être connecté pour effectuer cette action.';
+  }
+  if (raw.includes('ACCES_REFUSE')) {
+    return 'Accès refusé. Cette action est réservée au directeur et au super-administrateur.';
+  }
+  if (raw.includes('ECOLE_INTROUVABLE')) {
+    return 'Établissement introuvable ou compte non rattaché à une école.';
+  }
+  if (raw.includes('BAREME_INCOHERENT')) {
+    const match = /BAREME_INCOHERENT[:\s\-]+(.*)/i.exec(err?.message || raw);
+    const detail = match && match[1] ? match[1].trim() : (err?.message || '');
+    return `Le barème configuré est incohérent : ${detail}`;
+  }
+  if (err?.code === '42501' || raw.includes('row-level security')) {
+    return 'Accès refusé par la politique de sécurité (RLS).';
+  }
+  return err?.message || 'Une erreur inattendue est survenue lors de la génération des échéances.';
+}
+
+/**
+ * Appelle la RPC `generer_echeances_manquantes` (directeur / super_admin).
+ * Génère les tranches manquantes sans toucher aux échéances existantes ni aux paiements.
+ */
+export async function genererEcheancesManquantes(
+  params?: GenererEcheancesManquantesParams
+): Promise<GenererEcheancesManquantesResult> {
+  const annee = (params?.anneeScolaire !== undefined ? params.anneeScolaire : getAnneeScolaire())?.trim();
+  if (!annee) {
+    throw new Error("Définissez l'année scolaire dans Configuration avant de continuer.");
+  }
+
+  const { data: rpcResult, error: rpcError } = await supabase.rpc('generer_echeances_manquantes', {
+    p_eleve_id: params?.eleveId || null,
+    p_classe: params?.classe ? params.classe.trim() : null,
+  });
+
+  if (rpcError) {
+    throw new Error(formatGenererEcheancesError(rpcError));
+  }
+
+  if (!rpcResult || rpcResult.success === false) {
+    throw new Error('Échec de la génération des échéances : réponse inattendue du serveur.');
+  }
+
+  const rawClasses = Array.isArray(rpcResult.classes_sans_bareme)
+    ? rpcResult.classes_sans_bareme
+    : [];
+
+  const classesSansBareme: ClasseSansBaremeInfo[] = rawClasses.map((c: any) => ({
+    classe: String(c.classe || ''),
+    eleves: Number(c.eleves || 0),
+  }));
+
+  return {
+    success: true,
+    echeancesCreees: Number(rpcResult.echeances_creees ?? 0),
+    elevesConcernes: Number(rpcResult.eleves_concernes ?? 0),
+    classesSansBareme,
+  };
 }

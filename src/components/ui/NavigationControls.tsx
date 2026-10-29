@@ -15,6 +15,8 @@ const accentHover: Record<UserRole, string> = {
     'enabled:hover:text-amber-600 enabled:hover:bg-amber-50 enabled:hover:border-amber-200 dark:enabled:hover:text-amber-300 dark:enabled:hover:bg-amber-950/60 dark:enabled:hover:border-amber-800',
   parent:
     'enabled:hover:text-purple-600 enabled:hover:bg-purple-50 enabled:hover:border-purple-200 dark:enabled:hover:text-purple-300 dark:enabled:hover:bg-purple-950/60 dark:enabled:hover:border-purple-800',
+  super_admin:
+    'enabled:hover:text-purple-600 enabled:hover:bg-purple-50 enabled:hover:border-purple-200 dark:enabled:hover:text-purple-300 dark:enabled:hover:bg-purple-950/60 dark:enabled:hover:border-purple-800',
 };
 
 interface NavButtonProps {

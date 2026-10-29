@@ -5,17 +5,20 @@ import { Select } from '../components/ui/Select';
 import { KpiCard } from '../components/ui/KpiCard';
 import { Tooltip } from '../components/ui/Tooltip';
 import {
-  MOCK_ECHEANCIERS,
   EcheancierConfig,
   FrequenceEcheance,
-} from '../lib/mockData';
+} from '../types';
 import { formatMRU } from '../lib/utils';
 import { useAuthStore } from '../store/useAuthStore';
-import { DEFAULT_CLASSES_MAURITANIE } from '../lib/constants/classes';
+import { useNavigationStore } from '../store/useNavigationStore';
+import { useAnneeScolaire } from '../hooks/useAnneeScolaire';
+import { useClasses } from '../hooks/useClasses';
 import {
   fetchBaremes,
   createBaremeAndGenerateEcheances,
   deleteBareme,
+  genererEcheancesManquantes,
+  ClasseSansBaremeInfo,
 } from '../lib/echeancesHelper';
 import { supabase } from '../lib/supabase';
 import {
@@ -26,7 +29,6 @@ import {
   X,
   PlusCircle,
   CheckCircle,
-  Layers,
   Clock,
   MoreHorizontal,
   FileText,
@@ -34,99 +36,168 @@ import {
   Trash2,
   Loader2,
   AlertCircle,
+  Sparkles,
 } from 'lucide-react';
 
 export const EcheancesPage: React.FC = () => {
   const authProfile = useAuthStore((s) => s.profile);
-  const [echeanciers, setEcheanciers] = useState<EcheancierConfig[]>(() => {
-    if (authProfile?.ecole_id) return [];
-    return MOCK_ECHEANCIERS;
-  });
+  const anneeScolaire = useAnneeScolaire();
+  const navigate = useNavigationStore((s) => s.navigate);
+  const [echeanciers, setEcheanciers] = useState<EcheancierConfig[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [openMenuRowId, setOpenMenuRowId] = useState<string | null>(null);
-  const [availableClasses, setAvailableClasses] = useState<string[]>(DEFAULT_CLASSES_MAURITANIE);
+  const { nomsClasses: availableClasses, isLoading: isLoadingClasses } = useClasses();
+  const hasNoClasses = !isLoadingClasses && availableClasses.length === 0;
+  const [isGeneratingManquantes, setIsGeneratingManquantes] = useState(false);
+  const [isConfirmManquantesOpen, setIsConfirmManquantesOpen] = useState(false);
+  const [classesSansBaremeNotice, setClassesSansBaremeNotice] = useState<ClasseSansBaremeInfo[]>([]);
 
-  // Form state
+  // Données réelles issues de la base
+  const [elevesCouvertsCount, setElevesCouvertsCount] = useState<number>(0);
+  const [prochaineEcheance, setProchaineEcheance] = useState<{ date: string; libelle: string } | null>(null);
+
+  const canManage = authProfile?.role === 'directeur' || authProfile?.role === 'super_admin';
+
+  const formatProchaineDate = (dateStr?: string) => {
+    if (!dateStr) return '—';
+    const parts = dateStr.split('-');
+    if (parts.length === 3) {
+      const months = [
+        'Jan.', 'Fév.', 'Mars', 'Avril', 'Mai', 'Juin',
+        'Juil.', 'Août', 'Sept.', 'Oct.', 'Nov.', 'Déc.'
+      ];
+      const day = parseInt(parts[2], 10);
+      const mIdx = parseInt(parts[1], 10) - 1;
+      return `${day} ${months[mIdx] || ''}`;
+    }
+    return dateStr;
+  };
+
+  // Form state : champs vides sans valeurs inventées par défaut
   const [newLibelle, setNewLibelle] = useState('');
-  const [newClasse, setNewClasse] = useState('Terminales C');
-  const [newMontantTotal, setNewMontantTotal] = useState<number>(30000);
+  const [newClasse, setNewClasse] = useState('');
+  const [newMontantTotal, setNewMontantTotal] = useState<number | ''>('');
   const [newFrequence, setNewFrequence] = useState<FrequenceEcheance>('mensuel');
   const [newNombreTranches, setNewNombreTranches] = useState<number>(3);
-  const [newDateLimite, setNewDateLimite] = useState('2026-04-05');
+  const [newDateLimite, setNewDateLimite] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Validation : le bouton est désactivé tant que les champs obligatoires ne sont pas remplis
+  const isFormValid = Boolean(
+    newLibelle.trim() &&
+    newClasse.trim() &&
+    typeof newMontantTotal === 'number' &&
+    newMontantTotal > 0 &&
+    newDateLimite.trim() &&
+    newNombreTranches >= 1
+  );
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 5000);
   };
 
-  // Chargement persistant des barèmes au montage
-  useEffect(() => {
-    if (authProfile?.ecole_id) {
-      const ecoleId = authProfile.ecole_id;
-      let isMounted = true;
-      const loadData = async () => {
-        setIsLoading(true);
-        setErrorMessage(null);
-        try {
-          const list = await fetchBaremes(ecoleId);
-          if (isMounted) {
-            setEcheanciers(list);
-          }
+  const handleGenererManquantes = async () => {
+    if (isGeneratingManquantes) return;
+    if (!anneeScolaire) {
+      setErrorMessage("Définissez l'année scolaire dans Configuration avant de continuer");
+      return;
+    }
+    setIsGeneratingManquantes(true);
+    setErrorMessage(null);
+    setIsConfirmManquantesOpen(false);
 
-          // Charger également les classes réelles existantes dans l'école
-          const { data: eleves } = await supabase
-            .from('eleves')
-            .select('classe')
-            .eq('ecole_id', authProfile.ecole_id);
+    try {
+      const res = await genererEcheancesManquantes({ anneeScolaire });
 
-          if (isMounted && eleves) {
-            const schoolClasses = Array.from(new Set(eleves.map((e: any) => e.classe).filter(Boolean)));
-            const merged = Array.from(new Set([...schoolClasses, ...DEFAULT_CLASSES_MAURITANIE]));
-            setAvailableClasses(merged);
-            if (merged.length > 0 && !merged.includes(newClasse)) {
-              setNewClasse(merged[0]);
-            }
-          }
-        } catch (err: any) {
-          console.error('[EcheancesPage] Erreur chargement barèmes:', err);
-          if (isMounted) {
-            setErrorMessage(err.message || 'Erreur lors du chargement des barèmes');
-          }
-        } finally {
-          if (isMounted) setIsLoading(false);
-        }
-      };
-      loadData();
-      return () => {
-        isMounted = false;
-      };
+      if (res.echeancesCreees > 0) {
+        showToast(`${res.echeancesCreees} échéances créées pour ${res.elevesConcernes} élèves`);
+        await loadData();
+      } else {
+        showToast('Aucune échéance manquante.');
+      }
+
+      if (res.classesSansBareme && res.classesSansBareme.length > 0) {
+        setClassesSansBaremeNotice(res.classesSansBareme);
+      } else {
+        setClassesSansBaremeNotice([]);
+      }
+    } catch (err: any) {
+      console.error('[EcheancesPage] Erreur genererEcheancesManquantes:', err);
+      const msg = err.message || 'Erreur lors de la génération des échéances manquantes';
+      setErrorMessage(msg);
+      showToast(`Erreur : ${msg}`);
+    } finally {
+      setIsGeneratingManquantes(false);
+    }
+  };
+
+  const loadData = React.useCallback(async () => {
+    if (!authProfile?.ecole_id) return;
+    const ecoleId = authProfile.ecole_id;
+    setIsLoading(true);
+    setErrorMessage(null);
+    try {
+      const list = await fetchBaremes(ecoleId);
+      setEcheanciers(list);
+
+      // 1. Décompte réel des élèves ayant au moins une échéance enregistrée en base
+      const { data: echRows } = await supabase
+        .from('echeances')
+        .select('eleve_id')
+        .eq('ecole_id', ecoleId);
+
+      if (echRows) {
+        const uniqueCount = new Set(echRows.map((r: any) => r.eleve_id).filter(Boolean)).size;
+        setElevesCouvertsCount(uniqueCount);
+      }
+
+      // 2. Prochaine échéance réelle (première date_echeance >= aujourd'hui parmi les échéances non soldées)
+      const todayStr = new Date().toISOString().split('T')[0];
+      const { data: nextEch } = await supabase
+        .from('echeances')
+        .select('libelle, date_echeance')
+        .eq('ecole_id', ecoleId)
+        .neq('statut', 'paye')
+        .gte('date_echeance', todayStr)
+        .order('date_echeance', { ascending: true })
+        .limit(1)
+        .maybeSingle();
+
+      if (nextEch && nextEch.date_echeance) {
+        setProchaineEcheance({
+          date: nextEch.date_echeance,
+          libelle: nextEch.libelle || 'Échéance à venir',
+        });
+      } else {
+        setProchaineEcheance(null);
+      }
+    } catch (err: any) {
+      console.error('[EcheancesPage] Erreur chargement barèmes:', err);
+      setErrorMessage(err.message || 'Erreur lors du chargement des barèmes');
+    } finally {
+      setIsLoading(false);
     }
   }, [authProfile?.ecole_id]);
 
+  // Chargement persistant au montage
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
   const handleCreateEcheancier = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newLibelle.trim()) return;
+    if (!anneeScolaire) {
+      setErrorMessage("Définissez l'année scolaire dans Configuration avant de continuer");
+      return;
+    }
+    if (!isFormValid || typeof newMontantTotal !== 'number') return;
 
     if (!authProfile?.ecole_id) {
-      const newEcheancier: EcheancierConfig = {
-        id: `ech-${Date.now()}`,
-        libelle: newLibelle,
-        classe: newClasse,
-        montant_total: Number(newMontantTotal),
-        frequence: newFrequence,
-        nombre_tranches: Number(newNombreTranches),
-        montant_par_tranche: Math.round(Number(newMontantTotal) / Number(newNombreTranches)),
-        date_limite_prochaine: newDateLimite,
-        nb_eleves_concernes: 30,
-      };
-      setEcheanciers([newEcheancier, ...echeanciers]);
-      showToast(`Échéancier "${newLibelle}" créé.`);
-      setIsModalOpen(false);
-      setNewLibelle('');
+      setErrorMessage("Aucun établissement rattaché à votre profil.");
       return;
     }
 
@@ -141,7 +212,8 @@ export const EcheancesPage: React.FC = () => {
           frequence: newFrequence,
           nombre_tranches: Number(newNombreTranches),
           date_limite_prochaine: newDateLimite,
-        }
+        },
+        anneeScolaire
       );
 
       setEcheanciers((prev) => [bareme, ...prev.filter((b) => b.id !== bareme.id)]);
@@ -158,6 +230,9 @@ export const EcheancesPage: React.FC = () => {
 
       setIsModalOpen(false);
       setNewLibelle('');
+      setNewClasse('');
+      setNewMontantTotal('');
+      setNewDateLimite('');
     } catch (err: any) {
       console.error('[EcheancesPage] Erreur création barème:', err);
       const msg = err.message || 'Erreur inconnue';
@@ -189,8 +264,6 @@ export const EcheancesPage: React.FC = () => {
     }
   };
 
-  const totalElevesCouverts = echeanciers.reduce((sum, e) => sum + e.nb_eleves_concernes, 0);
-
   return (
     <div className="p-6 sm:p-8 lg:p-10 max-w-[1600px] mx-auto space-y-8 sm:space-y-10 relative" aria-busy={isLoading}>
       {/* Toast Notification */}
@@ -214,28 +287,131 @@ export const EcheancesPage: React.FC = () => {
             <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
               Échéances & Tarifs de Scolarité
             </h1>
-            <span className="rounded-full bg-blue-100 dark:bg-blue-950/60 px-2.5 py-0.5 text-xs font-bold text-blue-700 dark:text-blue-300 border border-blue-200/50 dark:border-blue-800/60">
-              Année 2025–2026
-            </span>
+            {anneeScolaire && (
+              <span className="rounded-full bg-blue-100 dark:bg-blue-950/60 px-2.5 py-0.5 text-xs font-bold text-blue-700 dark:text-blue-300 border border-blue-200/50 dark:border-blue-800/60">
+                Année {anneeScolaire}
+              </span>
+            )}
           </div>
           <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">
             Configuration des frais de scolarité, des mensualités et des calendriers d'échéances par classe.
           </p>
         </div>
 
-        <Button
-          variant="primary"
-          size="sm"
-          className="gap-2 h-10 px-4"
-          onClick={() => {
-            setErrorMessage(null);
-            setIsModalOpen(true);
-          }}
-        >
-          <Plus className="h-4 w-4" />
-          + Nouvelle Échéance
-        </Button>
+        <div className="flex flex-wrap items-center gap-3">
+          {canManage && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2 h-10 px-4 font-semibold text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-800 hover:bg-blue-50 dark:hover:bg-blue-950/40 disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={isGeneratingManquantes || !anneeScolaire}
+              title={!anneeScolaire ? "Définissez l'année scolaire dans Configuration avant de continuer" : undefined}
+              onClick={() => {
+                if (!anneeScolaire) return;
+                setIsConfirmManquantesOpen(true);
+              }}
+            >
+              {isGeneratingManquantes ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin text-blue-600 dark:text-blue-400" />
+                  <span>Génération en cours...</span>
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                  <span>Générer les échéances manquantes</span>
+                </>
+              )}
+            </Button>
+          )}
+
+          <Button
+            variant="primary"
+            size="sm"
+            className="gap-2 h-10 px-4 disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={!anneeScolaire || hasNoClasses}
+            title={
+              !anneeScolaire
+                ? "Définissez l'année scolaire dans Configuration avant de continuer"
+                : hasNoClasses
+                ? "Aucune classe définie. Ajoutez vos classes dans Configuration > Classes."
+                : undefined
+            }
+            onClick={() => {
+              if (!anneeScolaire || hasNoClasses) return;
+              setErrorMessage(null);
+              setNewLibelle('');
+              setNewClasse('');
+              setNewMontantTotal('');
+              setNewDateLimite('');
+              setIsModalOpen(true);
+            }}
+          >
+            <Plus className="h-4 w-4" />
+            + Nouvelle Échéance
+          </Button>
+        </div>
       </div>
+
+      {/* Garde année scolaire vide */}
+      {!anneeScolaire && (
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 p-4 rounded-xl border border-amber-200 dark:border-amber-800/60">
+          <div className="flex items-center gap-3 text-xs font-semibold">
+            <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0" />
+            <span>Définissez l'année scolaire dans Configuration avant de continuer</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => navigate('config')}
+            className="text-xs font-bold text-amber-800 dark:text-amber-300 underline hover:text-amber-950 dark:hover:text-white shrink-0 cursor-pointer"
+          >
+            Aller dans Configuration
+          </button>
+        </div>
+      )}
+
+      {/* Garde aucune classe définie */}
+      {hasNoClasses && (
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 p-4 rounded-xl border border-amber-200 dark:border-amber-800/60">
+          <div className="flex items-center gap-3 text-xs font-semibold">
+            <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0" />
+            <span>Aucune classe définie. Ajoutez vos classes dans Configuration &gt; Classes.</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => navigate('config')}
+            className="text-xs font-bold text-amber-800 dark:text-amber-300 underline hover:text-amber-950 dark:hover:text-white shrink-0 cursor-pointer"
+          >
+            Aller dans Configuration
+          </button>
+        </div>
+      )}
+
+      {/* Classes Sans Barème Notice */}
+      {classesSansBaremeNotice.length > 0 && (
+        <div className="flex items-start justify-between gap-3 bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 p-4 rounded-xl border border-amber-200 dark:border-amber-800/60 animate-in fade-in">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+            <div className="space-y-1 text-xs">
+              <span className="font-bold block">Classes sans barème :</span>
+              <ul className="list-disc list-inside space-y-0.5">
+                {classesSansBaremeNotice.map((c, i) => (
+                  <li key={i}>
+                    Classes sans barème : <span className="font-semibold">{c.classe}</span> ({c.eleves} élève{c.eleves > 1 ? 's' : ''}). Créez un barème pour ces classes.
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+          <button
+            onClick={() => setClassesSansBaremeNotice([])}
+            className="text-amber-500 hover:text-amber-700 dark:hover:text-amber-300 ml-2"
+            title="Fermer"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
 
       {/* Error Alert */}
       {errorMessage && (
@@ -254,8 +430,8 @@ export const EcheancesPage: React.FC = () => {
         </div>
       )}
 
-      {/* Metric Tiles (Pastel KpiCard Style) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      {/* Metric Tiles (100% données réelles Supabase) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         <KpiCard
           staggerIndex={0}
           title="Échéanciers Actifs"
@@ -269,9 +445,9 @@ export const EcheancesPage: React.FC = () => {
         <KpiCard
           staggerIndex={1}
           title="Élèves Couverts"
-          amount={totalElevesCouverts}
+          amount={elevesCouvertsCount}
           unit="count"
-          subtitle="✓ Échéancier individuel actif"
+          subtitle="Élèves avec au moins une échéance"
           icon={<Users className="h-5 w-5" />}
           variant="success"
         />
@@ -287,33 +463,12 @@ export const EcheancesPage: React.FC = () => {
               </div>
             </div>
             <div className="mt-3 sm:mt-4 text-2xl sm:text-3xl font-black tracking-tight text-slate-900 dark:text-white font-mono truncate">
-              05 Avril
+              {prochaineEcheance ? formatProchaineDate(prochaineEcheance.date) : '—'}
             </div>
           </div>
           <div className="mt-4">
             <span className="text-xs font-semibold text-amber-700 dark:text-amber-400 block truncate">
-              Tranche 3 / Mensualité
-            </span>
-          </div>
-        </Card>
-
-        <Card className="p-5 sm:p-6 rounded-2xl border border-indigo-200/70 dark:border-indigo-900/50 bg-indigo-50/75 dark:bg-indigo-950/35 flex flex-col justify-between shadow-2xs hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 min-w-0">
-          <div>
-            <div className="flex items-start justify-between gap-3">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 leading-snug">
-                Modes de Règlement
-              </span>
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/90 dark:bg-slate-800/90 border border-white/80 dark:border-slate-700/60 text-indigo-600 dark:text-indigo-400 shrink-0 shadow-2xs">
-                <Layers className="h-5 w-5 stroke-[1.75]" />
-              </div>
-            </div>
-            <div className="mt-3 sm:mt-4 text-2xl sm:text-3xl font-black tracking-tight text-slate-900 dark:text-white font-mono truncate">
-              3 types
-            </div>
-          </div>
-          <div className="mt-4">
-            <span className="text-xs font-medium text-slate-600 dark:text-slate-400 block truncate">
-              Mensuel, Trimestriel, Annuel
+              {prochaineEcheance ? prochaineEcheance.libelle : 'Aucune échéance à venir'}
             </span>
           </div>
         </Card>
@@ -328,7 +483,7 @@ export const EcheancesPage: React.FC = () => {
             </h3>
           </div>
           <span className="text-xs text-slate-500 dark:text-slate-400 font-medium hidden sm:inline">
-            Conforme au schéma backend Supabase (<code className="font-mono text-[11px] text-blue-600 dark:text-blue-400">echeances</code>)
+            Calendrier officiel des paiements par classe
           </span>
         </div>
 
@@ -350,7 +505,7 @@ export const EcheancesPage: React.FC = () => {
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
               {echeanciers.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-12 text-center">
+                  <td colSpan={9} className="py-12 text-center">
                     <div className="py-8 px-4 text-center space-y-3 max-w-md mx-auto">
                       <div className="h-12 w-12 rounded-2xl bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mx-auto shadow-sm">
                         <CreditCard className="h-6 w-6" />
@@ -363,8 +518,19 @@ export const EcheancesPage: React.FC = () => {
                       </p>
                       <Button
                         variant="primary"
-                        onClick={() => setIsModalOpen(true)}
-                        className="gap-2 mx-auto"
+                        disabled={!anneeScolaire || hasNoClasses}
+                        title={
+                          !anneeScolaire
+                            ? "Définissez l'année scolaire dans Configuration avant de continuer"
+                            : hasNoClasses
+                            ? "Aucune classe définie. Ajoutez vos classes dans Configuration > Classes."
+                            : undefined
+                        }
+                        onClick={() => {
+                          if (!anneeScolaire || hasNoClasses) return;
+                          setIsModalOpen(true);
+                        }}
+                        className="gap-2 mx-auto disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <Plus className="h-4 w-4" />
                         Créer un premier barème
@@ -520,6 +686,42 @@ export const EcheancesPage: React.FC = () => {
               </button>
             </div>
 
+            {!anneeScolaire && (
+              <div className="flex flex-col gap-2 bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 p-3 rounded-xl border border-amber-200 dark:border-amber-800/60 text-xs">
+                <span className="font-semibold">
+                  Définissez l'année scolaire dans Configuration avant de continuer
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsModalOpen(false);
+                    navigate('config');
+                  }}
+                  className="text-left font-bold text-amber-800 dark:text-amber-300 underline hover:text-amber-950 cursor-pointer"
+                >
+                  Aller dans Configuration
+                </button>
+              </div>
+            )}
+
+            {hasNoClasses && (
+              <div className="flex flex-col gap-2 bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 p-3 rounded-xl border border-amber-200 dark:border-amber-800/60 text-xs">
+                <span className="font-semibold">
+                  Aucune classe définie. Ajoutez vos classes dans Configuration &gt; Classes.
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsModalOpen(false);
+                    navigate('config');
+                  }}
+                  className="text-left font-bold text-amber-800 dark:text-amber-300 underline hover:text-amber-950 cursor-pointer"
+                >
+                  Aller dans Configuration
+                </button>
+              </div>
+            )}
+
             <form onSubmit={handleCreateEcheancier} className="space-y-4 text-xs">
               <div>
                 <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
@@ -543,7 +745,10 @@ export const EcheancesPage: React.FC = () => {
                   value={newClasse}
                   onChange={setNewClasse}
                   options={availableClasses.map((cls) => ({ value: cls, label: cls }))}
+                  placeholder="Sélectionner une classe..."
                   size="sm"
+                  disabled={hasNoClasses}
+                  emptyMessage="Aucune classe définie. Ajoutez vos classes dans Configuration > Classes."
                   triggerClassName="w-full h-9 rounded-lg font-semibold"
                 />
               </div>
@@ -556,9 +761,13 @@ export const EcheancesPage: React.FC = () => {
                   <input
                     type="number"
                     required
-                    min={100}
+                    min={1}
+                    placeholder="Ex: 30000"
                     value={newMontantTotal}
-                    onChange={(e) => setNewMontantTotal(Number(e.target.value))}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setNewMontantTotal(val === '' ? '' : Number(val));
+                    }}
                     className="w-full h-9 px-3 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-mono font-bold focus:ring-2 focus:ring-blue-600 focus:outline-none"
                   />
                 </div>
@@ -620,7 +829,13 @@ export const EcheancesPage: React.FC = () => {
                 >
                   Annuler
                 </Button>
-                <Button type="submit" variant="primary" size="sm" className="gap-1.5" disabled={isSubmitting}>
+                <Button
+                  type="submit"
+                  variant="primary"
+                  size="sm"
+                  className="gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={isSubmitting || !isFormValid || !anneeScolaire || hasNoClasses}
+                >
                   {isSubmitting ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin" />
@@ -635,6 +850,63 @@ export const EcheancesPage: React.FC = () => {
                 </Button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Confirmation Dialog Génération des échéances manquantes */}
+      {isConfirmManquantesOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 dark:bg-slate-950/75 backdrop-blur-xs p-4 animate-in fade-in">
+          <div className="w-full max-w-md rounded-2xl bg-white dark:bg-slate-900 p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+              <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <Sparkles className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                Générer les échéances manquantes
+              </h3>
+              <button
+                onClick={() => setIsConfirmManquantesOpen(false)}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                disabled={isGeneratingManquantes}
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+              Crée les tranches manquantes pour les élèves qui n'en ont pas, selon les barèmes existants. Les échéances et paiements déjà enregistrés ne sont jamais modifiés.
+            </p>
+
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setIsConfirmManquantesOpen(false)}
+                disabled={isGeneratingManquantes}
+              >
+                Annuler
+              </Button>
+              <Button
+                type="button"
+                variant="primary"
+                size="sm"
+                className="gap-1.5"
+                disabled={isGeneratingManquantes || !anneeScolaire}
+                onClick={handleGenererManquantes}
+              >
+                {isGeneratingManquantes ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span>Génération...</span>
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="h-4 w-4" />
+                    <span>Confirmer la génération</span>
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
         </div>
       )}
