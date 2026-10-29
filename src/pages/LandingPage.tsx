@@ -354,7 +354,7 @@ const Floating: React.FC<{
 );
 
 /**
- * Seconde ligne du titre, frappée lettre par lettre. Dans son propre composant
+ * Seconde ligne du titre, frappée lettre par lettre en boucle. Dans son propre composant
  * pour que chaque lettre ne refasse le rendu que de cette ligne, et non de
  * toute la page. Sous 640 px ou en mouvement réduit : phrase finale affichée
  * directement, sans copie fantôme (la place réservée laissait un grand vide).
@@ -370,21 +370,13 @@ const HeroTypedLine: React.FC = () => {
   const [typedLine, setTypedLine] = useState<string>(
     isAnimated ? '' : HERO_TYPED_PHRASES[0]
   );
-  const [showCursor, setShowCursor] = useState<boolean>(isAnimated);
 
-  // Frappe unique : passe par les 3 phrases vraies et s'arrête sur la première
+  // Frappe en boucle sur les 3 phrases vraies, à un rythme lisible
   useEffect(() => {
     if (!isAnimated) return;
 
     let cancelled = false;
     let timeoutId: number | undefined;
-
-    const sequence = [
-      HERO_TYPED_PHRASES[0],
-      HERO_TYPED_PHRASES[1],
-      HERO_TYPED_PHRASES[2],
-      HERO_TYPED_PHRASES[0],
-    ];
 
     const sleep = (ms: number) =>
       new Promise<void>((resolve) => {
@@ -392,33 +384,24 @@ const HeroTypedLine: React.FC = () => {
       });
 
     const runTypewriter = async () => {
-      for (let s = 0; s < sequence.length; s++) {
-        const phrase = sequence[s];
-        const isLast = s === sequence.length - 1;
+      for (let s = 0; !cancelled; s = (s + 1) % HERO_TYPED_PHRASES.length) {
+        const phrase = HERO_TYPED_PHRASES[s];
 
         for (let i = 1; i <= phrase.length; i++) {
           if (cancelled) return;
           setTypedLine(phrase.slice(0, i));
-          await sleep(22);
+          await sleep(75);
         }
 
-        if (isLast) {
-          await sleep(350);
-          if (!cancelled) {
-            setShowCursor(false);
-          }
-          return;
-        }
-
-        await sleep(420);
+        await sleep(2600);
 
         for (let i = phrase.length - 1; i >= 0; i--) {
           if (cancelled) return;
           setTypedLine(phrase.slice(0, i));
-          await sleep(10);
+          await sleep(35);
         }
 
-        await sleep(120);
+        await sleep(500);
       }
     };
 
@@ -456,9 +439,7 @@ const HeroTypedLine: React.FC = () => {
       </span>
       <span data-testid="hero-typed-line" className="[grid-area:1/1]">
         {typedLine}
-        {showCursor && (
-          <span className="inline-block w-[2px] h-[0.88em] bg-[#1D4ED8] dark:bg-[#60A5FA] ml-1 align-middle" />
-        )}
+        <span className="inline-block w-[2px] h-[0.88em] bg-[#1D4ED8] dark:bg-[#60A5FA] ml-1 align-middle" />
       </span>
     </span>
   );
