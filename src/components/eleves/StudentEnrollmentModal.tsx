@@ -18,7 +18,28 @@ import { X, UserPlus, ShieldAlert, CheckCircle, Loader2, HeartHandshake, AlertTr
 export const studentEnrollmentSchema = z.object({
   nom: z.string().min(2, 'Le nom doit contenir au moins 2 caractères'),
   prenom: z.string().min(2, 'Le prénom doit contenir au moins 2 caractères'),
-  date_naissance: z.string().min(1, 'La date de naissance est obligatoire'),
+  date_naissance: z
+    .string()
+    .min(1, 'La date de naissance est obligatoire')
+    .refine((val) => {
+      const parts = val.split('-');
+      if (parts.length !== 3) return false;
+      const [y, m, d] = parts.map(Number);
+      const dt = new Date(y, m - 1, d);
+      return (
+        y >= 1900 &&
+        dt.getFullYear() === y &&
+        dt.getMonth() === m - 1 &&
+        dt.getDate() === d
+      );
+    }, "Cette date n'existe pas (vérifiez le jour et le mois).")
+    .refine((val) => {
+      const [y, m, d] = val.split('-').map(Number);
+      const dt = new Date(y, m - 1, d);
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      return dt.getTime() <= today.getTime();
+    }, 'La date de naissance ne peut pas être dans le futur.'),
   lieu_naissance: z.string().min(2, 'Le lieu de naissance est obligatoire'),
   sexe: z.enum(['M', 'F'], { required_error: 'Le sexe est obligatoire' }),
   classe: z.string().min(1, 'Veuillez sélectionner une classe'),
@@ -82,6 +103,7 @@ export const StudentEnrollmentModal: React.FC<StudentEnrollmentModalProps> = ({
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [birthDateError, setBirthDateError] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
   const [isEnrolling, setIsEnrolling] = useState(false);
   const [createdParentLink, setCreatedParentLink] = useState<string | null>(null);
@@ -129,6 +151,7 @@ export const StudentEnrollmentModal: React.FC<StudentEnrollmentModalProps> = ({
     setParentInviteNotice(null);
     setEcheancesNotice(null);
     setErrors({});
+    setBirthDateError(null);
   }, [isOpen, eleveToEdit, activeClasses]);
 
   if (!isOpen) return null;
@@ -149,13 +172,18 @@ export const StudentEnrollmentModal: React.FC<StudentEnrollmentModalProps> = ({
 
     const result = studentEnrollmentSchema.safeParse(formData);
 
-    if (!result.success) {
+    if (!result.success || birthDateError) {
       const formattedErrors: Record<string, string> = {};
-      result.error.issues.forEach((issue) => {
-        if (issue.path[0]) {
-          formattedErrors[issue.path[0].toString()] = issue.message;
-        }
-      });
+      if (!result.success) {
+        result.error.issues.forEach((issue) => {
+          if (issue.path[0]) {
+            formattedErrors[issue.path[0].toString()] = issue.message;
+          }
+        });
+      }
+      if (birthDateError) {
+        formattedErrors.date_naissance = birthDateError;
+      }
       setErrors(formattedErrors);
       return;
     }
@@ -610,24 +638,34 @@ export const StudentEnrollmentModal: React.FC<StudentEnrollmentModalProps> = ({
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  <label
+                    htmlFor="eleve-date-naissance"
+                    className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1"
+                  >
                     Date de naissance <span className="text-red-500">*</span>
                   </label>
                   <DatePicker
+                    id="eleve-date-naissance"
+                    isBirthDate
                     value={formData.date_naissance || ''}
-                    onChange={(val) =>
-                      setFormData({ ...formData, date_naissance: val })
-                    }
+                    onChange={(val) => {
+                      setFormData({ ...formData, date_naissance: val });
+                      if (val) {
+                        setErrors((prev) => {
+                          if (!prev.date_naissance) return prev;
+                          const next = { ...prev };
+                          delete next.date_naissance;
+                          return next;
+                        });
+                      }
+                    }}
+                    onValidationChange={setBirthDateError}
+                    error={errors.date_naissance}
                     size="sm"
                     className="w-full"
                     triggerClassName="w-full h-9 rounded-lg text-xs"
                     placeholder="JJ/MM/AAAA"
                   />
-                  {errors.date_naissance && (
-                    <p className="text-[11px] text-red-600 dark:text-red-400 mt-1 flex items-center gap-1">
-                      <ShieldAlert className="h-3 w-3" /> {errors.date_naissance}
-                    </p>
-                  )}
                 </div>
 
                 <div>
