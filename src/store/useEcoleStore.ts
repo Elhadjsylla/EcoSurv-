@@ -1,16 +1,17 @@
 import { create } from 'zustand';
-import { EcoleMock } from '../lib/mockData';
+import { EcoleMock } from '../types';
 
 export const INITIAL_ECOLE: EcoleMock = {
   id: '',
-  nom: 'Établissement Scolaire',
+  nom: '',
   adresse: '',
   telephone: '',
   email: '',
   devise: 'MRU',
   statut_activation: 'active',
   date_creation: new Date().toISOString(),
-  ville: 'Nouakchott',
+  ville: '',
+  annee_scolaire: '',
 };
 
 interface EcoleState {

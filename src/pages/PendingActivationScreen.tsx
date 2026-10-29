@@ -20,6 +20,7 @@ import {
   hashOtp,
   sendActivationEmail,
 } from '../lib/email/sendActivationEmail';
+import { Logo } from '../components/ui/Logo';
 import type { UserRole } from '../components/ui/Header';
 
 export const PendingActivationScreen: React.FC = () => {
@@ -338,18 +339,11 @@ export const PendingActivationScreen: React.FC = () => {
     <div className="min-h-screen flex flex-col justify-between bg-slate-50 dark:bg-slate-950 px-4 py-8 font-['Plus_Jakarta_Sans',sans-serif] text-slate-900 dark:text-slate-100 antialiased selection:bg-blue-600 selection:text-white">
       {/* Top Header */}
       <div className="max-w-md w-full mx-auto flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-600 text-white font-black text-xs shadow-md shadow-blue-600/20">
-            ES
-          </div>
-          <div>
-            <span className="font-extrabold text-sm tracking-tight text-slate-900 dark:text-white block">
-              EcoSurv Mauritanie
-            </span>
-            <span className="text-[10px] text-slate-400 font-semibold block -mt-0.5">
-              Activation Immédiate
-            </span>
-          </div>
+        <div className="flex flex-col gap-1">
+          <Logo height={28} />
+          <span className="text-[10px] text-slate-400 font-semibold block">
+            Activation Immédiate
+          </span>
         </div>
 
         <button

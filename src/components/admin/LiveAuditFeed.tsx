@@ -7,6 +7,8 @@ import {
   Building2,
   ArrowRight,
   KeyRound,
+  AlertCircle,
+  Clock,
 } from 'lucide-react';
 
 export interface LiveAuditEvent {
@@ -18,65 +20,36 @@ export interface LiveAuditEvent {
   created_at: string;
 }
 
-const FALLBACK_FEED_EVENTS: LiveAuditEvent[] = [
-  {
-    id: 'live-feed-01',
-    actor_email: 'elhadjsylla667@gmail.com',
-    action_type: 'auth.login_success',
-    target_id: 'session-global',
-    metadata: { role: 'super_admin' },
-    created_at: new Date(Date.now() - 1000 * 60 * 14).toISOString(),
-  },
-  {
-    id: 'live-feed-02',
-    actor_email: 'directeur@ecole-excellence.mr',
-    action_type: 'school.self_activated',
-    target_id: 'ecole-demo-001',
-    metadata: { method: 'email_otp' },
-    created_at: new Date(Date.now() - 1000 * 60 * 55).toISOString(),
-  },
-  {
-    id: 'live-feed-03',
-    actor_email: 'elhadjsylla667@gmail.com',
-    action_type: 'school.status_changed',
-    target_id: 'ecole-demo-002',
-    metadata: { nouveau_statut: 'active', precedent_statut: 'en_attente' },
-    created_at: new Date(Date.now() - 1000 * 60 * 180).toISOString(),
-  },
-  {
-    id: 'live-feed-04',
-    actor_email: 'elhadjsylla667@gmail.com',
-    action_type: 'user.details_viewed',
-    target_id: 'usr-002',
-    metadata: { role_cible: 'directeur' },
-    created_at: new Date(Date.now() - 1000 * 60 * 360).toISOString(),
-  },
-];
-
-interface LiveAuditFeedProps {
-  onNavigateAudit: () => void;
+export interface LiveAuditFeedProps {
+  onNavigateAudit?: () => void;
 }
 
 export const LiveAuditFeed: React.FC<LiveAuditFeedProps> = ({ onNavigateAudit }) => {
   const [events, setEvents] = useState<LiveAuditEvent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchRecentEvents = async () => {
     setIsLoading(true);
+    setError(null);
     try {
-      const { data, error } = await supabase
+      const { data, error: dbError } = await supabase
         .from('audit_logs')
         .select('*')
         .order('created_at', { ascending: false })
         .limit(6);
 
-      if (error || !data || data.length === 0) {
-        setEvents(FALLBACK_FEED_EVENTS);
+      if (dbError) {
+        console.error('[LiveAuditFeed] Erreur lecture audit_logs:', dbError.message);
+        setError(dbError.message);
+        setEvents([]);
       } else {
-        setEvents(data as LiveAuditEvent[]);
+        setEvents((data as LiveAuditEvent[]) || []);
       }
-    } catch {
-      setEvents(FALLBACK_FEED_EVENTS);
+    } catch (err: any) {
+      console.error('[LiveAuditFeed] Exception:', err);
+      setError(err?.message || 'Erreur réseau');
+      setEvents([]);
     } finally {
       setIsLoading(false);
     }
@@ -189,44 +162,70 @@ export const LiveAuditFeed: React.FC<LiveAuditFeedProps> = ({ onNavigateAudit })
       </div>
 
       {/* Feed List */}
-      <div className="divide-y divide-slate-100 dark:divide-slate-800/80 my-2">
-        {events.map((ev) => {
-          const badge = getEventBadge(ev.action_type);
-          const IconComp = badge.icon;
-          return (
-            <div
-              key={ev.id}
-              className="py-3 px-2 flex items-start gap-3 hover:bg-slate-50/60 dark:hover:bg-slate-800/40 rounded-xl transition-colors"
+      <div className="divide-y divide-slate-100 dark:divide-slate-800/80 my-2 min-h-[160px] flex flex-col justify-center">
+        {isLoading ? (
+          <div className="py-8 text-center text-slate-400">
+            <RefreshCw className="h-5 w-5 mx-auto mb-2 animate-spin text-purple-500" />
+            <p className="text-xs">Chargement du flux d'audit...</p>
+          </div>
+        ) : error ? (
+          <div className="py-6 text-center text-rose-500">
+            <AlertCircle className="h-6 w-6 mx-auto mb-1 text-rose-500" />
+            <p className="text-xs font-semibold">Impossible de charger le flux d'activité</p>
+            <p className="text-[11px] text-slate-400 mt-0.5">{error}</p>
+            <button
+              type="button"
+              onClick={fetchRecentEvents}
+              className="mt-2.5 inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 text-[11px] font-bold hover:bg-rose-100 dark:hover:bg-rose-900/40"
             >
+              <RefreshCw className="h-3 w-3" /> Réessayer
+            </button>
+          </div>
+        ) : events.length === 0 ? (
+          <div className="py-8 text-center text-slate-400">
+            <Clock className="h-6 w-6 mx-auto mb-1.5 opacity-40" />
+            <p className="text-xs font-medium text-slate-600 dark:text-slate-300">Aucune activité enregistrée pour le moment.</p>
+            <p className="text-[11px] text-slate-400 mt-0.5">Les événements s'afficheront en temps réel.</p>
+          </div>
+        ) : (
+          events.map((ev) => {
+            const badge = getEventBadge(ev.action_type);
+            const IconComp = badge.icon;
+            return (
               <div
-                className={`h-8 w-8 rounded-lg ${badge.bg} ${badge.text} flex items-center justify-center flex-shrink-0 mt-0.5`}
+                key={ev.id}
+                className="py-3 px-2 flex items-start gap-3 hover:bg-slate-50/60 dark:hover:bg-slate-800/40 rounded-xl transition-colors"
               >
-                <IconComp className="h-4 w-4" />
-              </div>
-
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between gap-2">
-                  <p className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">
-                    {formatActionLabel(ev.action_type, ev.metadata)}
-                  </p>
-                  <span className="text-[11px] font-medium text-slate-400 whitespace-nowrap">
-                    {formatRelativeTime(ev.created_at)}
-                  </span>
+                <div
+                  className={`h-8 w-8 rounded-lg ${badge.bg} ${badge.text} flex items-center justify-center flex-shrink-0 mt-0.5`}
+                >
+                  <IconComp className="h-4 w-4" />
                 </div>
 
-                <div className="flex items-center gap-2 mt-1 text-[11px] text-slate-500 dark:text-slate-400">
-                  <span className="font-mono text-slate-600 dark:text-slate-300 truncate max-w-[190px]">
-                    {ev.actor_email || 'Système'}
-                  </span>
-                  <span>•</span>
-                  <span className="px-1.5 py-0.2 rounded text-[10px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
-                    {badge.label}
-                  </span>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">
+                      {formatActionLabel(ev.action_type, ev.metadata)}
+                    </p>
+                    <span className="text-[11px] font-medium text-slate-400 whitespace-nowrap">
+                      {formatRelativeTime(ev.created_at)}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-2 mt-1 text-[11px] text-slate-500 dark:text-slate-400">
+                    <span className="font-mono text-slate-600 dark:text-slate-300 truncate max-w-[190px]">
+                      {ev.actor_email || 'Système'}
+                    </span>
+                    <span>•</span>
+                    <span className="px-1.5 py-0.2 rounded text-[10px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                      {badge.label}
+                    </span>
+                  </div>
                 </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })
+        )}
       </div>
 
       {/* Footer */}

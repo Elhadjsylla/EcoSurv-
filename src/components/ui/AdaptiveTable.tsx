@@ -122,21 +122,21 @@ export function AdaptiveTable<T>({
     if (emptyState) return emptyState;
     return (
       <div className="py-12 px-4 text-center space-y-3">
-        <div className="h-12 w-12 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 flex items-center justify-center mx-auto">
+        <div className="h-12 w-12 rounded-md bg-surface-subtle text-muted flex items-center justify-center mx-auto border border-subtle">
           <Inbox className="h-6 w-6" />
         </div>
-        <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200">{emptyTitle}</h4>
-        <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">{emptyDescription}</p>
+        <h4 className="text-sm font-bold text-main">{emptyTitle}</h4>
+        <p className="text-xs text-muted max-w-sm mx-auto">{emptyDescription}</p>
       </div>
     );
   };
 
   // Render Table View (Desktop & Tablet)
   const renderTableContent = () => (
-    <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700 scrollbar-track-transparent">
+    <div className="overflow-x-auto">
       <table className={cn('w-full text-left text-xs border-collapse', tableClassName)}>
         <thead>
-          <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/50 font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+          <tr className="border-b border-subtle bg-surface-subtle font-bold uppercase tracking-wider text-muted">
             {selectable && (
               <th className="py-3.5 px-4 w-10 text-center">
                 <input
@@ -144,7 +144,7 @@ export function AdaptiveTable<T>({
                   checked={isAllSelected}
                   onChange={onToggleSelectAll}
                   aria-label="Sélectionner tous les éléments"
-                  className="h-4 w-4 rounded border-slate-300 dark:border-slate-600 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                  className="h-4 w-4 rounded-sm border-default text-primary focus-ring cursor-pointer"
                 />
               </th>
             )}
@@ -167,7 +167,7 @@ export function AdaptiveTable<T>({
             })}
           </tr>
         </thead>
-        <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-sm">
+        <tbody className="divide-y divide-subtle text-sm">
           {data.length === 0 ? (
             <tr>
               <td
@@ -187,10 +187,22 @@ export function AdaptiveTable<T>({
                 <tr
                   key={key}
                   onClick={() => onRowClick?.(item)}
+                  role={onRowClick ? 'button' : undefined}
+                  tabIndex={onRowClick ? 0 : undefined}
+                  onKeyDown={
+                    onRowClick
+                      ? (e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            onRowClick(item);
+                          }
+                        }
+                      : undefined
+                  }
                   className={cn(
                     'transition-colors duration-150',
-                    onRowClick && 'cursor-pointer hover:bg-slate-50/80 dark:hover:bg-slate-800/40',
-                    checked && 'bg-blue-50/60 dark:bg-blue-950/30',
+                    onRowClick && 'cursor-pointer hover:bg-surface-subtle focus-halo',
+                    checked && 'bg-surface-subtle text-main',
                     extraRowClass
                   )}
                 >
@@ -204,7 +216,7 @@ export function AdaptiveTable<T>({
                         checked={checked}
                         onChange={() => onToggleSelect?.(item)}
                         aria-label="Sélectionner la ligne"
-                        className="h-4 w-4 rounded border-slate-300 dark:border-slate-600 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                        className="h-4 w-4 rounded-sm border-default text-primary focus-ring cursor-pointer"
                       />
                     </td>
                   )}
@@ -236,7 +248,7 @@ export function AdaptiveTable<T>({
   const renderTable = () => {
     if (!bordered) return renderTableContent();
     return (
-      <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden shadow-xs">
+      <div className="rounded-md border border-subtle bg-surface overflow-hidden shadow-xs">
         {renderTableContent()}
       </div>
     );
@@ -246,7 +258,7 @@ export function AdaptiveTable<T>({
   const renderCards = () => {
     if (data.length === 0) {
       return (
-        <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6">
+        <div className="rounded-md border border-subtle bg-surface p-6">
           {renderEmpty()}
         </div>
       );
@@ -256,17 +268,17 @@ export function AdaptiveTable<T>({
       <div className={cn('space-y-3', cardsContainerClassName)}>
         {/* Mobile select all banner if selectable */}
         {selectable && onToggleSelectAll && (
-          <div className="flex items-center justify-between px-3 py-2 bg-slate-100 dark:bg-slate-800/60 rounded-lg text-xs text-slate-600 dark:text-slate-300">
+          <div className="flex items-center justify-between px-3 py-2 bg-surface-subtle border border-subtle rounded-md text-xs text-secondary">
             <label className="flex items-center gap-2 cursor-pointer font-medium">
               <input
                 type="checkbox"
                 checked={isAllSelected}
                 onChange={onToggleSelectAll}
-                className="h-4 w-4 rounded border-slate-300 dark:border-slate-600 text-blue-600 focus:ring-blue-500"
+                className="h-4 w-4 rounded-sm border-default text-primary focus-ring"
               />
               <span>Tout sélectionner</span>
             </label>
-            <span className="text-[11px] text-slate-400 font-mono">
+            <span className="text-xs text-muted tabular-nums">
               {data.filter((i) => isSelected?.(i)).length}/{data.length}
             </span>
           </div>
@@ -289,10 +301,22 @@ export function AdaptiveTable<T>({
             <div
               key={key}
               onClick={() => onRowClick?.(item)}
+              role={onRowClick ? 'button' : undefined}
+              tabIndex={onRowClick ? 0 : undefined}
+              onKeyDown={
+                onRowClick
+                  ? (e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        onRowClick(item);
+                      }
+                    }
+                  : undefined
+              }
               className={cn(
-                'rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-xs transition-all duration-150 space-y-3 text-left',
-                onRowClick && 'cursor-pointer active:scale-[0.99] hover:border-slate-300 dark:hover:border-slate-700',
-                checked && 'ring-2 ring-blue-500 bg-blue-50/30 dark:bg-blue-950/20 border-blue-300 dark:border-blue-800',
+                'rounded-md border border-subtle bg-surface p-4 shadow-xs transition-colors duration-150 space-y-3 text-left',
+                onRowClick && 'cursor-pointer active:scale-[0.99] hover:border-default focus-halo',
+                checked && 'ring-2 ring-primary bg-surface-subtle border-primary',
                 cardClassName,
                 extraRowClass
               )}
@@ -310,7 +334,7 @@ export function AdaptiveTable<T>({
                         checked={checked}
                         onChange={() => onToggleSelect?.(item)}
                         aria-label="Sélectionner cet élément"
-                        className="h-4 w-4 rounded border-slate-300 dark:border-slate-600 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                        className="h-4 w-4 rounded-sm border-default text-primary focus-ring cursor-pointer"
                       />
                     </div>
                   )}
@@ -323,18 +347,18 @@ export function AdaptiveTable<T>({
 
                   <div className="min-w-0 flex-1">
                     {titleCol ? (
-                      <div className="font-bold text-slate-900 dark:text-white text-sm leading-snug truncate">
+                      <div className="font-bold text-main text-sm leading-snug truncate">
                         {getCellContent(titleCol, item, index)}
                       </div>
                     ) : (
                       // Fallback: use first column content as title
-                      <div className="font-bold text-slate-900 dark:text-white text-sm leading-snug truncate">
+                      <div className="font-bold text-main text-sm leading-snug truncate">
                         {getCellContent(columns[0], item, index)}
                       </div>
                     )}
 
                     {subtitleCol && (
-                      <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">
+                      <div className="text-xs text-muted mt-0.5 truncate">
                         {getCellContent(subtitleCol, item, index)}
                       </div>
                     )}
@@ -350,15 +374,15 @@ export function AdaptiveTable<T>({
 
               {/* Card Middle: Key Facts Grid */}
               {keyFactCols.length > 0 && (
-                <div className="grid grid-cols-2 gap-x-3 gap-y-2 pt-2.5 border-t border-slate-100 dark:border-slate-800/80 text-xs">
+                <div className="grid grid-cols-2 gap-x-3 gap-y-2 pt-2.5 border-t border-subtle text-xs">
                   {keyFactCols.map((col) => {
                     const label = col.cardLabel ?? col.header;
                     return (
                       <div key={col.id} className="min-w-0">
-                        <span className="block text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider truncate mb-0.5">
+                        <span className="block text-xs font-semibold text-muted uppercase tracking-wider truncate mb-0.5">
                           {label}
                         </span>
-                        <div className="text-slate-700 dark:text-slate-200 font-medium truncate">
+                        <div className="text-main font-medium truncate">
                           {getCellContent(col, item, index)}
                         </div>
                       </div>
@@ -370,7 +394,7 @@ export function AdaptiveTable<T>({
               {/* Card Bottom: Thumb-friendly Actions */}
               {actionCols.length > 0 && (
                 <div
-                  className="pt-2.5 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-end gap-2"
+                  className="pt-2.5 border-t border-subtle flex items-center justify-end gap-2"
                   onClick={(e) => e.stopPropagation()}
                 >
                   {actionCols.map((col) => (
@@ -390,7 +414,7 @@ export function AdaptiveTable<T>({
   if (isLoading) {
     return (
       <div className={cn('w-full py-12 flex items-center justify-center', className)}>
-        <div className="w-7 h-7 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+        <div className="w-7 h-7 border-2 border-primary border-t-transparent rounded-sm animate-spin" />
       </div>
     );
   }
@@ -400,15 +424,15 @@ export function AdaptiveTable<T>({
       {/* Optional manual toggle view button */}
       {showViewToggle && (
         <div className="flex items-center justify-end mb-3 gap-1">
-          <div className="inline-flex rounded-lg p-1 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs">
+          <div className="inline-flex rounded-sm p-1 bg-surface-subtle border border-subtle text-xs">
             <button
               type="button"
               onClick={() => setActiveView('table')}
               className={cn(
-                'px-2.5 py-1 rounded-md font-medium flex items-center gap-1.5 transition-all',
+                'px-2.5 py-1 rounded-sm font-medium flex items-center gap-1.5 transition-colors cursor-pointer',
                 activeView === 'table'
-                  ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs'
-                  : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+                  ? 'bg-surface text-main shadow-xs border border-subtle'
+                  : 'text-muted hover:text-main'
               )}
             >
               <TableIcon className="w-3.5 h-3.5" />
@@ -418,10 +442,10 @@ export function AdaptiveTable<T>({
               type="button"
               onClick={() => setActiveView('cards')}
               className={cn(
-                'px-2.5 py-1 rounded-md font-medium flex items-center gap-1.5 transition-all',
+                'px-2.5 py-1 rounded-sm font-medium flex items-center gap-1.5 transition-colors cursor-pointer',
                 activeView === 'cards'
-                  ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs'
-                  : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+                  ? 'bg-surface text-main shadow-xs border border-subtle'
+                  : 'text-muted hover:text-main'
               )}
             >
               <LayoutGrid className="w-3.5 h-3.5" />

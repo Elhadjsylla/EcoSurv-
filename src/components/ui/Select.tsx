@@ -148,29 +148,30 @@ export function Select<T extends string | number = string>({
       const focusedElement = listboxRef.current.children[
         focusedIndex
       ] as HTMLElement;
+
       if (focusedElement) {
         focusedElement.scrollIntoView({ block: 'nearest' });
       }
     }
   }, [focusedIndex, isOpen]);
 
-  // Sizes
+  // Sizes avec cible tactile mobile garantie >= 44px
   const sizeStyles = {
-    sm: 'h-9 px-3 text-xs gap-1.5 rounded-lg',
-    md: 'h-11 px-3.5 text-xs sm:text-sm gap-2 rounded-xl',
-    lg: 'h-12 px-4 text-sm sm:text-base gap-2.5 rounded-xl',
+    sm: 'min-h-[44px] sm:min-h-0 sm:h-8 px-3 text-xs gap-1.5 rounded-sm',
+    md: 'min-h-[44px] sm:h-10 px-3.5 text-xs sm:text-sm gap-2 rounded-md',
+    lg: 'min-h-[48px] h-12 px-4 text-sm sm:text-base gap-2.5 rounded-md',
   };
 
-  // Variants
+  // Variants alignées sur les tokens sémantiques EcoSurv
   const variantStyles = {
     default:
-      'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 text-slate-800 dark:text-white shadow-2xs focus-visible:ring-2 focus-visible:ring-blue-500/20 focus-visible:border-blue-500',
+      'bg-surface-input border border-strong hover:border-default text-main shadow-2xs focus-halo',
     subtle:
-      'bg-slate-50 dark:bg-slate-950/60 border border-slate-200/90 dark:border-slate-800 hover:bg-slate-100/80 dark:hover:bg-slate-900 text-slate-800 dark:text-white hover:border-slate-300 shadow-2xs focus-visible:ring-2 focus-visible:ring-blue-500/20 focus-visible:border-blue-500',
+      'bg-surface-subtle border border-default hover:border-strong text-main shadow-2xs focus-halo',
     outline:
-      'bg-transparent border border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 focus-visible:ring-2 focus-visible:ring-blue-500/20 focus-visible:border-blue-500',
+      'bg-surface border border-default hover:border-strong text-secondary focus-halo',
     ghost:
-      'bg-transparent border-transparent hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 shadow-none',
+      'bg-transparent border-transparent hover:bg-surface-subtle text-secondary shadow-none focus-halo',
   };
 
   const isFullWidth =
@@ -189,7 +190,7 @@ export function Select<T extends string | number = string>({
       {label && (
         <label
           htmlFor={selectId}
-          className="mb-1.5 block text-xs font-bold text-slate-700 dark:text-slate-300"
+          className="mb-1.5 block text-xs font-bold text-main"
         >
           {label}
         </label>
@@ -204,19 +205,19 @@ export function Select<T extends string | number = string>({
         aria-haspopup="listbox"
         aria-expanded={isOpen}
         className={cn(
-          'flex items-center justify-between font-medium transition-all duration-150 outline-none select-none cursor-pointer',
+          'flex items-center justify-between font-medium transition-colors duration-150 select-none cursor-pointer',
           sizeStyles[size],
           variantStyles[variant],
           disabled &&
-            'opacity-50 cursor-not-allowed pointer-events-none bg-slate-100 dark:bg-slate-800 text-slate-400 border-slate-200 dark:border-slate-800',
-          isOpen && 'ring-2 ring-blue-500/20 border-blue-500',
+            'opacity-50 cursor-not-allowed pointer-events-none bg-surface-subtle text-muted border-subtle',
+          isOpen && 'border-primary ring-2 ring-primary/20',
           triggerClassName
         )}
       >
         <div className="flex items-center gap-2 min-w-0 pr-1 truncate">
-          {icon && <span className="shrink-0 text-slate-500 dark:text-slate-400">{icon}</span>}
+          {icon && <span className="shrink-0 text-muted">{icon}</span>}
           {prefix && (
-            <span className="text-slate-400 font-normal shrink-0">
+            <span className="text-muted font-normal shrink-0">
               {prefix}
             </span>
           )}
@@ -225,19 +226,19 @@ export function Select<T extends string | number = string>({
               {selectedOption.icon && (
                 <span className="shrink-0">{selectedOption.icon}</span>
               )}
-              <span className="truncate font-semibold text-slate-900 dark:text-white">
+              <span className="truncate font-semibold text-main">
                 {selectedOption.label}
               </span>
             </div>
           ) : (
-            <span className="text-slate-400 truncate">{placeholder}</span>
+            <span className="text-muted truncate">{placeholder}</span>
           )}
         </div>
 
         <ChevronDown
           className={cn(
-            'h-4 w-4 text-slate-400 shrink-0 transition-transform duration-200 ease-out ml-2',
-            isOpen && 'rotate-180 text-slate-700 dark:text-slate-200'
+            'h-4 w-4 text-muted shrink-0 transition-transform duration-150 ease-out ml-2',
+            isOpen && 'rotate-180 text-primary'
           )}
         />
       </button>
@@ -249,66 +250,67 @@ export function Select<T extends string | number = string>({
           role="listbox"
           tabIndex={-1}
           className={cn(
-            'absolute top-full mt-1.5 min-w-full w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-1.5 shadow-xl z-50 animate-in fade-in zoom-in-95 duration-150 max-h-64 overflow-y-auto focus:outline-none',
+            'absolute top-full mt-1.5 min-w-full w-full rounded-md border border-subtle bg-surface-elevated p-1.5 shadow-md z-50 animate-in fade-in zoom-in-95 duration-100 max-h-64 overflow-y-auto focus:outline-none',
             align === 'right' ? 'right-0' : 'left-0',
             menuClassName
           )}
         >
           {options.length === 0 ? (
-            <div className="py-4 px-3 text-center text-xs text-slate-500 dark:text-slate-400 space-y-1">
-              <AlertCircle className="h-4 w-4 mx-auto text-amber-500/80 mb-1" />
+            <div className="py-4 px-3 text-center text-xs text-muted space-y-1">
+              <AlertCircle className="h-4 w-4 mx-auto text-warning mb-1" />
               <div>{emptyMessage || 'Aucune option disponible'}</div>
             </div>
           ) : (
             options.map((option, index) => {
-            const isSelected = option.value === value;
-            const isFocused = index === focusedIndex;
+              const isSelected = option.value === value;
+              const isFocused = index === focusedIndex;
 
-            return (
-              <div
-                key={String(option.value)}
-                role="option"
-                aria-selected={isSelected}
-                aria-disabled={option.disabled}
-                onClick={() => {
-                  if (!option.disabled) {
-                    onChange(option.value);
-                    setIsOpen(false);
-                  }
-                }}
-                onMouseEnter={() => {
-                  if (!option.disabled) setFocusedIndex(index);
-                }}
-                className={cn(
-                  'flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg text-xs sm:text-sm font-medium transition-colors cursor-pointer select-none',
-                  isSelected
-                    ? 'bg-blue-50 dark:bg-blue-900/40 text-blue-900 dark:text-blue-300 font-bold'
-                    : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white',
-                  isFocused && !isSelected && 'bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white',
-                  option.disabled &&
-                    'opacity-40 cursor-not-allowed pointer-events-none'
-                )}
-              >
-                <div className="flex items-center gap-2.5 min-w-0">
-                  {option.icon && (
-                    <span className="shrink-0">{option.icon}</span>
+              return (
+                <div
+                  key={String(option.value)}
+                  role="option"
+                  aria-selected={isSelected}
+                  aria-disabled={option.disabled}
+                  onClick={() => {
+                    if (!option.disabled) {
+                      onChange(option.value);
+                      setIsOpen(false);
+                    }
+                  }}
+                  onMouseEnter={() => {
+                    if (!option.disabled) setFocusedIndex(index);
+                  }}
+                  className={cn(
+                    'flex items-center justify-between gap-3 px-3 py-2.5 rounded-sm text-xs sm:text-sm font-medium transition-colors cursor-pointer select-none',
+                    isSelected
+                      ? 'bg-surface-subtle text-primary font-bold'
+                      : 'text-secondary hover:bg-surface-subtle hover:text-main',
+                    isFocused && !isSelected && 'bg-surface-subtle text-main',
+                    option.disabled &&
+                      'opacity-40 cursor-not-allowed pointer-events-none'
                   )}
-                  <div className="flex flex-col text-left min-w-0">
-                    <span className="truncate">{option.label}</span>
-                    {option.description && (
-                      <span className="text-[11px] font-normal text-slate-400 truncate">
-                        {option.description}
-                      </span>
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    {option.icon && (
+                      <span className="shrink-0">{option.icon}</span>
                     )}
+                    <div className="flex flex-col text-left min-w-0">
+                      <span className="truncate">{option.label}</span>
+                      {option.description && (
+                        <span className="text-xs font-normal text-muted truncate">
+                          {option.description}
+                        </span>
+                      )}
+                    </div>
                   </div>
-                </div>
 
-                {isSelected && (
-                  <Check className="h-4 w-4 text-blue-600 shrink-0 ml-2" />
-                )}
-              </div>
-            );
-          }))}
+                  {isSelected && (
+                    <Check className="h-4 w-4 text-primary shrink-0 ml-2" />
+                  )}
+                </div>
+              );
+            })
+          )}
         </div>
       )}
     </div>

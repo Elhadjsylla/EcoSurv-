@@ -98,13 +98,13 @@ export const TooltipBubble: React.FC<TooltipBubbleProps> = ({ content, anchorRef
       ref={bubbleRef}
       id={id}
       role="tooltip"
-      className="pointer-events-none fixed left-0 top-0 z-60 w-max max-w-64 rounded-lg bg-slate-900 dark:bg-slate-700 px-2.5 py-1.5 text-[11px] font-semibold leading-snug text-white shadow-lg"
+      className="pointer-events-none fixed left-0 top-0 z-60 w-max max-w-64 rounded-sm bg-surface-elevated border border-subtle px-2.5 py-1.5 text-xs font-semibold leading-snug text-main shadow-elevated"
     >
       {content}
       <span
         ref={arrowRef}
         aria-hidden="true"
-        className="absolute h-2 w-2 -translate-x-1/2 -translate-y-1/2 rotate-45 bg-slate-900 dark:bg-slate-700"
+        className="absolute h-2 w-2 -translate-x-1/2 -translate-y-1/2 rotate-45 bg-surface-elevated border-subtle"
       />
     </div>,
     document.body
@@ -187,6 +187,6 @@ export const Tooltip: React.FC<TooltipProps> = ({
 export const TooltipLabel: React.FC<{ label: string; badge?: string }> = ({ label, badge }) => (
   <span className="flex items-center gap-2">
     {label}
-    {badge && <span className="rounded-full bg-white/15 px-1.5 text-[10px] font-bold">{badge}</span>}
+    {badge && <span className="rounded-sm bg-surface-subtle border border-subtle text-secondary px-1.5 text-xs font-bold">{badge}</span>}
   </span>
 );

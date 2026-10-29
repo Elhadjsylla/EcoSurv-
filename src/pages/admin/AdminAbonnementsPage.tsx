@@ -1,7 +1,6 @@
 import React from 'react';
 import { CreditCard, CheckCircle2, Clock, AlertCircle } from 'lucide-react';
 import { AdminEcoleItem } from './AdminEcolesPage';
-import { formatMRU } from '../../lib/utils';
 
 interface AdminAbonnementsPageProps {
   ecoles: AdminEcoleItem[];
@@ -10,9 +9,6 @@ interface AdminAbonnementsPageProps {
 export const AdminAbonnementsPage: React.FC<AdminAbonnementsPageProps> = ({ ecoles }) => {
   const trialCount = ecoles.filter((e) => e.statut_abonnement === 'essai').length;
   const activeCount = ecoles.filter((e) => e.statut_abonnement === 'actif').length;
-
-  // Option A MRR calculation
-  const mrrContractuel = activeCount * 15000;
 
   return (
     <div className="p-6 lg:p-8 space-y-6 max-w-7xl mx-auto animate-page-enter">
@@ -46,7 +42,7 @@ export const AdminAbonnementsPage: React.FC<AdminAbonnementsPageProps> = ({ ecol
           <div className="text-3xl font-black text-slate-900 dark:text-white mt-2">
             {activeCount}
           </div>
-          <p className="text-xs text-slate-500 mt-1">Contrats actifs (15 000 MRU / mois)</p>
+          <p className="text-xs text-slate-500 mt-1">Contrats actifs (tarif contractuel)</p>
         </div>
 
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-xs">
@@ -55,9 +51,9 @@ export const AdminAbonnementsPage: React.FC<AdminAbonnementsPageProps> = ({ ecol
             <span>MRR Contractuel Estimé</span>
           </div>
           <div className="text-2xl font-black text-slate-900 dark:text-white mt-2">
-            {formatMRU(mrrContractuel)} <span className="text-xs font-normal text-slate-400">/ mois</span>
+            À définir
           </div>
-          <p className="text-xs text-slate-500 mt-1">Option A : calculé sur les écoles actives</p>
+          <p className="text-xs text-slate-500 mt-1">Tarification contractuelle par école</p>
         </div>
       </div>
 
@@ -116,7 +112,7 @@ export const AdminAbonnementsPage: React.FC<AdminAbonnementsPageProps> = ({ ecol
                       )}
                     </td>
                     <td className="py-3.5 px-4 text-right font-bold text-slate-900 dark:text-white">
-                      {isActif ? '15 000 MRU / mois' : '0 MRU (Essai gratuit)'}
+                      {isActif ? 'À définir' : '0 MRU (Essai gratuit)'}
                     </td>
                   </tr>
                 );

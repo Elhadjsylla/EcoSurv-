@@ -17,6 +17,16 @@ interface InviteStaffRequest {
   redirect_to?: string;
 }
 
+function escapeHtml(str: string | null | undefined): string {
+  if (!str) return "";
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 Deno.serve(async (req: Request) => {
   // 1. Gestion pré-vol CORS
   if (req.method === "OPTIONS") {
@@ -35,11 +45,21 @@ Deno.serve(async (req: Request) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     const resendApiKey = Deno.env.get("RESEND_API_KEY");
+    const siteUrl = Deno.env.get("SITE_URL");
+    const allowTestActionLinks = Deno.env.get("ALLOW_TEST_ACTION_LINKS") === "true";
 
     if (!supabaseUrl || !serviceRoleKey) {
       console.error("[invite-staff-member] Configuration Supabase manquante.");
       return new Response(
         JSON.stringify({ error: "Configuration serveur Supabase incomplète." }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (!siteUrl?.trim()) {
+      console.error("[invite-staff-member] Configuration serveur manquante: SITE_URL non configuré.");
+      return new Response(
+        JSON.stringify({ error: "Configuration serveur incomplète : la variable d'environnement SITE_URL est requise." }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -126,20 +146,40 @@ Deno.serve(async (req: Request) => {
       .eq("email", cleanEmail)
       .maybeSingle();
 
-    if (existingProfile && existingProfile.ecole_id === callerProfile.ecole_id) {
+    if (existingProfile) {
       return new Response(
         JSON.stringify({
-          error: `Un membre avec l'adresse ${cleanEmail} est déjà enregistré dans votre établissement (Rôle : ${existingProfile.role}).`
+          error: "Cette adresse email ne peut pas être utilisée pour cette invitation. Veuillez vérifier l'adresse saisie."
         }),
-        { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // 6. Génération du lien d'invitation sécurisé via Supabase Auth Admin
-    const rawRedirect = redirect_to || "https://ecosurv.mr";
-    const targetRedirectUrl = rawRedirect.endsWith('/set-password')
-      ? rawRedirect
-      : `${rawRedirect.replace(/\/+$/, '')}/set-password`;
+    // 6. Détermination stricte de targetRedirectUrl via ALLOWED_ORIGINS et SITE_URL
+    const rawOrigin = (req.headers.get("origin") || "").trim();
+    let clientOrigin = "";
+    if (rawOrigin) {
+      try {
+        clientOrigin = new URL(rawOrigin).origin;
+      } catch {
+        clientOrigin = rawOrigin.replace(/\/+$/, "");
+      }
+    }
+
+    const allowedOriginsRaw = Deno.env.get("ALLOWED_ORIGINS") || "";
+    const allowedOrigins = allowedOriginsRaw
+      .split(",")
+      .map((o) => o.trim().replace(/\/+$/, ""))
+      .filter(Boolean);
+
+    const defaultSiteUrl = siteUrl.trim().replace(/\/+$/, "");
+    let resolvedOrigin = defaultSiteUrl;
+
+    if (clientOrigin && allowedOrigins.includes(clientOrigin)) {
+      resolvedOrigin = clientOrigin;
+    }
+
+    const targetRedirectUrl = `${resolvedOrigin}/set-password`;
     
     const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
       type: "invite",
@@ -163,8 +203,17 @@ Deno.serve(async (req: Request) => {
       );
     }
 
+    let actionLink = linkData.properties.action_link;
     const newUserId = linkData.user.id;
-    const actionLink = linkData.properties.action_link;
+    if (actionLink) {
+      try {
+        const parsedLink = new URL(actionLink);
+        parsedLink.searchParams.set("redirect_to", targetRedirectUrl);
+        actionLink = parsedLink.toString();
+      } catch {
+        actionLink = actionLink.replace(/redirect_to=[^&]+/, `redirect_to=${encodeURIComponent(targetRedirectUrl)}`);
+      }
+    }
 
     // 7. Enregistrement / mise à jour du profil dans public.profils (statut actif: false = en attente)
     const { error: profileUpsertError } = await supabaseAdmin
@@ -244,27 +293,27 @@ Deno.serve(async (req: Request) => {
             <p>Plateforme de Gestion Scolaire & Financière</p>
           </div>
           <div class="content">
-            <div class="greeting">Bonjour ${cleanPrenom} ${cleanNom},</div>
+            <div class="greeting">Bonjour ${escapeHtml(cleanPrenom)} ${escapeHtml(cleanNom)},</div>
             <p class="message">
-              ${directeurNomComplet} vous invite à rejoindre l'espace professionnel de <strong>${nomEcole}</strong> sur EcoSurv en tant que <strong>${roleLabel}</strong>.
+              ${escapeHtml(directeurNomComplet)} vous invite à rejoindre l'espace professionnel de <strong>${escapeHtml(nomEcole)}</strong> sur EcoSurv en tant que <strong>${escapeHtml(roleLabel)}</strong>.
             </p>
             <div class="info-box">
               <div class="info-row">
                 <span class="info-label">Établissement :</span>
-                <span class="info-value">${nomEcole}</span>
+                <span class="info-value">${escapeHtml(nomEcole)}</span>
               </div>
               <div class="info-row">
                 <span class="info-label">Rôle attribué :</span>
-                <span class="info-value">${roleLabel}</span>
+                <span class="info-value">${escapeHtml(roleLabel)}</span>
               </div>
               ${classe_assignee ? `
               <div class="info-row">
                 <span class="info-label">Classe assignée :</span>
-                <span class="info-value">${classe_assignee}</span>
+                <span class="info-value">${escapeHtml(classe_assignee)}</span>
               </div>` : ''}
               <div class="info-row">
                 <span class="info-label">Identifiant de connexion :</span>
-                <span class="info-value">${cleanEmail}</span>
+                <span class="info-value">${escapeHtml(cleanEmail)}</span>
               </div>
             </div>
             <div class="cta-wrap">
@@ -275,7 +324,7 @@ Deno.serve(async (req: Request) => {
             </p>
           </div>
           <div class="footer">
-            EcoSurv • République Islamique de Mauritanie • Support technique : contact@ecosurv.mr
+            EcoSurv • République Islamique de Mauritanie • Plateforme de Gestion Scolaire
           </div>
         </div>
       </body>
@@ -309,9 +358,9 @@ Deno.serve(async (req: Request) => {
           success: false,
           memberId: newUserId,
           error: isDomainTestingLimitation
-            ? `Mode test Resend : l'email d'invitation n'a pu être délivré qu'au compte administrateur Resend. Lien d'activation généré : ${actionLink}`
+            ? "Mode test Resend : l'email d'invitation n'a pu être délivré qu'à l'adresse autorisée sur votre domaine d'envoi."
             : resendData.message || "Échec de l'envoi de l'email d'invitation.",
-          actionLink: actionLink,
+          actionLink: allowTestActionLinks ? actionLink : undefined,
         }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
@@ -323,6 +372,7 @@ Deno.serve(async (req: Request) => {
         memberId: newUserId,
         email: cleanEmail,
         message: `Invitation envoyée avec succès à ${cleanPrenom} ${cleanNom}.`,
+        actionLink: allowTestActionLinks ? actionLink : undefined,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );

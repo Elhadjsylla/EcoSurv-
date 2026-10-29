@@ -173,9 +173,9 @@ export const translations: Record<Language, Translations> = {
       familySpace: 'Espace Famille',
     },
     landing: {
-      heroBadge: 'SaaS Scolarité & Finance — Mauritanie',
+      heroBadge: 'Gestion Scolaire & Financière — Mauritanie',
       heroTitle: 'La gestion scolaire moderne pensée pour la Mauritanie',
-      heroSubtitle: 'Pilotez vos inscriptions, recouvrements Ouguiya (MRU), relances WhatsApp et scolarité en temps réel avec un outil conçu sur-mesure.',
+      heroSubtitle: 'Pilotez vos inscriptions, encaissements en Ouguiya (MRU) et scolarité en temps réel avec un outil conçu sur-mesure.',
       ctaStart: 'Créer mon école gratuitement',
       ctaDemo: 'Explorer la démo interactive',
       featureTitle: 'Une suite complète pour votre établissement',
@@ -284,7 +284,7 @@ export const translations: Record<Language, Translations> = {
     landing: {
       heroBadge: 'برنامج إدارة المدارس والمالية — موريتانيا',
       heroTitle: 'الإدارة المدرسية الحديثة المصممة خصيصاً لموريتانيا',
-      heroSubtitle: 'تابع التسجيلات، وتحصيل الرسوم بالأوقية، والتنبيهات عبر الواتساب بدقة وسهولة فائقة.',
+      heroSubtitle: 'تابع التسجيلات، وتحصيل الرسوم بالأوقية، ومتابعة الأقساط بدقة وسهولة فائقة.',
       ctaStart: 'أنشئ مدرستك مجاناً',
       ctaDemo: 'استكشف النسخة التجريبية',
       featureTitle: 'منظومة متكاملة لجميع أركان مؤسستك',
@@ -391,9 +391,9 @@ export const translations: Record<Language, Translations> = {
       familySpace: 'Family Space',
     },
     landing: {
-      heroBadge: 'School Management & Finance SaaS — Mauritania',
+      heroBadge: 'School & Financial Management — Mauritania',
       heroTitle: 'Modern school management tailored for Mauritania',
-      heroSubtitle: 'Manage enrollments, Ouguiya (MRU) payments, automated WhatsApp reminders, and academic tracking in real time.',
+      heroSubtitle: 'Manage enrollments, Ouguiya (MRU) payments, tuition schedules, and academic tracking in real time.',
       ctaStart: 'Create Free School Account',
       ctaDemo: 'Explore Interactive Demo',
       featureTitle: 'A complete suite for your educational institution',

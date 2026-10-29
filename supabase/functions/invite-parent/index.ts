@@ -17,6 +17,16 @@ interface InviteParentRequest {
   redirect_to?: string;
 }
 
+function escapeHtml(str: string | null | undefined): string {
+  if (!str) return "";
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 Deno.serve(async (req: Request) => {
   // 1. Gestion pré-vol CORS
   if (req.method === "OPTIONS") {
@@ -34,11 +44,21 @@ Deno.serve(async (req: Request) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     const resendApiKey = Deno.env.get("RESEND_API_KEY");
+    const siteUrl = Deno.env.get("SITE_URL");
+    const allowTestActionLinks = Deno.env.get("ALLOW_TEST_ACTION_LINKS") === "true";
 
     if (!supabaseUrl || !serviceRoleKey) {
       console.error("[invite-parent] Variables Supabase manquantes.");
       return new Response(
         JSON.stringify({ error: "Configuration serveur Supabase incomplète." }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (!siteUrl?.trim()) {
+      console.error("[invite-parent] Configuration serveur manquante: SITE_URL non configuré.");
+      return new Response(
+        JSON.stringify({ error: "Configuration serveur incomplète : la variable d'environnement SITE_URL est requise." }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -82,7 +102,7 @@ Deno.serve(async (req: Request) => {
 
     // 4. Lecture et validation du payload
     const payload = (await req.json()) as InviteParentRequest;
-    const { eleve_id, nom_tuteur, prenom_tuteur, email_tuteur, telephone_tuteur, lien_parente, redirect_to } = payload;
+    const { eleve_id, nom_tuteur, prenom_tuteur, email_tuteur, telephone_tuteur, lien_parente } = payload;
 
     if (!eleve_id || !email_tuteur?.trim() || !nom_tuteur?.trim()) {
       return new Response(
@@ -128,10 +148,31 @@ Deno.serve(async (req: Request) => {
       .maybeSingle();
 
     const nomEcole = ecoleData?.nom || "Votre établissement scolaire";
-    const rawRedirect = redirect_to || "https://ecosurv.mr";
-    const targetRedirectUrl = rawRedirect.endsWith('/set-password')
-      ? rawRedirect
-      : `${rawRedirect.replace(/\/+$/, '')}/set-password`;
+    // Détermination stricte de targetRedirectUrl via ALLOWED_ORIGINS et SITE_URL
+    const rawOrigin = (req.headers.get("origin") || "").trim();
+    let clientOrigin = "";
+    if (rawOrigin) {
+      try {
+        clientOrigin = new URL(rawOrigin).origin;
+      } catch {
+        clientOrigin = rawOrigin.replace(/\/+$/, "");
+      }
+    }
+
+    const allowedOriginsRaw = Deno.env.get("ALLOWED_ORIGINS") || "";
+    const allowedOrigins = allowedOriginsRaw
+      .split(",")
+      .map((o) => o.trim().replace(/\/+$/, ""))
+      .filter(Boolean);
+
+    const defaultSiteUrl = siteUrl.trim().replace(/\/+$/, "");
+    let resolvedOrigin = defaultSiteUrl;
+
+    if (clientOrigin && allowedOrigins.includes(clientOrigin)) {
+      resolvedOrigin = clientOrigin;
+    }
+
+    const targetRedirectUrl = `${resolvedOrigin}/set-password`;
 
     // 7. Vérifier si un profil existe déjà avec cet email
     const { data: existingProfile } = await supabaseAdmin
@@ -144,13 +185,23 @@ Deno.serve(async (req: Request) => {
     if (existingProfile && existingProfile.role !== "parent") {
       return new Response(
         JSON.stringify({
-          error: `Cette adresse email est déjà associée à un compte membre du personnel (${existingProfile.role}). Veuillez utiliser une autre adresse.`,
+          error: "Cette adresse email ne peut pas être utilisée pour cette invitation. Veuillez vérifier l'adresse saisie ou utiliser une autre adresse.",
         }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // 8. Vérifier si cet élève est déjà rattaché à ce parent
+    // Garde-fou multi-école : si l'email appartient à un parent d'une AUTRE école (ecole_id différent)
+    if (existingProfile && existingProfile.ecole_id && existingProfile.ecole_id !== targetEcoleId) {
+      return new Response(
+        JSON.stringify({
+          error: "Cette adresse email ne peut pas être utilisée pour cette invitation. Veuillez vérifier l'adresse saisie ou utiliser une autre adresse.",
+        }),
+        { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // 8. Cas PARENT EXISTANT (même école) : Rattachement de l'enfant sans upsert de profil ni génération de lien
     if (existingProfile) {
       const { data: existingLink } = await supabaseAdmin
         .from("parents_eleves")
@@ -163,14 +214,15 @@ Deno.serve(async (req: Request) => {
         return new Response(
           JSON.stringify({
             success: true,
+            isExistingParent: true,
             alreadyLinked: true,
-            message: `Cet élève est déjà relié au compte parent de ${existingProfile.prenom} ${existingProfile.nom}.`,
+            message: `Cet élève est déjà relié au compte parent de ${escapeHtml(existingProfile.prenom || "")} ${escapeHtml(existingProfile.nom || "")}.`,
           }),
           { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
 
-      // Cas FRATRIE / NOUVEL ENFANT pour un parent existant
+      // Cas FRATRIE / NOUVEL ENFANT pour un parent existant (SANS upsert sur profils !)
       const { error: linkErr } = await supabaseAdmin
         .from("parents_eleves")
         .upsert(
@@ -192,15 +244,16 @@ Deno.serve(async (req: Request) => {
         );
       }
 
-      // Si Resend est configuré, on envoie un email d'information de rattachement
+      // Si Resend est configuré, on envoie un email d'information de rattachement (SANS lien magique ni token !)
       if (resendApiKey) {
         const subject = `Nouvel enfant rattaché à votre compte EcoSurv : ${eleveData.prenom} ${eleveData.nom}`;
+        const loginUrl = `${resolvedOrigin}/login`;
         const siblingHtml = `
           <!DOCTYPE html>
           <html lang="fr">
           <head>
             <meta charset="utf-8">
-            <title>${subject}</title>
+            <title>${escapeHtml(subject)}</title>
             <style>
               body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #0f172a; margin: 0; padding: 24px; color: #f8fafc; }
               .container { max-width: 560px; margin: 0 auto; background: #1e293b; border-radius: 20px; border: 1px solid #334155; overflow: hidden; }
@@ -220,23 +273,23 @@ Deno.serve(async (req: Request) => {
                 <h1>EcoSurv Espace Famille</h1>
               </div>
               <div class="content">
-                <p class="message">Bonjour ${existingProfile.prenom} ${existingProfile.nom},</p>
+                <p class="message">Bonjour ${escapeHtml(existingProfile.prenom || "")} ${escapeHtml(existingProfile.nom || "")},</p>
                 <p class="message">
-                  L'établissement <strong>${nomEcole}</strong> a rattaché un nouvel élève à votre compte Famille existant :
+                  L'établissement <strong>${escapeHtml(nomEcole)}</strong> a rattaché un nouvel élève à votre compte Famille existant :
                 </p>
                 <div class="card">
-                  <div style="font-weight: 800; font-size: 16px; color: #ffffff;">${eleveData.prenom} ${eleveData.nom}</div>
-                  <div style="font-size: 12px; color: #a78bfa; margin-top: 4px;">Classe : ${eleveData.classe} • Matr. #${eleveData.matricule || ''}</div>
+                  <div style="font-weight: 800; font-size: 16px; color: #ffffff;">${escapeHtml(eleveData.prenom)} ${escapeHtml(eleveData.nom)}</div>
+                  <div style="font-size: 12px; color: #a78bfa; margin-top: 4px;">Classe : ${escapeHtml(eleveData.classe || "")} • Matr. #${escapeHtml(eleveData.matricule || "")}</div>
                 </div>
                 <p class="message">
                   Vous pouvez dès à présent consulter son dossier, ses notes et sa situation financière directement dans votre Espace Famille avec vos identifiants habituels.
                 </p>
                 <div class="cta-wrap">
-                  <a href="${targetRedirectUrl}" class="cta-btn">Accéder à mon Espace Famille</a>
+                  <a href="${escapeHtml(loginUrl)}" class="cta-btn">Accéder à mon Espace Famille</a>
                 </div>
               </div>
               <div class="footer">
-                EcoSurv • République Islamique de Mauritanie
+                EcoSurv • Système de Gestion Scolaire
               </div>
             </div>
           </body>
@@ -266,7 +319,7 @@ Deno.serve(async (req: Request) => {
         JSON.stringify({
           success: true,
           isExistingParent: true,
-          message: `L'élève ${eleveData.prenom} a été rattaché au compte Famille existant de ${existingProfile.prenom} ${existingProfile.nom}.`,
+          message: "Compte parent existant, enfant rattaché.",
         }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
@@ -278,7 +331,7 @@ Deno.serve(async (req: Request) => {
     let parentUserId: string;
     let actionLink: string | null = null;
 
-    // Tentative 1 : Générer un lien d'invitation (crée l'utilisateur dans auth.users de façon native)
+    // Tentative unique : Générer un lien d'invitation (crée l'utilisateur dans auth.users de façon native)
     const { data: inviteLinkData, error: inviteLinkError } = await supabaseAdmin.auth.admin.generateLink({
       type: "invite",
       email: cleanEmail,
@@ -294,44 +347,29 @@ Deno.serve(async (req: Request) => {
       },
     });
 
-    if (!inviteLinkError && inviteLinkData?.user) {
-      parentUserId = inviteLinkData.user.id;
-      actionLink = inviteLinkData.properties?.action_link || null;
-    } else {
-      // Tentative 2 : Si l'utilisateur existe déjà dans auth.users, générer un lien recovery pour qu'il puisse se connecter/définir son mot de passe
-      const { data: recoveryLinkData, error: recoveryError } = await supabaseAdmin.auth.admin.generateLink({
-        type: "recovery",
-        email: cleanEmail,
-        options: {
-          redirectTo: targetRedirectUrl,
-        },
-      });
+    // Règle 4 : Si generateLink('invite') échoue, cela signifie que l'utilisateur existe déjà dans auth.users
+    // (ou que l'adresse est invalide). Règle stricte : refus neutre, aucun fallback recovery ou magiclink, aucun lien généré !
+    if (inviteLinkError || !inviteLinkData?.user) {
+      console.warn("[invite-parent] Échec generateLink type 'invite' (compte existant dans auth ou invalide):", inviteLinkError?.message);
+      return new Response(
+        JSON.stringify({
+          error: "Cette adresse email ne peut pas être utilisée pour cette invitation. Veuillez vérifier l'adresse saisie ou utiliser une autre adresse.",
+        }),
+        { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
-      if (!recoveryError && recoveryLinkData?.user) {
-        parentUserId = recoveryLinkData.user.id;
-        actionLink = recoveryLinkData.properties?.action_link || null;
-      } else {
-        // Tentative 3 : Si recovery échoue également, tenter un lien de connexion magique (magiclink)
-        const { data: magicData, error: magicError } = await supabaseAdmin.auth.admin.generateLink({
-          type: "magiclink",
-          email: cleanEmail,
-          options: {
-            redirectTo: targetRedirectUrl,
-          },
-        });
-
-        if (magicError || !magicData?.user) {
-          console.error("[invite-parent] Erreur generateLink (invite/recovery/magiclink):", inviteLinkError, recoveryError, magicError);
-          return new Response(
-            JSON.stringify({
-              error: recoveryError?.message || inviteLinkError?.message || magicError?.message || "Impossible de générer le compte tuteur ou son lien d'accès.",
-            }),
-            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
-        }
-
-        parentUserId = magicData.user.id;
-        actionLink = magicData.properties?.action_link || null;
+    parentUserId = inviteLinkData.user.id;
+    actionLink = inviteLinkData.properties?.action_link || null;
+    // Garantir que le paramètre redirect_to dans le lien d'action pointe strictement vers targetRedirectUrl
+    if (actionLink) {
+      try {
+        const parsedLink = new URL(actionLink);
+        parsedLink.searchParams.set("redirect_to", targetRedirectUrl);
+        actionLink = parsedLink.toString();
+      } catch {
+        // En cas d'URL non standard, remplacement direct du paramètre
+        actionLink = actionLink.replace(/redirect_to=[^&]+/, `redirect_to=${encodeURIComponent(targetRedirectUrl)}`);
       }
     }
 
@@ -417,13 +455,13 @@ Deno.serve(async (req: Request) => {
               <p>Portail Famille & Scolarité</p>
             </div>
             <div class="content">
-              <div class="greeting">Bonjour ${cleanPrenom} ${cleanNom},</div>
+              <div class="greeting">Bonjour ${escapeHtml(cleanPrenom)} ${escapeHtml(cleanNom)},</div>
               <p class="message">
-                La direction de l'établissement <strong>${nomEcole}</strong> a créé votre accès tuteur légal sur la plateforme EcoSurv suite à l'inscription de :
+                La direction de l'établissement <strong>${escapeHtml(nomEcole)}</strong> a créé votre accès tuteur légal sur la plateforme EcoSurv suite à l'inscription de :
               </p>
               <div class="card">
-                <div style="font-weight: 800; font-size: 16px; color: #ffffff;">${eleveData.prenom} ${eleveData.nom}</div>
-                <div style="font-size: 12px; color: #a78bfa; margin-top: 4px;">Classe : ${eleveData.classe}</div>
+                <div style="font-weight: 800; font-size: 16px; color: #ffffff;">${escapeHtml(eleveData.prenom)} ${escapeHtml(eleveData.nom)}</div>
+                <div style="font-size: 12px; color: #a78bfa; margin-top: 4px;">Classe : ${escapeHtml(eleveData.classe)}</div>
               </div>
               <p class="message">
                 Votre Espace Famille vous permet de suivre l'assiduité, les notes, les quittances de paiement et le calendrier des échéances de scolarité en temps réel.
@@ -436,7 +474,7 @@ Deno.serve(async (req: Request) => {
               </p>
             </div>
             <div class="footer">
-              EcoSurv • République Islamique de Mauritanie • Support : contact@ecosurv.mr
+              EcoSurv • République Islamique de Mauritanie • Plateforme de Gestion Scolaire
             </div>
           </div>
         </body>
@@ -476,7 +514,7 @@ Deno.serve(async (req: Request) => {
         isNewParent: true,
         emailSent: emailSent,
         emailError: emailErrorMsg,
-        actionLink: actionLink,
+        actionLink: allowTestActionLinks ? actionLink : undefined,
         message: `Compte tuteur créé et rattaché avec succès à ${eleveData.prenom} ${eleveData.nom}.`,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }

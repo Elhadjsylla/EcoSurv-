@@ -1,4 +1,4 @@
-import { MonthlyFinancialReport } from './mockData';
+import { MonthlyFinancialReport } from '../types';
 
 export const ATTACHMENT_RULE_DESCRIPTION =
   "Règle de rattachement comptable : par date d'échéance (les montants attendus et perçus sont rattachés au mois d'exigibilité scolaire).";

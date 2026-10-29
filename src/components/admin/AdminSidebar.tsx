@@ -7,13 +7,14 @@ import {
   ScrollText,
   LogOut,
   ShieldCheck,
-  School,
   ExternalLink,
   X,
 } from 'lucide-react';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useNavigationStore } from '../../store/useNavigationStore';
+import { useThemeStore } from '../../store/useThemeStore';
 import { supabase } from '../../lib/supabase';
+import { Logo } from '../ui/Logo';
 
 export type AdminTab = 'dashboard' | 'ecoles' | 'utilisateurs' | 'abonnements' | 'audit';
 
@@ -33,6 +34,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
   onClose,
 }) => {
   const profile = useAuthStore((s) => s.profile);
+  const theme = useThemeStore((s) => s.theme);
   const user = useAuthStore((s) => s.user);
 
   const handleLogout = async () => {
@@ -65,18 +67,11 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
       <div className="space-y-6">
         {/* Brand header */}
         <div className="flex items-center justify-between px-2 pt-2">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-emerald-600 dark:bg-emerald-500 text-white flex items-center justify-center shadow-md shadow-emerald-600/20">
-              <School className="h-5 w-5" />
-            </div>
-            <div>
-              <div className="font-extrabold text-base tracking-tight text-slate-900 dark:text-white leading-tight">
-                EcoSurv
-              </div>
-              <div className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1 mt-0.5">
-                <ShieldCheck className="h-3 w-3" />
-                <span>Super Admin</span>
-              </div>
+          <div className="flex flex-col gap-1">
+            <Logo variant={theme === 'dark' ? 'inverse' : 'couleur'} height={26} />
+            <div className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1 mt-0.5">
+              <ShieldCheck className="h-3 w-3" />
+              <span>Super Admin</span>
             </div>
           </div>
 

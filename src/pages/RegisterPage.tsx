@@ -20,6 +20,7 @@ import { useEcoleStore } from '../store/useEcoleStore';
 import { useNavigationStore } from '../store/useNavigationStore';
 import { Select } from '../components/ui/Select';
 import { LanguageSelector } from '../components/ui/LanguageSelector';
+import { Logo } from '../components/ui/Logo';
 import { generateOtp, hashOtp, sendActivationEmail } from '../lib/email/sendActivationEmail';
 import type { UserRole } from '../components/ui/Header';
 
@@ -153,20 +154,20 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
         if (msg.includes('already registered') || msg.includes('user already exists')) {
           setError('Un compte existe déjà avec cette adresse email. Veuillez vous connecter.');
         } else if (msg.includes('api key') || msg.includes('invalid api key')) {
-          setError("Erreur d'authentification Supabase : clé API anon invalide ou non configurée en local. Vérifiez VITE_SUPABASE_ANON_KEY.");
+          setError("Erreur d'authentification : clé API invalide ou non configurée. Contactez le support technique.");
         } else if (msg.includes('rate limit')) {
           setError("Trop de tentatives d'inscription. Veuillez patienter quelques minutes avant de réessayer.");
         } else if (msg.includes('database error saving new user')) {
-          setError("Erreur backend lors de l'enregistrement de l'école (vérifiez les informations renseignées).");
+          setError("Erreur lors de l'enregistrement de l'établissement (veuillez vérifier les informations renseignées).");
         } else {
-          setError(signUpError.message || "Erreur lors de l'enregistrement de l'école.");
+          setError(signUpError.message || "Erreur lors de l'enregistrement de l'établissement.");
         }
         setSubmitting(false);
         return;
       }
 
       if (!signUpData?.user) {
-        setError("Erreur : aucun compte utilisateur n'a été retourné par Supabase. Veuillez réessayer.");
+        setError("Erreur : aucun compte utilisateur créé. Veuillez réessayer.");
         setSubmitting(false);
         return;
       }
@@ -261,7 +262,6 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
         telephone: telephone.trim(),
         email: email.trim(),
         statut_activation: 'en_attente',
-        code_ecole: nomEnregistre.slice(0, 4).toUpperCase(),
       });
 
       // 5. Générer le code d'activation OTP et l'expédier par email via Resend
@@ -350,9 +350,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
           >
             Déjà un compte ? Se connecter
           </button>
-          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-600 text-white font-black text-xs shadow-md shadow-blue-600/20">
-            ES
-          </div>
+          <Logo height={28} />
         </div>
       </div>
 
@@ -519,7 +517,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
                       value={email}
                       disabled={submitting}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="direction@ecole.mr"
+                      placeholder="exemple@exemple.com"
                       className="w-full h-11 pl-10 pr-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600/30 focus:border-blue-600 dark:focus:border-blue-500 transition-all"
                     />
                   </div>

@@ -1,7 +1,7 @@
 {
   "heroBadge": "Plateforme Souveraine de Recouvrement Scolaire en Mauritanie",
-  "heroTitle": "Zéro impayé.",
-  "heroSubtitle": "Pilotez vos inscriptions, recouvrements Ouguiya (MRU), relances WhatsApp et scolarité en temps réel avec un outil conçu sur-mesure pour les établissements privés mauritaniens.",
+  "heroTitle": "Chaque paiement de scolarité, suivi de l'inscription au reçu.",
+  "heroSubtitle": "Pilotez vos inscriptions, encaissements en Ouguiya (MRU) et scolarité en temps réel avec un outil conçu sur-mesure pour les établissements privés mauritaniens.",
   "ctaStart": "Créer mon école",
   "ctaLogin": "Se connecter",
   "ctaAssistance": "Assistance WhatsApp 6j/7",
@@ -26,7 +26,7 @@
   },
   "finalCta": {
     "title": "Prêt à sécuriser les rentrées scolaires de votre établissement ?",
-    "subtitle": "Rejoignez les directions scolaires mauritaniennes qui ont éliminé les litiges de caisse, automatisé les quittances WhatsApp et divisé leurs impayés par trois.",
+    "subtitle": "Rejoignez les directions scolaires mauritaniennes qui simplifient leur gestion de caisse et assurent la traçabilité de chaque règlement.",
     "badges": {
       "deployment": "Déploiement garanti en 24h",
       "mobileMoney": "Intégré Bankily & Masrvi",

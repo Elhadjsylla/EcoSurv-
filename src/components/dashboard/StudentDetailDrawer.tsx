@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { EleveWithStats } from '../../lib/mockData';
+import { EleveWithStats } from '../../types';
 import { StudentInitials } from '../ui/StudentInitials';
 import { StatusBadge } from '../ui/StatusBadge';
 import { Button } from '../ui/Button';
@@ -21,7 +21,15 @@ import {
   Mail,
   HeartHandshake,
   Edit3,
+  Sparkles,
+  Loader2,
+  AlertCircle,
 } from 'lucide-react';
+import { useAuthStore } from '../../store/useAuthStore';
+import { useNavigationStore } from '../../store/useNavigationStore';
+import { useAnneeScolaire } from '../../hooks/useAnneeScolaire';
+import { supabase } from '../../lib/supabase';
+import { genererEcheancesManquantes } from '../../lib/echeancesHelper';
 
 interface StudentDetailDrawerProps {
   eleve: EleveWithStats | null;
@@ -29,6 +37,7 @@ interface StudentDetailDrawerProps {
   onQuickPay?: (eleve: EleveWithStats) => void;
   onQuickRelance?: (eleve: EleveWithStats) => void;
   onEdit?: (eleve: EleveWithStats) => void;
+  onEcheancesUpdated?: () => void;
 }
 
 export const StudentDetailDrawer: React.FC<StudentDetailDrawerProps> = ({
@@ -37,9 +46,18 @@ export const StudentDetailDrawer: React.FC<StudentDetailDrawerProps> = ({
   onQuickPay,
   onQuickRelance,
   onEdit,
+  onEcheancesUpdated,
 }) => {
   const [isFavorite, setIsFavorite] = useState(false);
   const [activeToast, setActiveToast] = useState<string | null>(null);
+  const [nbEcheances, setNbEcheances] = useState<number | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generateError, setGenerateError] = useState<string | null>(null);
+
+  const authProfile = useAuthStore((s) => s.profile);
+  const anneeScolaire = useAnneeScolaire();
+  const navigate = useNavigationStore((s) => s.navigate);
+  const canManage = authProfile?.role === 'directeur' || authProfile?.role === 'super_admin';
 
   // Close on Escape & Lock body overflow
   useEffect(() => {
@@ -57,6 +75,67 @@ export const StudentDetailDrawer: React.FC<StudentDetailDrawerProps> = ({
       document.body.style.overflow = '';
     }
   }, [eleve, onClose]);
+
+  // Vérification stricte du compte réel d'échéances en base (jamais une valeur par défaut)
+  useEffect(() => {
+    let isMounted = true;
+    if (eleve?.id) {
+      setNbEcheances(null);
+      setGenerateError(null);
+      supabase
+        .from('echeances')
+        .select('id', { count: 'exact', head: true })
+        .eq('eleve_id', eleve.id)
+        .then(({ count, error }) => {
+          if (isMounted) {
+            if (error) {
+              console.warn('[StudentDetailDrawer] Erreur comptage réel des échéances:', error);
+              setNbEcheances(null);
+            } else {
+              setNbEcheances(count ?? 0);
+            }
+          }
+        });
+    } else {
+      setNbEcheances(null);
+      setGenerateError(null);
+    }
+    return () => {
+      isMounted = false;
+    };
+  }, [eleve?.id]);
+
+  const handleGenererEcheances = async () => {
+    if (!eleve?.id || isGenerating) return;
+    if (!anneeScolaire) {
+      setGenerateError("Définissez l'année scolaire dans Configuration avant de continuer");
+      return;
+    }
+    setIsGenerating(true);
+    setGenerateError(null);
+    try {
+      const res = await genererEcheancesManquantes({
+        eleveId: eleve.id,
+        classe: eleve.classe,
+        anneeScolaire,
+      });
+      if (res.echeancesCreees > 0) {
+        showActionToast(`${res.echeancesCreees} échéance(s) créée(s) pour cet élève.`);
+        setNbEcheances(res.echeancesCreees);
+        if (onEcheancesUpdated) onEcheancesUpdated();
+      } else if (res.classesSansBareme && res.classesSansBareme.length > 0) {
+        setGenerateError(`Aucun barème trouvé pour la classe "${eleve.classe}". Créez d'abord un barème sur la page Échéances.`);
+      } else {
+        showActionToast('Aucune échéance manquante.');
+        setNbEcheances(1);
+      }
+    } catch (err: any) {
+      console.error('[StudentDetailDrawer] Erreur genererEcheancesManquantes:', err);
+      setGenerateError(err.message || 'Erreur lors de la génération des échéances.');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
   if (!eleve) return null;
 
@@ -193,7 +272,7 @@ export const StudentDetailDrawer: React.FC<StudentDetailDrawerProps> = ({
                 <button
                   type="button"
                   onClick={() => {
-                    generateStudentSheetPdf(eleve, 'download');
+                    generateStudentSheetPdf(eleve, anneeScolaire, 'download');
                     showActionToast('Fiche officielle PDF téléchargée');
                   }}
                   className="h-9 w-9 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-300 hover:bg-blue-50/50 flex items-center justify-center transition-all shadow-2xs"
@@ -246,6 +325,69 @@ export const StudentDetailDrawer: React.FC<StudentDetailDrawerProps> = ({
               </div>
             </div>
           </div>
+
+          {/* Action Générer les échéances si l'élève a réellement 0 échéance en base */}
+          {canManage && nbEcheances === 0 && (
+            <div className="mx-5 my-4 p-4 rounded-2xl bg-blue-50/90 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 space-y-3 print:hidden">
+              <div className="flex items-start gap-2.5">
+                <Sparkles className="h-4 w-4 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
+                <div className="space-y-0.5 text-xs">
+                  <span className="font-bold text-slate-900 dark:text-white block">
+                    Aucune échéance enregistrée
+                  </span>
+                  <span className="text-slate-600 dark:text-slate-300 block">
+                    Cet élève a actuellement 0 échéance en base. Vous pouvez générer ses échéances selon le barème de sa classe ({eleve.classe}).
+                  </span>
+                </div>
+              </div>
+
+              {!anneeScolaire && (
+                <div className="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-xs text-amber-900 dark:text-amber-200 space-y-1">
+                  <span className="font-semibold block">
+                    Définissez l'année scolaire dans Configuration avant de continuer
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onClose();
+                      navigate('config');
+                    }}
+                    className="font-bold text-amber-800 dark:text-amber-300 underline hover:text-amber-950 cursor-pointer"
+                  >
+                    Aller dans Configuration
+                  </button>
+                </div>
+              )}
+
+              {generateError && (
+                <div className="p-2.5 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-xs text-red-800 dark:text-red-200 flex items-start gap-2">
+                  <AlertCircle className="h-4 w-4 text-red-600 shrink-0 mt-0.5" />
+                  <span>{generateError}</span>
+                </div>
+              )}
+
+              <Button
+                variant="primary"
+                size="sm"
+                className="w-full gap-2 justify-center h-9 font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={isGenerating || !anneeScolaire}
+                title={!anneeScolaire ? "Définissez l'année scolaire dans Configuration avant de continuer" : undefined}
+                onClick={handleGenererEcheances}
+              >
+                {isGenerating ? (
+                  <>
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    <span>Génération en cours...</span>
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="h-3.5 w-3.5" />
+                    <span>Générer les échéances</span>
+                  </>
+                )}
+              </Button>
+            </div>
+          )}
 
           {/* Section "À propos de l'élève" */}
           <div className="p-5 space-y-3 border-b border-slate-100 dark:border-slate-800">
@@ -302,7 +444,7 @@ export const StudentDetailDrawer: React.FC<StudentDetailDrawerProps> = ({
 
               <div className="flex items-center gap-2.5 text-slate-600 dark:text-slate-300">
                 <MapPin className="h-4 w-4 text-slate-400 shrink-0" />
-                <span>{eleve.adresse_tuteur || 'Nouakchott'}</span>
+                <span>{eleve.adresse_tuteur || 'Non renseignée'}</span>
               </div>
 
               <div className="pt-2 border-t border-slate-200/60 dark:border-slate-700/60 flex items-center justify-between">

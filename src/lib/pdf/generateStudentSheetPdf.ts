@@ -1,10 +1,14 @@
 import { jsPDF } from 'jspdf';
-import { EleveWithStats } from '../mockData';
+import { EleveWithStats } from '../../types';
 import { formatMRU } from '../utils';
 import { downloadFile } from '../downloadFile';
 import { CLAIMS_CONFIG } from '../../config/claims';
 
-export function generateStudentSheetPdf(eleve: EleveWithStats, action: 'download' | 'print' = 'download'): jsPDF {
+export function generateStudentSheetPdf(
+  eleve: EleveWithStats,
+  anneeScolaire: string | null | undefined,
+  action: 'download' | 'print' = 'download'
+): jsPDF {
   const doc = new jsPDF({
     orientation: 'portrait',
     unit: 'mm',
@@ -48,7 +52,10 @@ export function generateStudentSheetPdf(eleve: EleveWithStats, action: 'download
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9);
   doc.setTextColor(71, 85, 105);
-  doc.text(`Année scolaire 2025-2026 • Document généré le ${new Date().toLocaleDateString('fr-FR')}`, pageWidth / 2, y, { align: 'center' });
+  const anneeTrimmed = anneeScolaire?.trim();
+  const dateStr = `Document généré le ${new Date().toLocaleDateString('fr-FR')}`;
+  const sousTitreFiche = anneeTrimmed ? `Année scolaire ${anneeTrimmed} • ${dateStr}` : dateStr;
+  doc.text(sousTitreFiche, pageWidth / 2, y, { align: 'center' });
 
   // Cadre État Civil
   y += 10;

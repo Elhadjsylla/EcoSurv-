@@ -13,6 +13,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Clock,
+  AlertCircle,
 } from 'lucide-react';
 import { ToastNotification } from '../../components/ui/ToastNotification';
 
@@ -27,44 +28,10 @@ export interface AuditLogRow {
   created_at: string;
 }
 
-const FALLBACK_AUDIT_LOGS: AuditLogRow[] = [
-  {
-    id: 'aud-demo-01',
-    actor_email: 'elhadjsylla667@gmail.com',
-    action_type: 'auth.login_success',
-    target_id: 'session-global',
-    metadata: { role: 'super_admin', ip: '197.239.77.102', user_agent: 'Chrome/Windows' },
-    created_at: new Date(Date.now() - 1000 * 60 * 12).toISOString(),
-  },
-  {
-    id: 'aud-demo-02',
-    actor_email: 'directeur@ecole-excellence.mr',
-    action_type: 'school.self_activated',
-    target_id: 'ecole-demo-001',
-    metadata: { method: 'email_otp', ecole: 'Complexe Scolaire Excellence' },
-    created_at: new Date(Date.now() - 1000 * 60 * 65).toISOString(),
-  },
-  {
-    id: 'aud-demo-03',
-    actor_email: 'elhadjsylla667@gmail.com',
-    action_type: 'school.status_changed',
-    target_id: 'ecole-demo-002',
-    metadata: { nouveau_statut: 'active', precedent_statut: 'en_attente' },
-    created_at: new Date(Date.now() - 1000 * 60 * 240).toISOString(),
-  },
-  {
-    id: 'aud-demo-04',
-    actor_email: 'system@ecosurv.mr',
-    action_type: 'security.rls_check',
-    target_id: 'schema-public',
-    metadata: { status: 'conforme', tables_verifiees: 12 },
-    created_at: new Date(Date.now() - 1000 * 60 * 60 * 8).toISOString(),
-  },
-];
-
 export const AdminAuditPage: React.FC = () => {
   const [logs, setLogs] = useState<AuditLogRow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [dateFilter, setDateFilter] = useState<'all' | 'today' | '7days' | '30days'>('all');
@@ -74,6 +41,7 @@ export const AdminAuditPage: React.FC = () => {
 
   const fetchAuditLogs = async () => {
     setIsLoading(true);
+    setFetchError(null);
     try {
       const { data, error } = await supabase
         .from('audit_logs')
@@ -82,16 +50,16 @@ export const AdminAuditPage: React.FC = () => {
         .limit(200);
 
       if (error) {
-        console.warn('[AdminAudit] Supabase audit_logs lecture (fallback local):', error.message);
-        setLogs(FALLBACK_AUDIT_LOGS);
-      } else if (data && data.length > 0) {
-        setLogs(data as AuditLogRow[]);
+        console.error('[AdminAudit] Erreur lecture audit_logs:', error.message);
+        setFetchError(error.message);
+        setLogs([]);
       } else {
-        setLogs(FALLBACK_AUDIT_LOGS);
+        setLogs((data as AuditLogRow[]) || []);
       }
-    } catch (err) {
-      console.warn('[AdminAudit] Erreur réseau:', err);
-      setLogs(FALLBACK_AUDIT_LOGS);
+    } catch (err: any) {
+      console.error('[AdminAudit] Erreur réseau:', err);
+      setFetchError(err?.message || 'Erreur réseau');
+      setLogs([]);
     } finally {
       setIsLoading(false);
     }
@@ -369,11 +337,42 @@ export const AdminAuditPage: React.FC = () => {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-xs font-medium">
-            {paginatedLogs.length === 0 ? (
+            {isLoading ? (
+              <tr>
+                <td colSpan={5} className="py-12 text-center text-slate-400">
+                  <RefreshCw className="h-6 w-6 mx-auto mb-2 animate-spin text-blue-500" />
+                  <p>Chargement des journaux d'audit en direct...</p>
+                </td>
+              </tr>
+            ) : fetchError ? (
+              <tr>
+                <td colSpan={5} className="py-12 text-center text-rose-500">
+                  <AlertCircle className="h-8 w-8 mx-auto mb-2 text-rose-500" />
+                  <p className="font-semibold text-sm">Erreur lors de la récupération des journaux d'audit</p>
+                  <p className="text-xs text-slate-400 mt-1 max-w-md mx-auto">{fetchError}</p>
+                  <button
+                    onClick={fetchAuditLogs}
+                    className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 text-xs font-bold hover:bg-rose-100 dark:hover:bg-rose-900/40 transition-colors"
+                  >
+                    <RefreshCw className="h-3.5 w-3.5" />
+                    <span>Réessayer</span>
+                  </button>
+                </td>
+              </tr>
+            ) : paginatedLogs.length === 0 ? (
               <tr>
                 <td colSpan={5} className="py-12 text-center text-slate-400">
                   <Clock className="h-8 w-8 mx-auto mb-2 opacity-40" />
-                  <p>Aucun enregistrement d'audit ne correspond à vos filtres.</p>
+                  <p className="font-medium text-slate-600 dark:text-slate-300">
+                    {search || typeFilter !== 'all' || dateFilter !== 'all'
+                      ? 'Aucun enregistrement d\'audit ne correspond à vos filtres.'
+                      : 'Aucun journal d\'audit enregistré pour le moment.'}
+                  </p>
+                  <p className="text-xs text-slate-400 mt-1">
+                    {search || typeFilter !== 'all' || dateFilter !== 'all'
+                      ? 'Essayez de réinitialiser vos filtres ou de modifier votre recherche.'
+                      : 'Les actions d\'administration et de sécurité apparaîtront ici dès leur exécution.'}
+                  </p>
                 </td>
               </tr>
             ) : (

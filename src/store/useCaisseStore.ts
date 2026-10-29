@@ -1,7 +1,8 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { supabase } from '../lib/supabase';
-import { CURRENT_CAISSIER, CaisseTransaction } from '../lib/mockData';
+import { CaisseTransaction } from '../types';
+import { useAuthStore } from './useAuthStore';
 
 export interface ClotureCaisseData {
   id?: string;
@@ -19,14 +20,14 @@ interface CaisseStoreState {
   clotures: Record<string, ClotureCaisseData>; // indexées par date YYYY-MM-DD
   transactions: CaisseTransaction[];
   refreshKey: number;
-  elevePaymentDeductions: Record<string, number>;
   addTransaction: (tx: CaisseTransaction) => void;
   triggerRefresh: () => void;
-  deductEleveBalance: (eleveId: string, amount: number) => void;
   isDateCloturee: (dateStr?: string) => boolean;
   getClotureForDate: (dateStr?: string) => ClotureCaisseData | null;
-  cloturerCaisseDuJour: (montantTotal: number, nbTransactions: number) => Promise<boolean>;
-  reouvrirCaisseDemo: (dateStr?: string) => void;
+  cloturerCaisseDuJour: (
+    montantTotal: number,
+    nbTransactions: number
+  ) => Promise<{ success: boolean; error?: string }>;
 }
 
 const getTodayDateStr = () => new Date().toISOString().split('T')[0];
@@ -37,7 +38,6 @@ export const useCaisseStore = create<CaisseStoreState>()(
       clotures: {},
       transactions: [],
       refreshKey: 1,
-      elevePaymentDeductions: {},
 
       addTransaction: (tx: CaisseTransaction) => {
         set((state) => ({
@@ -50,34 +50,26 @@ export const useCaisseStore = create<CaisseStoreState>()(
         set((state) => ({ refreshKey: state.refreshKey + 1 }));
       },
 
-      deductEleveBalance: (eleveId: string, amount: number) => {
-        set((state) => ({
-          elevePaymentDeductions: {
-            ...state.elevePaymentDeductions,
-            [eleveId]: (state.elevePaymentDeductions[eleveId] || 0) + amount,
-          },
-          refreshKey: state.refreshKey + 1,
-        }));
-      },
-
-      isDateCloturee: (dateStr) => {
+      isDateCloturee: (dateStr?: string) => {
         const d = dateStr || getTodayDateStr();
         return !!get().clotures[d];
       },
 
-      getClotureForDate: (dateStr) => {
+      getClotureForDate: (dateStr?: string) => {
         const d = dateStr || getTodayDateStr();
         return get().clotures[d] || null;
       },
 
       cloturerCaisseDuJour: async (montantTotal: number, nbTransactions: number) => {
         const today = getTodayDateStr();
-        const caissierId = CURRENT_CAISSIER.id || 'usr-cais-001';
-        const caissierNom = `${CURRENT_CAISSIER.prenom} ${CURRENT_CAISSIER.nom}`;
+        const authProfile = useAuthStore.getState().profile;
+        const caissierId = authProfile?.id || '';
+        const caissierNom = authProfile ? `${authProfile.prenom} ${authProfile.nom}`.trim() : 'Caissier';
+        const ecoleId = authProfile?.ecole_id || '';
 
         const clotureRecord: ClotureCaisseData = {
           id: `clot-${Date.now()}`,
-          ecole_id: 'ecole-demo-001',
+          ecole_id: ecoleId,
           caissier_id: caissierId,
           caissier_nom: caissierNom,
           date_cloture: today,
@@ -88,25 +80,46 @@ export const useCaisseStore = create<CaisseStoreState>()(
         };
 
         // 1. Tenter l'écriture réelle dans Supabase (table clotures_caisse)
-        try {
-          const { error } = await supabase.from('clotures_caisse').insert([
-            {
-              ecole_id: 'ecole-demo-001',
-              caissier_id: caissierId,
-              date_cloture: today,
-              montant_total: montantTotal,
-              nb_transactions: nbTransactions,
-              statut: 'cloture',
-            },
-          ]);
-          if (error) {
-            console.warn('[EcoSurv Caisse] Supabase fallback local:', error.message);
+        // Colonnes réelles non calculées : ecole_id, caissier_id, date_cloture
+        // montant_total_encaisse et nombre_operations sont calculés automatiquement par le trigger clotures_caisse_calcul
+        if (ecoleId && caissierId) {
+          try {
+            const { error } = await supabase.from('clotures_caisse').insert([
+              {
+                ecole_id: ecoleId,
+                caissier_id: caissierId,
+                date_cloture: today,
+              },
+            ]);
+            if (error) {
+              console.error(
+                '[EcoSurv Caisse] Erreur insertion clotures_caisse:',
+                error.code,
+                error.message,
+                error.details
+              );
+              return {
+                success: false,
+                error: `Échec de clôture (${error.code || 'ERR'}) : ${error.message}`,
+              };
+            }
+          } catch (err: any) {
+            console.error('[EcoSurv Caisse] Erreur inattendue clotures_caisse:', err);
+            return {
+              success: false,
+              error: `Erreur inattendue : ${err?.message || err}`,
+            };
           }
-        } catch (err) {
-          console.warn('[EcoSurv Caisse] Mode hors-ligne / fallback local:', err);
+        } else {
+          const errMsg = "Identifiants d'école ou de caissier introuvables.";
+          console.error('[EcoSurv Caisse]', errMsg);
+          return {
+            success: false,
+            error: errMsg,
+          };
         }
 
-        // 2. Persister dans l'état applicatif frontend
+        // 2. Persister dans l'état applicatif frontend uniquement en cas de succès
         set((state) => ({
           clotures: {
             ...state.clotures,
@@ -114,16 +127,7 @@ export const useCaisseStore = create<CaisseStoreState>()(
           },
         }));
 
-        return true;
-      },
-
-      reouvrirCaisseDemo: (dateStr) => {
-        const d = dateStr || getTodayDateStr();
-        set((state) => {
-          const updated = { ...state.clotures };
-          delete updated[d];
-          return { clotures: updated };
-        });
+        return { success: true };
       },
     }),
     {

@@ -1,3 +1,5 @@
+import React, { useState, useEffect } from 'react';
+import { supabase } from '../../lib/supabase';
 import { useEcoleStore } from '../../store/useEcoleStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useParentChildren } from '../../hooks/useParentChildren';
@@ -46,6 +48,58 @@ export const ParentDashboardPage: React.FC<ParentDashboardPageProps> = ({
     errorMessage: childrenError,
     refresh: refreshChildren,
   } = useParentChildren(selectedChildId, onSelectChild);
+
+  // Assiduité réelle de l'enfant sélectionné depuis Supabase
+  const [absencesState, setAbsencesState] = useState<{
+    status: 'idle' | 'loading' | 'success' | 'error';
+    total: number;
+    nonJustifiees: number;
+  }>({ status: 'idle', total: 0, nonJustifiees: 0 });
+
+  useEffect(() => {
+    if (!activeChild?.id) {
+      setAbsencesState({ status: 'idle', total: 0, nonJustifiees: 0 });
+      return;
+    }
+    let isCancelled = false;
+    setAbsencesState((prev) => ({ ...prev, status: 'loading' }));
+
+    const fetchAbsences = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('absences')
+          .select('id, type, justifiee')
+          .eq('eleve_id', activeChild.id);
+
+        if (error) {
+          console.error('[ParentDashboardPage] Erreur lecture absences:', error);
+          if (!isCancelled) {
+            setAbsencesState({ status: 'error', total: 0, nonJustifiees: 0 });
+          }
+          return;
+        }
+
+        if (data && !isCancelled) {
+          const total = data.filter((a: any) => a.type === 'absence').length;
+          const justifiees = data.filter((a: any) => a.justifiee).length;
+          setAbsencesState({
+            status: 'success',
+            total,
+            nonJustifiees: total - justifiees,
+          });
+        }
+      } catch (err) {
+        console.error('[ParentDashboardPage] Exception lecture absences:', err);
+        if (!isCancelled) {
+          setAbsencesState({ status: 'error', total: 0, nonJustifiees: 0 });
+        }
+      }
+    };
+    fetchAbsences();
+    return () => {
+      isCancelled = true;
+    };
+  }, [activeChild?.id]);
 
   return (
     <div className="p-6 sm:p-8 lg:p-10 max-w-6xl mx-auto space-y-8 sm:space-y-10 animate-stagger-rise relative">
@@ -187,19 +241,21 @@ export const ParentDashboardPage: React.FC<ParentDashboardPageProps> = ({
           amount={activeChild.remaining}
           unit="MRU"
           subtitle={
-            activeChild.remaining === 0
+            activeChild.total_due === 0
+              ? 'Aucun frais enregistré'
+              : activeChild.remaining === 0
               ? `Compte à jour (${formatMRU(activeChild.total_paid)} réglés)`
               : `Total scolarité : ${formatMRU(activeChild.total_due)}`
           }
           icon={<CreditCard className="w-5 h-5 text-purple-600 dark:text-purple-400" />}
-          variant={activeChild.remaining === 0 ? 'success' : 'purple'}
+          variant={activeChild.total_due > 0 && activeChild.remaining === 0 ? 'success' : 'purple'}
           onClick={() => onNavigateTab('parent_paiements')}
         />
 
         <KpiCard
           title="Résultats Scolaires"
-          customValue="En attente"
-          subtitle="Bulletins en cours de saisie"
+          customValue="—"
+          subtitle="Aucune note saisie ce trimestre"
           icon={<GraduationCap className="w-5 h-5 text-purple-600 dark:text-purple-400" />}
           variant="purple"
           onClick={() => onNavigateTab('parent_pedagogie')}
@@ -207,10 +263,32 @@ export const ParentDashboardPage: React.FC<ParentDashboardPageProps> = ({
 
         <KpiCard
           title="Assiduité & Présence"
-          customValue="Suivi régulier"
-          subtitle="Consultez le relevé d'assiduité"
+          customValue={
+            absencesState.status === 'loading' || absencesState.status === 'idle'
+              ? '—'
+              : absencesState.status === 'error'
+              ? 'Indisponible'
+              : `${absencesState.total} absence${absencesState.total > 1 ? 's' : ''}`
+          }
+          subtitle={
+            absencesState.status === 'loading' || absencesState.status === 'idle'
+              ? "Chargement de l'assiduité..."
+              : absencesState.status === 'error'
+              ? "Erreur de chargement de l'assiduité"
+              : absencesState.total === 0
+              ? 'Aucune absence enregistrée'
+              : absencesState.nonJustifiees > 0
+              ? `${absencesState.nonJustifiees} non justifiée${absencesState.nonJustifiees > 1 ? 's' : ''}`
+              : 'Toutes justifiées'
+          }
           icon={<CalendarCheck className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />}
-          variant="success"
+          variant={
+            absencesState.status === 'error'
+              ? 'danger'
+              : absencesState.status === 'success' && absencesState.nonJustifiees > 0
+              ? 'warning'
+              : 'success'
+          }
           onClick={() => onNavigateTab('parent_assiduite')}
         />
       </div>

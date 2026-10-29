@@ -1,14 +1,14 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import confetti from 'canvas-confetti';
 import {
   EleveWithStats,
   LienParente,
   StatutEcheance,
-  getDashboardKpis,
-  MOCK_ELEVES,
-} from '../lib/mockData';
+} from '../types';
+import { getDashboardKpis } from '../lib/kpiHelper';
 import { useAuthStore } from '../store/useAuthStore';
 import { useEcoleStore } from '../store/useEcoleStore';
+import { useNavigationStore } from '../store/useNavigationStore';
+import { useAnneeScolaire } from '../hooks/useAnneeScolaire';
 import { exportElevesToExcel } from '../lib/excel/exportElevesToExcel';
 import { supabase } from '../lib/supabase';
 import { StudentInitials } from '../components/ui/StudentInitials';
@@ -24,7 +24,9 @@ import { formatCompactMRU } from '../lib/formatCompactMRU';
 import { StudentEnrollmentModal } from '../components/eleves/StudentEnrollmentModal';
 import { AdaptiveTable } from '../components/ui/AdaptiveTable';
 import { Select } from '../components/ui/Select';
-import { DEFAULT_CLASSES_MAURITANIE } from '../lib/constants/classes';
+import { useClasses } from '../hooks/useClasses';
+import { generateReceiptPdf } from '../lib/pdf/generateReceiptPdf';
+import { getEcheanceActive, encaisser, ActiveEcheance } from '../lib/paiements';
 import {
   Search,
   Filter,
@@ -37,7 +39,6 @@ import {
   ArrowUpDown,
   X,
   PlusCircle,
-  Zap,
   Send,
   ArrowDownToLine,
   MoreHorizontal,
@@ -47,6 +48,9 @@ import {
   FileText,
   PhoneCall,
   Edit3,
+  Loader2,
+  Receipt,
+  AlertCircle,
 } from 'lucide-react';
 
 interface ElevesPageProps {
@@ -59,81 +63,97 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
   onFilterChange,
 }) => {
   const authProfile = useAuthStore((s) => s.profile);
+  const anneeScolaire = useAnneeScolaire();
+  const navigate = useNavigationStore((s) => s.navigate);
+  const { nomsClasses: classesList, isLoading: isLoadingClasses } = useClasses();
+  const hasNoClasses = !isLoadingClasses && classesList.length === 0;
 
-  const [elevesList, setElevesList] = useState<EleveWithStats[]>(MOCK_ELEVES);
+  const [elevesList, setElevesList] = useState<EleveWithStats[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (authProfile?.ecole_id && authProfile.ecole_id !== 'ecole-demo') {
-      const fetchRealEleves = async () => {
-        try {
-          const [elevesRes, echeancesRes] = await Promise.all([
-            supabase
-              .from('eleves')
-              .select('*')
-              .eq('ecole_id', authProfile.ecole_id)
-              .order('nom', { ascending: true }),
-            supabase
-              .from('echeances')
-              .select('*')
-              .eq('ecole_id', authProfile.ecole_id),
-          ]);
+  const fetchRealEleves = React.useCallback(async () => {
+    if (!authProfile?.ecole_id) return;
+    setIsLoading(true);
+    setFetchError(null);
+    try {
+      const [elevesRes, echeancesRes] = await Promise.all([
+        supabase
+          .from('eleves')
+          .select('*')
+          .eq('ecole_id', authProfile.ecole_id)
+          .order('nom', { ascending: true }),
+        supabase
+          .from('echeances')
+          .select('*')
+          .eq('ecole_id', authProfile.ecole_id),
+      ]);
 
-          if (!elevesRes.error && elevesRes.data && elevesRes.data.length > 0) {
-            const allEcheances = echeancesRes.data || [];
+      if (elevesRes.error) {
+        throw elevesRes.error;
+      }
+      if (echeancesRes.error) {
+        throw echeancesRes.error;
+      }
 
-            const mapped: EleveWithStats[] = elevesRes.data.map((d: any) => {
-              const studentEch = allEcheances.filter((ech: any) => ech.eleve_id === d.id);
-              const totalDue = studentEch.reduce((sum: number, ech: any) => sum + Number(ech.montant || 0), 0);
-              const totalPaid = studentEch.reduce((sum: number, ech: any) => sum + Number(ech.montant_paye || 0), 0);
-              const remaining = Math.max(0, totalDue - totalPaid);
-              const hasOverdue = studentEch.some((ech: any) => ech.statut === 'en_retard');
-              const computedStatut = hasOverdue
-                ? 'en_retard'
-                : (totalDue > 0 && remaining === 0
-                  ? 'paye'
-                  : (totalPaid > 0 ? 'partiel' : 'a_jour'));
+      if (elevesRes.data && elevesRes.data.length > 0) {
+        const allEcheances = echeancesRes.data || [];
 
-              return {
-                id: d.id,
-                ecole_id: d.ecole_id,
-                matricule: d.matricule || `ECO-${d.id.slice(0, 4).toUpperCase()}`,
-                nom: d.nom,
-                prenom: d.prenom,
-                date_naissance: d.date_naissance || '',
-                lieu_naissance: d.lieu_naissance || '',
-                sexe: (d.sexe === 'F' ? 'F' : 'M') as 'M' | 'F',
-                classe: d.classe || 'Non assigné',
-                nom_tuteur: d.nom_tuteur || 'Tuteur',
-                telephone_tuteur: d.telephone_tuteur || '',
-                email_tuteur: d.email_tuteur || '',
-                adresse_tuteur: d.adresse_tuteur || '',
-                lien_parente: (d.lien_parente || 'pere') as LienParente,
-                total_due: totalDue,
-                total_paid: totalPaid,
-                remaining: remaining,
-                statut: computedStatut as StatutEcheance,
-                derniere_echeance_date: d.derniere_echeance_date || '',
-                nb_absences: Number(d.nb_absences || 0),
-                prochaine_echeance_date: d.prochaine_echeance_date || '',
-                prochaine_echeance_montant: Number(d.prochaine_echeance_montant || 0),
-                timeline_paiements: [],
-                actif: d.actif ?? true,
-              };
-            });
-            setElevesList(mapped);
-          } else {
-            setElevesList(MOCK_ELEVES);
-          }
-        } catch (e) {
-          console.warn('[ElevesPage] Erreur chargement élèves réels:', e);
-          setElevesList(MOCK_ELEVES);
-        }
-      };
-      fetchRealEleves();
-    } else {
-      setElevesList(MOCK_ELEVES);
+        const mapped: EleveWithStats[] = elevesRes.data.map((d: any) => {
+          const studentEch = allEcheances.filter((ech: any) => ech.eleve_id === d.id);
+          const totalDue = studentEch.reduce((sum: number, ech: any) => sum + Number(ech.montant || 0), 0);
+          const totalPaid = studentEch.reduce((sum: number, ech: any) => sum + Number(ech.montant_paye || 0), 0);
+          const remaining = Math.max(0, totalDue - totalPaid);
+          const hasOverdue = studentEch.some((ech: any) => ech.statut === 'en_retard');
+          const computedStatut = hasOverdue
+            ? 'en_retard'
+            : (totalDue > 0 && remaining === 0
+              ? 'paye'
+              : (totalPaid > 0 ? 'partiel' : 'a_jour'));
+
+          return {
+            id: d.id,
+            ecole_id: d.ecole_id,
+            matricule: d.matricule || `ECO-${d.id.slice(0, 4).toUpperCase()}`,
+            nom: d.nom,
+            prenom: d.prenom,
+            date_naissance: d.date_naissance || '',
+            lieu_naissance: d.lieu_naissance || '',
+            sexe: (d.sexe === 'F' ? 'F' : 'M') as 'M' | 'F',
+            classe: d.classe || 'Non assigné',
+            nom_tuteur: d.nom_tuteur || 'Tuteur',
+            telephone_tuteur: d.telephone_tuteur || '',
+            email_tuteur: d.email_tuteur || '',
+            adresse_tuteur: d.adresse_tuteur || '',
+            lien_parente: (d.lien_parente || 'pere') as LienParente,
+            total_due: totalDue,
+            total_paid: totalPaid,
+            remaining: remaining,
+            statut: computedStatut as StatutEcheance,
+            derniere_echeance_date: d.derniere_echeance_date || '',
+            nb_absences: Number(d.nb_absences || 0),
+            prochaine_echeance_date: d.prochaine_echeance_date || '',
+            prochaine_echeance_montant: Number(d.prochaine_echeance_montant || 0),
+            timeline_paiements: [],
+            actif: d.actif ?? true,
+          };
+        });
+        setElevesList(mapped);
+      } else {
+        setElevesList([]);
+      }
+    } catch (e: any) {
+      console.warn('[ElevesPage] Erreur chargement élèves réels:', e);
+      setFetchError(e?.message || 'Erreur lors du chargement des élèves');
+      setElevesList([]);
+    } finally {
+      setIsLoading(false);
     }
   }, [authProfile?.ecole_id]);
+
+  useEffect(() => {
+    fetchRealEleves();
+  }, [fetchRealEleves]);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedClasse, setSelectedClasse] = useState<string>('all');
@@ -155,8 +175,56 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
   const [isEnrollModalOpen, setIsEnrollModalOpen] = useState(false);
   const [eleveToEdit, setEleveToEdit] = useState<EleveWithStats | null>(null);
   const [paymentModalEleve, setPaymentModalEleve] = useState<EleveWithStats | null>(null);
-  const [paymentMethod, setPaymentMethod] = useState('bankily');
+  const [paymentMethod, setPaymentMethod] = useState<string>('especes');
+  const [modalActiveEcheance, setModalActiveEcheance] = useState<ActiveEcheance | null>(null);
+  const [isLoadingModalEcheance, setIsLoadingModalEcheance] = useState<boolean>(false);
+  const [hasLoadedModalEcheance, setHasLoadedModalEcheance] = useState<boolean>(false);
+  const [payMontant, setPayMontant] = useState<number>(0);
+  const [referenceOperateur, setReferenceOperateur] = useState<string>('');
+  const [payNote, setPayNote] = useState<string>('');
+  const [isSubmittingPayment, setIsSubmittingPayment] = useState<boolean>(false);
   const [activeToast, setActiveToast] = useState<{ message: string; type: 'success' | 'info' | 'warning' | 'error' } | null>(null);
+
+  // Chargement de la plus ancienne échéance non soldée dès l'ouverture de la modale
+  useEffect(() => {
+    if (!paymentModalEleve) {
+      setModalActiveEcheance(null);
+      setHasLoadedModalEcheance(false);
+      setPayMontant(0);
+      setReferenceOperateur('');
+      setPayNote('');
+      return;
+    }
+
+    let isCancelled = false;
+    setIsLoadingModalEcheance(true);
+    setHasLoadedModalEcheance(false);
+
+    getEcheanceActive(paymentModalEleve.id)
+      .then((ech) => {
+        if (isCancelled) return;
+        setModalActiveEcheance(ech);
+        setPayMontant(ech ? ech.soldeDisponible : 0);
+        setHasLoadedModalEcheance(true);
+      })
+      .catch((err) => {
+        if (isCancelled) return;
+        setActiveToast({
+          message: `Erreur chargement échéance : ${err?.message || 'Erreur'}`,
+          type: 'error',
+        });
+        setModalActiveEcheance(null);
+        setPayMontant(0);
+        setHasLoadedModalEcheance(true);
+      })
+      .finally(() => {
+        if (!isCancelled) setIsLoadingModalEcheance(false);
+      });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [paymentModalEleve]);
 
   // Micro-interactions & animations state
   const [justPaidEleveId, setJustPaidEleveId] = useState<string | null>(null);
@@ -165,6 +233,7 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
   const [isImporting, setIsImporting] = useState(false);
 
   const handleImportClick = () => {
+    if (!anneeScolaire) return;
     setIsImporting(true);
     setTimeout(() => {
       setIsImporting(false);
@@ -224,10 +293,10 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
     return Array.from(new Set(elevesList.map((e) => e.classe).filter((c) => Boolean(c && c.trim()))));
   }, [elevesList]);
 
-  // Ensemble complet des classes disponibles pour l'inscription (élèves réels + nomenclature mauritanienne)
-  const classesList = useMemo(() => {
-    return Array.from(new Set([...existingElevesClasses, ...DEFAULT_CLASSES_MAURITANIE]));
-  }, [existingElevesClasses]);
+  // Classes proposées dans le filtre de recherche (classes actives de l'école + classes d'élèves déjà inscrits)
+  const filterClassesList = useMemo(() => {
+    return Array.from(new Set([...classesList, ...existingElevesClasses]));
+  }, [classesList, existingElevesClasses]);
 
   // Filtrage et Tri
   const filteredEleves = useMemo(() => {
@@ -293,23 +362,6 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
     setActiveToast({ message, type });
   };
 
-  // Célébration discrète par confetti
-  const triggerConfettiCelebration = () => {
-    try {
-      confetti({
-        particleCount: 38,
-        spread: 55,
-        origin: { y: 0.72 },
-        colors: ['#10b981', '#3b82f6', '#f59e0b', '#059669'],
-        disableForReducedMotion: true,
-        ticks: 130,
-        scalar: 0.85,
-      });
-    } catch {
-      // Ignorer si bloqué
-    }
-  };
-
   // Inscription d'un nouvel élève
   const handleEnrollStudent = (newEleve: EleveWithStats) => {
     setElevesList((prev) => [newEleve, ...prev]);
@@ -326,48 +378,6 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
       'info'
     );
     setTimeout(() => setRelancingId(null), 850);
-  };
-
-  // Action rapide : Marquer payé express (1 clic) avec micro-célébration
-  const triggerMarquerPayeExpress = (eleve: EleveWithStats, e?: React.MouseEvent) => {
-    if (e) e.stopPropagation();
-    setJustPaidEleveId(eleve.id);
-    triggerConfettiCelebration();
-
-    setElevesList((prev) =>
-      prev.map((item) => {
-        if (item.id === eleve.id) {
-          const newPaid = item.total_due;
-          return {
-            ...item,
-            total_paid: newPaid,
-            remaining: 0,
-            statut: 'paye',
-            timeline_paiements: [
-              {
-                id: `pay-express-${Date.now()}`,
-                libelle: 'Encaissement Express (Comptant)',
-                montant: item.remaining || 15000,
-                date: new Date().toLocaleDateString('fr-FR'),
-                methode: 'especes',
-                statut: 'regle',
-                recu_ref: `REC-EXP-${Math.floor(1000 + Math.random() * 9000)}`,
-              },
-              ...item.timeline_paiements,
-            ],
-          };
-        }
-        return item;
-      })
-    );
-
-    showToast(
-      `✓ Solde de ${eleve.prenom} ${eleve.nom} marqué comme réglé intégralement (${formatMRU(
-        eleve.remaining
-      )})`,
-      'success'
-    );
-    setTimeout(() => setJustPaidEleveId(null), 1400);
   };
 
   // Actions groupées (Bulk actions)
@@ -394,49 +404,94 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
     showToast(`✓ Export Excel généré avec succès pour ${listToExport.length} élève(s).`, 'info');
   };
 
-  // Encaissement fictif modal
-  const handleConfirmPayment = (amount: number, methode: string) => {
+  // Encaissement réel via RPC Supabase
+  const handleConfirmPayment = async () => {
+    if (isSubmittingPayment) return;
     if (!paymentModalEleve) return;
 
-    setElevesList((prev) =>
-      prev.map((e) => {
-        if (e.id === paymentModalEleve.id) {
-          const newPaid = e.total_paid + amount;
-          const newRemaining = Math.max(0, e.total_due - newPaid);
-          const newStatut =
-            newRemaining === 0
-              ? 'paye'
-              : newPaid > 0
-              ? 'partiel'
-              : 'en_retard';
+    if (!modalActiveEcheance) {
+      showToast('Aucune échéance pour cet élève. Demandez au directeur de les générer.', 'warning');
+      return;
+    }
 
-          return {
-            ...e,
-            total_paid: newPaid,
-            remaining: newRemaining,
-            statut: newStatut,
-            timeline_paiements: [
-              {
-                id: `pay-${Date.now()}`,
-                libelle: 'Encaissement Guichet',
-                montant: amount,
-                date: new Date().toLocaleDateString('fr-FR'),
-                methode: methode as any,
-                statut: 'regle',
-                recu_ref: `REC-${Math.floor(1000 + Math.random() * 9000)}`,
-              },
-              ...e.timeline_paiements,
-            ],
-          };
-        }
-        return e;
-      })
-    );
+    if (payMontant <= 0) {
+      showToast('Veuillez saisir un montant supérieur à 0 MRU.', 'warning');
+      return;
+    }
 
-    showToast(
-      `Paiement de ${formatMRU(amount)} enregistré pour ${paymentModalEleve.prenom} ${paymentModalEleve.nom}`
-    );
-    setPaymentModalEleve(null);
+    if (payMontant > modalActiveEcheance.soldeDisponible) {
+      showToast(`Le montant dépasse le solde disponible (${formatMRU(modalActiveEcheance.soldeDisponible)}).`, 'error');
+      return;
+    }
+
+    if (paymentMethod !== 'especes' && !referenceOperateur.trim()) {
+      showToast('La référence de transaction est obligatoire pour les règlements hors espèces.', 'error');
+      return;
+    }
+
+    setIsSubmittingPayment(true);
+    try {
+      const res = await encaisser({
+        echeanceId: modalActiveEcheance.id,
+        montant: payMontant,
+        methode: paymentMethod,
+        referenceOperateur: referenceOperateur.trim() || null,
+        note: payNote.trim() || null,
+      });
+
+      const isEnAttente = res.statut === 'en_attente';
+      const now = new Date();
+      const dateStr = now.toISOString().split('T')[0];
+      const heureStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+      const motif = isEnAttente
+        ? `${modalActiveEcheance.libelle || 'Scolarité'} [EN ATTENTE DE CONFIRMATION]`
+        : (modalActiveEcheance.libelle || 'Scolarité');
+
+      // Génération automatique du reçu PDF avec le vrai numéro de reçu
+      generateReceiptPdf(
+        {
+          recuRef: res.numeroRecu,
+          datePaiement: `${dateStr} à ${heureStr}`,
+          eleveNom: paymentModalEleve.nom,
+          elevePrenom: paymentModalEleve.prenom,
+          matricule: paymentModalEleve.matricule,
+          classe: paymentModalEleve.classe,
+          libelleEcheance: motif,
+          montant: payMontant,
+          methodePaiement: paymentMethod as any,
+          referenceTransaction: referenceOperateur.trim() || undefined,
+          caissierNom: authProfile ? `${authProfile.prenom} ${authProfile.nom}` : 'Administration',
+          ecoleNom: ecoleNom,
+          statut: res.statut,
+          nouveauSoldeRestant: res.nouveauSoldeRestant,
+          montantEnAttente: res.montantEnAttente,
+        },
+        'download'
+      );
+
+      if (isEnAttente) {
+        showToast(
+          `Paiement de ${formatMRU(payMontant)} enregistré, en attente de confirmation (Reçu #${res.numeroRecu}).`,
+          'info'
+        );
+      } else {
+        showToast(
+          `Paiement de ${formatMRU(payMontant)} encaissé avec succès pour ${paymentModalEleve.prenom} ${paymentModalEleve.nom} (Reçu #${res.numeroRecu}).`,
+          'success'
+        );
+      }
+
+      setJustPaidEleveId(paymentModalEleve.id);
+      setTimeout(() => setJustPaidEleveId(null), 1400);
+
+      setPaymentModalEleve(null);
+      // Rechargement réel depuis la base
+      await fetchRealEleves();
+    } catch (err: any) {
+      showToast(err?.message || 'Erreur lors de l’enregistrement du paiement.', 'error');
+    } finally {
+      setIsSubmittingPayment(false);
+    }
   };
 
   return (
@@ -497,9 +552,11 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
             <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
               Gestion des Élèves & Scolarités
             </h1>
-            <span className="rounded-full bg-blue-100 dark:bg-blue-950/60 px-2.5 py-0.5 text-xs font-bold text-blue-700 dark:text-blue-300 border border-blue-200/50 dark:border-blue-800/60">
-              Année 2025–2026
-            </span>
+            {anneeScolaire && (
+              <span className="rounded-full bg-blue-100 dark:bg-blue-950/60 px-2.5 py-0.5 text-xs font-bold text-blue-700 dark:text-blue-300 border border-blue-200/50 dark:border-blue-800/60">
+                Année {anneeScolaire}
+              </span>
+            )}
           </div>
           <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">
             Registre académique centralisé, facturation mensuelle et suivi des recouvrements en Ouguiya (MRU).
@@ -519,8 +576,16 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
           <Button
             variant="outline"
             size="sm"
-            className="gap-2 h-10 px-4"
+            className="gap-2 h-10 px-4 disabled:opacity-50 disabled:cursor-not-allowed"
             onClick={handleImportClick}
+            disabled={isImporting || !anneeScolaire || hasNoClasses}
+            title={
+              !anneeScolaire
+                ? "Définissez l'année scolaire dans Configuration avant de continuer"
+                : hasNoClasses
+                ? "Aucune classe définie. Ajoutez vos classes dans Configuration > Classes."
+                : undefined
+            }
             loading={isImporting}
             loadingText="Lecture du fichier..."
           >
@@ -530,8 +595,17 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
           <Button
             variant="primary"
             size="sm"
-            className="gap-2 h-10 px-4"
+            className="gap-2 h-10 px-4 disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={!anneeScolaire || hasNoClasses}
+            title={
+              !anneeScolaire
+                ? "Définissez l'année scolaire dans Configuration avant de continuer"
+                : hasNoClasses
+                ? "Aucune classe définie. Ajoutez vos classes dans Configuration > Classes."
+                : undefined
+            }
             onClick={() => {
+              if (!anneeScolaire || hasNoClasses) return;
               setEleveToEdit(null);
               setIsEnrollModalOpen(true);
             }}
@@ -541,6 +615,40 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
           </Button>
         </div>
       </div>
+
+      {/* Garde année scolaire vide */}
+      {!anneeScolaire && (
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 p-4 rounded-xl border border-amber-200 dark:border-amber-800/60">
+          <div className="flex items-center gap-3 text-xs font-semibold">
+            <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0" />
+            <span>Définissez l'année scolaire dans Configuration avant de continuer</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => navigate('config')}
+            className="text-xs font-bold text-amber-800 dark:text-amber-300 underline hover:text-amber-950 dark:hover:text-white shrink-0 cursor-pointer"
+          >
+            Aller dans Configuration
+          </button>
+        </div>
+      )}
+
+      {/* Garde aucune classe définie */}
+      {hasNoClasses && (
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 p-4 rounded-xl border border-amber-200 dark:border-amber-800/60">
+          <div className="flex items-center gap-3 text-xs font-semibold">
+            <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0" />
+            <span>Aucune classe définie. Ajoutez vos classes dans Configuration &gt; Classes.</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => navigate('config')}
+            className="text-xs font-bold text-amber-800 dark:text-amber-300 underline hover:text-amber-950 dark:hover:text-white shrink-0 cursor-pointer"
+          >
+            Aller dans Configuration
+          </button>
+        </div>
+      )}
 
       {/* Metric Quick Tiles (Nexoov Pastel Cards) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -619,8 +727,8 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
               onChange={setSelectedClasse}
               icon={<Filter className="h-4 w-4" />}
               options={[
-                { value: 'all', label: `Toutes les classes (${existingElevesClasses.length})` },
-                ...existingElevesClasses.map((c) => ({ value: c, label: c })),
+                { value: 'all', label: `Toutes les classes (${filterClassesList.length})` },
+                ...filterClassesList.map((c) => ({ value: c, label: c })),
               ]}
               triggerClassName="h-10 rounded-xl text-xs font-semibold"
             />
@@ -737,8 +845,27 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
               : ''
           }
           cardsContainerClassName="p-3 sm:p-4"
+          isLoading={isLoading}
           emptyState={
-            elevesList.length === 0 ? (
+            fetchError ? (
+              <div className="py-8 px-4 text-center space-y-3 max-w-md mx-auto">
+                <AlertTriangle className="h-8 w-8 text-rose-500 mx-auto" />
+                <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                  Erreur de chargement des élèves
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  {fetchError}
+                </p>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={fetchRealEleves}
+                  className="gap-2 mx-auto"
+                >
+                  Réessayer
+                </Button>
+              </div>
+            ) : elevesList.length === 0 ? (
               <div className="py-8 px-4 text-center space-y-3 max-w-md mx-auto">
                 <div className="h-12 w-12 rounded-2xl bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 flex items-center justify-center mx-auto shadow-sm">
                   <Users className="h-6 w-6" />
@@ -751,8 +878,19 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
                 </p>
                 <Button
                   variant="primary"
-                  onClick={() => setIsEnrollModalOpen(true)}
-                  className="gap-2 mx-auto"
+                  disabled={!anneeScolaire || hasNoClasses}
+                  title={
+                    !anneeScolaire
+                      ? "Définissez l'année scolaire dans Configuration avant de continuer"
+                      : hasNoClasses
+                      ? "Aucune classe définie. Ajoutez vos classes dans Configuration > Classes."
+                      : undefined
+                  }
+                  onClick={() => {
+                    if (!anneeScolaire || hasNoClasses) return;
+                    setIsEnrollModalOpen(true);
+                  }}
+                  className="gap-2 mx-auto disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <UserPlus className="h-4 w-4" />
                   Inscrire un premier élève
@@ -882,14 +1020,17 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
                       <span>Fiche</span>
                     </button>
 
-                    {/* Bouton rapide Encaisser comptant (sur mobile si restant > 0) */}
+                    {/* Bouton rapide Encaisser (ouvre la modale d'encaissement) */}
                     {eleve.remaining > 0 && (
                       <button
                         type="button"
-                        onClick={(e) => triggerMarquerPayeExpress(eleve, e)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setPaymentModalEleve(eleve);
+                        }}
                         className="md:hidden inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 transition-colors"
                       >
-                        <Zap className="w-3.5 h-3.5" />
+                        <CreditCard className="w-3.5 h-3.5" />
                         <span>Encaisser</span>
                       </button>
                     )}
@@ -938,13 +1079,14 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
                           <>
                             <button
                               onClick={(e) => {
+                                e.stopPropagation();
                                 setOpenMenuRowId(null);
-                                triggerMarquerPayeExpress(eleve, e);
+                                setPaymentModalEleve(eleve);
                               }}
                               className="w-full flex items-center gap-2.5 px-3 py-2 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 font-semibold"
                             >
-                              <Zap className="h-3.5 w-3.5" />
-                              <span>Encaisser comptant</span>
+                              <CreditCard className="h-3.5 w-3.5" />
+                              <span>Encaisser un paiement</span>
                             </button>
 
                             <button
@@ -1047,13 +1189,17 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
       <StudentDetailDrawer
         eleve={drawerEleve}
         onClose={() => setDrawerEleve(null)}
-        onQuickPay={(el) => triggerMarquerPayeExpress(el)}
+        onQuickPay={(el) => {
+          setDrawerEleve(null);
+          setPaymentModalEleve(el);
+        }}
         onQuickRelance={(el) => triggerRelance(el)}
         onEdit={(el) => {
           setDrawerEleve(null);
           setEleveToEdit(el);
           setIsEnrollModalOpen(true);
         }}
+        onEcheancesUpdated={fetchRealEleves}
       />
 
       {/* Modale d'Inscription Élève */}
@@ -1073,7 +1219,7 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
         eleveToEdit={eleveToEdit}
       />
 
-      {/* Modale d'Encaissement Fictif */}
+      {/* Modale d'Encaissement Réel (RPC Supabase) */}
       {paymentModalEleve && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 dark:bg-slate-950/75 backdrop-blur-xs p-4 animate-in fade-in">
           <div className="w-full max-w-md rounded-2xl bg-white dark:bg-slate-900 p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4">
@@ -1084,7 +1230,9 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
               </h3>
               <button
                 onClick={() => setPaymentModalEleve(null)}
-                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                disabled={isSubmittingPayment}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer disabled:opacity-50"
+                aria-label="Fermer"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -1092,24 +1240,107 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
 
             <div className="text-xs space-y-1 bg-slate-50 dark:bg-slate-800/60 p-3 rounded-xl border border-slate-100 dark:border-slate-700">
               <p className="font-bold text-slate-900 dark:text-white">
-                Élève: {paymentModalEleve.prenom} {paymentModalEleve.nom}
+                Élève : {paymentModalEleve.prenom} {paymentModalEleve.nom}
               </p>
               <p className="text-slate-500 dark:text-slate-400 font-mono">
-                Reste à payer actuel: {formatMRU(paymentModalEleve.remaining)}
+                Matricule : {paymentModalEleve.matricule} • Classe : {paymentModalEleve.classe}
               </p>
             </div>
+
+            {/* Échéance active */}
+            {isLoadingModalEcheance ? (
+              <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/40 flex items-center justify-center gap-2 text-xs text-slate-500">
+                <Loader2 className="h-4 w-4 animate-spin text-amber-600" />
+                <span>Recherche de la plus ancienne échéance non soldée...</span>
+              </div>
+            ) : modalActiveEcheance ? (
+              <div className="rounded-xl border border-blue-200 dark:border-blue-900/60 bg-blue-50/50 dark:bg-blue-950/20 p-3.5 space-y-1.5 text-xs animate-scale-in">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-blue-900 dark:text-blue-200 flex items-center gap-1.5">
+                    <Receipt className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+                    Échéance ciblée
+                  </span>
+                  <span className="text-[11px] font-mono text-blue-700 dark:text-blue-300">
+                    {modalActiveEcheance.date_echeance
+                      ? new Date(modalActiveEcheance.date_echeance).toLocaleDateString('fr-FR')
+                      : 'Sans date'}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between pt-1 border-t border-blue-200/60 dark:border-blue-900/40">
+                  <span className="font-semibold text-slate-800 dark:text-slate-200">
+                    {modalActiveEcheance.libelle || 'Scolarité'}
+                  </span>
+                  <div className="text-right">
+                    <span className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 block">
+                      Solde restant
+                    </span>
+                    <span className="text-sm font-extrabold font-mono text-blue-700 dark:text-blue-300">
+                      {formatMRU(modalActiveEcheance.solde_restant)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ) : hasLoadedModalEcheance ? (
+              <div className="p-3.5 rounded-xl border border-amber-300 dark:border-amber-800/80 bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 flex items-start gap-2.5 text-xs animate-scale-in">
+                <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                <span className="font-medium">
+                  Aucune échéance pour cet élève. Demandez au directeur de les générer.
+                </span>
+              </div>
+            ) : null}
 
             <div className="space-y-3">
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                   Montant encaissé (MRU)
                 </label>
-                <input
-                  type="number"
-                  defaultValue={Math.min(15000, paymentModalEleve.remaining || 15000)}
-                  id="payAmountInput"
-                  className="w-full h-10 px-3 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm font-mono font-bold focus:ring-2 focus:ring-blue-600 focus:outline-none"
-                />
+                <div className="relative">
+                  <input
+                    type="number"
+                    min="1"
+                    max={modalActiveEcheance?.soldeDisponible || 0}
+                    value={payMontant === 0 ? '' : payMontant}
+                    onChange={(e) => {
+                      const val = e.target.value === '' ? 0 : parseFloat(e.target.value);
+                      setPayMontant(isNaN(val) ? 0 : val);
+                    }}
+                    placeholder="0"
+                    disabled={!modalActiveEcheance || isSubmittingPayment}
+                    className="w-full h-10 px-3 pr-14 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm font-mono font-bold focus:ring-2 focus:ring-blue-600 focus:outline-none disabled:opacity-50"
+                  />
+                  <span className="absolute right-3 top-2.5 text-xs font-bold font-mono text-slate-400">
+                    MRU
+                  </span>
+                </div>
+                {modalActiveEcheance && payMontant > modalActiveEcheance.soldeDisponible && (
+                  <p className="text-[11px] font-semibold text-rose-600 dark:text-rose-400 mt-1">
+                    Le montant dépasse le solde disponible ({formatMRU(modalActiveEcheance.soldeDisponible)})
+                  </p>
+                )}
+                {modalActiveEcheance && payMontant <= 0 && (
+                  <p className="text-[11px] font-semibold text-rose-600 dark:text-rose-400 mt-1">
+                    Le montant doit être supérieur à 0 MRU
+                  </p>
+                )}
+                {modalActiveEcheance && (
+                  <div className="mt-1 flex flex-wrap items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
+                    <span>
+                      Solde restant :{' '}
+                      <button
+                        type="button"
+                        onClick={() => setPayMontant(modalActiveEcheance.soldeDisponible)}
+                        className="font-bold font-mono text-amber-700 dark:text-amber-400 hover:underline cursor-pointer"
+                      >
+                        {formatMRU(modalActiveEcheance.solde_restant)}
+                      </button>
+                      {modalActiveEcheance.montant_en_attente > 0 && (
+                        <span className="text-amber-600 dark:text-amber-400 font-medium ml-1">
+                          dont {formatMRU(modalActiveEcheance.montant_en_attente)} en attente de confirmation
+                        </span>
+                      )}
+                    </span>
+                  </div>
+                )}
               </div>
 
               <div>
@@ -1119,13 +1350,54 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
                 <Select
                   value={paymentMethod}
                   onChange={setPaymentMethod}
+                  disabled={!modalActiveEcheance || isSubmittingPayment}
                   options={[
                     { value: 'especes', label: 'Espèces (Comptant)' },
                     { value: 'bankily', label: 'Bankily (BPM)' },
                     { value: 'masrvi', label: 'Masrvi (BMCI)' },
+                    { value: 'sedad', label: 'Sedad' },
                     { value: 'cheque', label: 'Chèque' },
                   ]}
                   triggerClassName="w-full h-10 rounded-lg text-xs"
+                />
+              </div>
+
+              {paymentMethod !== 'especes' && (
+                <div className="space-y-1">
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                    Référence de la transaction <span className="text-red-500 font-bold">*</span> (Obligatoire)
+                  </label>
+                  <input
+                    type="text"
+                    value={referenceOperateur}
+                    onChange={(e) => setReferenceOperateur(e.target.value)}
+                    placeholder="Ex: TX-123456, N° Chèque..."
+                    disabled={isSubmittingPayment}
+                    className={`w-full h-9 px-3 rounded-lg border bg-white dark:bg-slate-800 text-xs font-mono text-slate-900 dark:text-white focus:outline-none focus:ring-2 ${
+                      !referenceOperateur.trim()
+                        ? 'border-red-300 dark:border-red-800 focus:ring-red-500'
+                        : 'border-slate-300 dark:border-slate-700 focus:ring-blue-600'
+                    }`}
+                  />
+                  {!referenceOperateur.trim() && (
+                    <p className="text-[11px] text-red-600 dark:text-red-400 font-medium">
+                      La référence de transaction est obligatoire pour ce mode de paiement.
+                    </p>
+                  )}
+                </div>
+              )}
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Note / Motif (Optionnel)
+                </label>
+                <input
+                  type="text"
+                  value={payNote}
+                  onChange={(e) => setPayNote(e.target.value)}
+                  placeholder="Remarque éventuelle..."
+                  disabled={isSubmittingPayment}
+                  className="w-full h-9 px-3 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-600"
                 />
               </div>
             </div>
@@ -1135,6 +1407,7 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
                 variant="outline"
                 size="sm"
                 className="w-full sm:w-auto justify-center"
+                disabled={isSubmittingPayment}
                 onClick={() => setPaymentModalEleve(null)}
               >
                 Annuler (Échap)
@@ -1142,15 +1415,27 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
               <Button
                 variant="primary"
                 size="sm"
-                className="w-full sm:w-auto justify-center"
-                onClick={() => {
-                  const inputAmt = (
-                    document.getElementById('payAmountInput') as HTMLInputElement
-                  )?.value;
-                  handleConfirmPayment(Number(inputAmt) || 15000, paymentMethod || 'bankily');
-                }}
+                className="w-full sm:w-auto justify-center gap-1.5"
+                disabled={
+                  isSubmittingPayment ||
+                  !modalActiveEcheance ||
+                  payMontant <= 0 ||
+                  payMontant > modalActiveEcheance.soldeDisponible ||
+                  (paymentMethod !== 'especes' && !referenceOperateur.trim())
+                }
+                onClick={handleConfirmPayment}
               >
-                Confirmer l'Encaissement
+                {isSubmittingPayment ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Enregistrement…
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="h-4 w-4" />
+                    Confirmer l'Encaissement
+                  </>
+                )}
               </Button>
             </div>
           </div>

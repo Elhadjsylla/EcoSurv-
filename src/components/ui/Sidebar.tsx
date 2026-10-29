@@ -9,9 +9,12 @@ import {
   BellRing,
   BarChart3,
   SlidersHorizontal,
+  Clock,
 } from 'lucide-react';
+import { useAuthStore } from '../../store/useAuthStore';
+import { supabase } from '../../lib/supabase';
 
-export type NavTab = 'dashboard' | 'eleves' | 'echeances' | 'relances' | 'rapports' | 'config';
+export type NavTab = 'dashboard' | 'eleves' | 'echeances' | 'paiements_attente' | 'relances' | 'rapports' | 'config';
 
 interface SidebarProps {
   activeTab: NavTab;
@@ -35,6 +38,44 @@ import { translations } from '../../i18n/translations';
 export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange, className }) => {
   const storeT = useLanguageStore((s) => s.t);
   const t = storeT?.nav ? storeT : translations.fr;
+  const authProfile = useAuthStore((s) => s.profile);
+  const [pendingCount, setPendingCount] = React.useState<number>(0);
+
+  React.useEffect(() => {
+    if (!authProfile?.ecole_id) return;
+    let isSubscribed = true;
+
+    const fetchPendingCount = async () => {
+      try {
+        const { count, error } = await supabase
+          .from('paiements')
+          .select('id', { count: 'exact', head: true })
+          .eq('ecole_id', authProfile.ecole_id)
+          .eq('statut', 'en_attente');
+
+        if (!error && typeof count === 'number' && isSubscribed) {
+          setPendingCount(count);
+        }
+      } catch {
+        // Ignorer en cas d'erreur réseau
+      }
+    };
+
+    fetchPendingCount();
+
+    const handleCountChanged = () => {
+      fetchPendingCount();
+    };
+
+    window.addEventListener('ecosurv:pending-payments-changed', handleCountChanged);
+    const interval = setInterval(fetchPendingCount, 30000);
+
+    return () => {
+      isSubscribed = false;
+      window.removeEventListener('ecosurv:pending-payments-changed', handleCountChanged);
+      clearInterval(interval);
+    };
+  }, [authProfile?.ecole_id, activeTab]);
 
   const sections: NavSection[] = [
     {
@@ -53,6 +94,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange, classN
       label: 'FINANCES',
       items: [
         { id: 'echeances', label: t.nav?.schedule || 'Échéances', icon: <CalendarDays className="h-4 w-4 shrink-0" /> },
+        {
+          id: 'paiements_attente',
+          label: 'Paiements en attente',
+          icon: <Clock className="h-4 w-4 shrink-0" />,
+          badge: pendingCount > 0 ? String(pendingCount) : undefined,
+        },
         { id: 'relances', label: t.nav?.reminders || 'Relances', icon: <BellRing className="h-4 w-4 shrink-0" /> },
         { id: 'rapports', label: t.nav?.reports || 'Rapports', icon: <BarChart3 className="h-4 w-4 shrink-0" /> },
       ],
@@ -73,11 +120,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange, classN
     >
       {(isCollapsed) => (
         /* Navigation Sections */
-        <div className="flex-1 px-3 py-5 space-y-6 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-800">
+        <div className="flex-1 px-3 py-5 space-y-6 overflow-y-auto">
           {sections.map((section, idx) => (
             <div key={idx} className="space-y-1">
               {!isCollapsed && (
-                <div className="px-3 pb-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                <div className="px-3 pb-1.5 text-xs font-bold uppercase tracking-wider text-muted">
                   {section.label}
                 </div>
               )}
@@ -96,10 +143,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange, classN
                       onClick={() => onTabChange(item.id)}
                       aria-label={isCollapsed ? item.label : undefined}
                       className={cn(
-                        'w-full flex items-center justify-between gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all group',
+                        'w-full flex items-center justify-between gap-3 px-3.5 py-2.5 rounded-sm text-xs font-semibold transition-colors group cursor-pointer focus-halo',
                         isActive
-                          ? 'bg-blue-600 text-white shadow-xs'
-                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-slate-800/80',
+                          ? 'bg-primary text-on-primary shadow-xs font-bold'
+                          : 'text-secondary hover:text-main hover:bg-surface-subtle',
                         isCollapsed && 'justify-center px-2.5'
                       )}
                     >
@@ -107,7 +154,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange, classN
                         <span
                           className={cn(
                             'transition-colors shrink-0',
-                            isActive ? 'text-white' : 'text-slate-500 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white'
+                            isActive ? 'text-on-primary' : 'text-muted group-hover:text-main'
                           )}
                         >
                           {item.icon}
@@ -118,10 +165,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange, classN
                       {!isCollapsed && item.badge && (
                         <span
                           className={cn(
-                            'px-2 py-0.5 text-[10px] font-bold rounded-full',
+                            'px-2 py-0.5 text-xs font-bold rounded-sm border',
                             isActive
-                              ? 'bg-white text-blue-700'
-                              : 'bg-red-100 text-red-700 dark:bg-red-950/80 dark:text-red-400'
+                              ? 'bg-white/20 text-on-primary border-transparent'
+                              : 'bg-danger-surface text-danger-text border-danger-border'
                           )}
                         >
                           {item.badge}

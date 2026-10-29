@@ -12,9 +12,6 @@ export const CONTACT_CONFIG = {
     number: '22237763928',
     display: '+222 37 76 39 28',
   },
-  email: {
-    support: 'contact@ecosurv.mr',
-  },
   address: {
     display: 'Ilot K, Avenue Charles de Gaulle, Tevragh-Zeina, Nouakchott',
     city: 'Nouakchott',

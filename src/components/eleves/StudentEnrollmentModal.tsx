@@ -3,18 +3,43 @@ import { z } from 'zod';
 import { Button } from '../ui/Button';
 import { Select } from '../ui/Select';
 import { DatePicker } from '../ui/DatePicker';
-import { EleveWithStats, LienParente } from '../../lib/mockData';
+import { EleveWithStats, LienParente } from '../../types';
 import { useAuthStore } from '../../store/useAuthStore';
+import { useNavigationStore } from '../../store/useNavigationStore';
+import { useAnneeScolaire } from '../../hooks/useAnneeScolaire';
+import { useClasses } from '../../hooks/useClasses';
 import { supabase } from '../../lib/supabase';
 import { generateEcheancesForNewStudent } from '../../lib/echeancesHelper';
 import { parseEdgeFunctionError } from '../../lib/functionsHelper';
-import { X, UserPlus, ShieldAlert, CheckCircle, Copy, Check, Loader2, Mail, HeartHandshake } from 'lucide-react';
+import { TestActivationLinkBanner } from '../ui/TestActivationLinkBanner';
+import { X, UserPlus, ShieldAlert, CheckCircle, Loader2, HeartHandshake, AlertTriangle, Info } from 'lucide-react';
 
 // Schéma Zod de validation stricte pour l'inscription d'un élève
 export const studentEnrollmentSchema = z.object({
   nom: z.string().min(2, 'Le nom doit contenir au moins 2 caractères'),
   prenom: z.string().min(2, 'Le prénom doit contenir au moins 2 caractères'),
-  date_naissance: z.string().min(1, 'La date de naissance est obligatoire'),
+  date_naissance: z
+    .string()
+    .min(1, 'La date de naissance est obligatoire')
+    .refine((val) => {
+      const parts = val.split('-');
+      if (parts.length !== 3) return false;
+      const [y, m, d] = parts.map(Number);
+      const dt = new Date(y, m - 1, d);
+      return (
+        y >= 1900 &&
+        dt.getFullYear() === y &&
+        dt.getMonth() === m - 1 &&
+        dt.getDate() === d
+      );
+    }, "Cette date n'existe pas (vérifiez le jour et le mois).")
+    .refine((val) => {
+      const [y, m, d] = val.split('-').map(Number);
+      const dt = new Date(y, m - 1, d);
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      return dt.getTime() <= today.getTime();
+    }, 'La date de naissance ne peut pas être dans le futur.'),
   lieu_naissance: z.string().min(2, 'Le lieu de naissance est obligatoire'),
   sexe: z.enum(['M', 'F'], { required_error: 'Le sexe est obligatoire' }),
   classe: z.string().min(1, 'Veuillez sélectionner une classe'),
@@ -51,70 +76,83 @@ export const StudentEnrollmentModal: React.FC<StudentEnrollmentModalProps> = ({
   eleveToEdit,
 }) => {
   const isEditing = Boolean(eleveToEdit);
+  const anneeScolaire = useAnneeScolaire();
+  const navigate = useNavigationStore((s) => s.navigate);
+  const { nomsClasses: hookClasses, isLoading: isLoadingClasses } = useClasses();
+  const activeClasses = classesList.length > 0 ? classesList : hookClasses;
+  const selectClassesOptions = React.useMemo(() => {
+    if (isEditing && eleveToEdit?.classe && !activeClasses.includes(eleveToEdit.classe)) {
+      return [eleveToEdit.classe, ...activeClasses];
+    }
+    return activeClasses;
+  }, [isEditing, eleveToEdit?.classe, activeClasses]);
+  const hasNoClasses = !isEditing && !isLoadingClasses && activeClasses.length === 0;
 
   const [formData, setFormData] = useState<Partial<StudentEnrollmentFormData>>({
     nom: '',
     prenom: '',
     date_naissance: '',
-    lieu_naissance: 'Nouakchott',
+    lieu_naissance: '',
     sexe: 'M',
-    classe: classesList[0] || 'Terminales C',
+    classe: activeClasses[0] || '',
     nom_tuteur: '',
     telephone_tuteur: '+222 ',
     email_tuteur: '',
-    adresse_tuteur: 'Tevragh-Zeina, Nouakchott',
+    adresse_tuteur: '',
     lien_parente: 'pere',
   });
 
-  const [isCustomClasse, setIsCustomClasse] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [birthDateError, setBirthDateError] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
   const [isEnrolling, setIsEnrolling] = useState(false);
   const [createdParentLink, setCreatedParentLink] = useState<string | null>(null);
   const [parentInviteNotice, setParentInviteNotice] = useState<string | null>(null);
-  const [copiedLink, setCopiedLink] = useState(false);
+  const [echeancesNotice, setEcheancesNotice] = useState<{
+    type: 'warning' | 'info';
+    message: string;
+  } | null>(null);
   const [enrolledEleve, setEnrolledEleve] = useState<EleveWithStats | null>(null);
 
   React.useEffect(() => {
     if (!isOpen) return;
 
     if (eleveToEdit) {
-      const isCustom = Boolean(eleveToEdit.classe && !classesList.includes(eleveToEdit.classe));
-      setIsCustomClasse(isCustom);
       setFormData({
         nom: eleveToEdit.nom || '',
         prenom: eleveToEdit.prenom || '',
         date_naissance: eleveToEdit.date_naissance || '',
-        lieu_naissance: eleveToEdit.lieu_naissance || 'Nouakchott',
+        lieu_naissance: eleveToEdit.lieu_naissance || '',
         sexe: eleveToEdit.sexe || 'M',
-        classe: eleveToEdit.classe || classesList[0] || '1AF (CI / CP1)',
+        classe: eleveToEdit.classe || activeClasses[0] || '',
         nom_tuteur: eleveToEdit.nom_tuteur || '',
         telephone_tuteur: eleveToEdit.telephone_tuteur || '+222 ',
         email_tuteur: eleveToEdit.email_tuteur || '',
-        adresse_tuteur: eleveToEdit.adresse_tuteur || 'Tevragh-Zeina, Nouakchott',
+        adresse_tuteur: eleveToEdit.adresse_tuteur || '',
         lien_parente: (eleveToEdit.lien_parente as any) || 'pere',
       });
     } else {
-      setIsCustomClasse(false);
       setFormData({
         nom: '',
         prenom: '',
         date_naissance: '',
-        lieu_naissance: 'Nouakchott',
+        lieu_naissance: '',
         sexe: 'M',
-        classe: classesList[0] || '1AF (CI / CP1)',
+        classe: activeClasses[0] || '',
         nom_tuteur: '',
         telephone_tuteur: '+222 ',
         email_tuteur: '',
-        adresse_tuteur: 'Tevragh-Zeina, Nouakchott',
+        adresse_tuteur: '',
         lien_parente: 'pere',
       });
     }
     setIsSuccess(false);
     setCreatedParentLink(null);
     setParentInviteNotice(null);
+    setEcheancesNotice(null);
     setErrors({});
-  }, [isOpen, eleveToEdit, classesList]);
+    setBirthDateError(null);
+  }, [isOpen, eleveToEdit, activeClasses]);
 
   if (!isOpen) return null;
 
@@ -122,30 +160,44 @@ export const StudentEnrollmentModal: React.FC<StudentEnrollmentModalProps> = ({
     e.preventDefault();
     setErrors({});
 
+    if (!isEditing && !anneeScolaire) {
+      setErrors({ submit: "Définissez l'année scolaire dans Configuration avant de continuer" });
+      return;
+    }
+
+    if (!isEditing && activeClasses.length === 0) {
+      setErrors({ submit: "Aucune classe définie. Ajoutez vos classes dans Configuration > Classes." });
+      return;
+    }
+
     const result = studentEnrollmentSchema.safeParse(formData);
 
-    if (!result.success) {
+    if (!result.success || birthDateError) {
       const formattedErrors: Record<string, string> = {};
-      result.error.issues.forEach((issue) => {
-        if (issue.path[0]) {
-          formattedErrors[issue.path[0].toString()] = issue.message;
-        }
-      });
+      if (!result.success) {
+        result.error.issues.forEach((issue) => {
+          if (issue.path[0]) {
+            formattedErrors[issue.path[0].toString()] = issue.message;
+          }
+        });
+      }
+      if (birthDateError) {
+        formattedErrors.date_naissance = birthDateError;
+      }
       setErrors(formattedErrors);
       return;
     }
 
     const validData = result.data;
     const authProfile = useAuthStore.getState().profile;
-    const authEcole = useAuthStore.getState().ecole;
 
     const newId = eleveToEdit?.id || `el-${Date.now().toString().slice(-6)}`;
-    const code = authEcole?.nom ? authEcole.nom.slice(0, 4).toUpperCase().replace(/[^A-Z]/g, '') : 'ECO';
-    const realMatricule = eleveToEdit?.matricule || `${code}-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+    const realMatricule = eleveToEdit?.matricule || `MAT-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
 
     let finalEleveId = newId;
     let inviteNotice = '';
     let testActionLink: string | null = null;
+    let localEcheancesNotice: { type: 'warning' | 'info'; message: string } | null = null;
 
     setIsEnrolling(true);
 
@@ -156,8 +208,8 @@ export const StudentEnrollmentModal: React.FC<StudentEnrollmentModalProps> = ({
           // CAS MODIFICATION D'UN ÉLÈVE EXISTANT
           // =========================================================================
           const coreUpdate = {
-            nom: validData.nom.toUpperCase(),
-            prenom: validData.prenom,
+            nom: validData.nom.trim().toUpperCase(),
+            prenom: validData.prenom.trim(),
             date_naissance: validData.date_naissance,
             lieu_naissance: validData.lieu_naissance,
             sexe: validData.sexe,
@@ -206,14 +258,15 @@ export const StudentEnrollmentModal: React.FC<StudentEnrollmentModalProps> = ({
                   email_tuteur: emailTuteur,
                   telephone_tuteur: validData.telephone_tuteur?.trim(),
                   lien_parente: validData.lien_parente,
-                  redirect_to: `${window.location.origin}/set-password`,
                 },
               });
 
               if (inviteRes?.actionLink) {
                 testActionLink = inviteRes.actionLink;
               }
-              if (inviteRes?.message) {
+              if (inviteRes?.isExistingParent) {
+                inviteNotice = inviteRes.message || "Compte parent existant, enfant rattaché.";
+              } else if (inviteRes?.message) {
                 inviteNotice = inviteRes.message;
               } else if (inviteErr) {
                 const realErrorMsg = await parseEdgeFunctionError(inviteErr, "Le service d'invitation parent n'a pas pu traiter la demande.");
@@ -236,8 +289,8 @@ export const StudentEnrollmentModal: React.FC<StudentEnrollmentModalProps> = ({
           const corePayload = {
             ecole_id: authProfile.ecole_id,
             matricule: realMatricule,
-            nom: validData.nom.toUpperCase(),
-            prenom: validData.prenom,
+            nom: validData.nom.trim().toUpperCase(),
+            prenom: validData.prenom.trim(),
             date_naissance: validData.date_naissance,
             lieu_naissance: validData.lieu_naissance,
             sexe: validData.sexe,
@@ -283,13 +336,24 @@ export const StudentEnrollmentModal: React.FC<StudentEnrollmentModalProps> = ({
             const nbGen = await generateEcheancesForNewStudent(
               authProfile.ecole_id,
               finalEleveId,
-              validData.classe
+              validData.classe,
+              anneeScolaire
             );
             if (nbGen > 0) {
               console.log(`[StudentEnrollmentModal] ${nbGen} échéance(s) générée(s) selon le barème de ${validData.classe}`);
+            } else {
+              localEcheancesNotice = {
+                type: 'info',
+                message: 'Aucun barème pour cette classe : aucune échéance générée',
+              };
             }
-          } catch (echGenErr) {
+          } catch (echGenErr: any) {
             console.warn('[StudentEnrollmentModal] Erreur auto-génération échéances nouvel élève:', echGenErr);
+            const errDetail = echGenErr?.message || 'Erreur inattendue';
+            localEcheancesNotice = {
+              type: 'warning',
+              message: `Élève créé, mais les échéances n'ont pas pu être générées : ${errDetail}. Elles pourront être régénérées depuis la page Échéances.`,
+            };
           }
 
           // Si le tuteur a un email, déclencher l'invitation / rattachement parent
@@ -302,14 +366,15 @@ export const StudentEnrollmentModal: React.FC<StudentEnrollmentModalProps> = ({
                   email_tuteur: validData.email_tuteur.trim(),
                   telephone_tuteur: validData.telephone_tuteur?.trim(),
                   lien_parente: validData.lien_parente,
-                  redirect_to: `${window.location.origin}/set-password`,
                 },
               });
 
               if (inviteRes?.actionLink) {
                 testActionLink = inviteRes.actionLink;
               }
-              if (inviteRes?.message) {
+              if (inviteRes?.isExistingParent) {
+                inviteNotice = inviteRes.message || "Compte parent existant, enfant rattaché.";
+              } else if (inviteRes?.message) {
                 inviteNotice = inviteRes.message;
               } else if (inviteErr) {
                 const realErrorMsg = await parseEdgeFunctionError(inviteErr, "Le service d'invitation parent n'a pas pu traiter la demande.");
@@ -336,8 +401,8 @@ export const StudentEnrollmentModal: React.FC<StudentEnrollmentModalProps> = ({
       id: finalEleveId,
       ecole_id: authProfile?.ecole_id || 'ecole-active',
       matricule: realMatricule,
-      nom: validData.nom.toUpperCase(),
-      prenom: validData.prenom,
+      nom: validData.nom.trim().toUpperCase(),
+      prenom: validData.prenom.trim(),
       date_naissance: validData.date_naissance,
       lieu_naissance: validData.lieu_naissance,
       sexe: validData.sexe,
@@ -348,13 +413,13 @@ export const StudentEnrollmentModal: React.FC<StudentEnrollmentModalProps> = ({
       adresse_tuteur: validData.adresse_tuteur,
       lien_parente: validData.lien_parente as LienParente,
       actif: true,
-      total_due: eleveToEdit?.total_due ?? 35000,
+      total_due: eleveToEdit?.total_due ?? 0,
       total_paid: eleveToEdit?.total_paid ?? 0,
-      remaining: eleveToEdit?.remaining ?? 35000,
+      remaining: eleveToEdit?.remaining ?? 0,
       statut: eleveToEdit?.statut ?? 'a_jour',
-      derniere_echeance_date: eleveToEdit?.derniere_echeance_date || '2026-03-01',
-      prochaine_echeance_date: eleveToEdit?.prochaine_echeance_date || '2026-03-01',
-      prochaine_echeance_montant: eleveToEdit?.prochaine_echeance_montant ?? 15000,
+      derniere_echeance_date: eleveToEdit?.derniere_echeance_date || '',
+      prochaine_echeance_date: eleveToEdit?.prochaine_echeance_date || undefined,
+      prochaine_echeance_montant: eleveToEdit?.prochaine_echeance_montant,
       nb_absences: eleveToEdit?.nb_absences ?? 0,
       timeline_paiements: eleveToEdit?.timeline_paiements ?? [],
     };
@@ -362,6 +427,7 @@ export const StudentEnrollmentModal: React.FC<StudentEnrollmentModalProps> = ({
     setEnrolledEleve(savedEleve);
     setCreatedParentLink(testActionLink);
     setParentInviteNotice(inviteNotice);
+    setEcheancesNotice(localEcheancesNotice);
     setIsEnrolling(false);
     setIsSuccess(true);
   };
@@ -410,6 +476,28 @@ export const StudentEnrollmentModal: React.FC<StudentEnrollmentModalProps> = ({
               </p>
             </div>
 
+            {echeancesNotice && (
+              <div
+                className={`p-3.5 rounded-xl border text-xs max-w-lg mx-auto text-left flex items-start gap-2.5 ${
+                  echeancesNotice.type === 'warning'
+                    ? 'bg-amber-50 dark:bg-amber-950/40 border-amber-300 dark:border-amber-800 text-amber-900 dark:text-amber-200'
+                    : 'bg-blue-50 dark:bg-blue-950/40 border-blue-200 dark:border-blue-800 text-blue-900 dark:text-blue-200'
+                }`}
+              >
+                {echeancesNotice.type === 'warning' ? (
+                  <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                ) : (
+                  <Info className="h-4 w-4 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
+                )}
+                <div className="space-y-0.5">
+                  <div className="font-bold">
+                    {echeancesNotice.type === 'warning' ? 'Avertissement échéances :' : 'Échéances de scolarité :'}
+                  </div>
+                  <div>{echeancesNotice.message}</div>
+                </div>
+              </div>
+            )}
+
             {parentInviteNotice && (
               <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs text-slate-700 dark:text-slate-300 max-w-lg mx-auto text-left flex items-start gap-2.5">
                 <HeartHandshake className="h-4 w-4 text-purple-600 dark:text-purple-400 shrink-0 mt-0.5" />
@@ -421,28 +509,11 @@ export const StudentEnrollmentModal: React.FC<StudentEnrollmentModalProps> = ({
             )}
 
             {createdParentLink && (
-              <div className="p-4 rounded-xl bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800 text-left space-y-2 max-w-lg mx-auto">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-purple-900 dark:text-purple-300 flex items-center gap-1.5">
-                    <Mail className="h-3.5 w-3.5" /> Lien d'activation Espace Famille (mode test) :
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      navigator.clipboard.writeText(createdParentLink);
-                      setCopiedLink(true);
-                      setTimeout(() => setCopiedLink(false), 2000);
-                    }}
-                    className="text-[11px] font-bold text-purple-700 dark:text-purple-400 hover:underline flex items-center gap-1"
-                  >
-                    {copiedLink ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
-                    {copiedLink ? 'Copié !' : 'Copier le lien'}
-                  </button>
-                </div>
-                <p className="text-[11px] text-purple-700/80 dark:text-purple-300/80">
-                  En mode bac à sable Resend, vous pouvez ouvrir ce lien directement pour tester la première connexion du parent.
-                </p>
-              </div>
+              <TestActivationLinkBanner
+                actionLink={createdParentLink}
+                title="Lien d'activation Espace Famille (mode test)"
+                className="max-w-lg mx-auto"
+              />
             )}
 
             <div className="pt-3 flex justify-center">
@@ -459,6 +530,7 @@ export const StudentEnrollmentModal: React.FC<StudentEnrollmentModalProps> = ({
                   setIsSuccess(false);
                   setCreatedParentLink(null);
                   setParentInviteNotice(null);
+                  setEcheancesNotice(null);
                   onClose();
                 }}
                 className="px-8 shadow-sm"
@@ -469,6 +541,46 @@ export const StudentEnrollmentModal: React.FC<StudentEnrollmentModalProps> = ({
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Garde année scolaire vide */}
+            {!isEditing && !anneeScolaire && (
+              <div className="p-4 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-xs text-amber-900 dark:text-amber-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div className="flex items-center gap-2.5 font-semibold">
+                  <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0" />
+                  <span>Définissez l'année scolaire dans Configuration avant de continuer</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    navigate('config');
+                  }}
+                  className="font-bold text-amber-800 dark:text-amber-300 underline hover:text-amber-950 shrink-0 cursor-pointer"
+                >
+                  Aller dans Configuration
+                </button>
+              </div>
+            )}
+
+            {/* Garde aucune classe définie */}
+            {hasNoClasses && (
+              <div className="p-4 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-xs text-amber-900 dark:text-amber-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div className="flex items-center gap-2.5 font-semibold">
+                  <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0" />
+                  <span>Aucune classe définie. Ajoutez vos classes dans Configuration &gt; Classes.</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    navigate('config');
+                  }}
+                  className="font-bold text-amber-800 dark:text-amber-300 underline hover:text-amber-950 shrink-0 cursor-pointer"
+                >
+                  Aller dans Configuration
+                </button>
+              </div>
+            )}
+
             {/* Bannière d'erreur générale d'enregistrement */}
             {errors.submit && (
               <div className="p-4 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-xs text-red-800 dark:text-red-200 flex items-start gap-2.5 animate-in fade-in">
@@ -526,24 +638,34 @@ export const StudentEnrollmentModal: React.FC<StudentEnrollmentModalProps> = ({
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  <label
+                    htmlFor="eleve-date-naissance"
+                    className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1"
+                  >
                     Date de naissance <span className="text-red-500">*</span>
                   </label>
                   <DatePicker
+                    id="eleve-date-naissance"
+                    isBirthDate
                     value={formData.date_naissance || ''}
-                    onChange={(val) =>
-                      setFormData({ ...formData, date_naissance: val })
-                    }
+                    onChange={(val) => {
+                      setFormData({ ...formData, date_naissance: val });
+                      if (val) {
+                        setErrors((prev) => {
+                          if (!prev.date_naissance) return prev;
+                          const next = { ...prev };
+                          delete next.date_naissance;
+                          return next;
+                        });
+                      }
+                    }}
+                    onValidationChange={setBirthDateError}
+                    error={errors.date_naissance}
                     size="sm"
                     className="w-full"
                     triggerClassName="w-full h-9 rounded-lg text-xs"
                     placeholder="JJ/MM/AAAA"
                   />
-                  {errors.date_naissance && (
-                    <p className="text-[11px] text-red-600 dark:text-red-400 mt-1 flex items-center gap-1">
-                      <ShieldAlert className="h-3 w-3" /> {errors.date_naissance}
-                    </p>
-                  )}
                 </div>
 
                 <div>
@@ -583,47 +705,18 @@ export const StudentEnrollmentModal: React.FC<StudentEnrollmentModalProps> = ({
                   <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
                     Classe d'affectation <span className="text-red-500">*</span>
                   </label>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const next = !isCustomClasse;
-                      setIsCustomClasse(next);
-                      if (next) {
-                        setFormData({ ...formData, classe: '' });
-                      } else {
-                        setFormData({ ...formData, classe: classesList[0] || '1AF (CI / CP1)' });
-                      }
-                    }}
-                    className="text-[11px] font-bold text-blue-600 dark:text-blue-400 hover:underline"
-                  >
-                    {isCustomClasse ? "Choisir dans la liste" : "+ Saisir une autre classe"}
-                  </button>
                 </div>
 
-                {isCustomClasse ? (
-                  <div className="space-y-1">
-                    <input
-                      type="text"
-                      value={formData.classe || ''}
-                      onChange={(e) => setFormData({ ...formData, classe: e.target.value })}
-                      placeholder="Ex: 6ème Bilingue, Terminale C1, Nation CP..."
-                      className="w-full h-9 px-3 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 text-xs focus:ring-2 focus:ring-blue-600 focus:outline-none font-semibold"
-                    />
-                    <p className="text-[10px] text-slate-500 dark:text-slate-400">
-                      Saisie libre : cette classe sera automatiquement conservée et proposée pour les prochains élèves.
-                    </p>
-                  </div>
-                ) : (
-                  <Select<string>
-                    value={formData.classe || (classesList[0] || '')}
-                    onChange={(val) => setFormData({ ...formData, classe: val })}
-                    options={classesList.map((c) => ({ value: c, label: c }))}
-                    placeholder="Sélectionner une classe..."
-                    size="sm"
-                    triggerClassName="w-full h-9 rounded-lg font-semibold"
-                    emptyMessage="Aucune classe configurée. Utilisez le lien ci-dessus pour la saisir manuellement."
-                  />
-                )}
+                <Select<string>
+                  value={formData.classe || ''}
+                  onChange={(val) => setFormData({ ...formData, classe: val })}
+                  options={selectClassesOptions.map((c) => ({ value: c, label: c }))}
+                  placeholder="Sélectionner une classe..."
+                  size="sm"
+                  disabled={hasNoClasses}
+                  triggerClassName="w-full h-9 rounded-lg font-semibold"
+                  emptyMessage="Aucune classe définie. Ajoutez vos classes dans Configuration > Classes."
+                />
                 {errors.classe && (
                   <p className="text-[11px] text-red-600 dark:text-red-400 mt-1 flex items-center gap-1">
                     <ShieldAlert className="h-3 w-3" /> {errors.classe}
@@ -741,7 +834,13 @@ export const StudentEnrollmentModal: React.FC<StudentEnrollmentModalProps> = ({
               <Button type="button" variant="outline" size="sm" onClick={onClose} disabled={isEnrolling} className="w-full sm:w-auto justify-center">
                 Annuler
               </Button>
-              <Button type="submit" variant="primary" size="sm" className="gap-2 w-full sm:w-auto justify-center" disabled={isEnrolling}>
+              <Button
+                type="submit"
+                variant="primary"
+                size="sm"
+                className="gap-2 w-full sm:w-auto justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={isEnrolling || (!isEditing && (!anneeScolaire || hasNoClasses))}
+              >
                 {isEnrolling ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
