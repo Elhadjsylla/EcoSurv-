@@ -327,7 +327,7 @@ export const DirectorDashboard: React.FC<DirectorDashboardProps> = ({
     }
     const cleanPhone = rawPhone.startsWith('222') ? rawPhone : `222${rawPhone}`;
     const ecoleNom = authEcole?.nom || 'notre établissement';
-    const msg = `Bonjour M./Mme ${eleve.nom_tuteur || 'le Tuteur'},\n\nL'administration de l'établissement ${ecoleNom} vous informe que l'échéance de scolarité de ${eleve.prenom} ${eleve.nom} (${eleve.classe}) présente un solde restant de ${formatMRU(eleve.remaining)}.\n\nMerci de bien vouloir vous rapprocher du guichet de l'école ou de régulariser ce montant par virement Bankily / Masrvi.\n\nBien cordialement,\nLa Direction.`;
+    const msg = `Bonjour M./Mme ${eleve.nom_tuteur || 'le Tuteur'},\n\nL'administration de l'établissement ${ecoleNom} vous informe que l'échéance de scolarité de ${eleve.prenom} ${eleve.nom} (${eleve.classe}) présente un solde restant de ${formatMRU(eleve.remaining)}.\n\nMerci de bien vouloir vous rapprocher du guichet de l'école ou de régulariser ce montant par virement Bankily / Masrvi / Sedad.\n\nBien cordialement,\nLa Direction.`;
     window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`, '_blank', 'noopener,noreferrer');
     setRelancedStudentIds((prev) => Array.from(new Set([...prev, eleve.id])));
     showToast(`WhatsApp pré-rempli ouvert pour le tuteur de ${eleve.prenom} ${eleve.nom}.`, 'info');
@@ -1155,6 +1155,7 @@ export const DirectorDashboard: React.FC<DirectorDashboardProps> = ({
                     { value: 'especes', label: 'Espèces (Comptant)' },
                     { value: 'bankily', label: 'Bankily (BPM)' },
                     { value: 'masrvi', label: 'Masrvi (BMCI)' },
+                    { value: 'sedad', label: 'Sedad' },
                     { value: 'cheque', label: 'Chèque' },
                   ]}
                   triggerClassName="w-full h-10 rounded-lg text-xs"

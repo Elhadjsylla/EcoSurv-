@@ -1355,6 +1355,7 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
                     { value: 'especes', label: 'Espèces (Comptant)' },
                     { value: 'bankily', label: 'Bankily (BPM)' },
                     { value: 'masrvi', label: 'Masrvi (BMCI)' },
+                    { value: 'sedad', label: 'Sedad' },
                     { value: 'cheque', label: 'Chèque' },
                   ]}
                   triggerClassName="w-full h-10 rounded-lg text-xs"

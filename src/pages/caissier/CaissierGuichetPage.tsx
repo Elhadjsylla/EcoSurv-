@@ -810,11 +810,12 @@ export const CaissierGuichetPage: React.FC<CaissierGuichetPageProps> = ({
                 <label className="font-bold text-slate-700 dark:text-slate-300 block mb-2">
                   Mode de Règlement *
                 </label>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
                   {[
                     { id: 'especes', label: 'Espèces (Comptant)' },
                     { id: 'bankily', label: 'Bankily (BPM)' },
                     { id: 'masrvi', label: 'Masrvi (BMCI)' },
+                    { id: 'sedad', label: 'Sedad' },
                     { id: 'cheque', label: 'Chèque' },
                   ].map((m) => (
                     <button

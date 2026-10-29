@@ -22,7 +22,7 @@ import {
   AlertTriangle,
 } from 'lucide-react';
 
-export type MethodePaiement = 'bankily' | 'masrvi';
+export type MethodePaiement = 'bankily' | 'masrvi' | 'sedad';
 
 interface ParentPaiementsPageProps {
   selectedChildId: string;
@@ -230,7 +230,7 @@ export const ParentPaiementsPage: React.FC<ParentPaiementsPageProps> = ({
             Frais de Scolarité — {activeChild.prenom} {activeChild.nom}
           </h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Classe de {activeChild.classe} • Solde de scolarité et règlement sécurisé par Bankily ou Masrvi.
+            Classe de {activeChild.classe} • Solde de scolarité et règlement sécurisé par Bankily, Masrvi ou Sedad.
           </p>
         </div>
 

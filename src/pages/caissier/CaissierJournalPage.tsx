@@ -257,7 +257,7 @@ export const CaissierJournalPage: React.FC = () => {
 
   const totalMobile = useMemo(() => {
     return transactions
-      .filter((tx) => ['bankily', 'masrvi'].includes(tx.methode))
+      .filter((tx) => ['bankily', 'masrvi', 'sedad'].includes(tx.methode))
       .reduce((acc, tx) => acc + tx.montant, 0);
   }, [transactions]);
 
@@ -327,6 +327,13 @@ export const CaissierJournalPage: React.FC = () => {
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-blue-50 dark:bg-blue-950/50 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800/60">
             <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
             Masrvi (BMCI)
+          </span>
+        );
+      case 'sedad':
+        return (
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-cyan-50 dark:bg-cyan-950/50 text-cyan-800 dark:text-cyan-300 border border-cyan-200 dark:border-cyan-800/60">
+            <span className="w-1.5 h-1.5 rounded-full bg-cyan-500"></span>
+            Sedad
           </span>
         );
       case 'cheque':
@@ -447,7 +454,7 @@ export const CaissierJournalPage: React.FC = () => {
           title="Paiements Mobiles"
           amount={totalMobile}
           unit="MRU"
-          subtitle="Bankily & Masrvi"
+          subtitle="Bankily, Masrvi & Sedad"
           icon={<Smartphone className="w-5 h-5 text-blue-600 dark:text-blue-400" />}
           variant="primary"
         />
@@ -493,6 +500,7 @@ export const CaissierJournalPage: React.FC = () => {
               { value: 'especes', label: 'Espèces uniquement' },
               { value: 'bankily', label: 'Bankily (BPM)' },
               { value: 'masrvi', label: 'Masrvi (BMCI)' },
+              { value: 'sedad', label: 'Sedad' },
               { value: 'cheque', label: 'Chèque' },
             ]}
             size="sm"

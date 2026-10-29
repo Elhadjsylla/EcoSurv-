@@ -70,7 +70,7 @@ export const ConfirmBulkRelanceModal: React.FC<ConfirmBulkRelanceModalProps> = (
     return (
       `Bonjour M./Mme ${eleve.nom_tuteur || 'le Tuteur'},\n\n` +
       `L'administration de l'établissement ${ecoleNom} vous informe que l'échéance de scolarité de ${eleve.prenom} ${eleve.nom} (${eleve.classe}) présente un solde restant de ${formatMRU(eleve.remaining)}.\n\n` +
-      `Merci de bien vouloir vous rapprocher du guichet de l'école ou de régulariser ce montant par virement Bankily / Masrvi.\n\n` +
+      `Merci de bien vouloir vous rapprocher du guichet de l'école ou de régulariser ce montant par virement Bankily / Masrvi / Sedad.\n\n` +
       `Bien cordialement,\nLa Direction.`
     );
   };
