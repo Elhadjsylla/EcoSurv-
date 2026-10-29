@@ -943,6 +943,24 @@ export const LandingPage: React.FC = () => {
                 </span>
               </h1>
 
+              {/* Sous 1280 px, pas de marge pour les pastilles flottantes : mêmes pastilles en ligne sous le titre */}
+              <div
+                data-testid="hero-pills-inline"
+                className="xl:hidden flex flex-wrap items-center justify-center gap-2"
+              >
+                {HERO_FLOATING_PILLS.map((pill, idx) => {
+                  const PillIcon = pill.icon;
+                  return (
+                    <Floating key={pill.text} index={idx}>
+                      <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-surface border border-subtle text-xs font-bold text-main shadow-[0_6px_18px_rgba(15,23,42,0.06)] dark:shadow-[0_6px_18px_rgba(0,0,0,0.3)]">
+                        <PillIcon className="h-3.5 w-3.5 text-[#1D4ED8] dark:text-blue-300" />
+                        {pill.text}
+                      </span>
+                    </Floating>
+                  );
+                })}
+              </div>
+
               <p className="text-base text-secondary leading-relaxed max-w-2xl mx-auto">
                 Inscrivez vos élèves par classe, suivez les échéances en MRU,
                 encaissez au guichet et suivez les absences sur téléphone et
