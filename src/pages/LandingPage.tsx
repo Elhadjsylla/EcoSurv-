@@ -15,7 +15,6 @@ import {
   X,
   MessageCircle,
   ChevronDown,
-  Smartphone,
   Check,
   LayoutDashboard,
   Banknote,
@@ -31,6 +30,9 @@ import {
 } from 'lucide-react';
 import { LanguageSelector } from '../components/ui/LanguageSelector';
 import { Logo } from '../components/ui/Logo';
+import bankilyLogo from '../assets/payments/bankily.jpg';
+import masrviLogo from '../assets/payments/masrvi.png';
+import sedadLogo from '../assets/payments/sedad.png';
 import { useLanguageStore } from '../i18n/useLanguageStore';
 import { Language } from '../i18n/translations';
 
@@ -466,17 +468,35 @@ export const LandingPage: React.FC = () => {
                 <Banknote className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                 <span>Espèces au guichet</span>
               </motion.div>
-              <motion.div variants={motionItem} className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-100/90 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 text-slate-700 dark:text-slate-200">
-                <Smartphone className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                <span>Bankily</span>
+              <motion.div
+                variants={motionItem}
+                className="flex items-center justify-center px-3.5 py-1.5 rounded-xl bg-white border border-slate-200 dark:border-slate-700"
+              >
+                <img
+                  src={bankilyLogo}
+                  alt="Bankily"
+                  className="max-h-[28px] w-auto h-auto object-contain select-none"
+                />
               </motion.div>
-              <motion.div variants={motionItem} className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-100/90 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 text-slate-700 dark:text-slate-200">
-                <Smartphone className="h-4 w-4 text-red-600 dark:text-red-400" />
-                <span>Masrvi</span>
+              <motion.div
+                variants={motionItem}
+                className="flex items-center justify-center px-3.5 py-1.5 rounded-xl bg-white border border-slate-200 dark:border-slate-700"
+              >
+                <img
+                  src={masrviLogo}
+                  alt="Masrvi"
+                  className="max-h-[28px] w-auto h-auto object-contain select-none"
+                />
               </motion.div>
-              <motion.div variants={motionItem} className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-100/90 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 text-slate-700 dark:text-slate-200">
-                <Smartphone className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                <span>Sedad</span>
+              <motion.div
+                variants={motionItem}
+                className="flex items-center justify-center px-3.5 py-1.5 rounded-xl bg-white border border-slate-200 dark:border-slate-700"
+              >
+                <img
+                  src={sedadLogo}
+                  alt="Sedad"
+                  className="max-h-[28px] w-auto h-auto object-contain select-none"
+                />
               </motion.div>
               <motion.div variants={motionItem} className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-100/90 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 text-slate-700 dark:text-slate-200">
                 <CreditCard className="h-4 w-4 text-slate-600 dark:text-slate-400" />
