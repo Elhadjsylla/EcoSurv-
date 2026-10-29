@@ -3,7 +3,6 @@ import {
   motion,
   AnimatePresence,
   useScroll,
-  useTransform,
   useReducedMotion,
 } from 'framer-motion';
 import {
@@ -257,54 +256,40 @@ interface ScrollRevealProps {
   children: React.ReactNode;
   className?: string;
   staggerIndex?: number;
-  startAt?: number;
-  endAt?: number;
   testId?: string;
 }
 
 /**
- * Bloc dont l'apparition (fondu 0 -> 1 et montée 32 px -> 0) est liée
- * progressivement à la position de défilement dans la fenêtre.
+ * Bloc qui apparaît une seule fois (fondu, montée de 32 px, échelle 0,97 vers 1)
+ * quand il entre dans la fenêtre, puis reste visible. Déclenché par
+ * IntersectionObserver et non lié en continu au défilement : sur iPhone
+ * (Safari), l'animation liée au défilement laissait des blocs invisibles.
  * En prefers-reduced-motion : fondu d'opacité seul (aucune translation).
  */
 const ScrollReveal: React.FC<ScrollRevealProps> = ({
   children,
   className = '',
   staggerIndex = 0,
-  startAt = 0.96,
-  endAt = 0.66,
   testId,
 }) => {
-  const ref = useRef<HTMLDivElement | null>(null);
   const shouldReduceMotion = Boolean(useReducedMotion());
-
-  const startOffset = Math.max(0.55, Number((startAt - staggerIndex * 0.04).toFixed(2)));
-  const endOffset = Math.max(0.35, Number((endAt - staggerIndex * 0.04).toFixed(2)));
-
-  const { scrollYProgress } = useScroll({
-    target: ref,
-    offset: [`start ${startOffset}`, `start ${endOffset}`],
-  });
-
-  // Courbe douce progressive liée au défilement : montée de 48 px et échelle 0,96 vers 1
-  const opacity = useTransform(scrollYProgress, [0, 0.5, 1], [0, 0.55, 1]);
-  const y = useTransform(
-    scrollYProgress,
-    [0, 1],
-    [shouldReduceMotion ? 0 : 48, 0]
-  );
-  const scale = useTransform(
-    scrollYProgress,
-    [0, 1],
-    [shouldReduceMotion ? 1 : 0.96, 1]
-  );
 
   return (
     <motion.div
-      ref={ref}
       data-testid={testId}
       data-reveal=""
-      style={{ opacity, y, scale }}
+      initial={
+        shouldReduceMotion
+          ? { opacity: 0 }
+          : { opacity: 0, y: 32, scale: 0.97 }
+      }
+      whileInView={{ opacity: 1, y: 0, scale: 1 }}
+      viewport={{ once: true, amount: 0.15 }}
+      transition={{
+        duration: shouldReduceMotion ? 0.3 : 0.6,
+        delay: staggerIndex * 0.08,
+        ease: SMOOTH_EASE,
+      }}
       className={className}
     >
       {children}
@@ -1479,8 +1464,6 @@ export const LandingPage: React.FC = () => {
           <div className="relative mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
             <ScrollReveal
               staggerIndex={0}
-              startAt={0.98}
-              endAt={0.78}
               className="text-center lg:text-left space-y-5"
             >
               <h2 className="text-[28px] leading-[36px] sm:text-[40px] sm:leading-[48px] font-extrabold text-white tracking-tight">
@@ -1502,7 +1485,7 @@ export const LandingPage: React.FC = () => {
               </div>
             </ScrollReveal>
 
-            <ScrollReveal staggerIndex={1} startAt={0.98} endAt={0.78}>
+            <ScrollReveal staggerIndex={1}>
               <PourDemarrerPreview />
             </ScrollReveal>
           </div>
