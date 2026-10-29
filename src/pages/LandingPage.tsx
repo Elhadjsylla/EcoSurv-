@@ -314,67 +314,134 @@ const ScrollReveal: React.FC<ScrollRevealProps> = ({
 
 /**
  * Lumière douce : disque bleu uni (#1D4ED8, sans dégradé CSS) adouci par un
- * flou fixe. Seuls transform et opacity sont animés, en dérive très lente.
+ * flou fixe. Immobile : animer un élément flouté oblige le navigateur à
+ * recalculer le flou à chaque image, ce qui bloquait le défilement sur téléphone.
  */
 const SoftLight: React.FC<{
   className: string;
   opacity: number;
-  drift: { x: number[]; y: number[] };
-  duration: number;
-}> = ({ className, opacity, drift, duration }) => {
-  const shouldReduceMotion = Boolean(useReducedMotion());
-  return (
-    <motion.div
-      aria-hidden="true"
-      data-testid="soft-light"
-      className={`pointer-events-none absolute rounded-full bg-[#1D4ED8] blur-[100px] will-change-transform ${className}`}
-      initial={{ opacity: 0 }}
-      animate={
-        shouldReduceMotion
-          ? { opacity }
-          : { opacity: [opacity, opacity * 0.8, opacity], x: drift.x, y: drift.y }
-      }
-      transition={
-        shouldReduceMotion
-          ? { duration: 0.6 }
-          : { duration, repeat: Infinity, ease: 'easeInOut' }
-      }
-    />
-  );
-};
+}> = ({ className, opacity }) => (
+  <div
+    aria-hidden="true"
+    data-testid="soft-light"
+    className={`pointer-events-none absolute rounded-full bg-[#1D4ED8] blur-[100px] ${className}`}
+    style={{ opacity }}
+  />
+);
 
-/** Élément qui flotte verticalement en boucle (immobile en mouvement réduit). */
+/**
+ * Élément qui flotte verticalement en boucle. Animation CSS (keyframes
+ * landing-float) : le navigateur la gère seul, sans JavaScript à chaque image,
+ * et ne fait rien tant que l'élément est masqué (téléphone). Immobile en
+ * mouvement réduit.
+ */
 const Floating: React.FC<{
   children: React.ReactNode;
   className?: string;
   index: number;
-}> = ({ children, className = '', index }) => {
+}> = ({ children, className = '', index }) => (
+  <div
+    aria-hidden="true"
+    data-testid="floating-item"
+    className={`landing-float ${className}`}
+    style={{
+      animationDuration: `0.6s, ${6 + index}s`,
+      animationDelay: `${0.4 + index * 0.15}s, ${index * 1.3}s`,
+    }}
+  >
+    {children}
+  </div>
+);
+
+/**
+ * Seconde ligne du titre, frappée lettre par lettre en boucle. Dans son propre composant
+ * pour que chaque lettre ne refasse le rendu que de cette ligne, et non de
+ * toute la page. Sous 640 px ou en mouvement réduit : phrase finale affichée
+ * directement, sans copie fantôme (la place réservée laissait un grand vide).
+ */
+const HeroTypedLine: React.FC = () => {
   const shouldReduceMotion = Boolean(useReducedMotion());
+  const [isAnimated] = useState<boolean>(
+    () =>
+      !shouldReduceMotion &&
+      typeof window !== 'undefined' &&
+      window.matchMedia('(min-width: 640px)').matches
+  );
+  const [typedLine, setTypedLine] = useState<string>(
+    isAnimated ? '' : HERO_TYPED_PHRASES[0]
+  );
+
+  // Frappe en boucle sur les 3 phrases vraies, à un rythme lisible
+  useEffect(() => {
+    if (!isAnimated) return;
+
+    let cancelled = false;
+    let timeoutId: number | undefined;
+
+    const sleep = (ms: number) =>
+      new Promise<void>((resolve) => {
+        timeoutId = window.setTimeout(resolve, ms);
+      });
+
+    const runTypewriter = async () => {
+      for (let s = 0; !cancelled; s = (s + 1) % HERO_TYPED_PHRASES.length) {
+        const phrase = HERO_TYPED_PHRASES[s];
+
+        for (let i = 1; i <= phrase.length; i++) {
+          if (cancelled) return;
+          setTypedLine(phrase.slice(0, i));
+          await sleep(75);
+        }
+
+        await sleep(2600);
+
+        for (let i = phrase.length - 1; i >= 0; i--) {
+          if (cancelled) return;
+          setTypedLine(phrase.slice(0, i));
+          await sleep(35);
+        }
+
+        await sleep(500);
+      }
+    };
+
+    runTypewriter();
+
+    return () => {
+      cancelled = true;
+      if (timeoutId !== undefined) {
+        window.clearTimeout(timeoutId);
+      }
+    };
+  }, [isAnimated]);
+
+  if (!isAnimated) {
+    return (
+      <span
+        data-testid="hero-typed-line"
+        className="block text-[#1D4ED8] dark:text-[#60A5FA]"
+      >
+        {HERO_TYPED_PHRASES[0]}
+      </span>
+    );
+  }
+
   return (
-    <motion.div
-      aria-hidden="true"
-      data-testid="floating-item"
-      className={className}
-      initial={{ opacity: 0 }}
-      animate={
-        shouldReduceMotion ? { opacity: 1 } : { opacity: 1, y: [0, -10, 0] }
-      }
-      transition={
-        shouldReduceMotion
-          ? { duration: 0.6 }
-          : {
-              opacity: { duration: 0.6, delay: 0.4 + index * 0.15 },
-              y: {
-                duration: 6 + index,
-                delay: index * 1.3,
-                repeat: Infinity,
-                ease: 'easeInOut',
-              },
-            }
-      }
-    >
-      {children}
-    </motion.div>
+    // Ligne tapée et copie invisible de la phrase la plus longue dans la même cellule de grille
+    <span className="grid text-[#1D4ED8] dark:text-[#60A5FA]">
+      <span
+        aria-hidden="true"
+        data-testid="hero-typed-ghost"
+        className="invisible pointer-events-none select-none [grid-area:1/1]"
+      >
+        {HERO_LONGEST_PHRASE}
+        <span className="inline-block w-[2px] h-[0.88em] ml-1 align-middle" />
+      </span>
+      <span data-testid="hero-typed-line" className="[grid-area:1/1]">
+        {typedLine}
+        <span className="inline-block w-[2px] h-[0.88em] bg-[#1D4ED8] dark:bg-[#60A5FA] ml-1 align-middle" />
+      </span>
+    </span>
   );
 };
 
@@ -535,12 +602,6 @@ export const LandingPage: React.FC = () => {
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
   const [activeSection, setActiveSection] = useState<SectionId | null>(null);
 
-  // État de la seconde ligne du titre d'accroche (frappe lettre par lettre, une seule fois)
-  const [typedLine, setTypedLine] = useState<string>(
-    shouldReduceMotion ? HERO_TYPED_PHRASES[0] : ''
-  );
-  const [showCursor, setShowCursor] = useState<boolean>(!shouldReduceMotion);
-
   // Thème clair par défaut à l'ouverture si l'utilisateur n'a pas explicitement choisi un thème
   useEffect(() => {
     try {
@@ -568,71 +629,6 @@ export const LandingPage: React.FC = () => {
       );
     }
   }, []);
-
-  // Frappe unique de la seconde ligne du titre : passe par les 3 phrases vraies et s'arrête sur la première
-  useEffect(() => {
-    if (shouldReduceMotion) {
-      setTypedLine(HERO_TYPED_PHRASES[0]);
-      setShowCursor(false);
-      return;
-    }
-
-    let cancelled = false;
-    let timeoutId: number | undefined;
-
-    const sequence = [
-      HERO_TYPED_PHRASES[0],
-      HERO_TYPED_PHRASES[1],
-      HERO_TYPED_PHRASES[2],
-      HERO_TYPED_PHRASES[0],
-    ];
-
-    const sleep = (ms: number) =>
-      new Promise<void>((resolve) => {
-        timeoutId = window.setTimeout(resolve, ms);
-      });
-
-    const runTypewriter = async () => {
-      setShowCursor(true);
-      for (let s = 0; s < sequence.length; s++) {
-        const phrase = sequence[s];
-        const isLast = s === sequence.length - 1;
-
-        for (let i = 1; i <= phrase.length; i++) {
-          if (cancelled) return;
-          setTypedLine(phrase.slice(0, i));
-          await sleep(22);
-        }
-
-        if (isLast) {
-          await sleep(350);
-          if (!cancelled) {
-            setShowCursor(false);
-          }
-          return;
-        }
-
-        await sleep(420);
-
-        for (let i = phrase.length - 1; i >= 0; i--) {
-          if (cancelled) return;
-          setTypedLine(phrase.slice(0, i));
-          await sleep(10);
-        }
-
-        await sleep(120);
-      }
-    };
-
-    runTypewriter();
-
-    return () => {
-      cancelled = true;
-      if (timeoutId !== undefined) {
-        window.clearTimeout(timeoutId);
-      }
-    };
-  }, [shouldReduceMotion]);
 
   // Suivi de la section visible au défilement pour souligner le lien correspondant
   useEffect(() => {
@@ -912,14 +908,10 @@ export const LandingPage: React.FC = () => {
           <SoftLight
             className="-top-48 -left-40 h-[560px] w-[560px]"
             opacity={0.1}
-            drift={{ x: [0, 60, 0], y: [0, 40, 0] }}
-            duration={26}
           />
           <SoftLight
             className="top-[32%] -right-48 h-[520px] w-[520px]"
             opacity={0.08}
-            drift={{ x: [0, -50, 0], y: [0, -30, 0] }}
-            duration={32}
           />
 
           <div className="relative mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 space-y-10 sm:space-y-12">
@@ -966,23 +958,7 @@ export const LandingPage: React.FC = () => {
                   <span className="block text-main">
                     Chaque paiement de scolarité suivi,
                   </span>
-                  {/* Ligne tapée et copie invisible de la phrase la plus longue dans la même cellule de grille */}
-                  <span className="grid text-[#1D4ED8] dark:text-[#60A5FA]">
-                    <span
-                      aria-hidden="true"
-                      data-testid="hero-typed-ghost"
-                      className="invisible pointer-events-none select-none [grid-area:1/1]"
-                    >
-                      {HERO_LONGEST_PHRASE}
-                      <span className="inline-block w-[2px] h-[0.88em] ml-1 align-middle" />
-                    </span>
-                    <span data-testid="hero-typed-line" className="[grid-area:1/1]">
-                      {typedLine}
-                      {showCursor && (
-                        <span className="inline-block w-[2px] h-[0.88em] bg-[#1D4ED8] dark:bg-[#60A5FA] ml-1 align-middle" />
-                      )}
-                    </span>
-                  </span>
+                  <HeroTypedLine />
                 </span>
               </h1>
 
@@ -1494,14 +1470,10 @@ export const LandingPage: React.FC = () => {
           <SoftLight
             className="-bottom-56 -left-32 h-[560px] w-[560px]"
             opacity={0.12}
-            drift={{ x: [0, 70, 0], y: [0, -40, 0] }}
-            duration={28}
           />
           <SoftLight
             className="-top-40 right-[10%] h-[440px] w-[440px]"
             opacity={0.1}
-            drift={{ x: [0, -40, 0], y: [0, 30, 0] }}
-            duration={34}
           />
 
           <div className="relative mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
