@@ -12,6 +12,8 @@ import {
 
 type Channel = 'especes' | 'bankily' | 'masrvi' | 'sedad';
 
+const SMOOTH_EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
+
 export const HonestProductDemo: React.FC = () => {
   const shouldReduceMotion = useReducedMotion();
   const [selectedChannel, setSelectedChannel] = useState<Channel>('bankily');
@@ -60,23 +62,23 @@ export const HonestProductDemo: React.FC = () => {
   const isMobileChannel = selectedChannel !== 'especes';
 
   return (
-    <div className="relative rounded-md bg-slate-950 border border-slate-800 text-white p-5 sm:p-8 shadow-card max-w-3xl mx-auto overflow-hidden">
+    <div className="relative rounded-3xl bg-slate-950 border border-slate-800 text-white p-5 sm:p-8 shadow-[0_10px_30px_rgba(0,0,0,0.4)] max-w-3xl mx-auto overflow-hidden">
       {/* Notification sobre d'exemple */}
       <AnimatePresence>
         {showNotification && (
           <motion.div
             initial={
-              shouldReduceMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: -12 }
+              shouldReduceMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: -14 }
             }
             animate={{ opacity: 1, y: 0 }}
             exit={
-              shouldReduceMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: -8 }
+              shouldReduceMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: -10 }
             }
             transition={{
-              duration: shouldReduceMotion ? 0 : 0.24,
-              ease: 'easeOut',
+              duration: shouldReduceMotion ? 0 : 0.4,
+              ease: SMOOTH_EASE,
             }}
-            className="mb-4 flex items-center justify-center gap-2 px-4 py-2.5 rounded-sm bg-emerald-800 border border-emerald-600 text-white font-bold text-xs"
+            className="mb-5 flex items-center justify-center gap-2 px-4 py-2.5 rounded-full bg-emerald-900 border border-emerald-700 text-white font-bold text-xs"
           >
             <CheckCircle2 className="h-4 w-4 shrink-0" />
             <span>Paiement fictif enregistré pour l'exemple</span>
@@ -90,11 +92,11 @@ export const HonestProductDemo: React.FC = () => {
           <div>
             <div className="text-xs font-bold uppercase tracking-wider text-blue-300 flex flex-wrap items-center gap-2">
               <span>Simulation interactive du guichet</span>
-              <span className="px-2.5 py-0.5 rounded-sm bg-slate-900 text-slate-200 border border-slate-700 text-xs">
+              <span className="px-3 py-0.5 rounded-full bg-slate-900 text-slate-200 border border-slate-700 text-xs">
                 Exemple fictif
               </span>
             </div>
-            <p className="text-base font-bold text-white mt-1">
+            <p className="text-base font-bold text-white mt-1.5">
               Guichet de l'établissement • Illustration d'un encaissement
             </p>
           </div>
@@ -117,10 +119,10 @@ export const HonestProductDemo: React.FC = () => {
                     : { opacity: 0, scale: 0.96 }
                 }
                 transition={{
-                  duration: shouldReduceMotion ? 0 : 0.2,
-                  ease: 'easeOut',
+                  duration: shouldReduceMotion ? 0 : 0.3,
+                  ease: SMOOTH_EASE,
                 }}
-                className="min-h-[44px] inline-flex items-center gap-2 px-3.5 py-2 rounded-sm bg-slate-900 hover:bg-slate-800 border border-slate-700 text-xs font-semibold text-slate-200 transition-colors self-start sm:self-auto cursor-pointer focus-visible:outline-2 focus-visible:outline-[#1D4ED8]"
+                className="min-h-[44px] inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-900 hover:bg-slate-800 border border-slate-700 text-xs font-semibold text-slate-200 transition-colors self-start sm:self-auto cursor-pointer focus-visible:outline-2 focus-visible:outline-[#1D4ED8]"
               >
                 <RotateCcw className="h-3.5 w-3.5" />
                 <span>Réinitialiser la démo</span>
@@ -130,15 +132,15 @@ export const HonestProductDemo: React.FC = () => {
         </div>
 
         {/* Fiche Élève fictive pour la démonstration */}
-        <div className="p-4 rounded-sm bg-slate-900 border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="p-4 sm:p-5 rounded-2xl bg-slate-900 border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3.5">
-            <div className="h-10 w-10 rounded-sm bg-[#1D4ED8] flex items-center justify-center text-white shrink-0 font-bold text-sm">
+            <div className="h-10 w-10 rounded-full bg-[#1D4ED8] flex items-center justify-center text-white shrink-0 font-bold text-sm">
               ET
             </div>
             <div>
               <div className="text-sm font-bold text-white flex flex-wrap items-center gap-2">
                 <span>Élève Test (Exemple)</span>
-                <span className="px-2 py-0.5 rounded-sm text-xs font-semibold bg-slate-800 text-slate-300 border border-slate-700">
+                <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-800 text-slate-300 border border-slate-700">
                   Exemple fictif
                 </span>
               </div>
@@ -166,10 +168,10 @@ export const HonestProductDemo: React.FC = () => {
                       : { opacity: 0, scale: 0.94 }
                   }
                   transition={{
-                    duration: shouldReduceMotion ? 0 : 0.22,
-                    ease: 'easeOut',
+                    duration: shouldReduceMotion ? 0 : 0.3,
+                    ease: SMOOTH_EASE,
                   }}
-                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-sm text-xs font-bold bg-emerald-950 text-emerald-300 border border-emerald-700"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-bold bg-emerald-950 text-emerald-300 border border-emerald-700"
                 >
                   <CheckCircle2 className="h-3.5 w-3.5" />
                   {isMobileChannel
@@ -191,10 +193,10 @@ export const HonestProductDemo: React.FC = () => {
                       : { opacity: 0, scale: 0.94 }
                   }
                   transition={{
-                    duration: shouldReduceMotion ? 0 : 0.22,
-                    ease: 'easeOut',
+                    duration: shouldReduceMotion ? 0 : 0.3,
+                    ease: SMOOTH_EASE,
                   }}
-                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-sm text-xs font-bold bg-amber-950 text-amber-300 border border-amber-700"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-bold bg-amber-950 text-amber-300 border border-amber-700"
                 >
                   Échéance à régler
                 </motion.span>
@@ -209,17 +211,17 @@ export const HonestProductDemo: React.FC = () => {
             <motion.div
               key="action-form"
               initial={
-                shouldReduceMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: 8 }
+                shouldReduceMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: 12 }
               }
               animate={{ opacity: 1, y: 0 }}
               exit={
                 shouldReduceMotion
                   ? { opacity: 1, y: 0 }
-                  : { opacity: 0, y: -8 }
+                  : { opacity: 0, y: -10 }
               }
               transition={{
-                duration: shouldReduceMotion ? 0 : 0.24,
-                ease: 'easeOut',
+                duration: shouldReduceMotion ? 0 : 0.4,
+                ease: SMOOTH_EASE,
               }}
               className="space-y-4 pt-1"
             >
@@ -235,7 +237,7 @@ export const HonestProductDemo: React.FC = () => {
                       key={ch}
                       type="button"
                       onClick={() => setSelectedChannel(ch)}
-                      className={`min-h-[44px] flex items-center justify-center gap-2 px-3 py-2.5 rounded-sm border text-xs font-bold transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-white ${
+                      className={`min-h-[44px] flex items-center justify-center gap-2 px-4 py-2.5 rounded-full border text-xs font-bold transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-white ${
                         isSelected
                           ? 'bg-[#1D4ED8] border-[#1D4ED8] text-white'
                           : 'bg-slate-900 border-slate-700 text-slate-200 hover:bg-slate-800 hover:border-slate-600'
@@ -249,7 +251,7 @@ export const HonestProductDemo: React.FC = () => {
               </div>
 
               {channelLabels[selectedChannel].refExample && (
-                <div className="p-3 rounded-sm bg-slate-900 border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                <div className="px-4 py-3 rounded-full bg-slate-900 border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
                   <span className="text-slate-300 font-medium">
                     Référence de l'opérateur (obligatoire hors espèces) :
                   </span>
@@ -263,7 +265,7 @@ export const HonestProductDemo: React.FC = () => {
                 <button
                   type="button"
                   onClick={handlePay}
-                  className="min-h-[48px] w-full px-6 py-3 rounded-sm bg-[#1D4ED8] hover:bg-[#1E40AF] text-white font-bold text-sm transition-colors flex items-center justify-center gap-2 cursor-pointer focus-visible:outline-2 focus-visible:outline-white tabular-nums"
+                  className="min-h-[48px] w-full px-6 py-3 rounded-full bg-[#1D4ED8] hover:bg-[#1E40AF] text-white font-bold text-sm transition-colors flex items-center justify-center gap-2 cursor-pointer focus-visible:outline-2 focus-visible:outline-white tabular-nums"
                 >
                   <span>Simuler l'encaissement de 15 000 MRU</span>
                   <ArrowRight className="h-4 w-4" />
@@ -276,25 +278,25 @@ export const HonestProductDemo: React.FC = () => {
               initial={
                 shouldReduceMotion
                   ? { opacity: 1, y: 0 }
-                  : { opacity: 0, y: 10 }
+                  : { opacity: 0, y: 14 }
               }
               animate={{ opacity: 1, y: 0 }}
               exit={
                 shouldReduceMotion
                   ? { opacity: 1, y: 0 }
-                  : { opacity: 0, y: -8 }
+                  : { opacity: 0, y: -10 }
               }
               transition={{
-                duration: shouldReduceMotion ? 0 : 0.28,
-                ease: 'easeOut',
+                duration: shouldReduceMotion ? 0 : 0.45,
+                ease: SMOOTH_EASE,
               }}
-              className="p-4 sm:p-5 rounded-sm bg-slate-900 border border-emerald-700 space-y-3"
+              className="p-5 sm:p-6 rounded-2xl bg-slate-900 border border-emerald-700 space-y-3"
             >
               <div className="flex flex-col sm:flex-row sm:items-center justify-between text-xs border-b border-slate-800 pb-3 gap-2">
                 <div className="flex flex-wrap items-center gap-2 text-emerald-300 font-bold">
                   <Receipt className="h-4 w-4 shrink-0" />
                   <span>Reçu PDF N° DEMO-001</span>
-                  <span className="px-2 py-0.5 rounded-sm text-xs bg-slate-800 text-slate-200 border border-slate-700">
+                  <span className="px-2.5 py-0.5 rounded-full text-xs bg-slate-800 text-slate-200 border border-slate-700">
                     Exemple fictif
                   </span>
                 </div>

@@ -47,6 +47,14 @@ const NAV_LINKS: { id: SectionId; label: string }[] = [
   { id: 'questions', label: 'Questions' },
 ];
 
+const HERO_TYPED_PHRASES = [
+  'du guichet au reçu PDF.',
+  "avec la référence de l'opérateur.",
+  'confirmé par le directeur.',
+] as const;
+
+const SMOOTH_EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
+
 const CONSTAT_CARDS = [
   {
     icon: AlertCircle,
@@ -154,6 +162,42 @@ const SOLUTION_ROLES = [
   },
 ];
 
+const BEFORE_ITEMS = [
+  'Suivre les paiements dans un cahier',
+  'Calculer les soldes à la main',
+  'Retrouver un reçu dans un tiroir',
+  'Recompter la caisse le soir',
+];
+
+const AFTER_ITEMS = [
+  'Solde de chaque élève calculé automatiquement',
+  'Reçu numéroté à chaque paiement',
+  'Paiements mobiles confirmés avec leur référence',
+  'Journal de caisse du jour',
+  'Clôture de caisse',
+];
+
+const THREE_STEPS = [
+  {
+    number: '1',
+    title: 'Créez votre école',
+    description:
+      "Renseignez le nom de votre établissement, la ville, le numéro de téléphone (+222) et l'année scolaire.",
+  },
+  {
+    number: '2',
+    title: 'Configurez vos classes et vos frais',
+    description:
+      'Créez les classes propres à votre école, définissez vos barèmes en MRU et inscrivez vos élèves.',
+  },
+  {
+    number: '3',
+    title: 'Encaissez et suivez',
+    description:
+      'Enregistrez les règlements au guichet, émettez les reçus PDF numérotés et suivez les absences au quotidien.',
+  },
+];
+
 const PRICING_PLANS = [
   {
     name: 'Essentiel',
@@ -240,6 +284,12 @@ export const LandingPage: React.FC = () => {
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
   const [activeSection, setActiveSection] = useState<SectionId | null>(null);
 
+  // État de la seconde ligne du titre d'accroche (frappe lettre par lettre, une seule fois)
+  const [typedLine, setTypedLine] = useState<string>(
+    shouldReduceMotion ? HERO_TYPED_PHRASES[0] : ''
+  );
+  const [showCursor, setShowCursor] = useState<boolean>(!shouldReduceMotion);
+
   // Thème clair par défaut à l'ouverture si l'utilisateur n'a pas explicitement choisi un thème
   useEffect(() => {
     try {
@@ -268,10 +318,75 @@ export const LandingPage: React.FC = () => {
     }
   }, []);
 
+  // Frappe unique de la seconde ligne du titre : passe par les 3 phrases vraies et s'arrête sur la première
+  useEffect(() => {
+    if (shouldReduceMotion) {
+      setTypedLine(HERO_TYPED_PHRASES[0]);
+      setShowCursor(false);
+      return;
+    }
+
+    let cancelled = false;
+    let timeoutId: number | undefined;
+
+    const sequence = [
+      HERO_TYPED_PHRASES[0],
+      HERO_TYPED_PHRASES[1],
+      HERO_TYPED_PHRASES[2],
+      HERO_TYPED_PHRASES[0],
+    ];
+
+    const sleep = (ms: number) =>
+      new Promise<void>((resolve) => {
+        timeoutId = window.setTimeout(resolve, ms);
+      });
+
+    const runTypewriter = async () => {
+      setShowCursor(true);
+      for (let s = 0; s < sequence.length; s++) {
+        const phrase = sequence[s];
+        const isLast = s === sequence.length - 1;
+
+        for (let i = 1; i <= phrase.length; i++) {
+          if (cancelled) return;
+          setTypedLine(phrase.slice(0, i));
+          await sleep(22);
+        }
+
+        if (isLast) {
+          await sleep(350);
+          if (!cancelled) {
+            setShowCursor(false);
+          }
+          return;
+        }
+
+        await sleep(420);
+
+        for (let i = phrase.length - 1; i >= 0; i--) {
+          if (cancelled) return;
+          setTypedLine(phrase.slice(0, i));
+          await sleep(10);
+        }
+
+        await sleep(120);
+      }
+    };
+
+    runTypewriter();
+
+    return () => {
+      cancelled = true;
+      if (timeoutId !== undefined) {
+        window.clearTimeout(timeoutId);
+      }
+    };
+  }, [shouldReduceMotion]);
+
   // Suivi de la section visible au défilement pour souligner le lien correspondant
   useEffect(() => {
     const handleScroll = () => {
-      const scrollPosition = window.scrollY + 160;
+      const scrollPosition = window.scrollY + 180;
       let current: SectionId | null = null;
 
       for (const link of NAV_LINKS) {
@@ -314,13 +429,23 @@ export const LandingPage: React.FC = () => {
     toggleTheme();
   };
 
-  // Animations conformes : uniquement transform et opacity, 280 ms, ease-out, décalage 40 ms, une seule fois
+  // Apparition au défilement : montée de 28 px avec fondu, 600 ms, cubic-bezier(0.22, 1, 0.36, 1), décalage de 80 ms, une seule fois
   const containerVariants: Variants = {
     hidden: { opacity: shouldReduceMotion ? 1 : 0 },
     show: {
       opacity: 1,
       transition: {
-        staggerChildren: shouldReduceMotion ? 0 : 0.04,
+        staggerChildren: shouldReduceMotion ? 0 : 0.08,
+      },
+    },
+  };
+
+  const stepsContainerVariants: Variants = {
+    hidden: { opacity: shouldReduceMotion ? 1 : 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: shouldReduceMotion ? 0 : 0.14,
       },
     },
   };
@@ -328,24 +453,54 @@ export const LandingPage: React.FC = () => {
   const itemVariants: Variants = {
     hidden: {
       opacity: shouldReduceMotion ? 1 : 0,
-      y: shouldReduceMotion ? 0 : 12,
+      y: shouldReduceMotion ? 0 : 28,
     },
     show: {
       opacity: 1,
       y: 0,
       transition: {
-        duration: shouldReduceMotion ? 0 : 0.28,
-        ease: 'easeOut',
+        duration: shouldReduceMotion ? 0 : 0.6,
+        ease: SMOOTH_EASE,
       },
     },
   };
 
+  // Classes partagées pour les cartes arrondies (24 px), ombre douce et levée de 4 px au survol / focus clavier
+  const softCardInteractiveClass = `rounded-3xl bg-surface border border-subtle shadow-[0_10px_30px_rgba(15,23,42,0.06)] dark:shadow-[0_10px_30px_rgba(0,0,0,0.35)] transition-[transform,box-shadow,border-color] duration-200 ease-out ${
+    shouldReduceMotion
+      ? ''
+      : 'hover:-translate-y-1 focus-within:-translate-y-1'
+  } hover:shadow-[0_16px_36px_rgba(15,23,42,0.09)] dark:hover:shadow-[0_16px_36px_rgba(0,0,0,0.48)] focus-within:shadow-[0_16px_36px_rgba(15,23,42,0.09)]`;
+
   return (
-    <div className="min-h-screen bg-surface text-main font-['Plus_Jakarta_Sans',sans-serif] antialiased overflow-x-clip">
+    <div className="relative min-h-screen bg-page-bg text-main font-['Plus_Jakarta_Sans',sans-serif] antialiased overflow-x-clip">
+      {/* Motif de grille SVG très discret sur le fond gris-bleu très pâle (aucun dégradé CSS) */}
+      <svg
+        aria-hidden="true"
+        className="pointer-events-none fixed inset-0 h-full w-full z-0 text-[#0F172A]/[0.035] dark:text-[#F8FAFC]/[0.04]"
+      >
+        <defs>
+          <pattern
+            id="ecosurv-subtle-grid"
+            width="44"
+            height="44"
+            patternUnits="userSpaceOnUse"
+          >
+            <path
+              d="M 44 0 L 0 0 0 44"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1"
+            />
+          </pattern>
+        </defs>
+        <rect width="100%" height="100%" fill="url(#ecosurv-subtle-grid)" />
+      </svg>
+
       {/* Lien d'évitement en tout premier */}
       <a
         href="#contenu-principal"
-        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:px-4 focus:py-2.5 focus:rounded-sm focus:bg-[#1D4ED8] focus:text-white focus:text-sm focus:font-semibold"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:px-4 focus:py-2.5 focus:rounded-full focus:bg-[#1D4ED8] focus:text-white focus:text-sm focus:font-semibold"
       >
         Aller au contenu
       </a>
@@ -361,12 +516,12 @@ export const LandingPage: React.FC = () => {
 
       {/* 1. Barre de navigation en pilule flottante */}
       <header className="sticky top-3 sm:top-4 z-40 px-3 sm:px-6">
-        <div className="mx-auto max-w-[1100px] rounded-full bg-surface border border-default shadow-card px-4 sm:px-6 h-14 sm:h-16 flex items-center justify-between gap-3">
+        <div className="mx-auto max-w-[1100px] rounded-full bg-surface border border-subtle shadow-[0_10px_30px_rgba(15,23,42,0.06)] dark:shadow-[0_10px_30px_rgba(0,0,0,0.35)] px-4 sm:px-6 h-14 sm:h-16 flex items-center justify-between gap-3">
           {/* Logo à gauche */}
           <a
             href="#"
             aria-label="EcoSurv — Accueil"
-            className="inline-flex items-center py-1 shrink-0 focus-visible:outline-2 focus-visible:outline-[#1D4ED8] rounded-sm"
+            className="inline-flex items-center py-1 shrink-0 focus-visible:outline-2 focus-visible:outline-[#1D4ED8] rounded-full"
           >
             <Logo
               variant={theme === 'dark' ? 'inverse' : 'couleur'}
@@ -386,7 +541,7 @@ export const LandingPage: React.FC = () => {
                   key={link.id}
                   href={`#${link.id}`}
                   aria-current={isActive ? 'location' : undefined}
-                  className={`min-h-[44px] inline-flex items-center px-1 text-sm transition-colors focus-visible:outline-2 focus-visible:outline-[#1D4ED8] rounded-sm ${
+                  className={`min-h-[44px] inline-flex items-center px-1 text-sm transition-colors focus-visible:outline-2 focus-visible:outline-[#1D4ED8] rounded-full ${
                     isActive
                       ? 'font-bold text-primary-text underline decoration-[#1D4ED8] decoration-2 underline-offset-8'
                       : 'font-semibold text-secondary hover:text-primary-text'
@@ -481,19 +636,19 @@ export const LandingPage: React.FC = () => {
               initial={
                 shouldReduceMotion
                   ? { opacity: 1, y: 0 }
-                  : { opacity: 0, y: -8 }
+                  : { opacity: 0, y: -10 }
               }
               animate={{ opacity: 1, y: 0 }}
               exit={
                 shouldReduceMotion
                   ? { opacity: 1, y: 0 }
-                  : { opacity: 0, y: -8 }
+                  : { opacity: 0, y: -10 }
               }
               transition={{
-                duration: shouldReduceMotion ? 0 : 0.22,
-                ease: 'easeOut',
+                duration: shouldReduceMotion ? 0 : 0.3,
+                ease: SMOOTH_EASE,
               }}
-              className="lg:hidden mx-auto max-w-[1100px] mt-2 rounded-md bg-surface border border-default shadow-card p-4 space-y-1.5"
+              className="lg:hidden mx-auto max-w-[1100px] mt-2 rounded-3xl bg-surface border border-subtle shadow-[0_10px_30px_rgba(15,23,42,0.08)] p-4 space-y-1.5"
             >
               {NAV_LINKS.map((link) => {
                 const isActive = activeSection === link.id;
@@ -502,7 +657,7 @@ export const LandingPage: React.FC = () => {
                     key={link.id}
                     href={`#${link.id}`}
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className={`min-h-[44px] flex items-center px-3 rounded-sm text-base transition-colors ${
+                    className={`min-h-[44px] flex items-center px-4 rounded-full text-base transition-colors ${
                       isActive
                         ? 'font-bold text-primary-text bg-surface-subtle'
                         : 'font-medium text-main hover:bg-surface-subtle'
@@ -540,9 +695,9 @@ export const LandingPage: React.FC = () => {
         </AnimatePresence>
       </header>
 
-      <main id="contenu-principal">
-        {/* 2. Accroche (texte et aperçu alignés par le haut, sans grand vide au-dessus) */}
-        <section className="pt-6 sm:pt-8 pb-12 sm:pb-16 bg-surface border-b border-subtle">
+      <main id="contenu-principal" className="relative z-10">
+        {/* 2. Accroche (texte et scène de produit alignés par le haut) */}
+        <section className="pt-6 sm:pt-10 pb-14 sm:pb-20 border-b border-subtle">
           <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
             <motion.div
               initial="hidden"
@@ -556,13 +711,28 @@ export const LandingPage: React.FC = () => {
                 variants={itemVariants}
                 className="lg:col-span-6 space-y-5 pt-1"
               >
-                <p className="inline-flex items-center px-3 py-1 rounded-full bg-surface-subtle border border-subtle text-xs font-bold text-primary-text">
+                <p className="inline-flex items-center px-3.5 py-1 rounded-full bg-surface border border-subtle text-xs font-bold uppercase tracking-wider text-primary-text shadow-[0_4px_12px_rgba(15,23,42,0.04)]">
                   Pensé pour les écoles en Mauritanie (MRU, +222)
                 </p>
 
                 <h1 className="text-2xl sm:text-[32px] sm:leading-[40px] font-extrabold text-main tracking-tight">
-                  Chaque paiement de scolarité, suivi de l'inscription au reçu
-                  PDF.
+                  {/* Titre complet immédiatement lisible par les lecteurs d'écran */}
+                  <span className="sr-only">
+                    Chaque paiement de scolarité suivi, du guichet au reçu PDF.
+                  </span>
+
+                  {/* Affichage visuel : ligne 1 fixe, ligne 2 frappée lettre par lettre en bleu uni */}
+                  <span aria-hidden="true" className="block">
+                    <span className="block text-main">
+                      Chaque paiement de scolarité suivi,
+                    </span>
+                    <span className="block text-[#1D4ED8] dark:text-[#60A5FA] min-h-[1.25em]">
+                      {typedLine}
+                      {showCursor && (
+                        <span className="inline-block w-[2px] h-[0.9em] bg-[#1D4ED8] dark:bg-[#60A5FA] ml-1 align-middle" />
+                      )}
+                    </span>
+                  </span>
                 </h1>
 
                 <p className="text-base text-secondary leading-relaxed max-w-[54ch]">
@@ -582,7 +752,7 @@ export const LandingPage: React.FC = () => {
 
                   <a
                     href="#demo"
-                    className="min-h-[44px] inline-flex items-center px-2 text-sm font-bold text-primary-text hover:underline focus-visible:outline-2 focus-visible:outline-[#1D4ED8] rounded-sm"
+                    className="min-h-[44px] inline-flex items-center px-3 rounded-full text-sm font-bold text-primary-text hover:underline focus-visible:outline-2 focus-visible:outline-[#1D4ED8]"
                   >
                     Voir la démonstration
                   </a>
@@ -595,41 +765,41 @@ export const LandingPage: React.FC = () => {
                   </p>
 
                   <div className="flex flex-wrap items-center gap-2.5">
-                    <div className="min-h-[40px] px-3 py-1.5 rounded-sm bg-white border border-subtle flex items-center justify-center">
+                    <div className="min-h-[40px] px-3.5 py-1.5 rounded-full bg-white border border-subtle flex items-center justify-center">
                       <img
                         src={bankilyLogo}
                         alt="Bankily"
                         width={39}
                         height={28}
-                        className="max-h-[28px] h-7 w-auto object-contain select-none"
+                        className="max-h-[26px] h-6 w-auto object-contain select-none"
                       />
                     </div>
 
-                    <div className="min-h-[40px] px-3 py-1.5 rounded-sm bg-white border border-subtle flex items-center justify-center">
+                    <div className="min-h-[40px] px-3.5 py-1.5 rounded-full bg-white border border-subtle flex items-center justify-center">
                       <img
                         src={masrviLogo}
                         alt="Masrvi"
                         width={28}
                         height={28}
-                        className="max-h-[28px] h-7 w-auto object-contain select-none"
+                        className="max-h-[26px] h-6 w-auto object-contain select-none"
                       />
                     </div>
 
-                    <div className="min-h-[40px] px-3 py-1.5 rounded-sm bg-white border border-subtle flex items-center justify-center">
+                    <div className="min-h-[40px] px-3.5 py-1.5 rounded-full bg-white border border-subtle flex items-center justify-center">
                       <img
                         src={sedadLogo}
                         alt="Sedad"
                         width={52}
                         height={28}
-                        className="max-h-[28px] h-7 w-auto object-contain select-none"
+                        className="max-h-[26px] h-6 w-auto object-contain select-none"
                       />
                     </div>
 
-                    <span className="min-h-[40px] px-3 py-1.5 rounded-sm bg-surface-subtle border border-subtle inline-flex items-center text-xs font-bold text-main">
+                    <span className="min-h-[40px] px-4 py-1.5 rounded-full bg-surface border border-subtle inline-flex items-center text-xs font-bold text-main">
                       Espèces
                     </span>
 
-                    <span className="min-h-[40px] px-3 py-1.5 rounded-sm bg-surface-subtle border border-subtle inline-flex items-center text-xs font-bold text-main">
+                    <span className="min-h-[40px] px-4 py-1.5 rounded-full bg-surface border border-subtle inline-flex items-center text-xs font-bold text-main">
                       Chèque
                     </span>
                   </div>
@@ -641,7 +811,7 @@ export const LandingPage: React.FC = () => {
                 </div>
               </motion.div>
 
-              {/* Colonne droite : aperçu interactif aligné en haut */}
+              {/* Colonne droite : scène de produit animée alignée en haut */}
               <motion.div variants={itemVariants} className="lg:col-span-6">
                 <LandingMockupPreview />
               </motion.div>
@@ -652,7 +822,7 @@ export const LandingPage: React.FC = () => {
         {/* 3. Temps 1 : Le constat */}
         <section
           id="constat"
-          className="scroll-mt-24 py-12 sm:py-16 lg:py-20 bg-page-bg border-b border-subtle"
+          className="scroll-mt-24 py-14 sm:py-20 border-b border-subtle"
         >
           <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
             <motion.div
@@ -664,10 +834,10 @@ export const LandingPage: React.FC = () => {
             >
               <motion.div
                 variants={itemVariants}
-                className="max-w-2xl space-y-2"
+                className="text-center max-w-2xl mx-auto space-y-3"
               >
-                <span className="text-xs font-bold uppercase tracking-wider text-primary-text block">
-                  Temps 1 • Le constat
+                <span className="inline-flex items-center px-3.5 py-1 rounded-full bg-warning-surface border border-warning-border text-warning-text text-xs font-bold uppercase tracking-wider">
+                  Le constat
                 </span>
                 <h2 className="text-xl sm:text-2xl font-extrabold text-main tracking-tight">
                   Trois difficultés courantes quand la scolarité est suivie sur
@@ -675,8 +845,7 @@ export const LandingPage: React.FC = () => {
                 </h2>
                 <p className="text-base text-secondary leading-relaxed">
                   Tenir les échéances, les acomptes et les références de
-                  transfert mobile sur papier complique le travail quotidien de
-                  la direction et de la caisse.
+                  transfert mobile sur papier alourdit la gestion quotidienne.
                 </p>
               </motion.div>
 
@@ -687,13 +856,13 @@ export const LandingPage: React.FC = () => {
                     <motion.div
                       key={card.title}
                       variants={itemVariants}
-                      className="rounded-md bg-surface border border-default p-6 shadow-card flex flex-col justify-between space-y-5"
+                      className={`${softCardInteractiveClass} p-6 sm:p-7 flex flex-col justify-between space-y-5`}
                     >
-                      <div className="space-y-3">
-                        <div className="h-10 w-10 rounded-sm bg-warning-surface border border-warning-border text-warning-text flex items-center justify-center">
+                      <div className="space-y-3.5">
+                        <div className="h-11 w-11 rounded-2xl bg-warning-surface border border-warning-border text-warning-text flex items-center justify-center">
                           <IconComponent className="h-5 w-5" />
                         </div>
-                        <h3 className="text-lg font-bold text-main leading-snug">
+                        <h3 className="text-lg font-extrabold text-main leading-snug">
                           {card.title}
                         </h3>
                         <p className="text-sm text-secondary leading-relaxed">
@@ -701,7 +870,7 @@ export const LandingPage: React.FC = () => {
                         </p>
                       </div>
 
-                      <div className="pt-3 border-t border-subtle text-xs font-semibold text-muted">
+                      <div className="pt-3.5 border-t border-subtle text-xs font-semibold text-muted">
                         Constat :{' '}
                         <span className="text-main">{card.consequence}</span>
                       </div>
@@ -713,26 +882,26 @@ export const LandingPage: React.FC = () => {
           </div>
         </section>
 
-        {/* 4. Temps 2 : La solution (fonctions et quatre rôles) */}
+        {/* 4. Temps 2 : La solution + Ce qui change au quotidien + Prêt en trois étapes */}
         <section
           id="solution"
-          className="scroll-mt-24 py-12 sm:py-16 lg:py-20 bg-surface border-b border-subtle"
+          className="scroll-mt-24 py-14 sm:py-20 border-b border-subtle"
         >
-          <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 space-y-14">
+          <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 space-y-16">
             {/* Sous-partie A : Cartes des fonctions */}
             <motion.div
               initial="hidden"
               whileInView="show"
               viewport={{ once: true, amount: 0.15 }}
               variants={containerVariants}
-              className="space-y-8"
+              className="space-y-10"
             >
               <motion.div
                 variants={itemVariants}
-                className="max-w-2xl space-y-2"
+                className="text-center max-w-2xl mx-auto space-y-3"
               >
-                <span className="text-xs font-bold uppercase tracking-wider text-primary-text block">
-                  Temps 2 • La solution
+                <span className="inline-flex items-center px-3.5 py-1 rounded-full bg-blue-50 dark:bg-slate-800 border border-blue-200 dark:border-blue-800 text-[#1D4ED8] dark:text-blue-300 text-xs font-bold uppercase tracking-wider">
+                  La solution
                 </span>
                 <h2 className="text-xl sm:text-2xl font-extrabold text-main tracking-tight">
                   Un outil structuré pour les inscriptions, la caisse et les
@@ -751,12 +920,12 @@ export const LandingPage: React.FC = () => {
                     <motion.div
                       key={feat.title}
                       variants={itemVariants}
-                      className="rounded-md bg-page-bg border border-subtle p-6 space-y-3"
+                      className={`${softCardInteractiveClass} p-6 sm:p-7 space-y-3.5`}
                     >
-                      <div className="h-10 w-10 rounded-sm bg-surface border border-default text-primary-text flex items-center justify-center">
+                      <div className="h-11 w-11 rounded-2xl bg-surface-subtle border border-subtle text-primary-text flex items-center justify-center">
                         <IconComponent className="h-5 w-5" />
                       </div>
-                      <h3 className="text-base font-bold text-main">
+                      <h3 className="text-base font-extrabold text-main">
                         {feat.title}
                       </h3>
                       <p className="text-sm text-secondary leading-relaxed">
@@ -774,13 +943,13 @@ export const LandingPage: React.FC = () => {
               whileInView="show"
               viewport={{ once: true, amount: 0.15 }}
               variants={containerVariants}
-              className="space-y-8 pt-6 border-t border-subtle"
+              className="space-y-10 pt-8 border-t border-subtle"
             >
               <motion.div
                 variants={itemVariants}
-                className="max-w-2xl space-y-2"
+                className="text-center max-w-2xl mx-auto space-y-2.5"
               >
-                <h3 className="text-lg sm:text-xl font-extrabold text-main">
+                <h3 className="text-lg sm:text-xl font-extrabold text-main tracking-tight">
                   Quatre accès distincts selon les responsabilités de chacun
                 </h3>
                 <p className="text-sm sm:text-base text-secondary leading-relaxed">
@@ -796,14 +965,14 @@ export const LandingPage: React.FC = () => {
                     <motion.div
                       key={roleCard.role}
                       variants={itemVariants}
-                      className="rounded-md bg-surface border border-default p-6 shadow-card space-y-4"
+                      className={`${softCardInteractiveClass} p-6 sm:p-7 space-y-4`}
                     >
                       <div className="flex items-start gap-3.5">
-                        <div className="h-10 w-10 rounded-sm bg-surface-subtle border border-subtle text-primary-text flex items-center justify-center shrink-0">
+                        <div className="h-11 w-11 rounded-2xl bg-surface-subtle border border-subtle text-primary-text flex items-center justify-center shrink-0">
                           <IconComponent className="h-5 w-5" />
                         </div>
                         <div>
-                          <h4 className="text-base font-bold text-main">
+                          <h4 className="text-base font-extrabold text-main">
                             {roleCard.role}
                           </h4>
                           <p className="text-xs text-muted mt-0.5">
@@ -812,7 +981,7 @@ export const LandingPage: React.FC = () => {
                         </div>
                       </div>
 
-                      <ul className="space-y-2 text-sm text-secondary border-t border-subtle pt-3.5">
+                      <ul className="space-y-2.5 text-sm text-secondary border-t border-subtle pt-4">
                         {roleCard.items.map((item) => (
                           <li key={item} className="flex items-start gap-2.5">
                             <Check className="h-4 w-4 text-primary-text shrink-0 mt-0.5" />
@@ -825,13 +994,140 @@ export const LandingPage: React.FC = () => {
                 })}
               </div>
             </motion.div>
+
+            {/* Sous-partie C : Bloc « Ce qui change au quotidien » (Avant / Avec EcoSurv) */}
+            <motion.div
+              initial="hidden"
+              whileInView="show"
+              viewport={{ once: true, amount: 0.15 }}
+              variants={containerVariants}
+              className="space-y-8 pt-8 border-t border-subtle"
+            >
+              <motion.div
+                variants={itemVariants}
+                className="text-center max-w-2xl mx-auto space-y-2.5"
+              >
+                <span className="inline-flex items-center px-3.5 py-1 rounded-full bg-surface border border-subtle text-secondary text-xs font-bold uppercase tracking-wider">
+                  Au quotidien
+                </span>
+                <h3 className="text-xl sm:text-2xl font-extrabold text-main tracking-tight">
+                  Ce qui change au quotidien
+                </h3>
+                <p className="text-base text-secondary leading-relaxed">
+                  Du suivi manuel sur cahier à une gestion structurée par élève
+                  et par échéance.
+                </p>
+              </motion.div>
+
+              <motion.div
+                variants={itemVariants}
+                className="rounded-3xl bg-surface border border-subtle shadow-[0_10px_30px_rgba(15,23,42,0.06)] dark:shadow-[0_10px_30px_rgba(0,0,0,0.35)] p-6 sm:p-8 grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8"
+              >
+                {/* Colonne gauche : Avant */}
+                <div className="rounded-2xl bg-page-bg border border-subtle p-5 sm:p-6 space-y-4">
+                  <div className="flex items-center justify-between gap-2 border-b border-subtle pb-3">
+                    <h4 className="text-base font-extrabold text-secondary">
+                      Avant
+                    </h4>
+                    <span className="px-3 py-0.5 rounded-full bg-surface border border-subtle text-xs font-semibold text-muted">
+                      Suivi manuel
+                    </span>
+                  </div>
+
+                  <ul className="space-y-3 text-sm text-muted">
+                    {BEFORE_ITEMS.map((item) => (
+                      <li key={item} className="flex items-start gap-3">
+                        <span
+                          aria-hidden="true"
+                          className="h-5 w-5 rounded-full bg-surface border border-default text-muted flex items-center justify-center shrink-0 mt-0.5"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </span>
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                {/* Colonne droite : Avec EcoSurv */}
+                <div className="rounded-2xl bg-surface border-2 border-[#1D4ED8] p-5 sm:p-6 space-y-4">
+                  <div className="flex items-center justify-between gap-2 border-b border-subtle pb-3">
+                    <h4 className="text-base font-extrabold text-main">
+                      Avec EcoSurv
+                    </h4>
+                    <span className="px-3 py-0.5 rounded-full bg-blue-50 dark:bg-slate-800 border border-blue-200 dark:border-blue-800 text-xs font-bold text-[#1D4ED8] dark:text-blue-300">
+                      Suivi structuré
+                    </span>
+                  </div>
+
+                  <ul className="space-y-3 text-sm font-medium text-main">
+                    {AFTER_ITEMS.map((item) => (
+                      <li key={item} className="flex items-start gap-3">
+                        <span
+                          aria-hidden="true"
+                          className="h-5 w-5 rounded-full bg-[#1D4ED8] text-white flex items-center justify-center shrink-0 mt-0.5"
+                        >
+                          <Check className="h-3.5 w-3.5" />
+                        </span>
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </motion.div>
+            </motion.div>
+
+            {/* Sous-partie D : Bloc « Prêt en trois étapes » (les cartes numérotées arrivent une par une) */}
+            <motion.div
+              initial="hidden"
+              whileInView="show"
+              viewport={{ once: true, amount: 0.15 }}
+              variants={stepsContainerVariants}
+              className="space-y-8 pt-8 border-t border-subtle"
+            >
+              <motion.div
+                variants={itemVariants}
+                className="text-center max-w-2xl mx-auto space-y-2.5"
+              >
+                <span className="inline-flex items-center px-3.5 py-1 rounded-full bg-surface border border-subtle text-secondary text-xs font-bold uppercase tracking-wider">
+                  Mise en route
+                </span>
+                <h3 className="text-xl sm:text-2xl font-extrabold text-main tracking-tight">
+                  Prêt en trois étapes
+                </h3>
+                <p className="text-base text-secondary leading-relaxed">
+                  Un parcours guidé par la carte « Pour démarrer » dès la
+                  création de votre établissement.
+                </p>
+              </motion.div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {THREE_STEPS.map((step) => (
+                  <motion.div
+                    key={step.number}
+                    variants={itemVariants}
+                    className={`${softCardInteractiveClass} p-6 sm:p-7 space-y-4`}
+                  >
+                    <div className="h-11 w-11 rounded-full bg-[#1D4ED8] text-white font-extrabold text-base flex items-center justify-center tabular-nums">
+                      {step.number}
+                    </div>
+                    <h4 className="text-lg font-extrabold text-main">
+                      {step.title}
+                    </h4>
+                    <p className="text-sm text-secondary leading-relaxed">
+                      {step.description}
+                    </p>
+                  </motion.div>
+                ))}
+              </div>
+            </motion.div>
           </div>
         </section>
 
         {/* 5. Temps 3 : Démonstration interactive (section d'appui sur fond sombre #0F172A) */}
         <section
           id="demo"
-          className="scroll-mt-24 py-12 sm:py-16 lg:py-20 bg-[#0F172A] text-white border-b border-slate-800"
+          className="scroll-mt-24 py-14 sm:py-20 bg-[#0F172A] text-white border-b border-slate-800"
         >
           <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
             <motion.div
@@ -839,14 +1135,14 @@ export const LandingPage: React.FC = () => {
               whileInView="show"
               viewport={{ once: true, amount: 0.15 }}
               variants={containerVariants}
-              className="space-y-8"
+              className="space-y-10"
             >
               <motion.div
                 variants={itemVariants}
-                className="text-center max-w-2xl mx-auto space-y-2.5"
+                className="text-center max-w-2xl mx-auto space-y-3"
               >
-                <span className="text-xs font-bold uppercase tracking-wider text-blue-300 block">
-                  Temps 3 • La démonstration
+                <span className="inline-flex items-center px-3.5 py-1 rounded-full bg-slate-900 border border-slate-700 text-slate-200 text-xs font-bold uppercase tracking-wider">
+                  Démonstration
                 </span>
                 <h2 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight">
                   Testez la saisie d'un encaissement au guichet
@@ -868,7 +1164,7 @@ export const LandingPage: React.FC = () => {
         {/* 6. Tarifs */}
         <section
           id="tarifs"
-          className="scroll-mt-24 py-12 sm:py-16 lg:py-20 bg-page-bg border-b border-subtle"
+          className="scroll-mt-24 py-14 sm:py-20 border-b border-subtle"
         >
           <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
             <motion.div
@@ -876,13 +1172,13 @@ export const LandingPage: React.FC = () => {
               whileInView="show"
               viewport={{ once: true, amount: 0.15 }}
               variants={containerVariants}
-              className="space-y-8"
+              className="space-y-10"
             >
               <motion.div
                 variants={itemVariants}
-                className="max-w-2xl space-y-2"
+                className="text-center max-w-2xl mx-auto space-y-3"
               >
-                <span className="text-xs font-bold uppercase tracking-wider text-primary-text block">
+                <span className="inline-flex items-center px-3.5 py-1 rounded-full bg-surface border border-subtle text-secondary text-xs font-bold uppercase tracking-wider">
                   Tarifs
                 </span>
                 <h2 className="text-xl sm:text-2xl font-extrabold text-main tracking-tight">
@@ -900,10 +1196,14 @@ export const LandingPage: React.FC = () => {
                   <motion.div
                     key={plan.name}
                     variants={itemVariants}
-                    className={`rounded-md bg-surface p-6 sm:p-8 shadow-card flex flex-col justify-between space-y-6 ${
+                    className={`rounded-3xl bg-surface p-6 sm:p-8 shadow-[0_10px_30px_rgba(15,23,42,0.06)] dark:shadow-[0_10px_30px_rgba(0,0,0,0.35)] transition-[transform,box-shadow] duration-200 ease-out ${
+                      shouldReduceMotion
+                        ? ''
+                        : 'hover:-translate-y-1 focus-within:-translate-y-1'
+                    } hover:shadow-[0_16px_36px_rgba(15,23,42,0.09)] flex flex-col justify-between space-y-6 ${
                       plan.highlighted
                         ? 'border-2 border-[#1D4ED8]'
-                        : 'border border-default'
+                        : 'border border-subtle'
                     }`}
                   >
                     <div className="space-y-4">
@@ -911,7 +1211,7 @@ export const LandingPage: React.FC = () => {
                         <h3 className="text-lg font-extrabold text-main">
                           {plan.name}
                         </h3>
-                        <span className="px-2.5 py-0.5 rounded-sm bg-surface-subtle border border-subtle text-xs font-bold text-primary-text">
+                        <span className="px-3 py-0.5 rounded-full bg-surface-subtle border border-subtle text-xs font-bold text-primary-text">
                           Essai gratuit
                         </span>
                       </div>
@@ -949,7 +1249,7 @@ export const LandingPage: React.FC = () => {
 
               <motion.p
                 variants={itemVariants}
-                className="text-sm font-medium text-secondary"
+                className="text-sm font-medium text-secondary text-center"
               >
                 Prix en MRU (nouvelle ouguiya), par mois et par école.
               </motion.p>
@@ -957,7 +1257,7 @@ export const LandingPage: React.FC = () => {
               {/* Encadré : Inclus dans toutes les formules */}
               <motion.div
                 variants={itemVariants}
-                className="rounded-md bg-surface border border-default p-6 sm:p-8 shadow-card space-y-5"
+                className="rounded-3xl bg-surface border border-subtle p-6 sm:p-8 shadow-[0_10px_30px_rgba(15,23,42,0.06)] dark:shadow-[0_10px_30px_rgba(0,0,0,0.35)] space-y-5"
               >
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-subtle pb-4">
                   <div>
@@ -969,7 +1269,7 @@ export const LandingPage: React.FC = () => {
                       l'ouverture de son compte.
                     </p>
                   </div>
-                  <span className="self-start sm:self-auto px-3 py-1 rounded-sm bg-surface-subtle border border-subtle text-xs font-bold text-primary-text">
+                  <span className="self-start sm:self-auto px-3.5 py-1 rounded-full bg-surface-subtle border border-subtle text-xs font-bold text-primary-text">
                     Essai gratuit
                   </span>
                 </div>
@@ -990,7 +1290,7 @@ export const LandingPage: React.FC = () => {
         {/* 7. Questions fréquentes (Accordéon accessible avec « + », 6 questions) */}
         <section
           id="questions"
-          className="scroll-mt-24 py-12 sm:py-16 lg:py-20 bg-surface border-b border-subtle"
+          className="scroll-mt-24 py-14 sm:py-20 border-b border-subtle"
         >
           <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
             <motion.div
@@ -998,14 +1298,14 @@ export const LandingPage: React.FC = () => {
               whileInView="show"
               viewport={{ once: true, amount: 0.15 }}
               variants={containerVariants}
-              className="space-y-8"
+              className="space-y-10"
             >
               <motion.div
                 variants={itemVariants}
-                className="max-w-2xl space-y-2"
+                className="text-center max-w-2xl mx-auto space-y-3"
               >
-                <span className="text-xs font-bold uppercase tracking-wider text-primary-text block">
-                  Questions fréquentes
+                <span className="inline-flex items-center px-3.5 py-1 rounded-full bg-surface border border-subtle text-secondary text-xs font-bold uppercase tracking-wider">
+                  Questions
                 </span>
                 <h2 className="text-xl sm:text-2xl font-extrabold text-main tracking-tight">
                   Six réponses claires avant de démarrer
@@ -1016,7 +1316,7 @@ export const LandingPage: React.FC = () => {
                 </p>
               </motion.div>
 
-              <div className="divide-y divide-subtle border border-default bg-page-bg rounded-md px-4 sm:px-6">
+              <div className="divide-y divide-subtle border border-subtle bg-surface rounded-3xl shadow-[0_10px_30px_rgba(15,23,42,0.06)] dark:shadow-[0_10px_30px_rgba(0,0,0,0.35)] px-5 sm:px-8">
                 {FAQ_ITEMS.map((faq, idx) => {
                   const isOpen = openFaqIndex === idx;
                   const buttonId = `${faq.id}-btn`;
@@ -1033,12 +1333,12 @@ export const LandingPage: React.FC = () => {
                           onClick={() =>
                             setOpenFaqIndex(isOpen ? null : idx)
                           }
-                          className="w-full min-h-[52px] py-4 flex items-center justify-between gap-4 text-left text-base font-bold text-main hover:text-primary-text transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-[#1D4ED8]"
+                          className="w-full min-h-[56px] py-4 flex items-center justify-between gap-4 text-left text-base font-bold text-main hover:text-primary-text transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-[#1D4ED8] rounded-xl"
                         >
                           <span>{faq.question}</span>
                           <span
                             aria-hidden="true"
-                            className="h-7 w-7 rounded-full border border-default bg-surface flex items-center justify-center shrink-0 text-primary-text"
+                            className="h-8 w-8 rounded-full border border-subtle bg-surface-subtle flex items-center justify-center shrink-0 text-primary-text"
                           >
                             <Plus
                               className={`h-4 w-4 transition-transform duration-200 ${
@@ -1058,17 +1358,17 @@ export const LandingPage: React.FC = () => {
                             initial={
                               shouldReduceMotion
                                 ? { opacity: 1, y: 0 }
-                                : { opacity: 0, y: -4 }
+                                : { opacity: 0, y: -6 }
                             }
                             animate={{ opacity: 1, y: 0 }}
                             exit={
                               shouldReduceMotion
                                 ? { opacity: 1, y: 0 }
-                                : { opacity: 0, y: -4 }
+                                : { opacity: 0, y: -6 }
                             }
                             transition={{
-                              duration: shouldReduceMotion ? 0 : 0.22,
-                              ease: 'easeOut',
+                              duration: shouldReduceMotion ? 0 : 0.3,
+                              ease: SMOOTH_EASE,
                             }}
                             className="pb-5 pt-1 text-sm sm:text-base text-secondary leading-relaxed max-w-[70ch]"
                           >
@@ -1085,14 +1385,14 @@ export const LandingPage: React.FC = () => {
         </section>
 
         {/* 8. Bandeau final sombre « Essayez avec votre propre école » */}
-        <section className="py-12 sm:py-16 bg-[#0F172A] text-white">
+        <section className="py-14 sm:py-20 bg-[#0F172A] text-white">
           <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
             <motion.div
               initial="hidden"
               whileInView="show"
               viewport={{ once: true, amount: 0.2 }}
               variants={containerVariants}
-              className="flex flex-col md:flex-row md:items-center justify-between gap-6"
+              className="rounded-3xl bg-slate-900 border border-slate-800 p-6 sm:p-10 flex flex-col md:flex-row md:items-center justify-between gap-6"
             >
               <motion.div
                 variants={itemVariants}
@@ -1123,7 +1423,7 @@ export const LandingPage: React.FC = () => {
       </main>
 
       {/* 9. Pied de page minimal */}
-      <footer className="bg-surface border-t border-subtle py-8">
+      <footer className="relative z-10 bg-surface border-t border-subtle py-8">
         <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
           <div className="flex items-center gap-3">
             <Logo

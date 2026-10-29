@@ -1,385 +1,481 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import {
-  Check,
-  Circle,
-  FileText,
-  Bell,
-  Calendar,
-  Users,
-  CreditCard,
-  LayoutDashboard,
   CheckCircle2,
+  Clock,
+  FileText,
+  Pause,
+  Play,
+  ShieldCheck,
+  Smartphone,
+  User,
 } from 'lucide-react';
 import { LogoIcone } from '../ui/Logo';
 
-type PreviewRole = 'directeur' | 'caissier' | 'enseignant' | 'parent';
+interface SceneStep {
+  id: number;
+  stepLabel: string;
+  roleBadge: string;
+  floatingPill: {
+    text: string;
+    tone: 'blue' | 'amber' | 'emerald';
+  };
+}
 
-const ROLE_TABS: { id: PreviewRole; label: string }[] = [
-  { id: 'directeur', label: 'Directeur' },
-  { id: 'caissier', label: 'Caissier' },
-  { id: 'enseignant', label: 'Enseignant' },
-  { id: 'parent', label: 'Parent' },
+const SCENE_STEPS: SceneStep[] = [
+  {
+    id: 0,
+    stepLabel: '1. Guichet',
+    roleBadge: 'Accès Caissier',
+    floatingPill: {
+      text: 'Référence Bankily saisie',
+      tone: 'blue',
+    },
+  },
+  {
+    id: 1,
+    stepLabel: '2. En attente',
+    roleBadge: 'Guichet • Statut',
+    floatingPill: {
+      text: 'Paiement en attente',
+      tone: 'amber',
+    },
+  },
+  {
+    id: 2,
+    stepLabel: '3. Validation',
+    roleBadge: 'Accès Directeur',
+    floatingPill: {
+      text: 'Confirmé par le directeur',
+      tone: 'blue',
+    },
+  },
+  {
+    id: 3,
+    stepLabel: '4. Reçu PDF',
+    roleBadge: 'Dossier élève à jour',
+    floatingPill: {
+      text: 'Reçu généré',
+      tone: 'emerald',
+    },
+  },
 ];
 
-export const LandingMockupPreview: React.FC = () => {
-  const [activeRole, setActiveRole] = useState<PreviewRole>('directeur');
-  const shouldReduceMotion = useReducedMotion();
+const SMOOTH_EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
-  const tabVariants = {
-    hidden: {
-      opacity: shouldReduceMotion ? 1 : 0,
-      y: shouldReduceMotion ? 0 : 8,
-    },
-    show: {
-      opacity: 1,
-      y: 0,
-      transition: {
-        duration: shouldReduceMotion ? 0 : 0.24,
-        ease: 'easeOut' as const,
+export const LandingMockupPreview: React.FC = () => {
+  const shouldReduceMotion = useReducedMotion();
+  const containerRef = useRef<HTMLDivElement | null>(null);
+
+  // En mouvement réduit, afficher directement l'état final (étape 4 : reçu généré)
+  const [currentStep, setCurrentStep] = useState<number>(() =>
+    shouldReduceMotion ? 3 : 0
+  );
+  const [isPaused, setIsPaused] = useState<boolean>(false);
+  const [isInView, setIsInView] = useState<boolean>(true);
+
+  useEffect(() => {
+    if (shouldReduceMotion) {
+      setCurrentStep(3);
+    }
+  }, [shouldReduceMotion]);
+
+  // Lecture automatique uniquement lorsque la scène est visible à l'écran
+  useEffect(() => {
+    const node = containerRef.current;
+    if (!node || typeof IntersectionObserver === 'undefined') return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        if (entry) {
+          setIsInView(entry.isIntersecting);
+        }
       },
-    },
-    exit: {
-      opacity: shouldReduceMotion ? 1 : 0,
-      y: shouldReduceMotion ? 0 : -6,
-      transition: {
-        duration: shouldReduceMotion ? 0 : 0.2,
-        ease: 'easeOut' as const,
-      },
-    },
-  };
+      { threshold: 0.25 }
+    );
+
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
+
+  // Boucle lente en 4 temps (arrêtée si pause, hors écran ou prefers-reduced-motion)
+  useEffect(() => {
+    if (shouldReduceMotion || isPaused || !isInView) return;
+
+    const timer = window.setInterval(() => {
+      setCurrentStep((prev) => (prev + 1) % SCENE_STEPS.length);
+    }, 2800);
+
+    return () => window.clearInterval(timer);
+  }, [shouldReduceMotion, isPaused, isInView]);
+
+  const activeScene = SCENE_STEPS[currentStep] ?? SCENE_STEPS[3];
+
+  const pillToneClasses = {
+    blue: 'bg-blue-50 dark:bg-slate-800 border-blue-200 dark:border-blue-800 text-[#1D4ED8] dark:text-blue-300',
+    amber:
+      'bg-warning-surface border-warning-border text-warning-text',
+    emerald:
+      'bg-success-surface border-success-border text-success-text',
+  }[activeScene.floatingPill.tone];
 
   return (
     <div
-      aria-label="Aperçu illustratif de l'interface EcoSurv"
-      className="w-full rounded-md border border-default bg-surface shadow-card overflow-hidden"
+      ref={containerRef}
+      aria-label="Scène animée illustrant un encaissement dans EcoSurv (Exemple fictif)"
+      className="relative w-full rounded-3xl border border-subtle bg-surface shadow-[0_10px_30px_rgba(15,23,42,0.06)] dark:shadow-[0_10px_30px_rgba(0,0,0,0.35)] overflow-hidden"
     >
-      {/* Barre supérieure de fenêtre avec étiquette explicite */}
-      <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 border-b border-subtle bg-surface-subtle">
+      {/* Barre supérieure du cadre d'écran */}
+      <div className="flex flex-wrap items-center justify-between gap-2 px-4 sm:px-5 py-3.5 border-b border-subtle bg-surface-subtle">
         <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-1.5 mr-1" aria-hidden="true">
+            <span className="h-2.5 w-2.5 rounded-full bg-border-default" />
+            <span className="h-2.5 w-2.5 rounded-full bg-border-default" />
+            <span className="h-2.5 w-2.5 rounded-full bg-border-default" />
+          </div>
           <LogoIcone size={22} />
           <div>
             <span className="text-sm font-bold text-main block leading-tight">
               EcoSurv
             </span>
             <span className="text-xs text-muted block leading-tight">
-              Aperçu des 4 accès de l'établissement
+              Parcours d'un encaissement scolaire
             </span>
           </div>
         </div>
-        <span className="inline-flex items-center px-2.5 py-1 rounded-sm border border-default bg-surface text-xs font-semibold text-secondary">
-          Exemple fictif
-        </span>
+
+        <div className="flex items-center gap-2">
+          <span className="inline-flex items-center px-3 py-1 rounded-full border border-subtle bg-surface text-xs font-semibold text-secondary">
+            Exemple fictif
+          </span>
+
+          <button
+            type="button"
+            aria-pressed={isPaused}
+            aria-label={
+              isPaused
+                ? "Reprendre l'animation de démonstration"
+                : "Mettre en pause l'animation de démonstration"
+            }
+            onClick={() => setIsPaused((prev) => !prev)}
+            className="min-h-[36px] px-3 py-1.5 rounded-full border border-default bg-surface hover:bg-surface-subtle text-xs font-bold text-main inline-flex items-center gap-1.5 transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-[#1D4ED8]"
+          >
+            {isPaused ? (
+              <>
+                <Play className="h-3.5 w-3.5 text-[#1D4ED8]" />
+                <span>Lecture</span>
+              </>
+            ) : (
+              <>
+                <Pause className="h-3.5 w-3.5 text-secondary" />
+                <span>Pause</span>
+              </>
+            )}
+          </button>
+        </div>
       </div>
 
-      {/* Sélecteur des 4 accès par rôle */}
+      {/* Barre des 4 temps du scénario */}
       <div
         role="tablist"
-        aria-label="Aperçu par rôle"
-        className="grid grid-cols-2 sm:grid-cols-4 border-b border-subtle bg-surface"
+        aria-label="Étapes de la scène de démonstration"
+        className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 p-2.5 bg-page-bg border-b border-subtle"
       >
-        {ROLE_TABS.map((tab) => {
-          const isSelected = activeRole === tab.id;
+        {SCENE_STEPS.map((step) => {
+          const isCurrent = currentStep === step.id;
+          const isDone = currentStep > step.id;
           return (
             <button
-              key={tab.id}
+              key={step.id}
               type="button"
               role="tab"
-              aria-selected={isSelected}
-              onClick={() => setActiveRole(tab.id)}
-              className={`min-h-[44px] px-3 py-2 text-sm font-bold border-b-2 transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-[#1D4ED8] focus-visible:outline-offset-[-2px] ${
-                isSelected
-                  ? 'border-[#1D4ED8] text-primary-text bg-surface'
-                  : 'border-transparent text-muted hover:text-main bg-surface-subtle'
+              aria-selected={isCurrent}
+              onClick={() => {
+                setCurrentStep(step.id);
+                setIsPaused(true);
+              }}
+              className={`min-h-[38px] px-2.5 py-1.5 rounded-full text-xs font-bold transition-colors cursor-pointer flex items-center justify-center gap-1.5 focus-visible:outline-2 focus-visible:outline-[#1D4ED8] ${
+                isCurrent
+                  ? 'bg-[#1D4ED8] text-white'
+                  : isDone
+                    ? 'bg-surface text-primary-text border border-subtle'
+                    : 'bg-surface-subtle text-muted hover:text-main'
               }`}
             >
-              {tab.label}
+              <span className="truncate">{step.stepLabel}</span>
             </button>
           );
         })}
       </div>
 
-      {/* Contenu illustratif selon le rôle sélectionné */}
-      <div className="p-4 sm:p-5 bg-surface text-left min-h-[340px]">
-        <AnimatePresence mode="wait">
-          {activeRole === 'directeur' && (
+      {/* Corps de la scène animée avec pastille flottante */}
+      <div className="relative p-4 sm:p-6 bg-surface min-h-[340px] flex flex-col justify-between space-y-4">
+        {/* En-tête de contexte + pastille flottante qui apparaît à chaque temps */}
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-subtle border border-subtle text-xs font-bold text-secondary">
+            <User className="h-3.5 w-3.5 text-primary-text" />
+            <span>{activeScene.roleBadge}</span>
+          </span>
+
+          <AnimatePresence mode="wait">
             <motion.div
-              key="directeur"
-              variants={tabVariants}
-              initial="hidden"
-              animate="show"
-              exit="exit"
-              className="space-y-4"
+              key={`pill-${activeScene.id}`}
+              initial={
+                shouldReduceMotion
+                  ? { opacity: 1, y: 0, scale: 1 }
+                  : { opacity: 0, y: 10, scale: 0.96 }
+              }
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={
+                shouldReduceMotion
+                  ? { opacity: 1, y: 0, scale: 1 }
+                  : { opacity: 0, y: -8, scale: 0.96 }
+              }
+              transition={{
+                duration: shouldReduceMotion ? 0 : 0.35,
+                ease: SMOOTH_EASE,
+              }}
+              className={`inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full border text-xs font-bold shadow-[0_6px_16px_rgba(15,23,42,0.06)] ${pillToneClasses}`}
             >
-              {/* Carte Pour démarrer */}
-              <div className="rounded-sm border border-subtle p-3.5 space-y-3 bg-surface">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <LayoutDashboard className="h-4 w-4 text-primary-text shrink-0" />
-                    <div>
-                      <p className="text-sm font-bold text-main">
-                        Carte « Pour démarrer »
-                      </p>
-                      <p className="text-xs text-muted">
-                        Mise en route pas à pas de l'école
-                      </p>
-                    </div>
-                  </div>
-                  <span className="px-2 py-0.5 rounded-sm bg-surface-subtle border border-subtle text-xs font-bold text-main tabular-nums">
-                    4 / 6 étapes
-                  </span>
-                </div>
-
-                <div className="w-full h-2 rounded-sm bg-surface-subtle overflow-hidden">
-                  <div className="h-full w-2/3 bg-[#1D4ED8] rounded-sm" />
-                </div>
-
-                <div className="divide-y divide-subtle border-t border-subtle text-xs">
-                  {[
-                    { label: "Profil de l'école (année, ville, +222)", done: true },
-                    { label: "Classes de l'école", done: true },
-                    { label: 'Barèmes de frais et échéances (MRU)', done: true },
-                    { label: 'Premier élève inscrit', done: true },
-                    { label: 'Équipe de l’école (caissier, enseignants)', done: false },
-                  ].map((step) => (
-                    <div
-                      key={step.label}
-                      className="py-2 flex items-center justify-between gap-2"
-                    >
-                      <div className="flex items-center gap-2 min-w-0">
-                        {step.done ? (
-                          <Check className="h-3.5 w-3.5 text-primary-text shrink-0" />
-                        ) : (
-                          <Circle className="h-3 w-3 text-muted shrink-0" />
-                        )}
-                        <span className="text-main font-medium truncate">
-                          {step.label}
-                        </span>
-                      </div>
-                      <span className="px-2 py-0.5 rounded-sm border border-subtle bg-surface-subtle text-secondary font-semibold shrink-0">
-                        {step.done ? 'Fait' : 'À faire'}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Validation des paiements en attente */}
-              <div className="rounded-sm border border-subtle p-3.5 space-y-2.5 bg-surface-subtle">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-xs font-bold text-main">
-                    Paiements en attente de confirmation (Exemple)
-                  </span>
-                  <Bell className="h-3.5 w-3.5 text-primary-text shrink-0" />
-                </div>
-                <div className="p-3 rounded-sm border border-subtle bg-surface flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
-                  <div>
-                    <p className="font-bold text-main">
-                      Élève Test • Bankily (Réf : TX-DEMO-01)
-                    </p>
-                    <p className="text-muted tabular-nums">
-                      Mensualité de scolarité : 15 000 MRU
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <span className="px-2.5 py-1 rounded-sm bg-[#1D4ED8] text-white font-semibold">
-                      Confirmer
-                    </span>
-                    <span className="px-2.5 py-1 rounded-sm border border-default bg-surface text-secondary font-semibold">
-                      Rejeter
-                    </span>
-                  </div>
-                </div>
-              </div>
+              {activeScene.id === 1 ? (
+                <Clock className="h-3.5 w-3.5 shrink-0" />
+              ) : (
+                <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
+              )}
+              <span>{activeScene.floatingPill.text}</span>
             </motion.div>
-          )}
+          </AnimatePresence>
+        </div>
 
-          {activeRole === 'caissier' && (
-            <motion.div
-              key="caissier"
-              variants={tabVariants}
-              initial="hidden"
-              animate="show"
-              exit="exit"
-              className="space-y-4"
-            >
-              <div className="rounded-sm border border-subtle p-3.5 space-y-3.5 bg-surface">
-                <div className="flex items-center justify-between gap-2 border-b border-subtle pb-2.5">
-                  <div className="flex items-center gap-2">
-                    <CreditCard className="h-4 w-4 text-primary-text shrink-0" />
-                    <span className="text-sm font-bold text-main">
-                      Guichet d'encaissement (Exemple)
-                    </span>
-                  </div>
-                  <span className="text-xs font-semibold text-secondary tabular-nums">
+        {/* Fiche de l'élève générique commune aux 4 temps */}
+        <div className="rounded-2xl border border-subtle bg-page-bg p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-full bg-[#1D4ED8] text-white font-bold text-xs flex items-center justify-center shrink-0">
+              ET
+            </div>
+            <div>
+              <p className="text-sm font-bold text-main">
+                Élève Test (Exemple)
+              </p>
+              <p className="text-xs text-muted tabular-nums">
+                Classe Démo • Mensualité : 15 000 MRU
+              </p>
+            </div>
+          </div>
+
+          <div className="text-xs font-bold tabular-nums">
+            {currentStep === 0 && (
+              <span className="inline-flex items-center px-3 py-1 rounded-full bg-surface border border-default text-secondary">
+                Échéance à régler
+              </span>
+            )}
+            {currentStep === 1 && (
+              <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-warning-surface border border-warning-border text-warning-text">
+                <Clock className="h-3.5 w-3.5" />
+                En attente de confirmation
+              </span>
+            )}
+            {currentStep === 2 && (
+              <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-blue-50 dark:bg-slate-800 border border-blue-200 dark:border-blue-800 text-[#1D4ED8] dark:text-blue-300">
+                <ShieldCheck className="h-3.5 w-3.5" />
+                Vérification directeur
+              </span>
+            )}
+            {currentStep === 3 && (
+              <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-success-surface border border-success-border text-success-text">
+                <CheckCircle2 className="h-3.5 w-3.5" />
+                Solde à jour : 0 MRU
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Zone centrale qui évolue selon le temps 1, 2, 3 ou 4 */}
+        <div className="min-h-[168px] flex flex-col justify-center">
+          <AnimatePresence mode="wait">
+            {currentStep === 0 && (
+              <motion.div
+                key="scene-step-0"
+                initial={
+                  shouldReduceMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: 14 }
+                }
+                animate={{ opacity: 1, y: 0 }}
+                exit={
+                  shouldReduceMotion
+                    ? { opacity: 1, y: 0 }
+                    : { opacity: 0, y: -10 }
+                }
+                transition={{
+                  duration: shouldReduceMotion ? 0 : 0.4,
+                  ease: SMOOTH_EASE,
+                }}
+                className="rounded-2xl border border-subtle bg-surface p-4 space-y-3"
+              >
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-bold text-main flex items-center gap-1.5">
+                    <Smartphone className="h-4 w-4 text-primary-text" />
+                    Canal choisi au guichet
+                  </span>
+                  <span className="px-3 py-0.5 rounded-full bg-[#1D4ED8] text-white font-bold">
+                    Bankily
+                  </span>
+                </div>
+
+                <div className="flex flex-wrap items-center justify-between gap-2 px-3.5 py-2.5 rounded-xl bg-surface-subtle border border-subtle text-xs">
+                  <span className="text-muted font-medium">
+                    Référence de l'opérateur :
+                  </span>
+                  <span className="font-bold text-main tabular-nums">
+                    TX-BKL-00412 (Exemple)
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between text-xs pt-1">
+                  <span className="text-muted">Montant saisi :</span>
+                  <span className="font-extrabold text-main tabular-nums">
                     15 000 MRU
                   </span>
                 </div>
+              </motion.div>
+            )}
 
-                <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5 text-xs">
-                  {['Espèces', 'Bankily', 'Masrvi', 'Sedad', 'Chèque'].map(
-                    (canal, idx) => (
-                      <div
-                        key={canal}
-                        className={`py-2 px-2 rounded-sm border text-center font-semibold ${
-                          idx === 1
-                            ? 'border-[#1D4ED8] bg-surface-subtle text-primary-text'
-                            : 'border-subtle bg-surface text-secondary'
-                        }`}
-                      >
-                        {canal}
-                      </div>
-                    )
-                  )}
-                </div>
-
-                <div className="space-y-2 text-xs">
-                  <div className="flex items-center justify-between py-2 px-3 rounded-sm border border-subtle bg-surface-subtle">
-                    <span className="text-muted">Référence opérateur</span>
-                    <span className="font-semibold text-main tabular-nums">
-                      TX-DEMO-8841 (Obligatoire hors espèces)
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between py-2 px-3 rounded-sm border border-subtle bg-surface-subtle">
-                    <span className="text-muted">Justificatif remis</span>
-                    <span className="font-semibold text-main flex items-center gap-1.5">
-                      <FileText className="h-3.5 w-3.5 text-primary-text" />
-                      Reçu PDF numéroté
-                    </span>
-                  </div>
-                </div>
-
-                <div className="pt-2.5 border-t border-subtle flex items-center justify-between gap-2 text-xs">
-                  <span className="text-muted font-medium">
-                    Arrêté de fin de journée
+            {currentStep === 1 && (
+              <motion.div
+                key="scene-step-1"
+                initial={
+                  shouldReduceMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: 14 }
+                }
+                animate={{ opacity: 1, y: 0 }}
+                exit={
+                  shouldReduceMotion
+                    ? { opacity: 1, y: 0 }
+                    : { opacity: 0, y: -10 }
+                }
+                transition={{
+                  duration: shouldReduceMotion ? 0 : 0.4,
+                  ease: SMOOTH_EASE,
+                }}
+                className="rounded-2xl border border-warning-border bg-warning-surface p-4 space-y-2.5"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-xs font-bold text-warning-text flex items-center gap-1.5">
+                    <Clock className="h-4 w-4 shrink-0" />
+                    Paiement hors espèces enregistré
                   </span>
-                  <span className="px-3 py-1.5 rounded-sm border border-default bg-surface text-main font-semibold">
-                    Clôturer la caisse du jour
+                  <span className="text-xs font-bold text-warning-text tabular-nums">
+                    15 000 MRU
                   </span>
                 </div>
-              </div>
-            </motion.div>
-          )}
+                <p className="text-xs text-main leading-relaxed">
+                  Le règlement Bankily (réf.{' '}
+                  <strong className="tabular-nums">TX-BKL-00412</strong>) passe
+                  automatiquement en statut « en attente de confirmation » pour
+                  le directeur.
+                </p>
+              </motion.div>
+            )}
 
-          {activeRole === 'enseignant' && (
-            <motion.div
-              key="enseignant"
-              variants={tabVariants}
-              initial="hidden"
-              animate="show"
-              exit="exit"
-              className="space-y-4"
-            >
-              <div className="rounded-sm border border-subtle p-3.5 space-y-3 bg-surface">
-                <div className="flex items-center justify-between gap-2 border-b border-subtle pb-2.5">
+            {currentStep === 2 && (
+              <motion.div
+                key="scene-step-2"
+                initial={
+                  shouldReduceMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: 14 }
+                }
+                animate={{ opacity: 1, y: 0 }}
+                exit={
+                  shouldReduceMotion
+                    ? { opacity: 1, y: 0 }
+                    : { opacity: 0, y: -10 }
+                }
+                transition={{
+                  duration: shouldReduceMotion ? 0 : 0.4,
+                  ease: SMOOTH_EASE,
+                }}
+                className="rounded-2xl border border-subtle bg-surface p-4 space-y-3"
+              >
+                <div className="flex items-center justify-between gap-2 text-xs">
+                  <span className="font-bold text-main flex items-center gap-1.5">
+                    <ShieldCheck className="h-4 w-4 text-primary-text" />
+                    Tableau du directeur • Paiements en attente
+                  </span>
+                  <span className="text-muted tabular-nums">TX-BKL-00412</span>
+                </div>
+
+                <div className="p-3 rounded-xl bg-surface-subtle border border-subtle flex flex-wrap items-center justify-between gap-2 text-xs">
+                  <div>
+                    <p className="font-bold text-main">
+                      Élève Test • Bankily • 15 000 MRU
+                    </p>
+                    <p className="text-muted">
+                      Vérification de la référence opérateur
+                    </p>
+                  </div>
                   <div className="flex items-center gap-2">
-                    <Users className="h-4 w-4 text-primary-text shrink-0" />
-                    <span className="text-sm font-bold text-main">
-                      Appel et saisie des absences (Exemple)
+                    <span className="px-3.5 py-1.5 rounded-full bg-[#1D4ED8] text-white font-bold inline-flex items-center gap-1">
+                      <CheckCircle2 className="h-3.5 w-3.5" />
+                      Confirmé
                     </span>
                   </div>
-                  <span className="text-xs font-semibold text-secondary">
-                    Classe affectée
+                </div>
+              </motion.div>
+            )}
+
+            {currentStep === 3 && (
+              <motion.div
+                key="scene-step-3"
+                initial={
+                  shouldReduceMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: 14 }
+                }
+                animate={{ opacity: 1, y: 0 }}
+                exit={
+                  shouldReduceMotion
+                    ? { opacity: 1, y: 0 }
+                    : { opacity: 0, y: -10 }
+                }
+                transition={{
+                  duration: shouldReduceMotion ? 0 : 0.4,
+                  ease: SMOOTH_EASE,
+                }}
+                className="rounded-2xl border border-success-border bg-success-surface p-4 space-y-2.5"
+              >
+                <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+                  <span className="font-bold text-success-text flex items-center gap-1.5">
+                    <FileText className="h-4 w-4 shrink-0" />
+                    Reçu PDF numéroté N° REC-DEMO-001
+                  </span>
+                  <span className="px-2.5 py-0.5 rounded-full bg-surface border border-subtle text-main font-bold tabular-nums">
+                    15 000 MRU
                   </span>
                 </div>
+                <p className="text-xs text-main leading-relaxed">
+                  Le paiement est validé, le solde de l'échéance est mis à jour
+                  et le reçu PDF numéroté (exemple) est prêt à être remis ou
+                  téléchargé.
+                </p>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
 
-                <div className="divide-y divide-subtle text-xs">
-                  {[
-                    { label: 'Élève Exemple 1 — Classe Démo', status: 'Présent' },
-                    { label: 'Élève Exemple 2 — Classe Démo', status: 'Absent' },
-                    { label: 'Élève Exemple 3 — Classe Démo', status: 'Présent' },
-                  ].map((row) => (
-                    <div
-                      key={row.label}
-                      className="py-2.5 flex items-center justify-between gap-2"
-                    >
-                      <span className="font-medium text-main">{row.label}</span>
-                      <span
-                        className={`px-2.5 py-0.5 rounded-sm border font-semibold ${
-                          row.status === 'Absent'
-                            ? 'border-danger-border bg-danger-surface text-danger-text'
-                            : 'border-subtle bg-surface-subtle text-secondary'
-                        }`}
-                      >
-                        {row.status}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="pt-2 border-t border-subtle flex items-center justify-between text-xs text-muted">
-                  <span>Saisie sur téléphone ou ordinateur</span>
-                  <span className="font-semibold text-primary-text">
-                    Notifications actives
-                  </span>
-                </div>
-              </div>
-            </motion.div>
-          )}
-
-          {activeRole === 'parent' && (
-            <motion.div
-              key="parent"
-              variants={tabVariants}
-              initial="hidden"
-              animate="show"
-              exit="exit"
-              className="space-y-4"
-            >
-              <div className="rounded-sm border border-subtle p-3.5 space-y-3 bg-surface">
-                <div className="flex items-center justify-between gap-2 border-b border-subtle pb-2.5">
-                  <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4 text-primary-text shrink-0" />
-                    <span className="text-sm font-bold text-main">
-                      Portail parent (Exemple fictif)
-                    </span>
-                  </div>
-                  <span className="inline-flex items-center gap-1 text-xs font-semibold text-success-text">
-                    <CheckCircle2 className="h-3.5 w-3.5" />
-                    Suivi en MRU
-                  </span>
-                </div>
-
-                <div className="space-y-2 text-xs">
-                  <div className="p-2.5 rounded-sm border border-subtle bg-surface-subtle flex items-center justify-between gap-2">
-                    <div>
-                      <span className="font-semibold text-main block">
-                        Échéances de scolarité et reçus PDF
-                      </span>
-                      <span className="text-muted">
-                        Téléchargement des quittances validées
-                      </span>
-                    </div>
-                    <span className="px-2 py-0.5 rounded-sm border border-success-border bg-success-surface text-success-text font-semibold shrink-0">
-                      À jour
-                    </span>
-                  </div>
-
-                  <div className="p-2.5 rounded-sm border border-subtle bg-surface-subtle flex items-center justify-between gap-2">
-                    <div>
-                      <span className="font-semibold text-main block">
-                        Suivi et déclaration d'absence
-                      </span>
-                      <span className="text-muted">
-                        Consultation des absences saisies en classe
-                      </span>
-                    </div>
-                    <span className="px-2.5 py-1 rounded-sm border border-default bg-surface text-secondary font-semibold shrink-0">
-                      Déclarer
-                    </span>
-                  </div>
-
-                  <div className="p-2.5 rounded-sm border border-subtle bg-surface-subtle flex items-center justify-between gap-2">
-                    <span className="font-semibold text-main">
-                      Notifications reçues dans l'application
-                    </span>
-                    <Bell className="h-4 w-4 text-primary-text shrink-0" />
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {/* Barre de progression basse entre les 4 étapes */}
+        <div className="pt-2 border-t border-subtle flex items-center justify-between gap-3 text-xs text-muted">
+          <span>
+            Étape {currentStep + 1} sur {SCENE_STEPS.length}
+          </span>
+          <div className="flex items-center gap-1.5" aria-hidden="true">
+            {SCENE_STEPS.map((s) => (
+              <span
+                key={s.id}
+                className={`h-1.5 rounded-full transition-all duration-300 ${
+                  currentStep === s.id
+                    ? 'w-6 bg-[#1D4ED8]'
+                    : 'w-2 bg-border-default'
+                }`}
+              />
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );
