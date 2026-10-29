@@ -1016,7 +1016,7 @@ export const LandingPage: React.FC = () => {
         </div>
       </section>
 
-      {/* 11. Bannière CTA Pré-Footer Haute Fidélité SaaS */}
+      {/* 11. Bannière CTA Pré-Footer */}
       <section className="relative py-10 sm:py-16 overflow-hidden">
         <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
           <motion.div
@@ -1046,7 +1046,7 @@ export const LandingPage: React.FC = () => {
                 Rejoignez les directions scolaires qui ont éliminé les litiges de caisse, fiabilisé les quittances et maîtrisé leur trésorerie en temps réel.
               </motion.p>
 
-              {/* Boutons d'Action SaaS */}
+              {/* Boutons d'Action */}
               <motion.div variants={motionItem} className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3.5">
                 {authProfile ? (
                   <button
@@ -1091,7 +1091,7 @@ export const LandingPage: React.FC = () => {
                 </a>
               </motion.div>
 
-              {/* Piliers de Confiance SaaS */}
+              {/* Piliers de Confiance */}
               <div className="pt-8 border-t border-white/10 flex flex-wrap items-center justify-center gap-y-3 gap-x-6 sm:gap-x-8 text-xs font-medium text-slate-400">
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />

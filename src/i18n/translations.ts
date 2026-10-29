@@ -173,7 +173,7 @@ export const translations: Record<Language, Translations> = {
       familySpace: 'Espace Famille',
     },
     landing: {
-      heroBadge: 'SaaS Scolarité & Finance — Mauritanie',
+      heroBadge: 'Gestion Scolaire & Financière — Mauritanie',
       heroTitle: 'La gestion scolaire moderne pensée pour la Mauritanie',
       heroSubtitle: 'Pilotez vos inscriptions, encaissements en Ouguiya (MRU) et scolarité en temps réel avec un outil conçu sur-mesure.',
       ctaStart: 'Créer mon école gratuitement',
@@ -391,7 +391,7 @@ export const translations: Record<Language, Translations> = {
       familySpace: 'Family Space',
     },
     landing: {
-      heroBadge: 'School Management & Finance SaaS — Mauritania',
+      heroBadge: 'School & Financial Management — Mauritania',
       heroTitle: 'Modern school management tailored for Mauritania',
       heroSubtitle: 'Manage enrollments, Ouguiya (MRU) payments, tuition schedules, and academic tracking in real time.',
       ctaStart: 'Create Free School Account',

@@ -819,10 +819,6 @@ export const ConfigPage: React.FC = () => {
             <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
               Configuration Établissement & Personnel
             </h1>
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 px-3 py-1 text-xs font-bold">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-              Abonnement SaaS Actif
-            </span>
           </div>
           <p className="text-sm text-slate-500 dark:text-slate-400 font-medium mt-1.5">
             Gestion du profil de l'école, choix de l'année scolaire active et administration des accès du personnel.
@@ -867,7 +863,7 @@ export const ConfigPage: React.FC = () => {
         />
 
         <KpiCard
-          title="Année & Licence"
+          title="Année scolaire"
           customValue={ecole.annee_scolaire || 'Non configurée'}
           subtitle="Exercice scolaire de l'établissement"
           icon={<School className="w-5 h-5 text-amber-600 dark:text-amber-400" />}
@@ -884,7 +880,7 @@ export const ConfigPage: React.FC = () => {
           <div className="flex items-center gap-2.5">
             <Building2 className="h-5 w-5 text-blue-600 dark:text-blue-400" />
             <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-              Profil de l'Établissement Client
+              Profil de l'Établissement
             </h3>
             {!canEditSchool && (
               <span className="text-[11px] font-semibold bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 px-2 py-0.5 rounded border border-amber-200 dark:border-amber-800/60">
