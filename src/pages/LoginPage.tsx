@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { motion, useReducedMotion, type Variants } from 'framer-motion';
 import { Mail, Lock, Eye, EyeOff, LogIn, ArrowLeft, AlertCircle, ShieldCheck, CheckCircle2, X } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuthStore, UserProfile } from '../store/useAuthStore';
@@ -13,6 +14,19 @@ import type { UserRole } from '../components/ui/Header';
 interface LoginPageProps {
   onReturnToLanding?: () => void;
 }
+
+const SMOOTH_EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
+
+// Masses de lumière bleue derrière la carte : disque uni #1D4ED8 adouci par un
+// flou fixe, sans dégradé. Seuls transform et opacity sont animés.
+const BACKGROUND_LIGHTS = [
+  { className: '-top-40 -left-32 h-[520px] w-[520px]', opacity: 0.16, x: [0, 60, 0], y: [0, 40, 0], duration: 16 },
+  { className: 'top-1/3 -right-40 h-[480px] w-[480px]', opacity: 0.12, x: [0, -50, 0], y: [0, -35, 0], duration: 20 },
+  { className: '-bottom-48 left-1/4 h-[440px] w-[440px]', opacity: 0.1, x: [0, 40, 0], y: [0, -30, 0], duration: 14 },
+];
+
+const FOCUS_RING =
+  'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1D4ED8]';
 
 export const LoginPage: React.FC<LoginPageProps> = ({ onReturnToLanding }) => {
   const authProfile = useAuthStore((s) => s.profile);
@@ -65,6 +79,36 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onReturnToLanding }) => {
   };
 
   const passwordRef = useRef<HTMLInputElement>(null);
+
+  // Entrée : le fond apparaît d'abord, puis la carte (fondu, montée de 24 px, zoom 0,98 vers 1),
+  // puis ses éléments un par un toutes les 70 ms. En mouvement réduit : simple fondu.
+  const shouldReduceMotion = Boolean(useReducedMotion());
+  const cardVariants: Variants = shouldReduceMotion
+    ? {
+        hidden: { opacity: 0 },
+        visible: { opacity: 1, transition: { duration: 0.3, delay: 0.3 } },
+      }
+    : {
+        hidden: { opacity: 0, y: 24, scale: 0.98 },
+        visible: {
+          opacity: 1,
+          y: 0,
+          scale: 1,
+          transition: {
+            duration: 0.45,
+            delay: 0.3,
+            ease: SMOOTH_EASE,
+            delayChildren: 0.2,
+            staggerChildren: 0.07,
+          },
+        },
+      };
+  const itemVariants: Variants = shouldReduceMotion
+    ? { hidden: { opacity: 1 }, visible: { opacity: 1 } }
+    : {
+        hidden: { opacity: 0, y: 8 },
+        visible: { opacity: 1, y: 0, transition: { duration: 0.3, ease: SMOOTH_EASE } },
+      };
 
   const handleReturn = () => {
     if (onReturnToLanding) {
@@ -195,13 +239,34 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onReturnToLanding }) => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col justify-between bg-slate-50 dark:bg-slate-950 px-4 py-8 font-['Plus_Jakarta_Sans',sans-serif] text-slate-900 dark:text-slate-100 antialiased selection:bg-blue-600 selection:text-white">
+    <div className="relative isolate min-h-[100dvh] grid grid-rows-[auto_1fr_auto] gap-6 bg-slate-50 dark:bg-slate-950 px-4 py-6 font-['Plus_Jakarta_Sans',sans-serif] text-slate-900 dark:text-slate-100 antialiased selection:bg-blue-600 selection:text-white">
+      {/* Arrière-plan : lumières bleues floues qui dérivent lentement, en fondu avant la carte */}
+      <motion.div
+        aria-hidden="true"
+        data-testid="login-background"
+        className="pointer-events-none fixed inset-0 -z-10 overflow-hidden"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.35 }}
+      >
+        {BACKGROUND_LIGHTS.map((light) => (
+          <motion.div
+            key={light.className}
+            data-testid="login-light"
+            className={`absolute rounded-full bg-[#1D4ED8] blur-[120px] will-change-transform ${light.className}`}
+            style={{ opacity: light.opacity }}
+            animate={shouldReduceMotion ? undefined : { x: light.x, y: light.y }}
+            transition={{ duration: light.duration, repeat: Infinity, ease: 'easeInOut' }}
+          />
+        ))}
+      </motion.div>
+
       {/* Top Bar with Back Button and Brand */}
-      <div className="max-w-md w-full mx-auto flex items-center justify-between">
+      <div className="max-w-md w-full mx-auto h-11 flex items-center justify-between">
         <button
           type="button"
           onClick={handleReturn}
-          className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs hover:border-slate-300 dark:hover:border-slate-700 transition-all cursor-pointer"
+          className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs hover:border-slate-300 dark:hover:border-slate-700 transition-all cursor-pointer ${FOCUS_RING}`}
         >
           <ArrowLeft className="h-4 w-4" />
           <span>Retour au site</span>
@@ -213,22 +278,28 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onReturnToLanding }) => {
         </div>
       </div>
 
-      {/* Main Login Card */}
-      <div className="w-full max-w-md mx-auto my-auto py-8">
-        <div className="text-center space-y-2 mb-8">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-900/60 text-blue-700 dark:text-blue-300 text-[11px] font-bold">
-            <ShieldCheck className="h-3.5 w-3.5" />
-            <span>Espace Sécurisé Établissement</span>
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 dark:text-white">
-            Connexion à votre espace
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
-            Accédez à la gestion de scolarité, caisse et suivi pédagogique.
-          </p>
-        </div>
+      {/* Main Login Card, centrée dans la rangée du milieu (barre du haut et pied de page de même hauteur) */}
+      <div className="w-full max-w-md mx-auto self-center">
+        <motion.div
+          data-testid="login-card"
+          variants={cardVariants}
+          initial="hidden"
+          animate="visible"
+          className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 sm:p-8 shadow-[0_10px_30px_rgba(15,23,42,0.08)] dark:shadow-[0_10px_30px_rgba(0,0,0,0.35)]"
+        >
+          <motion.div variants={itemVariants} className="text-center space-y-2 mb-7">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-900/60 text-blue-700 dark:text-blue-300 text-[11px] font-bold">
+              <ShieldCheck className="h-3.5 w-3.5" />
+              <span>Espace Sécurisé Établissement</span>
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 dark:text-white">
+              Connexion à votre espace
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+              Accédez à la gestion de scolarité, caisse et suivi pédagogique.
+            </p>
+          </motion.div>
 
-        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 sm:p-8 shadow-xl shadow-slate-200/50 dark:shadow-none">
           <form onSubmit={handleSubmit} noValidate className="space-y-5">
             {error && (
               <div
@@ -241,7 +312,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onReturnToLanding }) => {
             )}
 
             {/* Email Field */}
-            <div className="space-y-1.5">
+            <motion.div variants={itemVariants} className="space-y-1.5">
               <label
                 htmlFor="login-email"
                 className="block text-xs font-bold text-slate-700 dark:text-slate-300"
@@ -264,10 +335,10 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onReturnToLanding }) => {
                   className="w-full h-11 pl-10 pr-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600/30 focus:border-blue-600 dark:focus:border-blue-500 transition-all disabled:opacity-60"
                 />
               </div>
-            </div>
+            </motion.div>
 
             {/* Password Field */}
-            <div className="space-y-1.5">
+            <motion.div variants={itemVariants} className="space-y-1.5">
               <div className="flex items-center justify-between">
                 <label
                   htmlFor="login-password"
@@ -283,7 +354,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onReturnToLanding }) => {
                     setForgotError(null);
                     setIsForgotModalOpen(true);
                   }}
-                  className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+                  className={`text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer rounded ${FOCUS_RING}`}
                 >
                   Mot de passe oublié ?
                 </button>
@@ -307,18 +378,19 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onReturnToLanding }) => {
                   type="button"
                   onClick={() => setShowPassword((v) => !v)}
                   aria-label={showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                  className={`absolute right-2 top-1/2 -translate-y-1/2 flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors ${FOCUS_RING}`}
                 >
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
-            </div>
+            </motion.div>
 
             {/* Submit Button */}
+            <motion.div variants={itemVariants}>
             <button
               type="submit"
               disabled={submitting}
-              className="w-full h-12 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm transition-all shadow-md shadow-blue-600/25 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed hover:scale-[1.01] active:scale-[0.99]"
+              className={`w-full h-12 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm transition-all shadow-md shadow-blue-600/25 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed hover:scale-[1.01] active:scale-[0.99] ${FOCUS_RING}`}
             >
               {submitting ? (
                 <>
@@ -332,24 +404,25 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onReturnToLanding }) => {
                 </>
               )}
             </button>
+            </motion.div>
 
             {/* Inscription d'un nouvel établissement */}
-            <div className="pt-2 text-center">
+            <motion.div variants={itemVariants} className="pt-2 text-center">
               <p className="text-xs text-slate-500 dark:text-slate-400">
                 Vous n'avez pas encore inscrit votre établissement ?{' '}
                 <button
                   type="button"
                   onClick={() => useNavigationStore.getState().navigateToRegister()}
-                  className="text-blue-600 dark:text-blue-400 font-bold hover:underline cursor-pointer"
+                  className={`text-blue-600 dark:text-blue-400 font-bold hover:underline cursor-pointer rounded ${FOCUS_RING}`}
                 >
                   Créer mon école
                 </button>
               </p>
-            </div>
+            </motion.div>
           </form>
 
           {/* Help & Assistance */}
-          <div className="mt-6 pt-6 border-t border-slate-100 dark:border-slate-800 text-center space-y-2">
+          <motion.div variants={itemVariants} className="mt-6 pt-6 border-t border-slate-100 dark:border-slate-800 text-center space-y-2">
             <p className="text-xs text-slate-500 dark:text-slate-400">
               Identifiants perdus ou compte bloqué ?
             </p>
@@ -364,12 +437,12 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onReturnToLanding }) => {
                 support WhatsApp ({CONTACT_CONFIG.phone.display})
               </a>.
             </p>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
       </div>
 
-      {/* Footer */}
-      <div className="text-center text-[11px] text-slate-400 dark:text-slate-500">
+      {/* Footer, même hauteur que la barre du haut pour centrer la carte */}
+      <div className="h-11 flex items-center justify-center text-center text-[11px] text-slate-400 dark:text-slate-500">
         &copy; {new Date().getFullYear()} EcoSurv Mauritanie &bull; Plateforme agréée de gestion scolaire
       </div>
 
