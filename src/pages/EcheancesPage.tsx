@@ -12,7 +12,7 @@ import { formatMRU } from '../lib/utils';
 import { useAuthStore } from '../store/useAuthStore';
 import { useNavigationStore } from '../store/useNavigationStore';
 import { useAnneeScolaire } from '../hooks/useAnneeScolaire';
-import { DEFAULT_CLASSES_MAURITANIE } from '../lib/constants/classes';
+import { useClasses } from '../hooks/useClasses';
 import {
   fetchBaremes,
   createBaremeAndGenerateEcheances,
@@ -49,7 +49,8 @@ export const EcheancesPage: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [openMenuRowId, setOpenMenuRowId] = useState<string | null>(null);
-  const [availableClasses, setAvailableClasses] = useState<string[]>(DEFAULT_CLASSES_MAURITANIE);
+  const { nomsClasses: availableClasses, isLoading: isLoadingClasses } = useClasses();
+  const hasNoClasses = !isLoadingClasses && availableClasses.length === 0;
   const [isGeneratingManquantes, setIsGeneratingManquantes] = useState(false);
   const [isConfirmManquantesOpen, setIsConfirmManquantesOpen] = useState(false);
   const [classesSansBaremeNotice, setClassesSansBaremeNotice] = useState<ClasseSansBaremeInfo[]>([]);
@@ -142,18 +143,6 @@ export const EcheancesPage: React.FC = () => {
     try {
       const list = await fetchBaremes(ecoleId);
       setEcheanciers(list);
-
-      // Charger également les classes réelles existantes dans l'école
-      const { data: eleves } = await supabase
-        .from('eleves')
-        .select('classe')
-        .eq('ecole_id', ecoleId);
-
-      if (eleves) {
-        const schoolClasses = Array.from(new Set(eleves.map((e: any) => e.classe).filter(Boolean)));
-        const merged = Array.from(new Set([...schoolClasses, ...DEFAULT_CLASSES_MAURITANIE]));
-        setAvailableClasses(merged);
-      }
 
       // 1. Décompte réel des élèves ayant au moins une échéance enregistrée en base
       const { data: echRows } = await supabase
@@ -340,10 +329,16 @@ export const EcheancesPage: React.FC = () => {
             variant="primary"
             size="sm"
             className="gap-2 h-10 px-4 disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled={!anneeScolaire}
-            title={!anneeScolaire ? "Définissez l'année scolaire dans Configuration avant de continuer" : undefined}
+            disabled={!anneeScolaire || hasNoClasses}
+            title={
+              !anneeScolaire
+                ? "Définissez l'année scolaire dans Configuration avant de continuer"
+                : hasNoClasses
+                ? "Aucune classe définie. Ajoutez vos classes dans Configuration > Classes."
+                : undefined
+            }
             onClick={() => {
-              if (!anneeScolaire) return;
+              if (!anneeScolaire || hasNoClasses) return;
               setErrorMessage(null);
               setNewLibelle('');
               setNewClasse('');
@@ -364,6 +359,23 @@ export const EcheancesPage: React.FC = () => {
           <div className="flex items-center gap-3 text-xs font-semibold">
             <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0" />
             <span>Définissez l'année scolaire dans Configuration avant de continuer</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => navigate('config')}
+            className="text-xs font-bold text-amber-800 dark:text-amber-300 underline hover:text-amber-950 dark:hover:text-white shrink-0 cursor-pointer"
+          >
+            Aller dans Configuration
+          </button>
+        </div>
+      )}
+
+      {/* Garde aucune classe définie */}
+      {hasNoClasses && (
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 p-4 rounded-xl border border-amber-200 dark:border-amber-800/60">
+          <div className="flex items-center gap-3 text-xs font-semibold">
+            <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0" />
+            <span>Aucune classe définie. Ajoutez vos classes dans Configuration &gt; Classes.</span>
           </div>
           <button
             type="button"
@@ -506,10 +518,16 @@ export const EcheancesPage: React.FC = () => {
                       </p>
                       <Button
                         variant="primary"
-                        disabled={!anneeScolaire}
-                        title={!anneeScolaire ? "Définissez l'année scolaire dans Configuration avant de continuer" : undefined}
+                        disabled={!anneeScolaire || hasNoClasses}
+                        title={
+                          !anneeScolaire
+                            ? "Définissez l'année scolaire dans Configuration avant de continuer"
+                            : hasNoClasses
+                            ? "Aucune classe définie. Ajoutez vos classes dans Configuration > Classes."
+                            : undefined
+                        }
                         onClick={() => {
-                          if (!anneeScolaire) return;
+                          if (!anneeScolaire || hasNoClasses) return;
                           setIsModalOpen(true);
                         }}
                         className="gap-2 mx-auto disabled:opacity-50 disabled:cursor-not-allowed"
@@ -686,6 +704,24 @@ export const EcheancesPage: React.FC = () => {
               </div>
             )}
 
+            {hasNoClasses && (
+              <div className="flex flex-col gap-2 bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 p-3 rounded-xl border border-amber-200 dark:border-amber-800/60 text-xs">
+                <span className="font-semibold">
+                  Aucune classe définie. Ajoutez vos classes dans Configuration &gt; Classes.
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsModalOpen(false);
+                    navigate('config');
+                  }}
+                  className="text-left font-bold text-amber-800 dark:text-amber-300 underline hover:text-amber-950 cursor-pointer"
+                >
+                  Aller dans Configuration
+                </button>
+              </div>
+            )}
+
             <form onSubmit={handleCreateEcheancier} className="space-y-4 text-xs">
               <div>
                 <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
@@ -711,6 +747,8 @@ export const EcheancesPage: React.FC = () => {
                   options={availableClasses.map((cls) => ({ value: cls, label: cls }))}
                   placeholder="Sélectionner une classe..."
                   size="sm"
+                  disabled={hasNoClasses}
+                  emptyMessage="Aucune classe définie. Ajoutez vos classes dans Configuration > Classes."
                   triggerClassName="w-full h-9 rounded-lg font-semibold"
                 />
               </div>
@@ -796,7 +834,7 @@ export const EcheancesPage: React.FC = () => {
                   variant="primary"
                   size="sm"
                   className="gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
-                  disabled={isSubmitting || !isFormValid || !anneeScolaire}
+                  disabled={isSubmitting || !isFormValid || !anneeScolaire || hasNoClasses}
                 >
                   {isSubmitting ? (
                     <>

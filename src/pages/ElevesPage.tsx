@@ -24,7 +24,7 @@ import { formatCompactMRU } from '../lib/formatCompactMRU';
 import { StudentEnrollmentModal } from '../components/eleves/StudentEnrollmentModal';
 import { AdaptiveTable } from '../components/ui/AdaptiveTable';
 import { Select } from '../components/ui/Select';
-import { DEFAULT_CLASSES_MAURITANIE } from '../lib/constants/classes';
+import { useClasses } from '../hooks/useClasses';
 import { generateReceiptPdf } from '../lib/pdf/generateReceiptPdf';
 import { getEcheanceActive, encaisser, ActiveEcheance } from '../lib/paiements';
 import {
@@ -65,6 +65,8 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
   const authProfile = useAuthStore((s) => s.profile);
   const anneeScolaire = useAnneeScolaire();
   const navigate = useNavigationStore((s) => s.navigate);
+  const { nomsClasses: classesList, isLoading: isLoadingClasses } = useClasses();
+  const hasNoClasses = !isLoadingClasses && classesList.length === 0;
 
   const [elevesList, setElevesList] = useState<EleveWithStats[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -291,10 +293,10 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
     return Array.from(new Set(elevesList.map((e) => e.classe).filter((c) => Boolean(c && c.trim()))));
   }, [elevesList]);
 
-  // Ensemble complet des classes disponibles pour l'inscription (élèves réels + nomenclature mauritanienne)
-  const classesList = useMemo(() => {
-    return Array.from(new Set([...existingElevesClasses, ...DEFAULT_CLASSES_MAURITANIE]));
-  }, [existingElevesClasses]);
+  // Classes proposées dans le filtre de recherche (classes actives de l'école + classes d'élèves déjà inscrits)
+  const filterClassesList = useMemo(() => {
+    return Array.from(new Set([...classesList, ...existingElevesClasses]));
+  }, [classesList, existingElevesClasses]);
 
   // Filtrage et Tri
   const filteredEleves = useMemo(() => {
@@ -576,8 +578,14 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
             size="sm"
             className="gap-2 h-10 px-4 disabled:opacity-50 disabled:cursor-not-allowed"
             onClick={handleImportClick}
-            disabled={isImporting || !anneeScolaire}
-            title={!anneeScolaire ? "Définissez l'année scolaire dans Configuration avant de continuer" : undefined}
+            disabled={isImporting || !anneeScolaire || hasNoClasses}
+            title={
+              !anneeScolaire
+                ? "Définissez l'année scolaire dans Configuration avant de continuer"
+                : hasNoClasses
+                ? "Aucune classe définie. Ajoutez vos classes dans Configuration > Classes."
+                : undefined
+            }
             loading={isImporting}
             loadingText="Lecture du fichier..."
           >
@@ -588,10 +596,16 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
             variant="primary"
             size="sm"
             className="gap-2 h-10 px-4 disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled={!anneeScolaire}
-            title={!anneeScolaire ? "Définissez l'année scolaire dans Configuration avant de continuer" : undefined}
+            disabled={!anneeScolaire || hasNoClasses}
+            title={
+              !anneeScolaire
+                ? "Définissez l'année scolaire dans Configuration avant de continuer"
+                : hasNoClasses
+                ? "Aucune classe définie. Ajoutez vos classes dans Configuration > Classes."
+                : undefined
+            }
             onClick={() => {
-              if (!anneeScolaire) return;
+              if (!anneeScolaire || hasNoClasses) return;
               setEleveToEdit(null);
               setIsEnrollModalOpen(true);
             }}
@@ -608,6 +622,23 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
           <div className="flex items-center gap-3 text-xs font-semibold">
             <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0" />
             <span>Définissez l'année scolaire dans Configuration avant de continuer</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => navigate('config')}
+            className="text-xs font-bold text-amber-800 dark:text-amber-300 underline hover:text-amber-950 dark:hover:text-white shrink-0 cursor-pointer"
+          >
+            Aller dans Configuration
+          </button>
+        </div>
+      )}
+
+      {/* Garde aucune classe définie */}
+      {hasNoClasses && (
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 p-4 rounded-xl border border-amber-200 dark:border-amber-800/60">
+          <div className="flex items-center gap-3 text-xs font-semibold">
+            <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0" />
+            <span>Aucune classe définie. Ajoutez vos classes dans Configuration &gt; Classes.</span>
           </div>
           <button
             type="button"
@@ -696,8 +727,8 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
               onChange={setSelectedClasse}
               icon={<Filter className="h-4 w-4" />}
               options={[
-                { value: 'all', label: `Toutes les classes (${existingElevesClasses.length})` },
-                ...existingElevesClasses.map((c) => ({ value: c, label: c })),
+                { value: 'all', label: `Toutes les classes (${filterClassesList.length})` },
+                ...filterClassesList.map((c) => ({ value: c, label: c })),
               ]}
               triggerClassName="h-10 rounded-xl text-xs font-semibold"
             />
@@ -847,10 +878,16 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
                 </p>
                 <Button
                   variant="primary"
-                  disabled={!anneeScolaire}
-                  title={!anneeScolaire ? "Définissez l'année scolaire dans Configuration avant de continuer" : undefined}
+                  disabled={!anneeScolaire || hasNoClasses}
+                  title={
+                    !anneeScolaire
+                      ? "Définissez l'année scolaire dans Configuration avant de continuer"
+                      : hasNoClasses
+                      ? "Aucune classe définie. Ajoutez vos classes dans Configuration > Classes."
+                      : undefined
+                  }
                   onClick={() => {
-                    if (!anneeScolaire) return;
+                    if (!anneeScolaire || hasNoClasses) return;
                     setIsEnrollModalOpen(true);
                   }}
                   className="gap-2 mx-auto disabled:opacity-50 disabled:cursor-not-allowed"

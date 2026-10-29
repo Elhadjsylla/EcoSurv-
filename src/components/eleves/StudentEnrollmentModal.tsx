@@ -7,6 +7,7 @@ import { EleveWithStats, LienParente } from '../../types';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useNavigationStore } from '../../store/useNavigationStore';
 import { useAnneeScolaire } from '../../hooks/useAnneeScolaire';
+import { useClasses } from '../../hooks/useClasses';
 import { supabase } from '../../lib/supabase';
 import { generateEcheancesForNewStudent } from '../../lib/echeancesHelper';
 import { parseEdgeFunctionError } from '../../lib/functionsHelper';
@@ -56,6 +57,15 @@ export const StudentEnrollmentModal: React.FC<StudentEnrollmentModalProps> = ({
   const isEditing = Boolean(eleveToEdit);
   const anneeScolaire = useAnneeScolaire();
   const navigate = useNavigationStore((s) => s.navigate);
+  const { nomsClasses: hookClasses, isLoading: isLoadingClasses } = useClasses();
+  const activeClasses = classesList.length > 0 ? classesList : hookClasses;
+  const selectClassesOptions = React.useMemo(() => {
+    if (isEditing && eleveToEdit?.classe && !activeClasses.includes(eleveToEdit.classe)) {
+      return [eleveToEdit.classe, ...activeClasses];
+    }
+    return activeClasses;
+  }, [isEditing, eleveToEdit?.classe, activeClasses]);
+  const hasNoClasses = !isEditing && !isLoadingClasses && activeClasses.length === 0;
 
   const [formData, setFormData] = useState<Partial<StudentEnrollmentFormData>>({
     nom: '',
@@ -63,7 +73,7 @@ export const StudentEnrollmentModal: React.FC<StudentEnrollmentModalProps> = ({
     date_naissance: '',
     lieu_naissance: '',
     sexe: 'M',
-    classe: classesList[0] || '',
+    classe: activeClasses[0] || '',
     nom_tuteur: '',
     telephone_tuteur: '+222 ',
     email_tuteur: '',
@@ -71,7 +81,6 @@ export const StudentEnrollmentModal: React.FC<StudentEnrollmentModalProps> = ({
     lien_parente: 'pere',
   });
 
-  const [isCustomClasse, setIsCustomClasse] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSuccess, setIsSuccess] = useState(false);
   const [isEnrolling, setIsEnrolling] = useState(false);
@@ -87,15 +96,13 @@ export const StudentEnrollmentModal: React.FC<StudentEnrollmentModalProps> = ({
     if (!isOpen) return;
 
     if (eleveToEdit) {
-      const isCustom = Boolean(eleveToEdit.classe && !classesList.includes(eleveToEdit.classe));
-      setIsCustomClasse(isCustom);
       setFormData({
         nom: eleveToEdit.nom || '',
         prenom: eleveToEdit.prenom || '',
         date_naissance: eleveToEdit.date_naissance || '',
         lieu_naissance: eleveToEdit.lieu_naissance || '',
         sexe: eleveToEdit.sexe || 'M',
-        classe: eleveToEdit.classe || classesList[0] || '',
+        classe: eleveToEdit.classe || activeClasses[0] || '',
         nom_tuteur: eleveToEdit.nom_tuteur || '',
         telephone_tuteur: eleveToEdit.telephone_tuteur || '+222 ',
         email_tuteur: eleveToEdit.email_tuteur || '',
@@ -103,14 +110,13 @@ export const StudentEnrollmentModal: React.FC<StudentEnrollmentModalProps> = ({
         lien_parente: (eleveToEdit.lien_parente as any) || 'pere',
       });
     } else {
-      setIsCustomClasse(false);
       setFormData({
         nom: '',
         prenom: '',
         date_naissance: '',
         lieu_naissance: '',
         sexe: 'M',
-        classe: classesList[0] || '',
+        classe: activeClasses[0] || '',
         nom_tuteur: '',
         telephone_tuteur: '+222 ',
         email_tuteur: '',
@@ -123,7 +129,7 @@ export const StudentEnrollmentModal: React.FC<StudentEnrollmentModalProps> = ({
     setParentInviteNotice(null);
     setEcheancesNotice(null);
     setErrors({});
-  }, [isOpen, eleveToEdit, classesList]);
+  }, [isOpen, eleveToEdit, activeClasses]);
 
   if (!isOpen) return null;
 
@@ -133,6 +139,11 @@ export const StudentEnrollmentModal: React.FC<StudentEnrollmentModalProps> = ({
 
     if (!isEditing && !anneeScolaire) {
       setErrors({ submit: "Définissez l'année scolaire dans Configuration avant de continuer" });
+      return;
+    }
+
+    if (!isEditing && activeClasses.length === 0) {
+      setErrors({ submit: "Aucune classe définie. Ajoutez vos classes dans Configuration > Classes." });
       return;
     }
 
@@ -522,6 +533,26 @@ export const StudentEnrollmentModal: React.FC<StudentEnrollmentModalProps> = ({
               </div>
             )}
 
+            {/* Garde aucune classe définie */}
+            {hasNoClasses && (
+              <div className="p-4 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-xs text-amber-900 dark:text-amber-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div className="flex items-center gap-2.5 font-semibold">
+                  <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0" />
+                  <span>Aucune classe définie. Ajoutez vos classes dans Configuration &gt; Classes.</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    navigate('config');
+                  }}
+                  className="font-bold text-amber-800 dark:text-amber-300 underline hover:text-amber-950 shrink-0 cursor-pointer"
+                >
+                  Aller dans Configuration
+                </button>
+              </div>
+            )}
+
             {/* Bannière d'erreur générale d'enregistrement */}
             {errors.submit && (
               <div className="p-4 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-xs text-red-800 dark:text-red-200 flex items-start gap-2.5 animate-in fade-in">
@@ -636,47 +667,18 @@ export const StudentEnrollmentModal: React.FC<StudentEnrollmentModalProps> = ({
                   <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
                     Classe d'affectation <span className="text-red-500">*</span>
                   </label>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const next = !isCustomClasse;
-                      setIsCustomClasse(next);
-                      if (next) {
-                        setFormData({ ...formData, classe: '' });
-                      } else {
-                        setFormData({ ...formData, classe: classesList[0] || '1AF (CI / CP1)' });
-                      }
-                    }}
-                    className="text-[11px] font-bold text-blue-600 dark:text-blue-400 hover:underline"
-                  >
-                    {isCustomClasse ? "Choisir dans la liste" : "+ Saisir une autre classe"}
-                  </button>
                 </div>
 
-                {isCustomClasse ? (
-                  <div className="space-y-1">
-                    <input
-                      type="text"
-                      value={formData.classe || ''}
-                      onChange={(e) => setFormData({ ...formData, classe: e.target.value })}
-                      placeholder="Ex: 6ème Bilingue, Terminale C1, Nation CP..."
-                      className="w-full h-9 px-3 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 text-xs focus:ring-2 focus:ring-blue-600 focus:outline-none font-semibold"
-                    />
-                    <p className="text-[10px] text-slate-500 dark:text-slate-400">
-                      Saisie libre : cette classe sera automatiquement conservée et proposée pour les prochains élèves.
-                    </p>
-                  </div>
-                ) : (
-                  <Select<string>
-                    value={formData.classe || (classesList[0] || '')}
-                    onChange={(val) => setFormData({ ...formData, classe: val })}
-                    options={classesList.map((c) => ({ value: c, label: c }))}
-                    placeholder="Sélectionner une classe..."
-                    size="sm"
-                    triggerClassName="w-full h-9 rounded-lg font-semibold"
-                    emptyMessage="Aucune classe configurée. Utilisez le lien ci-dessus pour la saisir manuellement."
-                  />
-                )}
+                <Select<string>
+                  value={formData.classe || ''}
+                  onChange={(val) => setFormData({ ...formData, classe: val })}
+                  options={selectClassesOptions.map((c) => ({ value: c, label: c }))}
+                  placeholder="Sélectionner une classe..."
+                  size="sm"
+                  disabled={hasNoClasses}
+                  triggerClassName="w-full h-9 rounded-lg font-semibold"
+                  emptyMessage="Aucune classe définie. Ajoutez vos classes dans Configuration > Classes."
+                />
                 {errors.classe && (
                   <p className="text-[11px] text-red-600 dark:text-red-400 mt-1 flex items-center gap-1">
                     <ShieldAlert className="h-3 w-3" /> {errors.classe}
@@ -799,7 +801,7 @@ export const StudentEnrollmentModal: React.FC<StudentEnrollmentModalProps> = ({
                 variant="primary"
                 size="sm"
                 className="gap-2 w-full sm:w-auto justify-center disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={isEnrolling || (!isEditing && !anneeScolaire)}
+                disabled={isEnrolling || (!isEditing && (!anneeScolaire || hasNoClasses))}
               >
                 {isEnrolling ? (
                   <>
