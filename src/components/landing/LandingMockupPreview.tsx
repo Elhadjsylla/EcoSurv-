@@ -1,540 +1,293 @@
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import {
-  TrendingUp,
-  AlertCircle,
-  CheckCircle2,
-  Building2,
-  Smartphone,
-  Receipt,
-  MessageCircle,
+  Check,
+  Circle,
+  FileText,
+  Bell,
+  Calendar,
+  Users,
   CreditCard,
-  QrCode,
-  ShieldCheck,
-  Printer,
-  Clock,
 } from 'lucide-react';
 import { LogoIcone } from '../ui/Logo';
 
-type MockupTab = 'directeur' | 'guichet' | 'whatsapp' | 'recu';
+type PreviewRole = 'directeur' | 'caissier' | 'enseignant' | 'parent';
+
+const ROLE_TABS: { id: PreviewRole; label: string }[] = [
+  { id: 'directeur', label: 'Directeur' },
+  { id: 'caissier', label: 'Caissier' },
+  { id: 'enseignant', label: 'Enseignant' },
+  { id: 'parent', label: 'Parent' },
+];
 
 export const LandingMockupPreview: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<MockupTab>('directeur');
-  const [paymentChannel, setPaymentChannel] = useState<'bankily' | 'masrvi' | 'especes'>('bankily');
+  const [activeRole, setActiveRole] = useState<PreviewRole>('directeur');
 
   return (
-    <div className="relative w-full">
-      {/* Main Mockup Card Container */}
-      <div className="relative rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden transition-all duration-300">
-        {/* Top Window Chrome & Tab Switcher */}
-        <div className="border-b border-slate-200/80 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 px-4 py-3 flex flex-wrap items-center justify-between gap-3">
-          {/* Header indicator */}
-          <div className="flex items-center gap-2">
-            <span className="h-2 w-2 rounded-full bg-blue-600" />
-            <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
-              Démonstration de l'interface en situation réelle
-            </span>
-          </div>
-
-          {/* Interactive Navigation Pills */}
-          <div className="flex items-center gap-1 p-1 bg-slate-200/70 dark:bg-slate-800/80 rounded-xl overflow-x-auto no-scrollbar">
-            <button
-              type="button"
-              onClick={() => setActiveTab('directeur')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0 ${
-                activeTab === 'directeur'
-                  ? 'bg-white dark:bg-blue-600 text-blue-700 dark:text-white shadow-sm'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-              }`}
-            >
-              <TrendingUp className="h-3.5 w-3.5" />
-              <span>Pilotage DAF</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setActiveTab('guichet')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0 ${
-                activeTab === 'guichet'
-                  ? 'bg-white dark:bg-blue-600 text-blue-700 dark:text-white shadow-sm'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-              }`}
-            >
-              <CreditCard className="h-3.5 w-3.5" />
-              <span>Guichet Bankily</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setActiveTab('whatsapp')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0 ${
-                activeTab === 'whatsapp'
-                  ? 'bg-white dark:bg-emerald-600 text-emerald-700 dark:text-white shadow-sm'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-              }`}
-            >
-              <MessageCircle className="h-3.5 w-3.5" />
-              <span>WhatsApp Auto</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setActiveTab('recu')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0 ${
-                activeTab === 'recu'
-                  ? 'bg-white dark:bg-blue-600 text-blue-700 dark:text-white shadow-sm'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-              }`}
-            >
-              <Receipt className="h-3.5 w-3.5" />
-              <span>Reçu DGI QR</span>
-            </button>
-          </div>
-
-          {/* Institutional Status Badge */}
-          <div className="hidden md:flex items-center gap-1.5 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
-            <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="font-mono">Nouakchott • En Direct</span>
-          </div>
+    <div
+      aria-label="Aperçu illustratif de l'interface EcoSurv"
+      className="w-full rounded-md border border-default bg-surface overflow-hidden"
+    >
+      {/* Barre supérieure de fenêtre avec étiquette explicite */}
+      <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 border-b border-subtle bg-surface-subtle">
+        <div className="flex items-center gap-2">
+          <LogoIcone size={20} />
+          <span className="text-sm font-semibold text-main">EcoSurv</span>
         </div>
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-sm border border-default bg-surface text-xs font-semibold text-secondary">
+          Aperçu illustratif
+        </span>
+      </div>
 
-        {/* Content Wrapper for AnimatePresence */}
-        <div className="relative">
-          <AnimatePresence mode="wait">
-            {/* Tab Content 1: Pilotage DAF & Direction */}
-            {activeTab === 'directeur' && (
-              <motion.div 
-                key="directeur"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.2 }}
-                className="p-4 sm:p-6 space-y-4"
-              >
-            {/* Header School Info */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-800">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-950/80 dark:text-blue-400 border border-blue-200/60 dark:border-blue-800/80 shadow-2xs">
-                  <Building2 className="h-5 w-5" />
-                </div>
+      {/* Sélecteur des 4 accès par rôle */}
+      <div
+        role="tablist"
+        aria-label="Aperçu par rôle"
+        className="grid grid-cols-2 sm:grid-cols-4 border-b border-subtle bg-surface"
+      >
+        {ROLE_TABS.map((tab) => {
+          const isSelected = activeRole === tab.id;
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              role="tab"
+              aria-selected={isSelected}
+              onClick={() => setActiveRole(tab.id)}
+              className={`min-h-[44px] px-3 py-2 text-sm font-semibold border-b-2 transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-primary ${
+                isSelected
+                  ? 'border-primary text-primary-text bg-surface'
+                  : 'border-transparent text-muted hover:text-main bg-surface-subtle/50'
+              }`}
+            >
+              {tab.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Contenu illustratif selon le rôle sélectionné */}
+      <div className="p-4 sm:p-5 space-y-4 bg-surface text-left">
+        {activeRole === 'directeur' && (
+          <div className="space-y-4">
+            {/* Carte Pour démarrer */}
+            <div className="rounded-sm border border-subtle p-3.5 space-y-3 bg-surface">
+              <div className="flex items-center justify-between gap-2">
                 <div>
-                  <h4 className="text-sm font-extrabold text-slate-900 dark:text-white tracking-tight">
-                    Lycée d'Excellence El-Amel
-                  </h4>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
-                    Tevragh-Zeina • Année 2024-2025 • 482 élèves
+                  <p className="text-sm font-bold text-main">Pour démarrer</p>
+                  <p className="text-xs text-muted">
+                    Configuration pas à pas de l'établissement
                   </p>
                 </div>
-              </div>
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800/80 text-[11px] font-bold self-start sm:self-auto">
-                <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                <span>Exercice Actif • RLS Isolé</span>
-              </div>
-            </div>
-
-            {/* KPI Cards in MRU */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-              <div className="p-4 rounded-2xl bg-gradient-to-br from-slate-50 to-white dark:from-slate-800/80 dark:to-slate-800/40 border border-slate-100 dark:border-slate-800/80 shadow-2xs relative overflow-hidden">
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                    Recouvré ce mois (MRU)
-                  </span>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300">
-                    +18.4%
-                  </span>
-                </div>
-                <div className="mt-1.5 flex items-baseline gap-1.5">
-                  <span className="text-2xl sm:text-3xl font-black text-slate-950 dark:text-white font-mono tracking-tight">
-                    4 850 000
-                  </span>
-                  <span className="text-xs font-bold text-slate-500">MRU</span>
-                </div>
-                <div className="mt-2 flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
-                  <TrendingUp className="h-3.5 w-3.5" />
-                  <span>Rapprochement Mobile Money direct</span>
-                </div>
-              </div>
-
-              <div className="p-4 rounded-2xl bg-gradient-to-br from-slate-50 to-white dark:from-slate-800/80 dark:to-slate-800/40 border border-slate-100 dark:border-slate-800/80 shadow-2xs relative overflow-hidden">
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                    Reste exigible en retard
-                  </span>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300">
-                    28 élèves
-                  </span>
-                </div>
-                <div className="mt-1.5 flex items-baseline gap-1.5">
-                  <span className="text-2xl sm:text-3xl font-black text-rose-600 dark:text-rose-400 font-mono tracking-tight">
-                    310 000
-                  </span>
-                  <span className="text-xs font-bold text-slate-500">MRU</span>
-                </div>
-                <div className="mt-2 flex items-center gap-1 text-[11px] font-semibold text-amber-600 dark:text-amber-400">
-                  <AlertCircle className="h-3.5 w-3.5" />
-                  <span>Suivi des échéances et impayés</span>
-                </div>
-              </div>
-            </div>
-
-            {/* SVG Weekly Evolution Chart */}
-            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800/80">
-              <div className="flex items-center justify-between mb-2.5">
-                <span className="text-xs font-bold text-slate-900 dark:text-white">
-                  Tendance des encaissements (Semaine 1 à 4)
-                </span>
-                <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold">
-                  94.8% d'objectifs atteints
+                <span className="text-xs font-semibold text-secondary">
+                  Progression
                 </span>
               </div>
-              <div className="h-20 w-full relative">
-                <svg className="h-full w-full text-blue-600 dark:text-blue-500" preserveAspectRatio="none" viewBox="0 0 400 80">
-                  <defs>
-                    <linearGradient id="gradMockupArt" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="currentColor" stopOpacity="0.3" />
-                      <stop offset="100%" stopColor="currentColor" stopOpacity="0.0" />
-                    </linearGradient>
-                  </defs>
-                  <path d="M0 65 Q 60 50, 120 42 T 240 28 T 320 18 T 400 8 L 400 80 L 0 80 Z" fill="url(#gradMockupArt)" />
-                  <path d="M0 65 Q 60 50, 120 42 T 240 28 T 320 18 T 400 8" fill="none" stroke="currentColor" strokeWidth="2.5" />
-                  <circle cx="120" cy="42" r="4" className="fill-blue-600 dark:fill-blue-400" />
-                  <circle cx="240" cy="28" r="4" className="fill-blue-600 dark:fill-blue-400" />
-                  <circle cx="320" cy="18" r="4" className="fill-blue-600 dark:fill-blue-400" />
-                  <circle cx="400" cy="8" r="5" className="fill-emerald-500 animate-pulse" />
-                </svg>
-              </div>
-            </div>
 
-            {/* Live Certified Transactions Feed */}
-            <div className="overflow-hidden rounded-2xl border border-slate-100 dark:border-slate-800">
-              <div className="px-4 py-2.5 bg-slate-100/80 dark:bg-slate-800/80 flex justify-between text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                <span>Dernières transactions certifiées</span>
-                <span>Canal / Montant</span>
+              <div className="w-full h-1.5 rounded-sm bg-surface-subtle overflow-hidden">
+                <div className="h-full w-1/2 bg-primary rounded-sm" />
               </div>
-              <div className="divide-y divide-slate-100 dark:divide-slate-800 text-xs">
-                <div className="px-4 py-2.5 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
-                  <div className="flex items-center gap-2.5">
-                    <div className="h-8 w-8 rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/60 dark:text-blue-300 flex items-center justify-center font-bold text-xs">
-                      AB
+
+              <div className="divide-y divide-subtle border-t border-subtle text-xs">
+                {[
+                  { label: "Profil de l'école (année, ville, +222)", done: true },
+                  { label: "Classes de l'école", done: true },
+                  { label: 'Barèmes de frais et échéances (MRU)', done: true },
+                  { label: 'Inscrire les élèves', done: false },
+                ].map((step) => (
+                  <div
+                    key={step.label}
+                    className="py-2 flex items-center justify-between gap-2"
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      {step.done ? (
+                        <Check className="h-3.5 w-3.5 text-primary-text shrink-0" />
+                      ) : (
+                        <Circle className="h-3 w-3 text-muted shrink-0" />
+                      )}
+                      <span className="text-main font-medium truncate">
+                        {step.label}
+                      </span>
                     </div>
-                    <div>
-                      <p className="font-bold text-slate-900 dark:text-white">Ahmed Salem Bilal</p>
-                      <p className="text-[11px] text-slate-500">Terminale D • Reçu #2025-0981</p>
-                    </div>
+                    <span className="px-2 py-0.5 rounded-sm border border-subtle bg-surface-subtle text-secondary font-semibold shrink-0">
+                      {step.done ? 'Terminée' : 'À faire'}
+                    </span>
                   </div>
-                  <div className="text-right">
-                    <p className="font-mono font-bold text-slate-900 dark:text-white">45 000 MRU</p>
-                    <p className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1 justify-end">
-                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> Bankily Direct
-                    </p>
-                  </div>
-                </div>
-
-                <div className="px-4 py-2.5 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
-                  <div className="flex items-center gap-2.5">
-                    <div className="h-8 w-8 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-300 flex items-center justify-center font-bold text-xs">
-                      FD
-                    </div>
-                    <div>
-                      <p className="font-bold text-slate-900 dark:text-white">Fatimetou Diop</p>
-                      <p className="text-[11px] text-slate-500">3ème Année • Reçu #2025-0982</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-mono font-bold text-slate-900 dark:text-white">35 000 MRU</p>
-                    <p className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1 justify-end">
-                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> Masrvi BMCI
-                    </p>
-                  </div>
-                </div>
+                ))}
               </div>
             </div>
-            </motion.div>
-          )}
 
-          {/* Tab Content 2: Guichet Bankily */}
-          {activeTab === 'guichet' && (
-            <motion.div 
-              key="guichet"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.2 }}
-              className="p-4 sm:p-6 space-y-4"
-            >
-            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
-              <div>
-                <span className="text-[11px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider">
-                  Guichet Caisse N°1 — Encaissement express
+            {/* Validation des paiements en attente */}
+            <div className="rounded-sm border border-subtle p-3.5 space-y-2.5 bg-surface-subtle">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs font-bold text-main">
+                  Paiements en attente de confirmation
                 </span>
-                <h4 className="text-base font-extrabold text-slate-900 dark:text-white">
-                  Règlement Échéance Scolarité
-                </h4>
+                <Bell className="h-3.5 w-3.5 text-muted shrink-0" />
               </div>
-              <span className="px-3 py-1 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 text-[11px] font-bold">
-                Rapprochement en 4s
-              </span>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
-                <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Élève au guichet</span>
-                <p className="text-sm font-bold text-slate-900 dark:text-white mt-0.5">
-                  Aminetou Mint Cheikh
-                </p>
-                <p className="text-xs text-slate-500">
-                  Matricule: <span className="font-mono font-bold text-slate-700 dark:text-slate-300">ES-2025-042</span> • 6ème A
-                </p>
-              </div>
-
-              <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
-                <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Échéance à régler</span>
-                <p className="text-sm font-bold text-slate-900 dark:text-white mt-0.5">
-                  Frais de scolarité — Mars 2025
-                </p>
-                <p className="text-xs font-mono font-extrabold text-blue-600 dark:text-blue-400">
-                  35 000 MRU <span className="text-[10px] font-normal text-slate-500">(Net sans commission)</span>
-                </p>
-              </div>
-            </div>
-
-            {/* Canal de réception */}
-            <div>
-              <label className="text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5 block">
-                Canal d'encaissement instantané
-              </label>
-              <div className="grid grid-cols-3 gap-2.5">
-                <button
-                  type="button"
-                  onClick={() => setPaymentChannel('bankily')}
-                  className={`p-3 rounded-2xl flex flex-col items-center justify-center text-center transition-all cursor-pointer ${
-                    paymentChannel === 'bankily'
-                      ? 'border-2 border-blue-600 bg-blue-50/80 dark:bg-blue-950/80 text-blue-900 dark:text-blue-100 shadow-xs ring-2 ring-blue-600/15 font-bold'
-                      : 'border border-slate-200 dark:border-slate-700/80 bg-white/90 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800'
-                  }`}
-                >
-                  <Smartphone className={`h-5 w-5 mb-1 ${paymentChannel === 'bankily' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500'}`} />
-                  <span className={`text-xs ${paymentChannel === 'bankily' ? 'font-bold text-blue-800 dark:text-blue-200' : 'font-semibold text-slate-700 dark:text-slate-300'}`}>
-                    Bankily
-                  </span>
-                  <span className={`text-[10px] font-mono ${paymentChannel === 'bankily' ? 'text-blue-600 dark:text-blue-400 font-semibold' : 'text-slate-400'}`}>
-                    BPM #98214
-                  </span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setPaymentChannel('masrvi')}
-                  className={`p-3 rounded-2xl flex flex-col items-center justify-center text-center transition-all cursor-pointer ${
-                    paymentChannel === 'masrvi'
-                      ? 'border-2 border-blue-600 bg-blue-50/80 dark:bg-blue-950/80 text-blue-900 dark:text-blue-100 shadow-xs ring-2 ring-blue-600/15 font-bold'
-                      : 'border border-slate-200 dark:border-slate-700/80 bg-white/90 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800'
-                  }`}
-                >
-                  <CreditCard className={`h-5 w-5 mb-1 ${paymentChannel === 'masrvi' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500'}`} />
-                  <span className={`text-xs ${paymentChannel === 'masrvi' ? 'font-bold text-blue-800 dark:text-blue-200' : 'font-semibold text-slate-700 dark:text-slate-300'}`}>
-                    Masrvi
-                  </span>
-                  <span className={`text-[10px] font-mono ${paymentChannel === 'masrvi' ? 'text-blue-600 dark:text-blue-400 font-semibold' : 'text-slate-400'}`}>
-                    BMCI #44012
-                  </span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setPaymentChannel('especes')}
-                  className={`p-3 rounded-2xl flex flex-col items-center justify-center text-center transition-all cursor-pointer ${
-                    paymentChannel === 'especes'
-                      ? 'border-2 border-blue-600 bg-blue-50/80 dark:bg-blue-950/80 text-blue-900 dark:text-blue-100 shadow-xs ring-2 ring-blue-600/15 font-bold'
-                      : 'border border-slate-200 dark:border-slate-700/80 bg-white/90 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800'
-                  }`}
-                >
-                  <Receipt className={`h-5 w-5 mb-1 ${paymentChannel === 'especes' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500'}`} />
-                  <span className={`text-xs ${paymentChannel === 'especes' ? 'font-bold text-blue-800 dark:text-blue-200' : 'font-semibold text-slate-700 dark:text-slate-300'}`}>
-                    Espèces
-                  </span>
-                  <span className={`text-[10px] ${paymentChannel === 'especes' ? 'text-blue-600 dark:text-blue-400 font-semibold' : 'text-slate-400'}`}>
-                    Caisse physique
-                  </span>
-                </button>
-              </div>
-            </div>
-
-            <div className="p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                <span className="text-xs font-semibold text-emerald-900 dark:text-emerald-200">
-                  {paymentChannel === 'bankily' && 'Paiement instantané Bankily BPM validé. Quittance officielle générée.'}
-                  {paymentChannel === 'masrvi' && 'Paiement certifié Masrvi BMCI reçu. Quittance officielle générée.'}
-                  {paymentChannel === 'especes' && 'Encaissement espèces validé à la caisse N°1. Quittance officielle générée.'}
-                </span>
-              </div>
-              <button
-                type="button"
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-colors shadow-xs"
-              >
-                <Printer className="h-3.5 w-3.5" />
-                Imprimer
-              </button>
-            </div>
-          </motion.div>
-        )}
-
-        {/* Tab Content 3: WhatsApp Auto */}
-        {activeTab === 'whatsapp' && (
-          <motion.div 
-            key="whatsapp"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.2 }}
-            className="p-4 sm:p-6 space-y-4"
-          >
-            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
-              <div>
-                <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
-                  Relance Éducative Automatisée
-                </span>
-                <h4 className="text-base font-extrabold text-slate-900 dark:text-white">
-                  Aperçu du message WhatsApp reçu par le parent
-                </h4>
-              </div>
-              <span className="px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-[11px] font-bold flex items-center gap-1">
-                <Clock className="h-3 w-3" />
-                Modèle de message préparé à J-3
-              </span>
-            </div>
-
-            {/* Realistic WhatsApp Chat Card */}
-            <div className="rounded-2xl bg-[#0b141a] p-4 text-white shadow-inner max-w-md mx-auto font-sans border border-slate-800">
-              <div className="flex items-center gap-2.5 pb-3 border-b border-slate-800">
-                <LogoIcone size={32} />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1">
-                    <span className="text-xs font-bold truncate">EcoSurv • Groupe Scolaire Al-Baraka</span>
-                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
-                  </div>
-                  <p className="text-[10px] text-slate-400">Compte vérifié officiel</p>
-                </div>
-              </div>
-
-              <div className="mt-3.5 bg-[#1f2c34] p-3.5 rounded-2xl rounded-tl-xs text-xs text-slate-200 leading-relaxed shadow-sm space-y-2">
-                <p>
-                  <span className="font-bold text-white">Chers parents de Mariam Diallo (CM2),</span>
-                </p>
-                <p className="text-slate-300">
-                  Nous vous informons avec bienveillance que l'échéance de scolarité pour le mois de <strong className="text-white">Mars 2025</strong> (35 000 MRU) arrive à terme le <strong className="text-white">05 Mars</strong>.
-                </p>
-                <div className="p-2.5 rounded-xl bg-[#111b21] border border-slate-700/60 font-mono text-[11px] space-y-1">
-                  <p className="text-emerald-400 font-bold">Moyens de paiement directs :</p>
-                  <p>• Bankily : Code établissement <span className="text-white font-bold">44021</span></p>
-                  <p>• Masrvi : Tél caisse <span className="text-white font-bold">+222 45 25 00 00</span></p>
-                </div>
-                <p className="text-slate-300">
-                  Téléchargez votre quittance officielle dès validation : <span className="text-emerald-400 font-semibold">[Lien sécurisé unique • Exemple fictif]</span>
-                </p>
-                <div className="text-right text-[10px] text-slate-400 pt-1 flex items-center justify-end gap-1">
-                  <span>10:14</span>
-                  <span className="text-blue-400 font-bold">✓✓</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 pt-1">
-              <span className="flex items-center gap-1.5">
-                <ShieldCheck className="h-4 w-4 text-emerald-500" />
-                Réduit de 70% les impayés sans contact embarrassant
-              </span>
-              <span className="font-bold text-slate-700 dark:text-slate-300">
-                Français & Arabe
-              </span>
-            </div>
-          </motion.div>
-        )}
-
-        {/* Tab Content 4: Reçu DGI QR */}
-        {activeTab === 'recu' && (
-          <motion.div 
-            key="recu"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.2 }}
-            className="p-4 sm:p-6 space-y-4"
-          >
-            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
-              <div>
-                <span className="text-[11px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider">
-                  Sécurité Fiscale & Contrôle
-                </span>
-                <h4 className="text-base font-extrabold text-slate-900 dark:text-white">
-                  Quittance Scolaire Inaltérable Conforme DGI
-                </h4>
-              </div>
-              <span className="px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-[11px] font-bold">
-                Inviolable • Horodaté
-              </span>
-            </div>
-
-            {/* Receipt Card */}
-            <div className="rounded-2xl bg-slate-50 dark:bg-slate-800/80 p-4 border border-slate-200 dark:border-slate-700 shadow-sm relative overflow-hidden">
-              <div className="flex justify-between items-start border-b border-slate-200 dark:border-slate-700 pb-3">
+              <div className="p-2.5 rounded-sm border border-subtle bg-surface flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
                 <div>
-                  <p className="text-[10px] uppercase font-bold tracking-wider text-slate-400">
-                    RÉPUBLIQUE ISLAMIQUE DE MAURITANIE
+                  <p className="font-semibold text-main">
+                    Règlement mobile avec référence opérateur
                   </p>
-                  <h5 className="text-sm font-extrabold text-slate-900 dark:text-white">
-                    Groupe Scolaire Al-Baraka — Tevragh-Zeina
-                  </h5>
-                  <p className="text-[11px] text-slate-500 font-mono">NIF: 00921448-B • Agrément MENESF N° 2019/41</p>
+                  <p className="text-muted">
+                    Échéance de scolarité en MRU
+                  </p>
                 </div>
-                <div className="text-right">
-                  <span className="inline-block px-2.5 py-0.5 rounded-lg bg-blue-100 dark:bg-blue-900/60 text-blue-800 dark:text-blue-300 font-mono font-bold text-xs">
-                    REÇU N° 2025-0492
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className="px-2.5 py-1 rounded-sm bg-primary text-on-primary font-semibold">
+                    Confirmer
                   </span>
-                  <p className="text-[10px] text-slate-400 mt-1">14 Mars 2025 à 11:32</p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3 py-3 text-xs border-b border-slate-200 dark:border-slate-700">
-                <div>
-                  <span className="text-[10px] text-slate-400 uppercase font-semibold">Élève & Classe</span>
-                  <p className="font-bold text-slate-900 dark:text-white">Cheikh Ould Souleymane</p>
-                  <p className="text-slate-500">Terminale C • Matricule ES-2024-118</p>
-                </div>
-                <div>
-                  <span className="text-[10px] text-slate-400 uppercase font-semibold">Paiement & Canal</span>
-                  <p className="font-bold text-emerald-600 dark:text-emerald-400 font-mono text-sm">45 000 MRU</p>
-                  <p className="text-slate-500">Bankily Direct • Réf TX #BKL-884129</p>
-                </div>
-              </div>
-
-              <div className="pt-3 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="h-12 w-12 rounded-xl bg-white p-1 border border-slate-200 shadow-2xs shrink-0 flex items-center justify-center">
-                    <QrCode className="h-10 w-10 text-slate-900" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-bold text-slate-900 dark:text-white">
-                      Signature Cryptographique DGI
-                    </p>
-                    <p className="text-[10px] text-slate-500 font-mono">
-                      SHA-256: 8f9b...a41c (Audit conforme)
-                    </p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1 justify-end">
-                    <CheckCircle2 className="h-4 w-4" /> Quittance archivée
+                  <span className="px-2.5 py-1 rounded-sm border border-default bg-surface text-secondary font-semibold">
+                    Rejeter
                   </span>
                 </div>
               </div>
             </div>
-            </motion.div>
-          )}
-          </AnimatePresence>
-        </div>
+          </div>
+        )}
+
+        {activeRole === 'caissier' && (
+          <div className="space-y-4">
+            <div className="rounded-sm border border-subtle p-3.5 space-y-3 bg-surface">
+              <div className="flex items-center justify-between gap-2 border-b border-subtle pb-2.5">
+                <div className="flex items-center gap-2">
+                  <CreditCard className="h-4 w-4 text-primary-text shrink-0" />
+                  <span className="text-sm font-bold text-main">
+                    Encaissement au guichet
+                  </span>
+                </div>
+                <span className="text-xs font-semibold text-muted">
+                  Monnaie : MRU
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                {['Espèces', 'Bankily', 'Masrvi', 'Sedad'].map((canal, idx) => (
+                  <div
+                    key={canal}
+                    className={`py-2 px-2.5 rounded-sm border text-center font-semibold ${
+                      idx === 1
+                        ? 'border-primary bg-surface-subtle text-primary-text'
+                        : 'border-subtle bg-surface text-secondary'
+                    }`}
+                  >
+                    {canal}
+                  </div>
+                ))}
+              </div>
+
+              <div className="space-y-2 text-xs">
+                <div className="flex items-center justify-between py-1.5 px-2.5 rounded-sm border border-subtle bg-surface-subtle">
+                  <span className="text-muted">Référence opérateur</span>
+                  <span className="font-semibold text-main">
+                    Saisie obligatoire hors espèces
+                  </span>
+                </div>
+                <div className="flex items-center justify-between py-1.5 px-2.5 rounded-sm border border-subtle bg-surface-subtle">
+                  <span className="text-muted">Justificatif</span>
+                  <span className="font-semibold text-main flex items-center gap-1">
+                    <FileText className="h-3.5 w-3.5 text-primary-text" />
+                    Reçu PDF numéroté
+                  </span>
+                </div>
+              </div>
+
+              <div className="pt-2 border-t border-subtle flex items-center justify-between gap-2 text-xs">
+                <span className="text-muted font-medium">
+                  Fin de journée au guichet
+                </span>
+                <span className="px-2.5 py-1 rounded-sm border border-default bg-surface text-main font-semibold">
+                  Clôturer la caisse du jour
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeRole === 'enseignant' && (
+          <div className="space-y-4">
+            <div className="rounded-sm border border-subtle p-3.5 space-y-3 bg-surface">
+              <div className="flex items-center justify-between gap-2 border-b border-subtle pb-2.5">
+                <div className="flex items-center gap-2">
+                  <Users className="h-4 w-4 text-primary-text shrink-0" />
+                  <span className="text-sm font-bold text-main">
+                    Appel et saisie des absences
+                  </span>
+                </div>
+                <span className="text-xs font-semibold text-secondary">
+                  Classe affectée
+                </span>
+              </div>
+
+              <div className="divide-y divide-subtle text-xs">
+                {[
+                  { label: 'Élève inscrit — Liste de classe', status: 'Présent' },
+                  { label: 'Élève inscrit — Liste de classe', status: 'Absent' },
+                  { label: 'Élève inscrit — Liste de classe', status: 'Présent' },
+                ].map((row, idx) => (
+                  <div
+                    key={idx}
+                    className="py-2.5 flex items-center justify-between gap-2"
+                  >
+                    <span className="font-medium text-main">{row.label}</span>
+                    <span
+                      className={`px-2 py-0.5 rounded-sm border font-semibold ${
+                        row.status === 'Absent'
+                          ? 'border-danger-border bg-danger-surface text-danger-text'
+                          : 'border-subtle bg-surface-subtle text-secondary'
+                      }`}
+                    >
+                      {row.status}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeRole === 'parent' && (
+          <div className="space-y-4">
+            <div className="rounded-sm border border-subtle p-3.5 space-y-3 bg-surface">
+              <div className="flex items-center justify-between gap-2 border-b border-subtle pb-2.5">
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-primary-text shrink-0" />
+                  <span className="text-sm font-bold text-main">
+                    Espace parent (téléphone et ordinateur)
+                  </span>
+                </div>
+              </div>
+
+              <div className="space-y-2 text-xs">
+                <div className="p-2.5 rounded-sm border border-subtle bg-surface-subtle flex items-center justify-between gap-2">
+                  <span className="font-medium text-main">
+                    Suivi des échéances de scolarité (MRU)
+                  </span>
+                  <span className="px-2 py-0.5 rounded-sm border border-success-border bg-success-surface text-success-text font-semibold">
+                    À jour
+                  </span>
+                </div>
+                <div className="p-2.5 rounded-sm border border-subtle bg-surface-subtle flex items-center justify-between gap-2">
+                  <span className="font-medium text-main">
+                    Suivi et déclaration d'absence
+                  </span>
+                  <span className="px-2 py-0.5 rounded-sm border border-default bg-surface text-secondary font-semibold">
+                    Déclarer une absence
+                  </span>
+                </div>
+                <div className="p-2.5 rounded-sm border border-subtle bg-surface-subtle flex items-center justify-between gap-2">
+                  <span className="font-medium text-main">
+                    Notifications reçues dans l'application
+                  </span>
+                  <Bell className="h-3.5 w-3.5 text-primary-text shrink-0" />
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
 };
+
+export default LandingMockupPreview;
