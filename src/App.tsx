@@ -95,6 +95,15 @@ export function AppContent() {
   // Notification inter-onglets
   const [sessionChangedNotice, setSessionChangedNotice] = useState<string | null>(null);
 
+  // Un utilisateur déjà connecté qui arrive sur l'écran de connexion rejoint son
+  // portail. Fait dans un effet : mettre à jour le store pendant le rendu
+  // déclenchait « Cannot update a component (AppContent) while rendering ».
+  useEffect(() => {
+    if (viewMode === 'login' && authProfile) {
+      useNavigationStore.getState().navigateToUserPortal(authProfile.role);
+    }
+  }, [viewMode, authProfile]);
+
   const isInitialResolvingRef = useRef<boolean>(true);
   const isSyncingRef = useRef<boolean>(false);
 
@@ -729,10 +738,8 @@ export function AppContent() {
   };
 
   if (viewMode === 'login') {
-    if (authProfile) {
-      useNavigationStore.getState().navigateToUserPortal(authProfile.role);
-      return null;
-    }
+    // La redirection vers le portail est faite par l'effet dédié plus haut
+    if (authProfile) return null;
     return (
       <div key="login-page" className="animate-page-enter">
         {renderNotice()}
