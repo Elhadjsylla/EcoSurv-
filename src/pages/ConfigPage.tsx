@@ -14,7 +14,12 @@ import {
   StaffMember,
   RoleUtilisateur,
 } from '../types';
-import { DEFAULT_CLASSES_MAURITANIE } from '../lib/constants/classes';
+import {
+  DEFAULT_CLASSES_MAURITANIE,
+  NIVEAUX_SCOLAIRES_ORDRE,
+  deduireNiveauModeleMauritanien,
+} from '../lib/constants/classes';
+import { useClasses, ClasseEcole, notifyClassesChanged } from '../hooks/useClasses';
 import { anneeScolaireSuggeree, getAnneeScolaireOptions } from '../lib/constants/scolaire';
 import {
   Save,
@@ -35,17 +40,356 @@ import {
   ChevronRight,
   AlertCircle,
   Loader2,
+  Plus,
+  Edit3,
+  CheckSquare,
+  Power,
+  Layers,
 } from 'lucide-react';
 
 export const ConfigPage: React.FC = () => {
   const { ecole, updateEcole } = useEcoleStore();
   const authProfile = useAuthStore((s) => s.profile);
   const canEditSchool = authProfile?.role === 'directeur' || authProfile?.role === 'super_admin';
+  const { nomsClasses: activeClasses, isLoading: isLoadingActiveClasses } = useClasses();
   const [formData, setFormData] = useState(() => ({
     ...ecole,
     annee_scolaire: ecole.annee_scolaire || anneeScolaireSuggeree(),
   }));
   const [isSaving, setIsSaving] = useState(false);
+
+  // Gestion des classes de l'école (public.classes_ecole)
+  const [schoolClasses, setSchoolClasses] = useState<ClasseEcole[]>([]);
+  const [isLoadingSchoolClasses, setIsLoadingSchoolClasses] = useState(false);
+  const [schoolClassesError, setSchoolClassesError] = useState<string | null>(null);
+  const [classUsageMap, setClassUsageMap] = useState<
+    Record<string, { eleves: number; baremes: number; affectations: number }>
+  >({});
+
+  // Ajout unitaire d'une classe
+  const [newClassName, setNewClassName] = useState('');
+  const [newClassNiveau, setNewClassNiveau] = useState('');
+  const [isAddingClass, setIsAddingClass] = useState(false);
+  const [addClassError, setAddClassError] = useState<string | null>(null);
+
+  // Renommage d'une classe
+  const [renamingClass, setRenamingClass] = useState<ClasseEcole | null>(null);
+  const [renameValue, setRenameValue] = useState('');
+  const [isRenamingClass, setIsRenamingClass] = useState(false);
+  const [renameClassError, setRenameClassError] = useState<string | null>(null);
+
+  // Activation / désactivation d'une classe
+  const [togglingClassId, setTogglingClassId] = useState<string | null>(null);
+
+  // Fenêtre modèle mauritanien
+  const [isModelModalOpen, setIsModelModalOpen] = useState(false);
+  const [selectedModelClasses, setSelectedModelClasses] = useState<string[]>([]);
+  const [isInsertingModel, setIsInsertingModel] = useState(false);
+  const [modelModalError, setModelModalError] = useState<string | null>(null);
+
+  const modeleMauritanienItems = React.useMemo(
+    () =>
+      DEFAULT_CLASSES_MAURITANIE.map((nom, index) => ({
+        nom,
+        niveau: deduireNiveauModeleMauritanien(nom),
+        ordre: index + 1,
+      })),
+    []
+  );
+
+  const fetchSchoolClasses = React.useCallback(async () => {
+    const ecoleId = authProfile?.ecole_id || ecole.id;
+    if (!ecoleId) return;
+    setIsLoadingSchoolClasses(true);
+    setSchoolClassesError(null);
+    try {
+      const [classesRes, elevesRes, baremesRes, affectationsRes] = await Promise.all([
+        supabase
+          .from('classes_ecole')
+          .select('id, ecole_id, nom, niveau, ordre, actif, created_at, updated_at')
+          .eq('ecole_id', ecoleId)
+          .order('ordre', { ascending: true })
+          .order('nom', { ascending: true }),
+        supabase.from('eleves').select('classe').eq('ecole_id', ecoleId),
+        supabase.from('baremes_echeances').select('classe').eq('ecole_id', ecoleId),
+        supabase.from('affectations_enseignants').select('classe').eq('ecole_id', ecoleId),
+      ]);
+
+      if (classesRes.error) {
+        throw classesRes.error;
+      }
+
+      setSchoolClasses((classesRes.data as ClasseEcole[]) || []);
+
+      const usage: Record<string, { eleves: number; baremes: number; affectations: number }> = {};
+      const ensureEntry = (nom: string) => {
+        if (!usage[nom]) {
+          usage[nom] = { eleves: 0, baremes: 0, affectations: 0 };
+        }
+      };
+
+      for (const row of elevesRes.data || []) {
+        if (row.classe) {
+          ensureEntry(row.classe);
+          usage[row.classe].eleves += 1;
+        }
+      }
+      for (const row of baremesRes.data || []) {
+        if (row.classe) {
+          ensureEntry(row.classe);
+          usage[row.classe].baremes += 1;
+        }
+      }
+      for (const row of affectationsRes.data || []) {
+        if (row.classe) {
+          ensureEntry(row.classe);
+          usage[row.classe].affectations += 1;
+        }
+      }
+      setClassUsageMap(usage);
+    } catch (err: any) {
+      console.error('[ConfigPage] Erreur chargement classes_ecole:', err);
+      setSchoolClassesError(err?.message || "Impossible de charger les classes de l'école.");
+    } finally {
+      setIsLoadingSchoolClasses(false);
+    }
+  }, [authProfile?.ecole_id, ecole.id]);
+
+  useEffect(() => {
+    fetchSchoolClasses();
+  }, [fetchSchoolClasses]);
+
+  const handleAddClass = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!canEditSchool || isAddingClass) return;
+    setAddClassError(null);
+
+    const ecoleId = authProfile?.ecole_id || ecole.id;
+    if (!ecoleId) {
+      setAddClassError("Identifiant de l'école introuvable.");
+      return;
+    }
+
+    const cleanNom = newClassName.trim();
+    if (cleanNom.length < 1 || cleanNom.length > 80) {
+      setAddClassError('Le nom de la classe doit contenir entre 1 et 80 caractères.');
+      return;
+    }
+
+    setIsAddingClass(true);
+    try {
+      const maxOrdre =
+        schoolClasses.length > 0 ? Math.max(...schoolClasses.map((c) => Number(c.ordre) || 0)) : 0;
+
+      const { error } = await supabase.from('classes_ecole').insert({
+        ecole_id: ecoleId,
+        nom: cleanNom,
+        niveau: newClassNiveau.trim() || null,
+        ordre: maxOrdre + 1,
+        actif: true,
+      });
+
+      if (error) {
+        if (error.code === '23505') {
+          setAddClassError(
+            `Une classe portant le nom « ${cleanNom} » existe déjà dans votre école (erreur 23505 : doublon).`
+          );
+        } else {
+          setAddClassError(`Erreur (${error.code || 'BDD'}) : ${error.message}`);
+        }
+        return;
+      }
+
+      setNewClassName('');
+      setNewClassNiveau('');
+      await fetchSchoolClasses();
+      notifyClassesChanged();
+      showToast(`✓ Classe « ${cleanNom} » ajoutée avec succès.`);
+    } catch (err: any) {
+      setAddClassError(err?.message || "Erreur inattendue lors de l'ajout de la classe.");
+    } finally {
+      setIsAddingClass(false);
+    }
+  };
+
+  const handleOpenRenameModal = (cls: ClasseEcole) => {
+    setRenamingClass(cls);
+    setRenameValue(cls.nom);
+    setRenameClassError(null);
+  };
+
+  const handleConfirmRenameClass = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!canEditSchool || !renamingClass || isRenamingClass) return;
+    setRenameClassError(null);
+
+    const ecoleId = authProfile?.ecole_id || ecole.id;
+    if (!ecoleId) return;
+
+    const cleanNom = renameValue.trim();
+    if (cleanNom.length < 1 || cleanNom.length > 80) {
+      setRenameClassError('Le nom de la classe doit contenir entre 1 et 80 caractères.');
+      return;
+    }
+
+    if (cleanNom === renamingClass.nom) {
+      setRenamingClass(null);
+      return;
+    }
+
+    setIsRenamingClass(true);
+    try {
+      // Vérification stricte avant renommage : aucun élève, aucun barème, aucune affectation d'enseignant
+      const [elevesCheck, baremesCheck, affectationsCheck] = await Promise.all([
+        supabase
+          .from('eleves')
+          .select('id', { count: 'exact', head: true })
+          .eq('ecole_id', ecoleId)
+          .eq('classe', renamingClass.nom),
+        supabase
+          .from('baremes_echeances')
+          .select('id', { count: 'exact', head: true })
+          .eq('ecole_id', ecoleId)
+          .eq('classe', renamingClass.nom),
+        supabase
+          .from('affectations_enseignants')
+          .select('enseignant_id', { count: 'exact', head: true })
+          .eq('ecole_id', ecoleId)
+          .eq('classe', renamingClass.nom),
+      ]);
+
+      const nbEleves = elevesCheck.count || 0;
+      const nbBaremes = baremesCheck.count || 0;
+      const nbAffectations = affectationsCheck.count || 0;
+
+      if (nbEleves > 0 || nbBaremes > 0 || nbAffectations > 0) {
+        setRenameClassError(
+          `Renommage bloqué : cette classe est utilisée (${nbEleves} élève(s), ${nbBaremes} barème(s), ${nbAffectations} affectation(s)).`
+        );
+        await fetchSchoolClasses();
+        return;
+      }
+
+      const { error } = await supabase
+        .from('classes_ecole')
+        .update({ nom: cleanNom })
+        .eq('id', renamingClass.id)
+        .eq('ecole_id', ecoleId);
+
+      if (error) {
+        if (error.code === '23505') {
+          setRenameClassError(
+            `Une classe portant le nom « ${cleanNom} » existe déjà dans votre école (erreur 23505 : doublon).`
+          );
+        } else {
+          setRenameClassError(`Erreur (${error.code || 'BDD'}) : ${error.message}`);
+        }
+        return;
+      }
+
+      setRenamingClass(null);
+      await fetchSchoolClasses();
+      notifyClassesChanged();
+      showToast(`✓ Classe renommée en « ${cleanNom} ».`);
+    } catch (err: any) {
+      setRenameClassError(err?.message || 'Erreur inattendue lors du renommage.');
+    } finally {
+      setIsRenamingClass(false);
+    }
+  };
+
+  const handleToggleClassActive = async (cls: ClasseEcole) => {
+    if (!canEditSchool || togglingClassId) return;
+    const ecoleId = authProfile?.ecole_id || ecole.id;
+    if (!ecoleId) return;
+
+    setTogglingClassId(cls.id);
+    try {
+      const nextActif = !cls.actif;
+      const { error } = await supabase
+        .from('classes_ecole')
+        .update({ actif: nextActif })
+        .eq('id', cls.id)
+        .eq('ecole_id', ecoleId);
+
+      if (error) {
+        showToast(`Erreur (${error.code || 'BDD'}) : ${error.message}`);
+        return;
+      }
+
+      await fetchSchoolClasses();
+      notifyClassesChanged();
+      showToast(
+        nextActif
+          ? `✓ Classe « ${cls.nom} » réactivée.`
+          : `✓ Classe « ${cls.nom} » désactivée (les élèves inscrits conservent leur classe).`
+      );
+    } catch (err: any) {
+      showToast(`Erreur : ${err?.message || 'Impossible de modifier le statut de la classe.'}`);
+    } finally {
+      setTogglingClassId(null);
+    }
+  };
+
+  const handleOpenModelModal = () => {
+    const existingNames = new Set(schoolClasses.map((c) => c.nom));
+    const missingNames = modeleMauritanienItems
+      .filter((item) => !existingNames.has(item.nom))
+      .map((item) => item.nom);
+    setSelectedModelClasses(missingNames);
+    setModelModalError(null);
+    setIsModelModalOpen(true);
+  };
+
+  const handleInsertModelClasses = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!canEditSchool || isInsertingModel) return;
+    setModelModalError(null);
+
+    const ecoleId = authProfile?.ecole_id || ecole.id;
+    if (!ecoleId) {
+      setModelModalError("Identifiant de l'école introuvable.");
+      return;
+    }
+
+    const selectedItems = modeleMauritanienItems.filter((item) =>
+      selectedModelClasses.includes(item.nom)
+    );
+
+    if (selectedItems.length === 0) {
+      setModelModalError('Veuillez cocher au moins une classe à ajouter.');
+      return;
+    }
+
+    setIsInsertingModel(true);
+    try {
+      const rows = selectedItems.map((item) => ({
+        ecole_id: ecoleId,
+        nom: item.nom,
+        niveau: item.niveau,
+        ordre: item.ordre,
+        actif: true,
+      }));
+
+      const { error } = await supabase
+        .from('classes_ecole')
+        .upsert(rows, { onConflict: 'ecole_id,nom', ignoreDuplicates: true });
+
+      if (error) {
+        setModelModalError(`Erreur (${error.code || 'BDD'}) : ${error.message}`);
+        return;
+      }
+
+      setIsModelModalOpen(false);
+      await fetchSchoolClasses();
+      notifyClassesChanged();
+      showToast(`✓ ${selectedItems.length} classe(s) du modèle mauritanien ajoutée(s).`);
+    } catch (err: any) {
+      setModelModalError(err?.message || "Erreur inattendue lors de l'insertion des classes.");
+    } finally {
+      setIsInsertingModel(false);
+    }
+  };
 
   const [staffList, setStaffList] = useState<StaffMember[]>([]);
   const [isLoadingStaff, setIsLoadingStaff] = useState(false);
@@ -147,8 +491,14 @@ export const ConfigPage: React.FC = () => {
   const [newEmail, setNewEmail] = useState('');
   const [newTelephone, setNewTelephone] = useState('+222 ');
   const [newRole, setNewRole] = useState<RoleUtilisateur>('enseignant');
-  const [newClasse, setNewClasse] = useState('Terminales C');
+  const [newClasse, setNewClasse] = useState('');
   const [testStaffActionLink, setTestStaffActionLink] = useState<{ label: string; link: string } | null>(null);
+
+  useEffect(() => {
+    if (!newClasse && activeClasses.length > 0) {
+      setNewClasse(activeClasses[0]);
+    }
+  }, [activeClasses, newClasse]);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -288,7 +638,7 @@ export const ConfigPage: React.FC = () => {
   const [editPrenom, setEditPrenom] = useState('');
   const [editTelephone, setEditTelephone] = useState('');
   const [editRole, setEditRole] = useState<RoleUtilisateur>('enseignant');
-  const [editClasse, setEditClasse] = useState('Terminales C');
+  const [editClasse, setEditClasse] = useState('');
   const [isUpdatingMember, setIsUpdatingMember] = useState(false);
   const [updateMemberError, setUpdateMemberError] = useState<string | null>(null);
 
@@ -301,7 +651,7 @@ export const ConfigPage: React.FC = () => {
     setEditPrenom(member.prenom);
     setEditTelephone(member.telephone || '+222 ');
     setEditRole(member.role);
-    setEditClasse(member.classe_assignee || 'Terminales C');
+    setEditClasse(member.classe_assignee || activeClasses[0] || '');
     setUpdateMemberError(null);
     setActiveMenuId(null);
   };
@@ -638,6 +988,256 @@ export const ConfigPage: React.FC = () => {
             </div>
           )}
         </form>
+      </Card>
+
+      {/* Section Classes de l'école */}
+      <Card
+        id="section-classes-ecole"
+        className="p-6 sm:p-8 space-y-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xs"
+      >
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2.5">
+              <Layers className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+                Classes de l'école ({schoolClasses.length})
+              </h3>
+              {!canEditSchool && (
+                <span className="text-[11px] font-semibold bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 px-2 py-0.5 rounded border border-amber-200 dark:border-amber-800/60">
+                  Lecture seule
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Une classe désactivée n'est plus proposée pour de nouveaux élèves, mais les élèves qui y sont déjà gardent leur classe.
+            </p>
+          </div>
+
+          {canEditSchool && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="gap-2 shrink-0"
+              onClick={handleOpenModelModal}
+            >
+              <CheckSquare className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+              Ajouter les classes du modèle mauritanien
+            </Button>
+          )}
+        </div>
+
+        {/* Formulaire d'ajout d'une classe */}
+        {canEditSchool && (
+          <form
+            onSubmit={handleAddClass}
+            className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700/80 space-y-3 text-xs"
+          >
+            <div className="font-bold text-slate-800 dark:text-slate-200">
+              Ajouter une classe personnalisée
+            </div>
+
+            {addClassError && (
+              <div className="p-3 rounded-lg bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 text-red-700 dark:text-red-300 flex items-center gap-2">
+                <AlertCircle className="h-4 w-4 shrink-0" />
+                <span>{addClassError}</span>
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
+              <div className="sm:col-span-6">
+                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Nom de la classe (1 à 80 caractères) <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  maxLength={80}
+                  value={newClassName}
+                  onChange={(e) => setNewClassName(e.target.value)}
+                  placeholder="Ex: 1AF (CI / CP1), 6ème Bilingue, Terminale C..."
+                  disabled={isAddingClass}
+                  className="w-full h-10 px-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-semibold text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-600 focus:outline-none"
+                />
+              </div>
+
+              <div className="sm:col-span-4">
+                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Niveau (facultatif)
+                </label>
+                <Select
+                  value={newClassNiveau}
+                  onChange={setNewClassNiveau}
+                  disabled={isAddingClass}
+                  options={[
+                    { value: '', label: 'Non spécifié' },
+                    { value: 'Maternelle', label: 'Maternelle' },
+                    { value: 'Primaire', label: 'Primaire' },
+                    { value: 'Collège', label: 'Collège' },
+                    { value: 'Lycée', label: 'Lycée' },
+                  ]}
+                  size="sm"
+                  triggerClassName="w-full h-10 rounded-xl font-semibold"
+                />
+              </div>
+
+              <div className="sm:col-span-2">
+                <Button
+                  type="submit"
+                  variant="primary"
+                  size="sm"
+                  disabled={isAddingClass || !newClassName.trim()}
+                  className="w-full h-10 justify-center gap-1.5"
+                >
+                  {isAddingClass ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <>
+                      <Plus className="h-4 w-4" />
+                      <span>Ajouter</span>
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          </form>
+        )}
+
+        {/* Liste des classes de l'école */}
+        {schoolClassesError ? (
+          <div className="p-4 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 text-xs text-red-700 dark:text-red-300 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="h-4 w-4 shrink-0" />
+              <span>{schoolClassesError}</span>
+            </div>
+            <Button variant="outline" size="sm" onClick={fetchSchoolClasses}>
+              Réessayer
+            </Button>
+          </div>
+        ) : isLoadingSchoolClasses ? (
+          <div className="py-8 text-center text-xs text-slate-500 flex items-center justify-center gap-2">
+            <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+            <span>Chargement des classes de l'école...</span>
+          </div>
+        ) : schoolClasses.length === 0 ? (
+          <div className="py-8 px-4 text-center rounded-xl border border-dashed border-slate-300 dark:border-slate-700 space-y-2">
+            <School className="h-8 w-8 text-slate-400 mx-auto" />
+            <p className="text-sm font-bold text-slate-800 dark:text-slate-200">
+              Aucune classe définie pour cet établissement
+            </p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto">
+              Ajoutez vos classes ci-dessus ou utilisez le bouton « Ajouter les classes du modèle mauritanien » pour initialiser votre établissement.
+            </p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
+            <table className="w-full text-left border-collapse text-xs min-w-[640px]">
+              <thead>
+                <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">
+                  <th className="py-3.5 px-4">Nom de la classe</th>
+                  <th className="py-3.5 px-4">Niveau</th>
+                  <th className="py-3.5 px-4 text-center">Élèves inscrits</th>
+                  <th className="py-3.5 px-4 text-center">Statut</th>
+                  {canEditSchool && <th className="py-3.5 px-4 text-right">Actions</th>}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                {schoolClasses.map((cls) => {
+                  const usage = classUsageMap[cls.nom] || {
+                    eleves: 0,
+                    baremes: 0,
+                    affectations: 0,
+                  };
+                  const isReferenced =
+                    usage.eleves > 0 || usage.baremes > 0 || usage.affectations > 0;
+                  const renameBlockedReason = isReferenced
+                    ? `Renommage désactivé : classe utilisée (${usage.eleves} élève(s), ${usage.baremes} barème(s), ${usage.affectations} affectation(s) d'enseignant).`
+                    : 'Renommer cette classe';
+
+                  return (
+                    <tr
+                      key={cls.id}
+                      className={`transition-colors ${
+                        cls.actif
+                          ? 'hover:bg-slate-50/60 dark:hover:bg-slate-800/40'
+                          : 'bg-slate-50/40 dark:bg-slate-900/40 opacity-75'
+                      }`}
+                    >
+                      <td className="py-3.5 px-4 font-bold text-slate-900 dark:text-white">
+                        {cls.nom}
+                      </td>
+                      <td className="py-3.5 px-4 text-slate-600 dark:text-slate-300">
+                        {cls.niveau ? (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-semibold">
+                            {cls.niveau}
+                          </span>
+                        ) : (
+                          <span className="text-slate-400 italic">Non spécifié</span>
+                        )}
+                      </td>
+                      <td className="py-3.5 px-4 text-center font-mono font-bold text-slate-800 dark:text-slate-200">
+                        {usage.eleves}
+                      </td>
+                      <td className="py-3.5 px-4 text-center">
+                        {cls.actif ? (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-50 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                            Active
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
+                            <span className="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
+                            Désactivée
+                          </span>
+                        )}
+                      </td>
+                      {canEditSchool && (
+                        <td className="py-3.5 px-4 text-right whitespace-nowrap">
+                          <div className="inline-flex items-center justify-end gap-2">
+                            <Tooltip content={renameBlockedReason}>
+                              <span className="inline-block">
+                                <button
+                                  type="button"
+                                  disabled={isReferenced}
+                                  title={renameBlockedReason}
+                                  onClick={() => {
+                                    if (isReferenced) return;
+                                    handleOpenRenameModal(cls);
+                                  }}
+                                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                                >
+                                  <Edit3 className="h-3.5 w-3.5" />
+                                  <span>Renommer</span>
+                                </button>
+                              </span>
+                            </Tooltip>
+
+                            <button
+                              type="button"
+                              disabled={togglingClassId === cls.id}
+                              onClick={() => handleToggleClassActive(cls)}
+                              className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border text-xs font-semibold transition-colors cursor-pointer disabled:opacity-50 ${
+                                cls.actif
+                                  ? 'border-amber-200 dark:border-amber-800/60 bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 hover:bg-amber-100'
+                                  : 'border-emerald-200 dark:border-emerald-800/60 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 hover:bg-emerald-100'
+                              }`}
+                            >
+                              {togglingClassId === cls.id ? (
+                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              ) : (
+                                <Power className="h-3.5 w-3.5" />
+                              )}
+                              <span>{cls.actif ? 'Désactiver' : 'Réactiver'}</span>
+                            </button>
+                          </div>
+                        </td>
+                      )}
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </Card>
 
       {/* Test Link Banner (Mode Diagnostic/Dev Uniquement) */}
@@ -1059,14 +1659,21 @@ export const ConfigPage: React.FC = () => {
                   <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
                     Classe Assignée
                   </label>
-                  <Select
-                    value={newClasse}
-                    onChange={setNewClasse}
-                    disabled={isInviting}
-                    options={DEFAULT_CLASSES_MAURITANIE.map((c) => ({ value: c, label: c }))}
-                    size="sm"
-                    triggerClassName="w-full h-9 rounded-lg font-semibold"
-                  />
+                  {!isLoadingActiveClasses && activeClasses.length === 0 ? (
+                    <div className="p-2.5 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-200 text-xs">
+                      Aucune classe définie. Ajoutez vos classes dans Configuration &gt; Classes.
+                    </div>
+                  ) : (
+                    <Select
+                      value={newClasse}
+                      onChange={setNewClasse}
+                      disabled={isInviting || activeClasses.length === 0}
+                      options={activeClasses.map((c) => ({ value: c, label: c }))}
+                      placeholder="Sélectionner une classe..."
+                      size="sm"
+                      triggerClassName="w-full h-9 rounded-lg font-semibold"
+                    />
+                  )}
                 </div>
               )}
 
@@ -1080,7 +1687,13 @@ export const ConfigPage: React.FC = () => {
                 >
                   Annuler
                 </Button>
-                <Button type="submit" variant="primary" size="sm" className="gap-1.5" disabled={isInviting}>
+                <Button
+                  type="submit"
+                  variant="primary"
+                  size="sm"
+                  className="gap-1.5"
+                  disabled={isInviting || (newRole === 'enseignant' && activeClasses.length === 0)}
+                >
                   {isInviting ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin" />
@@ -1198,14 +1811,23 @@ export const ConfigPage: React.FC = () => {
                   <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
                     Classe Assignée
                   </label>
-                  <Select
-                    value={editClasse}
-                    onChange={setEditClasse}
-                    disabled={isUpdatingMember}
-                    options={DEFAULT_CLASSES_MAURITANIE.map((c) => ({ value: c, label: c }))}
-                    size="sm"
-                    triggerClassName="w-full h-9 rounded-lg font-semibold"
-                  />
+                  {!isLoadingActiveClasses && activeClasses.length === 0 && !editClasse ? (
+                    <div className="p-2.5 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-200 text-xs">
+                      Aucune classe définie. Ajoutez vos classes dans Configuration &gt; Classes.
+                    </div>
+                  ) : (
+                    <Select
+                      value={editClasse}
+                      onChange={setEditClasse}
+                      disabled={isUpdatingMember}
+                      options={Array.from(
+                        new Set(editClasse ? [editClasse, ...activeClasses] : activeClasses)
+                      ).map((c) => ({ value: c, label: c }))}
+                      placeholder="Sélectionner une classe..."
+                      size="sm"
+                      triggerClassName="w-full h-9 rounded-lg font-semibold"
+                    />
+                  )}
                 </div>
               )}
 
@@ -1229,6 +1851,224 @@ export const ConfigPage: React.FC = () => {
                     <>
                       <Save className="h-4 w-4" />
                       <span>Enregistrer les modifications</span>
+                    </>
+                  )}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Renommer une classe */}
+      {renamingClass && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 animate-in fade-in">
+          <div className="w-full max-w-md rounded-2xl bg-white dark:bg-slate-900 p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+              <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <Edit3 className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                Renommer la classe « {renamingClass.nom} »
+              </h3>
+              <button
+                type="button"
+                onClick={() => setRenamingClass(null)}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {renameClassError && (
+              <div className="p-3 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 text-red-700 dark:text-red-300 text-xs flex items-center gap-2">
+                <AlertCircle className="h-4 w-4 shrink-0" />
+                <span>{renameClassError}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleConfirmRenameClass} className="space-y-4 text-xs">
+              <div>
+                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Nouveau nom (1 à 80 caractères) <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  maxLength={80}
+                  required
+                  value={renameValue}
+                  onChange={(e) => setRenameValue(e.target.value)}
+                  disabled={isRenamingClass}
+                  className="w-full h-10 px-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-600 focus:outline-none"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-2 border-t border-slate-100 dark:border-slate-800">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={isRenamingClass}
+                  onClick={() => setRenamingClass(null)}
+                >
+                  Annuler
+                </Button>
+                <Button
+                  type="submit"
+                  variant="primary"
+                  size="sm"
+                  disabled={isRenamingClass || !renameValue.trim()}
+                  className="gap-1.5"
+                >
+                  {isRenamingClass ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <>
+                      <Save className="h-4 w-4" />
+                      <span>Enregistrer</span>
+                    </>
+                  )}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Ajouter les classes du modèle mauritanien */}
+      {isModelModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 animate-in fade-in">
+          <div className="w-full max-w-2xl rounded-2xl bg-white dark:bg-slate-900 p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4 max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3 shrink-0">
+              <div>
+                <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                  <CheckSquare className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                  Ajouter les classes du modèle mauritanien
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  Sélectionnez les classes à créer pour votre établissement (les doublons éventuels sont ignorés automatiquement).
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsModelModalOpen(false)}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {modelModalError && (
+              <div className="p-3 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 text-red-700 dark:text-red-300 text-xs flex items-center gap-2 shrink-0">
+                <AlertCircle className="h-4 w-4 shrink-0" />
+                <span>{modelModalError}</span>
+              </div>
+            )}
+
+            <div className="flex items-center justify-between px-1 text-xs shrink-0">
+              <span className="font-semibold text-slate-600 dark:text-slate-300">
+                {selectedModelClasses.length} classe(s) sélectionnée(s) sur {modeleMauritanienItems.length}
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  if (selectedModelClasses.length === modeleMauritanienItems.length) {
+                    setSelectedModelClasses([]);
+                  } else {
+                    setSelectedModelClasses(modeleMauritanienItems.map((i) => i.nom));
+                  }
+                }}
+                className="font-bold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+              >
+                {selectedModelClasses.length === modeleMauritanienItems.length
+                  ? 'Tout décocher'
+                  : 'Tout cocher'}
+              </button>
+            </div>
+
+            <form
+              onSubmit={handleInsertModelClasses}
+              className="flex-1 flex flex-col min-h-0 space-y-4 text-xs"
+            >
+              <div className="flex-1 overflow-y-auto space-y-4 pr-1">
+                {NIVEAUX_SCOLAIRES_ORDRE.map((niveau) => {
+                  const groupItems = modeleMauritanienItems.filter((i) => i.niveau === niveau);
+                  const existingSet = new Set(schoolClasses.map((c) => c.nom));
+
+                  return (
+                    <div
+                      key={niveau}
+                      className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40 space-y-2.5"
+                    >
+                      <div className="font-bold text-slate-800 dark:text-slate-200 text-xs uppercase tracking-wider">
+                        {niveau} ({groupItems.length})
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {groupItems.map((item) => {
+                          const checked = selectedModelClasses.includes(item.nom);
+                          const alreadyExists = existingSet.has(item.nom);
+                          return (
+                            <label
+                              key={item.nom}
+                              className="flex items-center justify-between gap-2 p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 cursor-pointer hover:border-blue-400 transition-colors"
+                            >
+                              <div className="flex items-center gap-2 min-w-0">
+                                <input
+                                  type="checkbox"
+                                  checked={checked}
+                                  onChange={(e) => {
+                                    if (e.target.checked) {
+                                      setSelectedModelClasses((prev) => [...prev, item.nom]);
+                                    } else {
+                                      setSelectedModelClasses((prev) =>
+                                        prev.filter((n) => n !== item.nom)
+                                      );
+                                    }
+                                  }}
+                                  className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                                />
+                                <span className="font-semibold text-slate-800 dark:text-slate-200 truncate">
+                                  {item.nom}
+                                </span>
+                              </div>
+                              {alreadyExists && (
+                                <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 shrink-0">
+                                  Déjà créée
+                                </span>
+                              )}
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800 shrink-0">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={isInsertingModel}
+                  onClick={() => setIsModelModalOpen(false)}
+                >
+                  Annuler
+                </Button>
+                <Button
+                  type="submit"
+                  variant="primary"
+                  size="sm"
+                  disabled={isInsertingModel || selectedModelClasses.length === 0}
+                  className="gap-1.5"
+                >
+                  {isInsertingModel ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span>Insertion...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="h-4 w-4" />
+                      <span>Ajouter la sélection ({selectedModelClasses.length})</span>
                     </>
                   )}
                 </Button>
