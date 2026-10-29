@@ -175,6 +175,31 @@
   animation: float-reverse 7s ease-in-out 1s infinite;
 }
 
+/* Pastilles flottantes de la landing : apparition puis flottement vertical.
+   Durées et délais posés en style inline par élément (LandingPage, Floating). */
+@keyframes landing-float-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes landing-float-y {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+.landing-float {
+  animation-name: landing-float-in, landing-float-y;
+  animation-timing-function: ease-out, ease-in-out;
+  animation-iteration-count: 1, infinite;
+  animation-fill-mode: both, none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-float {
+    animation: none;
+  }
+}
+
 .animate-aurora {
   animation: aurora-glow 8s ease-in-out infinite;
 }
