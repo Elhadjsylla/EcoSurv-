@@ -12,11 +12,7 @@ import {
 
 type Channel = 'especes' | 'bankily' | 'masrvi' | 'sedad';
 
-interface HonestProductDemoProps {
-  onNavigateToLogin?: () => void;
-}
-
-export const HonestProductDemo: React.FC<HonestProductDemoProps> = () => {
+export const HonestProductDemo: React.FC = () => {
   const shouldReduceMotion = useReducedMotion();
   const [selectedChannel, setSelectedChannel] = useState<Channel>('bankily');
   const [isPaid, setIsPaid] = useState(false);
@@ -25,7 +21,7 @@ export const HonestProductDemo: React.FC<HonestProductDemoProps> = () => {
   const handlePay = () => {
     setIsPaid(true);
     setShowNotification(true);
-    setTimeout(() => {
+    window.setTimeout(() => {
       setShowNotification(false);
     }, 3500);
   };
@@ -35,24 +31,52 @@ export const HonestProductDemo: React.FC<HonestProductDemoProps> = () => {
     setShowNotification(false);
   };
 
-  const channelLabels: Record<Channel, { label: string; icon: React.ReactNode }> = {
-    especes: { label: 'Espèces (Guichet)', icon: <Banknote className="h-4 w-4" /> },
-    bankily: { label: 'Bankily', icon: <Smartphone className="h-4 w-4" /> },
-    masrvi: { label: 'Masrvi', icon: <Smartphone className="h-4 w-4" /> },
-    sedad: { label: 'Sedad', icon: <Smartphone className="h-4 w-4" /> },
+  const channelLabels: Record<
+    Channel,
+    { label: string; refExample: string | null; icon: React.ReactNode }
+  > = {
+    especes: {
+      label: 'Espèces',
+      refExample: null,
+      icon: <Banknote className="h-4 w-4 shrink-0" />,
+    },
+    bankily: {
+      label: 'Bankily',
+      refExample: 'TX-BKL-00412 (Exemple)',
+      icon: <Smartphone className="h-4 w-4 shrink-0" />,
+    },
+    masrvi: {
+      label: 'Masrvi',
+      refExample: 'TX-MSR-00891 (Exemple)',
+      icon: <Smartphone className="h-4 w-4 shrink-0" />,
+    },
+    sedad: {
+      label: 'Sedad',
+      refExample: 'TX-SDD-00534 (Exemple)',
+      icon: <Smartphone className="h-4 w-4 shrink-0" />,
+    },
   };
 
+  const isMobileChannel = selectedChannel !== 'especes';
+
   return (
-    <div className="relative rounded-3xl bg-slate-900 border border-slate-800 text-white p-5 sm:p-8 shadow-xl max-w-3xl mx-auto overflow-hidden">
-      {/* Toast Notification sobre */}
+    <div className="relative rounded-md bg-slate-950 border border-slate-800 text-white p-5 sm:p-8 shadow-card max-w-3xl mx-auto overflow-hidden">
+      {/* Notification sobre d'exemple */}
       <AnimatePresence>
         {showNotification && (
           <motion.div
-            initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: -16, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: -12, scale: 0.98 }}
-            transition={{ duration: shouldReduceMotion ? 0 : 0.25, ease: [0.22, 1, 0.36, 1] }}
-            className="absolute top-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500 text-slate-950 font-bold text-xs shadow-lg"
+            initial={
+              shouldReduceMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: -12 }
+            }
+            animate={{ opacity: 1, y: 0 }}
+            exit={
+              shouldReduceMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: -8 }
+            }
+            transition={{
+              duration: shouldReduceMotion ? 0 : 0.24,
+              ease: 'easeOut',
+            }}
+            className="mb-4 flex items-center justify-center gap-2 px-4 py-2.5 rounded-sm bg-emerald-800 border border-emerald-600 text-white font-bold text-xs"
           >
             <CheckCircle2 className="h-4 w-4 shrink-0" />
             <span>Paiement fictif enregistré pour l'exemple</span>
@@ -64,13 +88,15 @@ export const HonestProductDemo: React.FC<HonestProductDemoProps> = () => {
         {/* En-tête démonstration */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-800">
           <div>
-            <div className="text-[11px] font-bold uppercase tracking-wider text-blue-400 flex items-center gap-2">
-              <span>Simulation interactive</span>
-              <span className="px-2 py-0.5 rounded bg-blue-500/10 text-blue-300 border border-blue-500/20 text-[10px]">Exemple fictif</span>
+            <div className="text-xs font-bold uppercase tracking-wider text-blue-300 flex flex-wrap items-center gap-2">
+              <span>Simulation interactive du guichet</span>
+              <span className="px-2.5 py-0.5 rounded-sm bg-slate-900 text-slate-200 border border-slate-700 text-xs">
+                Exemple fictif
+              </span>
             </div>
-            <div className="text-sm font-extrabold text-white mt-0.5">
-              Guichet de l'établissement • Illustration du fonctionnement
-            </div>
+            <p className="text-base font-bold text-white mt-1">
+              Guichet de l'établissement • Illustration d'un encaissement
+            </p>
           </div>
 
           <AnimatePresence>
@@ -79,11 +105,22 @@ export const HonestProductDemo: React.FC<HonestProductDemoProps> = () => {
                 key="reset-btn"
                 type="button"
                 onClick={handleReset}
-                initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.95 }}
+                initial={
+                  shouldReduceMotion
+                    ? { opacity: 1, scale: 1 }
+                    : { opacity: 0, scale: 0.96 }
+                }
                 animate={{ opacity: 1, scale: 1 }}
-                exit={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.95 }}
-                transition={{ duration: shouldReduceMotion ? 0 : 0.2 }}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-750 text-xs font-semibold text-slate-300 transition-colors self-start sm:self-auto cursor-pointer active:scale-[0.98]"
+                exit={
+                  shouldReduceMotion
+                    ? { opacity: 1, scale: 1 }
+                    : { opacity: 0, scale: 0.96 }
+                }
+                transition={{
+                  duration: shouldReduceMotion ? 0 : 0.2,
+                  ease: 'easeOut',
+                }}
+                className="min-h-[44px] inline-flex items-center gap-2 px-3.5 py-2 rounded-sm bg-slate-900 hover:bg-slate-800 border border-slate-700 text-xs font-semibold text-slate-200 transition-colors self-start sm:self-auto cursor-pointer focus-visible:outline-2 focus-visible:outline-[#1D4ED8]"
               >
                 <RotateCcw className="h-3.5 w-3.5" />
                 <span>Réinitialiser la démo</span>
@@ -93,45 +130,73 @@ export const HonestProductDemo: React.FC<HonestProductDemoProps> = () => {
         </div>
 
         {/* Fiche Élève fictive pour la démonstration */}
-        <div className="p-4 rounded-2xl bg-slate-800/60 border border-slate-700/70 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="p-4 rounded-sm bg-slate-900 border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3.5">
-            <div className="h-10 w-10 rounded-xl bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-blue-400 shrink-0 font-bold text-sm">
+            <div className="h-10 w-10 rounded-sm bg-[#1D4ED8] flex items-center justify-center text-white shrink-0 font-bold text-sm">
               ET
             </div>
             <div>
-              <div className="text-sm font-bold text-white flex items-center gap-2">
+              <div className="text-sm font-bold text-white flex flex-wrap items-center gap-2">
                 <span>Élève Test (Exemple)</span>
-                <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-slate-700/80 text-slate-300 border border-slate-600">Démo</span>
+                <span className="px-2 py-0.5 rounded-sm text-xs font-semibold bg-slate-800 text-slate-300 border border-slate-700">
+                  Exemple fictif
+                </span>
               </div>
-              <div className="text-xs text-slate-400">Classe : Classe Démo • Échéance mensuelle : 15 000 MRU</div>
+              <p className="text-xs text-slate-300 mt-0.5 tabular-nums">
+                Classe : Classe Démo • Échéance mensuelle : 15 000 MRU
+              </p>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="text-xs text-slate-400">Statut :</span>
+            <span className="text-xs text-slate-300">Statut :</span>
             <AnimatePresence mode="wait">
               {isPaid ? (
                 <motion.span
                   key="paid-status"
-                  initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.9 }}
+                  initial={
+                    shouldReduceMotion
+                      ? { opacity: 1, scale: 1 }
+                      : { opacity: 0, scale: 0.94 }
+                  }
                   animate={{ opacity: 1, scale: 1 }}
-                  exit={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.9 }}
-                  transition={{ duration: shouldReduceMotion ? 0 : 0.2, ease: [0.22, 1, 0.36, 1] }}
-                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
+                  exit={
+                    shouldReduceMotion
+                      ? { opacity: 1, scale: 1 }
+                      : { opacity: 0, scale: 0.94 }
+                  }
+                  transition={{
+                    duration: shouldReduceMotion ? 0 : 0.22,
+                    ease: 'easeOut',
+                  }}
+                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-sm text-xs font-bold bg-emerald-950 text-emerald-300 border border-emerald-700"
                 >
                   <CheckCircle2 className="h-3.5 w-3.5" />
-                  Dossier à jour
+                  {isMobileChannel
+                    ? 'Enregistré (avec réf. opérateur)'
+                    : 'Dossier à jour'}
                 </motion.span>
               ) : (
                 <motion.span
                   key="pending-status"
-                  initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.9 }}
+                  initial={
+                    shouldReduceMotion
+                      ? { opacity: 1, scale: 1 }
+                      : { opacity: 0, scale: 0.94 }
+                  }
                   animate={{ opacity: 1, scale: 1 }}
-                  exit={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.9 }}
-                  transition={{ duration: shouldReduceMotion ? 0 : 0.2, ease: [0.22, 1, 0.36, 1] }}
-                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30"
+                  exit={
+                    shouldReduceMotion
+                      ? { opacity: 1, scale: 1 }
+                      : { opacity: 0, scale: 0.94 }
+                  }
+                  transition={{
+                    duration: shouldReduceMotion ? 0 : 0.22,
+                    ease: 'easeOut',
+                  }}
+                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-sm text-xs font-bold bg-amber-950 text-amber-300 border border-amber-700"
                 >
-                  Échéance en attente
+                  Échéance à régler
                 </motion.span>
               )}
             </AnimatePresence>
@@ -143,14 +208,23 @@ export const HonestProductDemo: React.FC<HonestProductDemoProps> = () => {
           {!isPaid ? (
             <motion.div
               key="action-form"
-              initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: 8 }}
+              initial={
+                shouldReduceMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: 8 }
+              }
               animate={{ opacity: 1, y: 0 }}
-              exit={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: -8 }}
-              transition={{ duration: shouldReduceMotion ? 0 : 0.25, ease: [0.22, 1, 0.36, 1] }}
+              exit={
+                shouldReduceMotion
+                  ? { opacity: 1, y: 0 }
+                  : { opacity: 0, y: -8 }
+              }
+              transition={{
+                duration: shouldReduceMotion ? 0 : 0.24,
+                ease: 'easeOut',
+              }}
               className="space-y-4 pt-1"
             >
-              <div className="text-xs font-semibold text-slate-300">
-                1. Choisissez le canal de règlement pour tester :
+              <div className="text-xs font-semibold text-slate-200">
+                1. Choisissez le canal de règlement pour simuler l'opération :
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
@@ -161,10 +235,10 @@ export const HonestProductDemo: React.FC<HonestProductDemoProps> = () => {
                       key={ch}
                       type="button"
                       onClick={() => setSelectedChannel(ch)}
-                      className={`flex items-center justify-center gap-2 p-3 rounded-xl border text-xs font-bold transition-all duration-200 cursor-pointer ${
+                      className={`min-h-[44px] flex items-center justify-center gap-2 px-3 py-2.5 rounded-sm border text-xs font-bold transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-white ${
                         isSelected
-                          ? 'bg-blue-600 border-blue-500 text-white shadow-md -translate-y-0.5'
-                          : 'bg-slate-800/70 border-slate-700/80 text-slate-300 hover:bg-slate-800 hover:border-slate-600'
+                          ? 'bg-[#1D4ED8] border-[#1D4ED8] text-white'
+                          : 'bg-slate-900 border-slate-700 text-slate-200 hover:bg-slate-800 hover:border-slate-600'
                       }`}
                     >
                       {channelLabels[ch].icon}
@@ -174,13 +248,24 @@ export const HonestProductDemo: React.FC<HonestProductDemoProps> = () => {
                 })}
               </div>
 
-              <div className="pt-2">
+              {channelLabels[selectedChannel].refExample && (
+                <div className="p-3 rounded-sm bg-slate-900 border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                  <span className="text-slate-300 font-medium">
+                    Référence de l'opérateur (obligatoire hors espèces) :
+                  </span>
+                  <span className="font-bold text-white tabular-nums">
+                    {channelLabels[selectedChannel].refExample}
+                  </span>
+                </div>
+              )}
+
+              <div className="pt-1">
                 <button
                   type="button"
                   onClick={handlePay}
-                  className="w-full py-3.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs sm:text-sm shadow-md shadow-blue-600/20 transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.99]"
+                  className="min-h-[48px] w-full px-6 py-3 rounded-sm bg-[#1D4ED8] hover:bg-[#1E40AF] text-white font-bold text-sm transition-colors flex items-center justify-center gap-2 cursor-pointer focus-visible:outline-2 focus-visible:outline-white tabular-nums"
                 >
-                  <span>Tester l'encaissement de 15 000 MRU</span>
+                  <span>Simuler l'encaissement de 15 000 MRU</span>
                   <ArrowRight className="h-4 w-4" />
                 </button>
               </div>
@@ -188,30 +273,47 @@ export const HonestProductDemo: React.FC<HonestProductDemoProps> = () => {
           ) : (
             <motion.div
               key="receipt-view"
-              initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: 12 }}
+              initial={
+                shouldReduceMotion
+                  ? { opacity: 1, y: 0 }
+                  : { opacity: 0, y: 10 }
+              }
               animate={{ opacity: 1, y: 0 }}
-              exit={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: -8 }}
-              transition={{ duration: shouldReduceMotion ? 0 : 0.35, ease: [0.22, 1, 0.36, 1] }}
-              className="p-4 rounded-2xl bg-emerald-950/30 border border-emerald-800/40 space-y-3"
+              exit={
+                shouldReduceMotion
+                  ? { opacity: 1, y: 0 }
+                  : { opacity: 0, y: -8 }
+              }
+              transition={{
+                duration: shouldReduceMotion ? 0 : 0.28,
+                ease: 'easeOut',
+              }}
+              className="p-4 sm:p-5 rounded-sm bg-slate-900 border border-emerald-700 space-y-3"
             >
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between text-xs border-b border-emerald-800/40 pb-2 gap-1.5">
-                <div className="flex items-center gap-2 text-emerald-400 font-bold">
-                  <Receipt className="h-4 w-4" />
-                  <span>Reçu Fictif N° DEMO-001</span>
-                  <span className="px-1.5 py-0.2 rounded text-[10px] bg-emerald-900/60 text-emerald-300 border border-emerald-700">Exemple</span>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between text-xs border-b border-slate-800 pb-3 gap-2">
+                <div className="flex flex-wrap items-center gap-2 text-emerald-300 font-bold">
+                  <Receipt className="h-4 w-4 shrink-0" />
+                  <span>Reçu PDF N° DEMO-001</span>
+                  <span className="px-2 py-0.5 rounded-sm text-xs bg-slate-800 text-slate-200 border border-slate-700">
+                    Exemple fictif
+                  </span>
                 </div>
-                <span className="text-[11px] text-slate-300 font-mono">
+                <span className="text-xs text-slate-200 font-semibold tabular-nums">
                   Canal : {channelLabels[selectedChannel].label} • 15 000 MRU
                 </span>
               </div>
 
-              <p className="text-xs text-slate-300 leading-relaxed">
-                Dans l'application réelle, l'opération est immédiatement inscrite au journal de caisse, le solde de l'élève passe à zéro et la quittance officielle numérotée est générée.
+              <p className="text-xs sm:text-sm text-slate-200 leading-relaxed">
+                {isMobileChannel
+                  ? "Dans l'application réelle, ce règlement mobile est enregistré avec la référence de l'opérateur en statut en attente pour confirmation par le directeur, et un reçu PDF numéroté peut être émis."
+                  : "Dans l'application réelle, ce paiement en espèces met immédiatement à jour le solde de l'échéance dans le journal de caisse et génère un reçu PDF numéroté."}
               </p>
 
-              <div className="pt-1 flex items-center gap-2 text-[11px] text-slate-400">
-                <UserCheck className="h-3.5 w-3.5 text-emerald-400" />
-                <span>Opération de caisse instantanée sans calculatrice ni rature</span>
+              <div className="pt-1 flex items-center gap-2 text-xs text-slate-300">
+                <UserCheck className="h-4 w-4 text-emerald-400 shrink-0" />
+                <span>
+                  Enregistrement structuré par élève et par échéance en MRU
+                </span>
               </div>
             </motion.div>
           )}
@@ -220,3 +322,5 @@ export const HonestProductDemo: React.FC<HonestProductDemoProps> = () => {
     </div>
   );
 };
+
+export default HonestProductDemo;
