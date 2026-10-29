@@ -34,7 +34,6 @@ import {
   Eye,
   FileText,
   School,
-  UserPlus,
   CreditCard,
   PlusCircle,
   X,
@@ -43,9 +42,9 @@ import {
 } from 'lucide-react';
 import { ConfirmBulkRelanceModal } from './ConfirmBulkRelanceModal';
 import { StudentDetailDrawer } from './StudentDetailDrawer';
+import { PourDemarrerCard } from './PourDemarrerCard';
 import { Tooltip } from '../ui/Tooltip';
 import { useAuthStore } from '../../store/useAuthStore';
-import { useNavigationStore } from '../../store/useNavigationStore';
 import { useAnneeScolaire } from '../../hooks/useAnneeScolaire';
 import { supabase } from '../../lib/supabase';
 
@@ -59,7 +58,6 @@ export const DirectorDashboard: React.FC<DirectorDashboardProps> = ({
   const authProfile = useAuthStore((s) => s.profile);
   const authEcole = useAuthStore((s) => s.ecole);
   const anneeScolaire = useAnneeScolaire();
-  const navigate = useNavigationStore((s) => s.navigate);
 
   const [elevesList, setElevesList] = useState<EleveWithStats[]>([]);
   const [monthlyReports, setMonthlyReports] = useState<MonthlyFinancialReport[]>([]);
@@ -616,52 +614,8 @@ export const DirectorDashboard: React.FC<DirectorDashboardProps> = ({
         />
       </div>
 
-      {/* Zero State Onboarding pour école neuve */}
-      {elevesList.length === 0 && (
-        <div className="bg-gradient-to-br from-blue-500/10 via-emerald-500/5 to-transparent border border-blue-200/80 dark:border-blue-900 rounded-3xl p-8 text-center space-y-4 shadow-xs">
-          <div className="h-14 w-14 rounded-2xl bg-blue-600 text-white flex items-center justify-center mx-auto shadow-lg shadow-blue-600/30">
-            <School className="h-7 w-7" />
-          </div>
-          <div className="max-w-xl mx-auto">
-            <h2 className="text-xl font-black text-slate-900 dark:text-white">
-              Bienvenue sur votre espace de direction {authEcole?.nom ? `« ${authEcole.nom} »` : ''}
-            </h2>
-            <p className="text-sm text-slate-600 dark:text-slate-300 mt-1">
-              Votre établissement est actif et prêt. Vous pouvez dès maintenant inscrire vos premiers élèves ou configurer vos classes et tarifs.
-            </p>
-          </div>
-          {!anneeScolaire && (
-            <div className="max-w-lg mx-auto p-3.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-xs text-amber-900 dark:text-amber-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <div className="flex items-center gap-2 font-semibold">
-                <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
-                <span>Définissez l'année scolaire dans Configuration avant de continuer</span>
-              </div>
-              <button
-                type="button"
-                onClick={() => navigate('config')}
-                className="font-bold text-amber-800 dark:text-amber-300 underline hover:text-amber-950 shrink-0 cursor-pointer"
-              >
-                Aller dans Configuration
-              </button>
-            </div>
-          )}
-          <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
-            <Button
-              variant="primary"
-              disabled={!anneeScolaire}
-              title={!anneeScolaire ? "Définissez l'année scolaire dans Configuration avant de continuer" : undefined}
-              onClick={() => {
-                if (!anneeScolaire) return;
-                if (onNavigateToEleves) onNavigateToEleves('all');
-              }}
-              className="gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <UserPlus className="h-4 w-4" />
-              Inscrire un premier élève
-            </Button>
-          </div>
-        </div>
-      )}
+      {/* Carte « Pour démarrer » (uniquement pour le directeur) */}
+      <PourDemarrerCard />
 
       {/* Roster Controls: Search, Filters, Stats Summary */}
       <Card className="p-5 sm:p-6 space-y-4 border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xs rounded-2xl">

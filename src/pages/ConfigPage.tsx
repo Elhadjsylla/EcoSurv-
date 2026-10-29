@@ -159,6 +159,23 @@ export const ConfigPage: React.FC = () => {
     fetchSchoolClasses();
   }, [fetchSchoolClasses]);
 
+  useEffect(() => {
+    try {
+      const targetId = window.sessionStorage.getItem('ecosurv:config-scroll-target');
+      if (targetId) {
+        window.sessionStorage.removeItem('ecosurv:config-scroll-target');
+        window.requestAnimationFrame(() => {
+          document.getElementById(targetId)?.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start',
+          });
+        });
+      }
+    } catch {
+      // Ignorer si sessionStorage est indisponible
+    }
+  }, []);
+
   const handleAddClass = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!canEditSchool || isAddingClass) return;
@@ -869,7 +886,10 @@ export const ConfigPage: React.FC = () => {
       </div>
 
       {/* School Information Form */}
-      <Card className="p-6 sm:p-8 space-y-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xs">
+      <Card
+        id="section-profil-ecole"
+        className="p-6 sm:p-8 space-y-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xs"
+      >
         <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
           <div className="flex items-center gap-2.5">
             <Building2 className="h-5 w-5 text-blue-600 dark:text-blue-400" />
@@ -1258,7 +1278,10 @@ export const ConfigPage: React.FC = () => {
       )}
 
       {/* Staff Directory Table */}
-      <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xs overflow-hidden">
+      <div
+        id="section-personnel-ecole"
+        className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xs overflow-hidden"
+      >
         <div className="py-4 px-6 bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div className="flex items-center gap-2.5">
             <Users className="h-5 w-5 text-blue-600 dark:text-blue-400" />
