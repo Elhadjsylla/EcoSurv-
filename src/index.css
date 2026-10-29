@@ -199,7 +199,9 @@
 }
 
 .animate-page-enter {
-  animation: page-transition-enter 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  /* Sans « forwards » : une fois terminée, l'animation ne laisse aucun transform sur le
+     conteneur, qui sinon devient le repère des éléments position: fixed de la page. */
+  animation: page-transition-enter 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .animate-drawer-slide-in {
