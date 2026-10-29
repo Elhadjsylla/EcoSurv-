@@ -21,6 +21,7 @@ import {
 } from '../lib/constants/classes';
 import { useClasses, ClasseEcole, notifyClassesChanged } from '../hooks/useClasses';
 import { anneeScolaireSuggeree, getAnneeScolaireOptions } from '../lib/constants/scolaire';
+import { syncEcoleStores } from '../lib/ecole';
 import {
   Save,
   Building2,
@@ -48,7 +49,7 @@ import {
 } from 'lucide-react';
 
 export const ConfigPage: React.FC = () => {
-  const { ecole, updateEcole } = useEcoleStore();
+  const { ecole } = useEcoleStore();
   const authProfile = useAuthStore((s) => s.profile);
   const canEditSchool = authProfile?.role === 'directeur' || authProfile?.role === 'super_admin';
   const { nomsClasses: activeClasses, isLoading: isLoadingActiveClasses } = useClasses();
@@ -564,18 +565,7 @@ export const ConfigPage: React.FC = () => {
         console.error('[ConfigPage] Erreur mise à jour école:', error.code, error.message, error.details);
         showToast(`Erreur (${error.code || 'BDD'}) : ${error.message || 'Impossible de mettre à jour le profil de l’établissement'}`);
       } else if (data) {
-        useAuthStore.getState().setEcole(data);
-        updateEcole({
-          id: data.id,
-          nom: data.nom || '',
-          ville: data.ville || '',
-          adresse: data.adresse || '',
-          telephone: data.telephone || '',
-          email: data.email || '',
-          annee_scolaire: data.annee_scolaire || '',
-          statut_activation: data.statut_activation,
-          statut_abonnement: data.statut_abonnement as any,
-        });
+        syncEcoleStores(data);
         setFormData((prev) => ({
           ...prev,
           nom: data.nom || '',

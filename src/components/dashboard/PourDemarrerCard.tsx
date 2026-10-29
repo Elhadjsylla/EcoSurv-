@@ -66,7 +66,13 @@ function writeIgnoredSteps(storageKey: string, stepIds: OnboardingStepId[]): voi
   }
 }
 
-export const PourDemarrerCard: React.FC = () => {
+export interface PourDemarrerCardProps {
+  onOpenAnneeModal?: () => void;
+}
+
+export const PourDemarrerCard: React.FC<PourDemarrerCardProps> = ({
+  onOpenAnneeModal,
+}) => {
   const authProfile = useAuthStore((s) => s.profile);
   const authEcole = useAuthStore((s) => s.ecole);
   const navigate = useNavigationStore((s) => s.navigate);
@@ -218,7 +224,13 @@ export const PourDemarrerCard: React.FC = () => {
           "Renseignez l'année scolaire, la ville et le téléphone de l'établissement.",
         actionLabel: 'Compléter le profil',
         completed: isProfilDone,
-        onAction: () => navigateToConfigSection('section-profil-ecole'),
+        onAction: () => {
+          if (!anneeScolaire && onOpenAnneeModal) {
+            onOpenAnneeModal();
+          } else {
+            navigateToConfigSection('section-profil-ecole');
+          }
+        },
       },
       {
         id: 'classes',
@@ -266,7 +278,14 @@ export const PourDemarrerCard: React.FC = () => {
         onAction: () => navigate('echeances'),
       },
     ];
-  }, [counts, isProfilDone, anneeScolaire, navigate, navigateToConfigSection]);
+  }, [
+    counts,
+    isProfilDone,
+    anneeScolaire,
+    navigate,
+    navigateToConfigSection,
+    onOpenAnneeModal,
+  ]);
 
   const handleIgnoreStep = (stepId: OnboardingStepId) => {
     setIgnoredStepIds((prev) => {

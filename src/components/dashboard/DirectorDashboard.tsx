@@ -43,6 +43,7 @@ import {
 import { ConfirmBulkRelanceModal } from './ConfirmBulkRelanceModal';
 import { StudentDetailDrawer } from './StudentDetailDrawer';
 import { PourDemarrerCard } from './PourDemarrerCard';
+import { WelcomeAnneeScolaireModal } from './WelcomeAnneeScolaireModal';
 import { Tooltip } from '../ui/Tooltip';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useAnneeScolaire } from '../../hooks/useAnneeScolaire';
@@ -58,6 +59,7 @@ export const DirectorDashboard: React.FC<DirectorDashboardProps> = ({
   const authProfile = useAuthStore((s) => s.profile);
   const authEcole = useAuthStore((s) => s.ecole);
   const anneeScolaire = useAnneeScolaire();
+  const [isWelcomeAnneeForceOpen, setIsWelcomeAnneeForceOpen] = useState(false);
 
   const [elevesList, setElevesList] = useState<EleveWithStats[]>([]);
   const [monthlyReports, setMonthlyReports] = useState<MonthlyFinancialReport[]>([]);
@@ -614,8 +616,22 @@ export const DirectorDashboard: React.FC<DirectorDashboardProps> = ({
         />
       </div>
 
+      {/* Fenêtre « Bienvenue » pour confirmer l'année scolaire en un clic (rôle directeur uniquement) */}
+      <WelcomeAnneeScolaireModal
+        forceOpen={isWelcomeAnneeForceOpen}
+        onCloseForceOpen={() => setIsWelcomeAnneeForceOpen(false)}
+        onConfirmed={(confirmedAnnee) => {
+          showToast(
+            `Année scolaire ${confirmedAnnee} confirmée pour votre établissement.`,
+            'success'
+          );
+        }}
+      />
+
       {/* Carte « Pour démarrer » (uniquement pour le directeur) */}
-      <PourDemarrerCard />
+      <PourDemarrerCard
+        onOpenAnneeModal={() => setIsWelcomeAnneeForceOpen(true)}
+      />
 
       {/* Roster Controls: Search, Filters, Stats Summary */}
       <Card className="p-5 sm:p-6 space-y-4 border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xs rounded-2xl">
