@@ -187,6 +187,34 @@
   50% { transform: translateY(-10px); }
 }
 
+/* Motif de croix du panneau d'inscription : glisse d'une tuile (48 px) en boucle continue.
+   Seul transform est animé : le calque est composité, rien n'est redessiné. */
+@keyframes register-drift {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(48px, 48px, 0); }
+}
+
+/* Console super administrateur : entrée en cascade des blocs d'une page (Utilisateurs, Audit).
+   fill-mode backwards : rien ne reste appliqué après l'animation (pas de transform résiduel
+   qui deviendrait le repère des éléments fixed, voir .animate-page-enter). */
+@keyframes admin-rise {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.admin-stagger > * {
+  animation: admin-rise 0.45s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+.admin-stagger > *:nth-child(2) { animation-delay: 0.07s; }
+.admin-stagger > *:nth-child(3) { animation-delay: 0.14s; }
+.admin-stagger > *:nth-child(4) { animation-delay: 0.21s; }
+.admin-stagger > *:nth-child(5) { animation-delay: 0.28s; }
+.admin-stagger > *:nth-child(n + 6) { animation-delay: 0.35s; }
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-stagger > * { animation: none; }
+}
+
 .landing-float {
   animation-name: landing-float-in, landing-float-y;
   animation-timing-function: ease-out, ease-in-out;

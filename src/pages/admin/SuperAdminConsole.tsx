@@ -19,11 +19,14 @@ export const SuperAdminConsole: React.FC<SuperAdminConsoleProps> = ({ onReturnTo
   const [ecoles, setEcoles] = useState<AdminEcoleItem[]>([]);
   const [users, setUsers] = useState<AdminUserRow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const theme = useThemeStore((s) => s.theme);
 
   const fetchAdminData = async () => {
     setIsLoading(true);
+    setLoadError(false);
     try {
       // 1. Fetch schools from Supabase
       const { data: ecolesData, error: ecolesError } = await supabase
@@ -35,6 +38,12 @@ export const SuperAdminConsole: React.FC<SuperAdminConsoleProps> = ({ onReturnTo
       const { data: profilsData, error: profilsError } = await supabase
         .from('profils')
         .select('*');
+
+      if (ecolesError || profilsError) {
+        setLoadError(true);
+      } else {
+        setLastUpdated(new Date());
+      }
 
       if (!ecolesError && ecolesData) {
         const mappedEcoles: AdminEcoleItem[] = ecolesData.map((e: any) => {
@@ -73,6 +82,7 @@ export const SuperAdminConsole: React.FC<SuperAdminConsoleProps> = ({ onReturnTo
       }
     } catch (err) {
       console.warn('[SuperAdminConsole] Erreur chargement données:', err);
+      setLoadError(true);
     } finally {
       setIsLoading(false);
     }
@@ -83,7 +93,7 @@ export const SuperAdminConsole: React.FC<SuperAdminConsoleProps> = ({ onReturnTo
   }, []);
 
   return (
-    <div className="flex h-screen overflow-hidden bg-slate-50 dark:bg-slate-950 font-['Plus_Jakarta_Sans',sans-serif] text-slate-900 dark:text-slate-100 antialiased">
+    <div className="flex h-screen overflow-hidden bg-slate-50 dark:bg-slate-950 font-['Plus_Jakarta_Sans',sans-serif] text-slate-900 dark:text-slate-100 antialiased selection:bg-[#1D4ED8] selection:text-white">
       {/* Sidebar dedicated to Super Admin (Responsive: Desktop standard, Mobile slide-over drawer) */}
       <AdminSidebar
         activeTab={activeTab}
@@ -101,7 +111,7 @@ export const SuperAdminConsole: React.FC<SuperAdminConsoleProps> = ({ onReturnTo
             <button
               type="button"
               onClick={() => setIsMobileMenuOpen(true)}
-              className="p-2 -ml-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              className="p-2 -ml-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1D4ED8]"
               aria-label="Ouvrir le menu"
             >
               <Menu className="h-5 w-5" />
@@ -110,8 +120,8 @@ export const SuperAdminConsole: React.FC<SuperAdminConsoleProps> = ({ onReturnTo
               <Logo variant={theme === 'dark' ? 'inverse' : 'couleur'} height={24} />
             </div>
           </div>
-          <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
-            Super Admin
+          <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/60 text-[#1D4ED8] dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+            Super administrateur
           </span>
         </header>
 
@@ -122,6 +132,10 @@ export const SuperAdminConsole: React.FC<SuperAdminConsoleProps> = ({ onReturnTo
               onNavigateTab={setActiveTab}
               ecoles={ecoles}
               users={users}
+              isLoading={isLoading}
+              loadError={loadError}
+              lastUpdated={lastUpdated}
+              onRefresh={fetchAdminData}
             />
           )}
 

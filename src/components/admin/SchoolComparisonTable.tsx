@@ -1,6 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { AdminEcoleItem } from '../../pages/admin/AdminEcolesPage';
-import { AdminUserRow } from '../../pages/admin/AdminUsersPage';
+import { motion, useReducedMotion } from 'framer-motion';
 import {
   Building2,
   Search,
@@ -10,6 +9,9 @@ import {
   ArrowUpDown,
   ChevronRight,
 } from 'lucide-react';
+import { AdminEcoleItem } from '../../pages/admin/AdminEcolesPage';
+import { AdminUserRow } from '../../pages/admin/AdminUsersPage';
+import { ADMIN_EASE, AdminCard, CardTitle, FOCUS_RING, STATUS_PILL } from './adminUi';
 
 interface SchoolComparisonTableProps {
   ecoles: AdminEcoleItem[];
@@ -25,11 +27,11 @@ export const SchoolComparisonTable: React.FC<SchoolComparisonTableProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [sortField, setSortField] = useState<'nom' | 'users' | 'date'>('users');
   const [sortAsc, setSortAsc] = useState(false);
+  const reduce = Boolean(useReducedMotion());
 
-  // Croisement 100% réel entre ecoles et profils utilisateurs
+  // Croisement réel entre écoles et profils utilisateurs
   const comparisonData = useMemo(() => {
     return ecoles.map((ecole) => {
-      // Compter les utilisateurs dont l'école correspond
       const schoolUsers = users.filter((u) => u.ecole_nom === ecole.nom);
       const directeurs = schoolUsers.filter((u) => u.role === 'directeur');
       const staff = schoolUsers.filter((u) => u.role !== 'directeur' && u.role !== 'super_admin');
@@ -44,7 +46,7 @@ export const SchoolComparisonTable: React.FC<SchoolComparisonTableProps> = ({
   }, [ecoles, users]);
 
   const filteredAndSorted = useMemo(() => {
-    let result = comparisonData.filter((e) => {
+    const result = comparisonData.filter((e) => {
       const q = searchTerm.toLowerCase();
       return (
         e.nom.toLowerCase().includes(q) ||
@@ -75,7 +77,7 @@ export const SchoolComparisonTable: React.FC<SchoolComparisonTableProps> = ({
       setSortAsc(!sortAsc);
     } else {
       setSortField(field);
-      setSortAsc(false); // par défaut décroissant
+      setSortAsc(false);
     }
   };
 
@@ -83,21 +85,21 @@ export const SchoolComparisonTable: React.FC<SchoolComparisonTableProps> = ({
     switch (statut) {
       case 'active':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+          <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-bold ${STATUS_PILL.ok}`}>
             <CheckCircle2 className="h-3 w-3" />
             Active
           </span>
         );
       case 'en_attente':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+          <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-bold ${STATUS_PILL.wait}`}>
             <Clock className="h-3 w-3" />
             En attente
           </span>
         );
       default:
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
+          <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-bold ${STATUS_PILL.bad}`}>
             <AlertTriangle className="h-3 w-3" />
             Suspendue
           </span>
@@ -109,100 +111,87 @@ export const SchoolComparisonTable: React.FC<SchoolComparisonTableProps> = ({
     switch (statut) {
       case 'actif':
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
-            Payant
+          <span className={`inline-flex items-center rounded-md border px-2 py-0.5 text-[11px] font-bold ${STATUS_PILL.info}`}>
+            Actif
           </span>
         );
       case 'essai':
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
-            Essai 14j
+          <span className={`inline-flex items-center rounded-md border px-2 py-0.5 text-[11px] font-bold ${STATUS_PILL.wait}`}>
+            Essai
           </span>
         );
       default:
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+          <span className={`inline-flex items-center rounded-md border px-2 py-0.5 text-[11px] font-bold ${STATUS_PILL.neutral}`}>
             Expiré
           </span>
         );
     }
   };
 
+  const sortableTh = (field: 'nom' | 'users' | 'date', label: string, align = '') => (
+    <th
+      aria-sort={sortField === field ? (sortAsc ? 'ascending' : 'descending') : 'none'}
+      className={`px-3 py-3 ${align}`}
+    >
+      <button
+        type="button"
+        onClick={() => toggleSort(field)}
+        className={`inline-flex items-center gap-1.5 rounded uppercase tracking-wider font-extrabold cursor-pointer transition-colors hover:text-slate-700 dark:hover:text-slate-200 ${FOCUS_RING} ${
+          sortField === field ? 'text-[#1D4ED8] dark:text-blue-300' : ''
+        }`}
+      >
+        <span>{label}</span>
+        <ArrowUpDown className="h-3 w-3" />
+      </button>
+    </th>
+  );
+
   return (
-    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-xs space-y-4">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-800">
-        <div>
-          <div className="flex items-center gap-2">
-            <Building2 className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-            <h3 className="text-base font-extrabold text-slate-900 dark:text-white">
-              Tableau Comparatif des Établissements
-            </h3>
+    <AdminCard testId="comparison-table-card" className="space-y-4">
+      <CardTitle
+        icon={<Building2 className="h-4 w-4" />}
+        title="Comparatif des établissements"
+        subtitle="Écoles, comptes rattachés et abonnements"
+        right={
+          <div className="relative w-full max-w-[16rem]">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              aria-label="Rechercher une école ou une ville"
+              placeholder="Rechercher une école, une ville"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 py-1.5 pl-9 pr-3 text-xs text-slate-900 placeholder-slate-400 transition-colors focus:border-[#1D4ED8] focus:outline-none focus:ring-2 focus:ring-[#1D4ED8]/20 dark:border-slate-700 dark:bg-slate-800/80 dark:text-white"
+            />
           </div>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            Suivi croisé en temps réel des écoles, comptes rattachés et formules contractuelles
-          </p>
-        </div>
+        }
+      />
 
-        {/* Search Input */}
-        <div className="relative w-full sm:w-64">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
-          <input
-            type="text"
-            placeholder="Rechercher une école, ville..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-9 pr-3 py-1.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-blue-500 transition-colors"
-          />
-        </div>
-      </div>
-
-      {/* Table Container */}
-      <div className="overflow-x-auto">
-        <table className="w-full text-left border-collapse">
+      <div className="overflow-x-auto -mx-1 px-1">
+        <table className="w-full border-collapse text-left">
           <thead>
-            <tr className="border-b border-slate-200/80 dark:border-slate-800 text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
-              <th
-                onClick={() => toggleSort('nom')}
-                className="py-3 px-3 cursor-pointer hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
-              >
-                <div className="flex items-center gap-1.5">
-                  <span>Établissement</span>
-                  <ArrowUpDown className="h-3 w-3" />
-                </div>
-              </th>
-              <th className="py-3 px-3">Statut Activation</th>
-              <th className="py-3 px-3">Formule</th>
-              <th
-                onClick={() => toggleSort('users')}
-                className="py-3 px-3 cursor-pointer hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
-              >
-                <div className="flex items-center gap-1.5">
-                  <span>Comptes Rattachés</span>
-                  <ArrowUpDown className="h-3 w-3" />
-                </div>
-              </th>
-              <th className="py-3 px-3">Directeur</th>
-              <th
-                onClick={() => toggleSort('date')}
-                className="py-3 px-3 cursor-pointer hover:text-slate-700 dark:hover:text-slate-200 transition-colors text-right"
-              >
-                <div className="flex items-center justify-end gap-1.5">
-                  <span>Date d'inscription</span>
-                  <ArrowUpDown className="h-3 w-3" />
-                </div>
-              </th>
+            <tr className="border-b border-slate-200/80 text-[11px] text-slate-400 dark:border-slate-800">
+              {sortableTh('nom', 'Établissement')}
+              <th className="px-3 py-3 text-[11px] font-extrabold uppercase tracking-wider">Activation</th>
+              <th className="px-3 py-3 text-[11px] font-extrabold uppercase tracking-wider">Abonnement</th>
+              {sortableTh('users', 'Comptes')}
+              <th className="px-3 py-3 text-[11px] font-extrabold uppercase tracking-wider">Directeur</th>
+              {sortableTh('date', "Inscription", 'text-right')}
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 text-xs">
+          <tbody className="divide-y divide-slate-100 text-xs dark:divide-slate-800/60">
             {filteredAndSorted.length === 0 ? (
               <tr>
-                <td colSpan={6} className="py-8 text-center text-slate-400">
-                  Aucun établissement ne correspond à la recherche.
+                <td colSpan={6} className="py-10 text-center text-slate-400">
+                  {ecoles.length === 0
+                    ? 'Aucun établissement enregistré.'
+                    : 'Aucun établissement ne correspond à la recherche.'}
                 </td>
               </tr>
             ) : (
-              filteredAndSorted.slice(0, 8).map((ecole) => {
+              filteredAndSorted.slice(0, 8).map((ecole, i) => {
                 const dateFormatted = ecole.created_at
                   ? new Date(ecole.created_at).toLocaleDateString('fr-FR', {
                       day: 'numeric',
@@ -212,68 +201,60 @@ export const SchoolComparisonTable: React.FC<SchoolComparisonTableProps> = ({
                   : '—';
 
                 return (
-                  <tr
+                  <motion.tr
                     key={ecole.id}
+                    initial={reduce ? false : { opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, delay: 0.15 + i * 0.04, ease: ADMIN_EASE }}
                     onClick={() => onNavigateTab('ecoles')}
-                    className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors cursor-pointer group"
+                    className="group cursor-pointer transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50"
                   >
-                    {/* Nom & Ville */}
-                    <td className="py-3 px-3">
+                    <td className="px-3 py-3">
                       <div className="flex items-center gap-2.5">
-                        <div className="h-8 w-8 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center font-black text-xs group-hover:scale-105 transition-transform">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-50 text-xs font-extrabold text-[#1D4ED8] dark:bg-blue-950/60 dark:text-blue-300">
                           {ecole.nom.substring(0, 2).toUpperCase()}
                         </div>
                         <div>
-                          <div className="font-bold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors flex items-center gap-1.5">
+                          <div className="flex items-center gap-1.5 font-bold text-slate-900 transition-colors group-hover:text-[#1D4ED8] dark:text-white dark:group-hover:text-blue-300">
                             {ecole.nom}
-                            <ChevronRight className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                            <ChevronRight className="h-3 w-3 opacity-0 transition-opacity group-hover:opacity-100" />
                           </div>
                           <span className="text-[11px] text-slate-400">
-                            {ecole.ville || 'Nouakchott'}
+                            {ecole.ville && ecole.ville !== '—' ? ecole.ville : 'Ville non renseignée'}
                           </span>
                         </div>
                       </div>
                     </td>
 
-                    {/* Statut Activation */}
-                    <td className="py-3 px-3">
-                      {getStatusBadge(ecole.statut_activation)}
-                    </td>
+                    <td className="px-3 py-3">{getStatusBadge(ecole.statut_activation)}</td>
+                    <td className="px-3 py-3">{getAbonnementBadge(ecole.statut_abonnement)}</td>
 
-                    {/* Formule Abonnement */}
-                    <td className="py-3 px-3">
-                      {getAbonnementBadge(ecole.statut_abonnement)}
-                    </td>
-
-                    {/* Comptes rattachés */}
-                    <td className="py-3 px-3">
+                    <td className="px-3 py-3">
                       <div className="flex items-center gap-2">
-                        <span className="font-black text-slate-900 dark:text-white">
+                        <span className="font-extrabold text-slate-900 dark:text-white">
                           {ecole.totalUsersCount}
                         </span>
                         <span className="text-[11px] text-slate-400">
-                          ({ecole.directeursCount} dir. • {ecole.staffCount} staff)
+                          ({ecole.directeursCount} dir. · {ecole.staffCount} autre{ecole.staffCount > 1 ? 's' : ''})
                         </span>
                       </div>
                     </td>
 
-                    {/* Directeur */}
-                    <td className="py-3 px-3">
-                      <div className="truncate max-w-[180px]">
-                        <span className="font-semibold text-slate-700 dark:text-slate-300 block truncate">
-                          {ecole.directeur_nom || 'Directeur'}
+                    <td className="px-3 py-3">
+                      <div className="max-w-[180px] truncate">
+                        <span className="block truncate font-semibold text-slate-700 dark:text-slate-300">
+                          {ecole.directeur_nom || 'Non assigné'}
                         </span>
-                        <span className="text-[11px] text-slate-400 font-mono block truncate">
+                        <span className="block truncate font-mono text-[11px] text-slate-400">
                           {ecole.directeur_email || ecole.email || '—'}
                         </span>
                       </div>
                     </td>
 
-                    {/* Date d'inscription */}
-                    <td className="py-3 px-3 text-right font-medium text-slate-500 dark:text-slate-400">
+                    <td className="px-3 py-3 text-right font-medium text-slate-500 dark:text-slate-400">
                       {dateFormatted}
                     </td>
-                  </tr>
+                  </motion.tr>
                 );
               })
             )}
@@ -281,19 +262,19 @@ export const SchoolComparisonTable: React.FC<SchoolComparisonTableProps> = ({
         </table>
       </div>
 
-      {/* Footer Info */}
-      <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500">
+      <div className="flex items-center justify-between gap-3 border-t border-slate-100 pt-3 text-xs text-slate-500 dark:border-slate-800">
         <span>
-          Affichage des {Math.min(filteredAndSorted.length, 8)} sur {filteredAndSorted.length} école(s)
+          {Math.min(filteredAndSorted.length, 8)} sur {filteredAndSorted.length} école
+          {filteredAndSorted.length > 1 ? 's' : ''}
         </span>
         <button
           type="button"
           onClick={() => onNavigateTab('ecoles')}
-          className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+          className={`rounded text-xs font-bold text-[#1D4ED8] hover:underline cursor-pointer dark:text-blue-300 ${FOCUS_RING}`}
         >
-          Ouvrir le registre complet des écoles →
+          Ouvrir le registre des écoles
         </button>
       </div>
-    </div>
+    </AdminCard>
   );
 };
