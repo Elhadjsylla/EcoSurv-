@@ -16,9 +16,9 @@ import { useAuthStore } from '../store/useAuthStore';
 import { useNavigationStore } from '../store/useNavigationStore';
 import { useEcoleStore } from '../store/useEcoleStore';
 import {
-  generateOtp,
-  hashOtp,
-  sendActivationEmail,
+  clearInitialSendError,
+  peekInitialSendError,
+  requestActivationCode,
 } from '../lib/email/sendActivationEmail';
 import { Logo } from '../components/ui/Logo';
 import type { UserRole } from '../components/ui/Header';
@@ -32,18 +32,26 @@ export const PendingActivationScreen: React.FC = () => {
   const [codeDigits, setCodeDigits] = useState<string[]>(['', '', '', '', '', '']);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  // Compte à rebours anti-spam de 60 secondes pour le renvoi
-  const [cooldown, setCooldown] = useState<number>(60);
+  // Résultat du premier envoi, fait à l'inscription : null si l'envoi a réussi ou n'a pas eu lieu ici.
+  const [initialSendError] = useState<string | null>(() => peekInitialSendError());
+  const [codeSent, setCodeSent] = useState<boolean>(initialSendError === null);
+
+  // Délai avant de pouvoir renvoyer : 60 s après un envoi réussi, 30 s après un échec
+  const [cooldown, setCooldown] = useState<number>(initialSendError ? 30 : 60);
   const [isVerifying, setIsVerifying] = useState<boolean>(false);
   const [isResending, setIsResending] = useState<boolean>(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(initialSendError);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [testCode, setTestCode] = useState<string | null>(() => sessionStorage.getItem('ecosurv_test_otp'));
 
-  const emailDestinataire = ecole?.email || user?.email || profile?.email || '';
+  // Le code part toujours vers l'adresse du compte connecté (décidé par le serveur)
+  const emailDestinataire = user?.email || profile?.email || ecole?.email || '';
   const ecoleNom = ecole?.nom || 'Votre Établissement';
   const ecoleId = ecole?.id || profile?.ecole_id || '';
-  const directeurNom = profile ? `${profile.prenom} ${profile.nom}` : 'Directeur';
+
+  // Le message du premier envoi est affiché une fois : on le retire du module
+  useEffect(() => {
+    clearInitialSendError();
+  }, []);
 
   // Gestion du compte à rebours
   useEffect(() => {
@@ -123,100 +131,44 @@ export const PendingActivationScreen: React.FC = () => {
     }
   };
 
-  // Renvoi d'un nouveau code
-  const handleResendCode = async (isSilent: boolean = false) => {
-    if (!emailDestinataire || !ecoleId) {
+  // Renvoi d'un nouveau code : le serveur le génère, l'enregistre et l'envoie. Le navigateur ne le voit jamais.
+  const handleResendCode = async () => {
+    if (!user || !ecoleId) {
       setErrorMessage("Informations d'établissement introuvables. Veuillez vous reconnecter.");
       return;
     }
 
-    if (!isSilent && cooldown > 0) return;
+    if (cooldown > 0) return;
 
     setIsResending(true);
     setErrorMessage(null);
-    if (!isSilent) setSuccessMessage(null);
+    setSuccessMessage(null);
 
     try {
-      const newOtp = generateOtp();
-      const codeHash = await hashOtp(newOtp);
+      const result = await requestActivationCode();
 
-      // 1. Enregistrer dans Supabase via RPC ou insert direct
-      let rpcSuccess = false;
-      try {
-        const { error: rpcError } = await supabase.rpc('enregistrer_code_activation', {
-          p_ecole_id: ecoleId,
-          p_email: emailDestinataire,
-          p_code_hash: codeHash,
-        });
-        if (!rpcError) rpcSuccess = true;
-      } catch (e) {
-        console.warn('[PendingActivation] RPC non dispo, fallback table directe:', e);
-      }
-
-      if (!rpcSuccess) {
-        // Fallback d'insertion directe
-        await supabase
-          .from('codes_activation')
-          .update({ utilise: true })
-          .eq('ecole_id', ecoleId)
-          .eq('utilise', false);
-
-        await supabase.from('codes_activation').insert([
-          {
-            ecole_id: ecoleId,
-            email: emailDestinataire,
-            code_hash: codeHash,
-            expire_a: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
-            utilise: false,
-          },
-        ]);
-      }
-
-      // 2. Envoi par email via Resend
-      const emailResult = await sendActivationEmail({
-        to: emailDestinataire,
-        nomDirecteur: directeurNom,
-        nomEcole: ecoleNom,
-        code: newOtp,
-      });
-
-      if (!emailResult.success) {
-        console.warn('[Resend] Résultat envoi email:', emailResult.error);
-        if (emailResult.code) {
-          sessionStorage.setItem('ecosurv_test_otp', emailResult.code);
-          setTestCode(emailResult.code);
-        }
-        if (!isSilent) {
-          if (emailResult.isTestModeLimitation) {
-            setSuccessMessage(
-              `Mode test Resend (onboarding@resend.dev) : Nouveau code de vérification généré (${emailResult.code}).`
-            );
-          } else {
-            setErrorMessage(
-              `Email non envoyé via Resend (${emailResult.error}). En mode test, votre code est : ${newOtp}`
-            );
-          }
-        }
+      if (!result.ok) {
+        setCodeSent(false);
+        setErrorMessage(result.error || "L'e-mail n'a pas pu être envoyé, réessayez dans quelques minutes.");
+        setCooldown(30);
       } else {
-        sessionStorage.removeItem('ecosurv_test_otp');
-        setTestCode(null);
-        if (!isSilent) {
-          setSuccessMessage(`✓ Un nouveau code de vérification a été expédié à ${emailDestinataire}.`);
-        }
+        setCodeSent(true);
+        setSuccessMessage(`Un nouveau code de vérification a été envoyé à ${emailDestinataire}.`);
+        setCooldown(60);
       }
 
-      setCooldown(60);
       setCodeDigits(['', '', '', '', '', '']);
       inputRefs.current[0]?.focus();
-    } catch (err: any) {
+    } catch (err) {
       console.error('[PendingActivation] Erreur renvoi code:', err);
-      setErrorMessage(err?.message || "Impossible d'expédier le code d'activation.");
+      setErrorMessage("L'e-mail n'a pas pu être envoyé, réessayez dans quelques minutes.");
+      setCooldown(30);
     } finally {
       setIsResending(false);
     }
   };
 
-  // Validation du code OTP
+  // Validation du code : le hash est calculé et comparé côté serveur par la fonction verifier_code_activation
   const handleVerifyCode = async (explicitCode?: string) => {
     const code = explicitCode || codeDigits.join('');
     if (code.length < 6) {
@@ -233,61 +185,19 @@ export const PendingActivationScreen: React.FC = () => {
     setErrorMessage(null);
 
     try {
-      const codeHash = await hashOtp(code);
+      let result: { succes?: boolean; message?: string } | null = null;
 
-      // 1. Appel de la fonction de validation et auto-activation
-      let result: any = null;
-
-      try {
-        const { data, error } = await supabase.rpc('verifier_et_activer_ecole_otp', {
-          p_ecole_id: ecoleId,
-          p_code_hash: codeHash,
-        });
-
-        if (!error && data) {
-          result = data;
-        } else if (error) {
-          console.warn('[PendingActivation] Erreur RPC:', error);
-        }
-      } catch (e) {
-        console.warn('[PendingActivation] RPC indisponible:', e);
-      }
-
-      // 2. Fallback direct si la RPC n'est pas encore créée en remote Supabase
-      if (!result) {
-        const { data: codeRow } = await supabase
-          .from('codes_activation')
-          .select('*')
-          .eq('ecole_id', ecoleId)
-          .eq('utilise', false)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
-
-        if (!codeRow) {
-          result = { succes: false, message: "Aucun code d'activation en attente." };
-        } else if (new Date(codeRow.expire_a).getTime() < Date.now()) {
-          result = { succes: false, message: 'Ce code a expiré. Veuillez en demander un nouveau.' };
-        } else if (codeRow.code_hash !== codeHash) {
-          result = { succes: false, message: 'Code de vérification incorrect.' };
-        } else {
-          // Activer directement
-          await supabase.from('codes_activation').update({ utilise: true }).eq('id', codeRow.id);
-          await supabase.from('ecoles').update({ statut_activation: 'active' }).eq('id', ecoleId);
-          if (user) {
-            await supabase.from('profils').update({ actif: true }).eq('id', user.id);
-          }
-          result = { succes: true };
-        }
+      const { data, error } = await supabase.rpc('verifier_code_activation', { p_code: code });
+      if (error) {
+        console.warn('[PendingActivation] Erreur RPC verifier_code_activation:', error.message);
+        result = { succes: false, message: 'La vérification est momentanément indisponible. Réessayez dans quelques instants.' };
+      } else {
+        result = data as { succes?: boolean; message?: string } | null;
       }
 
       if (result && result.succes === true) {
-        // Nettoyer le code de test temporaire
-        sessionStorage.removeItem('ecosurv_test_otp');
-        setTestCode(null);
-
         // SUCCÈS !
-        setSuccessMessage('🎉 Code validé ! Votre établissement est activé avec succès.');
+        setSuccessMessage('Code validé. Votre établissement est activé.');
         try {
           confetti({
             particleCount: 50,
@@ -370,7 +280,7 @@ export const PendingActivationScreen: React.FC = () => {
                 Vérifiez votre boîte email
               </h1>
               <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium leading-relaxed">
-                Un code à 6 chiffres a été envoyé à :<br />
+                {codeSent ? 'Un code à 6 chiffres a été envoyé à :' : "Le code n'a pas pu être envoyé à :"}<br />
                 <strong className="text-slate-800 dark:text-slate-200 font-bold">
                   {emailDestinataire || 'votre adresse email'}
                 </strong>
@@ -416,35 +326,6 @@ export const PendingActivationScreen: React.FC = () => {
             <div className="p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900/60 text-emerald-700 dark:text-emerald-300 text-xs flex items-start gap-2.5 animate-in fade-in">
               <CheckCircle2 className="h-4 w-4 shrink-0 mt-0.5" />
               <span className="font-semibold leading-relaxed">{successMessage}</span>
-            </div>
-          )}
-
-          {/* Test Mode Helper (utile quand le domaine Resend n'est pas encore vérifié pour l'adresse testée) */}
-          {testCode && (
-            <div className="p-3 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-900 dark:text-amber-200 text-xs flex flex-col gap-2">
-              <div className="flex items-center justify-between">
-                <span className="font-bold flex items-center gap-1.5">
-                  <span className="inline-block w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-                  Mode test Resend (onboarding@resend.dev)
-                </span>
-                <span className="font-mono font-black text-sm px-2 py-0.5 rounded-lg bg-amber-500/20 text-amber-700 dark:text-amber-300 tracking-wider">
-                  {testCode}
-                </span>
-              </div>
-              <p className="text-[11px] text-amber-700/80 dark:text-amber-300/80">
-                Resend envoie les vrais emails vers l'adresse du compte (<strong>elhadjsylla667@gmail.com</strong>). Pour cette adresse de test, voici le code généré :
-              </p>
-              <button
-                type="button"
-                onClick={() => {
-                  const digits = testCode.split('').slice(0, 6);
-                  setCodeDigits(digits);
-                  handleVerifyCode(testCode);
-                }}
-                className="text-left font-bold text-xs text-blue-600 dark:text-blue-400 hover:underline cursor-pointer flex items-center gap-1"
-              >
-                <span>⚡ Cliquer ici pour remplir et valider automatiquement</span>
-              </button>
             </div>
           )}
 
@@ -507,7 +388,7 @@ export const PendingActivationScreen: React.FC = () => {
               ) : (
                 <button
                   type="button"
-                  onClick={() => handleResendCode(false)}
+                  onClick={() => handleResendCode()}
                   disabled={isResending}
                   className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer disabled:opacity-50"
                 >
@@ -521,7 +402,7 @@ export const PendingActivationScreen: React.FC = () => {
           {/* Security Banner */}
           <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-center gap-2 text-[11px] text-slate-400 font-medium">
             <ShieldCheck className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
-            <span>Code chiffré SHA-256 • Validité 15 minutes</span>
+            <span>Code valable 15 minutes</span>
           </div>
         </div>
       </div>

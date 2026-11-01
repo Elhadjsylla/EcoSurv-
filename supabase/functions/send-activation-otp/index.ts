@@ -1,4 +1,9 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { createClient } from "jsr:@supabase/supabase-js@2";
+
+// Envoi du code d'activation d'une école.
+// Le code est généré, haché et enregistré ICI, côté serveur. Il n'est jamais renvoyé au navigateur.
+// Le corps de la requête est ignoré : l'école et l'adresse e-mail viennent du compte authentifié.
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -6,54 +11,55 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-interface SendOtpRequest {
-  to: string;
-  nomDirecteur?: string;
-  nomEcole: string;
-  code: string;
-  redirect_to?: string;
+const JSON_HEADERS = { ...corsHeaders, "Content-Type": "application/json" };
+
+const CODE_VALIDITY_MINUTES = 15;
+const MAX_CODES_PER_HOUR = 3;
+
+function json(body: Record<string, unknown>, status: number): Response {
+  return new Response(JSON.stringify(body), { status, headers: JSON_HEADERS });
 }
 
-Deno.serve(async (req: Request) => {
-  // Gestion requêtes pré-vol CORS
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
-  }
+function escapeHtml(str: string | null | undefined): string {
+  if (!str) return "";
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
 
-  if (req.method !== "POST") {
-    return new Response(
-      JSON.stringify({ error: "Méthode non autorisée" }),
-      { status: 405, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
-  }
+// Code à 6 chiffres sans biais de modulo (rejet des valeurs hors du plus grand multiple de 1 000 000).
+function generateCode(): string {
+  const limit = Math.floor(0x100000000 / 1_000_000) * 1_000_000;
+  const buf = new Uint32Array(1);
+  do {
+    crypto.getRandomValues(buf);
+  } while (buf[0] >= limit);
+  return (buf[0] % 1_000_000).toString().padStart(6, "0");
+}
 
-  try {
-    const resendApiKey = Deno.env.get("RESEND_API_KEY");
-    if (!resendApiKey) {
-      console.error("[send-activation-otp] RESEND_API_KEY non configurée dans les secrets Supabase.");
-      return new Response(
-        JSON.stringify({ error: "Service d'envoi non configuré côté serveur." }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+// Même formule que la fonction SQL verifier_code_activation : sha256(ecole_id || ':' || code), en hexadécimal.
+async function hashCode(ecoleId: string, code: string): Promise<string> {
+  const data = new TextEncoder().encode(`${ecoleId}:${code}`);
+  const digest = await crypto.subtle.digest("SHA-256", data);
+  return Array.from(new Uint8Array(digest))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
 
-    const payload = (await req.json()) as SendOtpRequest;
-    const { to, nomDirecteur, nomEcole, code, redirect_to } = payload;
+function buildHtml(params: { nomDirecteur: string; nomEcole: string; code: string; activationUrl: string | null }): string {
+  const { nomDirecteur, nomEcole, code, activationUrl } = params;
+  const link = activationUrl
+    ? `<div style="text-align: center; margin: 24px 0 20px 0;">
+              <a href="${escapeHtml(activationUrl)}" style="display: inline-block; background-color: #1d4ed8; color: #ffffff; padding: 12px 28px; border-radius: 12px; font-weight: 700; text-decoration: none; font-size: 14px;">
+                Ouvrir l'écran d'activation
+              </a>
+            </div>`
+    : "";
 
-    if (!to || !to.includes("@") || !code || code.length !== 6 || !nomEcole) {
-      return new Response(
-        JSON.stringify({ error: "Paramètres d'envoi invalides." }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    const cleanEmail = to.trim();
-    const rawRedirect = redirect_to || "https://ecosurv.mr/activation";
-    const activationUrl = rawRedirect.endsWith('/activation')
-      ? rawRedirect
-      : `${rawRedirect.replace(/\/+$/, '')}/activation`;
-
-    const htmlContent = `
+  return `
       <!DOCTYPE html>
       <html lang="fr">
       <head>
@@ -61,7 +67,7 @@ Deno.serve(async (req: Request) => {
         <title>Votre code d'activation EcoSurv</title>
         <style>
           body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #0f172a; margin: 0; padding: 24px; color: #f8fafc; }
-          .container { max-width: 540px; margin: 0 auto; background: #1e293b; border-radius: 20px; border: 1px solid #334155; overflow: hidden; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5); }
+          .container { max-width: 540px; margin: 0 auto; background: #1e293b; border-radius: 20px; border: 1px solid #334155; overflow: hidden; }
           .header { background: #1d4ed8; padding: 32px 24px; text-align: center; }
           .header h1 { margin: 0; font-size: 24px; font-weight: 800; color: #ffffff; letter-spacing: -0.5px; }
           .content { padding: 32px 24px; }
@@ -81,34 +87,163 @@ Deno.serve(async (req: Request) => {
           </div>
           <div class="content">
             <p class="welcome">
-              Bonjour <strong>${nomDirecteur || 'Directeur'}</strong>,<br><br>
-              Votre établissement <strong>« ${nomEcole} »</strong> a bien été créé sur EcoSurv. Pour finaliser l'accès et accéder immédiatement à votre tableau de bord de direction, saisissez le code de vérification ci-dessous :
+              Bonjour <strong>${escapeHtml(nomDirecteur) || "Directeur"}</strong>,<br><br>
+              Votre établissement <strong>« ${escapeHtml(nomEcole)} »</strong> a bien été créé sur EcoSurv. Pour finaliser l'accès à votre tableau de bord de direction, saisissez le code de vérification ci-dessous :
             </p>
 
             <div class="code-box">
-              <div class="code-title">Code de vérification sécurisé</div>
-              <p class="otp-number">${code}</p>
-              <div class="expiry-badge">Expire dans 15 minutes</div>
+              <div class="code-title">Code de vérification</div>
+              <p class="otp-number">${escapeHtml(code)}</p>
+              <div class="expiry-badge">Expire dans ${CODE_VALIDITY_MINUTES} minutes</div>
             </div>
 
-            <div style="text-align: center; margin: 24px 0 20px 0;">
-              <a href="${activationUrl}" style="display: inline-block; background-color: #2563eb; color: #ffffff; padding: 12px 28px; border-radius: 12px; font-weight: 700; text-decoration: none; font-size: 14px; box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.3);">
-                Accéder à l'écran d'activation →
-              </a>
-            </div>
+            ${link}
 
             <p style="font-size: 13px; color: #94a3b8; line-height: 1.5; margin: 0;">
-              Ce code est à usage unique et strictement confidentiel. Si vous n'êtes pas à l'origine de cette demande, vous pouvez ignorer cet email.
+              Ce code est à usage unique et strictement confidentiel. Si vous n'êtes pas à l'origine de cette demande, vous pouvez ignorer cet e-mail.
             </p>
           </div>
           <div class="footer">
-            EcoSurv SARL • Nouakchott, Mauritanie<br>
-            Plateforme de Recouvrement et Gestion de Scolarité
+            EcoSurv
           </div>
         </div>
       </body>
       </html>
     `;
+}
+
+Deno.serve(async (req: Request) => {
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders });
+  }
+
+  if (req.method !== "POST") {
+    return json({ error: "Méthode non autorisée" }, 405);
+  }
+
+  try {
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const resendApiKey = Deno.env.get("RESEND_API_KEY");
+    const resendFrom = (Deno.env.get("RESEND_FROM") || "").trim() || "EcoSurv <onboarding@resend.dev>";
+
+    if (!supabaseUrl || !serviceRoleKey) {
+      console.error("[send-activation-otp] Configuration Supabase manquante.");
+      return json({ error: "Configuration serveur incomplète." }, 500);
+    }
+    if (!resendApiKey) {
+      console.error("[send-activation-otp] RESEND_API_KEY non configurée dans les secrets Supabase.");
+      return json({ error: "Service d'envoi non configuré côté serveur." }, 500);
+    }
+
+    // 1. JWT obligatoire
+    const authHeader = req.headers.get("Authorization") || "";
+    const token = authHeader.replace(/^Bearer\s+/i, "").trim();
+    if (!token) {
+      return json({ error: "Session non fournie. Veuillez vous reconnecter." }, 401);
+    }
+
+    const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
+    const { data: userData, error: userError } = await supabaseAdmin.auth.getUser(token);
+    const user = userData?.user;
+    if (userError || !user || !user.email) {
+      return json({ error: "Session expirée ou non autorisée." }, 401);
+    }
+
+    // 2. Profil et école lus côté serveur (le corps de la requête n'est jamais lu)
+    const { data: profil, error: profilError } = await supabaseAdmin
+      .from("profils")
+      .select("id, ecole_id, role, nom, prenom")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    if (profilError || !profil || profil.role !== "directeur" || !profil.ecole_id) {
+      return json({ error: "Action réservée au directeur de l'établissement." }, 403);
+    }
+
+    const { data: ecole, error: ecoleError } = await supabaseAdmin
+      .from("ecoles")
+      .select("id, nom, statut_activation")
+      .eq("id", profil.ecole_id)
+      .maybeSingle();
+
+    if (ecoleError || !ecole) {
+      return json({ error: "Établissement introuvable." }, 404);
+    }
+    if (ecole.statut_activation !== "en_attente") {
+      return json({ error: "Cet établissement n'est pas en attente d'activation." }, 409);
+    }
+
+    // 3. Limite : 3 codes par heure et par école
+    const sinceIso = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+    const { count: recentCount, error: countError } = await supabaseAdmin
+      .from("codes_activation")
+      .select("id", { count: "exact", head: true })
+      .eq("ecole_id", ecole.id)
+      .gte("created_at", sinceIso);
+
+    if (countError) {
+      console.error("[send-activation-otp] Erreur comptage:", countError);
+      return json({ error: "Erreur interne du serveur lors de l'envoi." }, 500);
+    }
+    if ((recentCount ?? 0) >= MAX_CODES_PER_HOUR) {
+      return json({ error: "Trop de demandes de code. Veuillez patienter avant de redemander un code." }, 429);
+    }
+
+    // 4. Génération, hash et enregistrement côté serveur
+    const code = generateCode();
+    const codeHash = await hashCode(ecole.id, code);
+
+    const { error: invalidateError } = await supabaseAdmin
+      .from("codes_activation")
+      .update({ utilise: true })
+      .eq("ecole_id", ecole.id)
+      .eq("utilise", false);
+
+    if (invalidateError) {
+      console.error("[send-activation-otp] Erreur invalidation anciens codes:", invalidateError);
+      return json({ error: "Erreur interne du serveur lors de l'envoi." }, 500);
+    }
+
+    const { data: inserted, error: insertError } = await supabaseAdmin
+      .from("codes_activation")
+      .insert({
+        ecole_id: ecole.id,
+        email: user.email,
+        code_hash: codeHash,
+        expire_a: new Date(Date.now() + CODE_VALIDITY_MINUTES * 60 * 1000).toISOString(),
+        utilise: false,
+      })
+      .select("id")
+      .single();
+
+    if (insertError || !inserted) {
+      console.error("[send-activation-otp] Erreur enregistrement du code:", insertError);
+      return json({ error: "Erreur interne du serveur lors de l'envoi." }, 500);
+    }
+
+    // 5. Lien vers l'écran d'activation : origine du client seulement si elle est dans ALLOWED_ORIGINS, sinon SITE_URL
+    let activationUrl: string | null = null;
+    const siteUrl = (Deno.env.get("SITE_URL") || "").trim().replace(/\/+$/, "");
+    const allowedOrigins = (Deno.env.get("ALLOWED_ORIGINS") || "")
+      .split(",")
+      .map((o) => o.trim().replace(/\/+$/, ""))
+      .filter(Boolean);
+    let clientOrigin = "";
+    const rawOrigin = (req.headers.get("origin") || "").trim();
+    if (rawOrigin) {
+      try {
+        clientOrigin = new URL(rawOrigin).origin;
+      } catch {
+        clientOrigin = "";
+      }
+    }
+    const baseUrl = clientOrigin && allowedOrigins.includes(clientOrigin) ? clientOrigin : siteUrl;
+    if (baseUrl) activationUrl = `${baseUrl}/activation`;
+
+    // 6. Envoi via Resend : toutes les valeurs insérées dans le HTML sont échappées
+    const nomDirecteur = `${profil.prenom || ""} ${profil.nom || ""}`.trim();
+    const html = buildHtml({ nomDirecteur, nomEcole: ecole.nom || "", code, activationUrl });
 
     const resendResponse = await fetch("https://api.resend.com/emails", {
       method: "POST",
@@ -117,54 +252,36 @@ Deno.serve(async (req: Request) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: "EcoSurv <onboarding@resend.dev>",
-        to: [cleanEmail],
-        subject: `Votre code d'activation EcoSurv : ${code}`,
-        html: htmlContent,
+        from: resendFrom,
+        to: [user.email],
+        subject: "Votre code d'activation EcoSurv",
+        html,
       }),
     });
 
-    const resendData = await resendResponse.json();
-
     if (!resendResponse.ok) {
-      console.error("[send-activation-otp] Erreur Resend API:", resendData);
-      const isTestLimitation =
-        resendData.message &&
-        resendData.message.toLowerCase().includes("you can only send testing emails");
+      let resendMessage = "";
+      try {
+        const resendData = await resendResponse.json();
+        resendMessage = String(resendData?.message || "");
+      } catch {
+        // corps non JSON
+      }
+      console.error("[send-activation-otp] Erreur Resend:", resendResponse.status, resendMessage);
 
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: resendData.message || "Échec de distribution de l'email.",
-          isTestModeLimitation: Boolean(isTestLimitation),
-          code,
-        }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
+      // Le code n'a pas été remis : on le retire pour qu'il ne reste pas valide ni ne compte dans la limite horaire.
+      await supabaseAdmin.from("codes_activation").delete().eq("id", inserted.id);
+
+      return json(
+        { ok: false, error: "L'e-mail n'a pas pu être envoyé. Réessayez dans quelques minutes." },
+        502,
       );
     }
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        messageId: resendData.id,
-        code,
-      }),
-      {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
-    );
-  } catch (error: any) {
+    // Jamais de code ni de hash dans la réponse
+    return json({ ok: true }, 200);
+  } catch (error) {
     console.error("[send-activation-otp] Exception interne:", error);
-    return new Response(
-      JSON.stringify({ error: "Erreur interne du serveur lors de l'envoi." }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
-    );
+    return json({ error: "Erreur interne du serveur lors de l'envoi." }, 500);
   }
 });
