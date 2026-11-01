@@ -187,6 +187,13 @@
   50% { transform: translateY(-10px); }
 }
 
+/* Motif de croix du panneau d'inscription : glisse d'une tuile (48 px) en boucle continue.
+   Seul transform est animé : le calque est composité, rien n'est redessiné. */
+@keyframes register-drift {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(48px, 48px, 0); }
+}
+
 .landing-float {
   animation-name: landing-float-in, landing-float-y;
   animation-timing-function: ease-out, ease-in-out;

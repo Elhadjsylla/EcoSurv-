@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { motion, useReducedMotion, type Variants } from 'framer-motion';
 import {
   Building2,
   User,
@@ -10,9 +11,9 @@ import {
   MapPin,
   Users,
   ArrowLeft,
+  ArrowRight,
   AlertCircle,
-  ShieldCheck,
-  Sparkles,
+  Check,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuthStore, UserProfile, EcoleInfo } from '../store/useAuthStore';
@@ -28,6 +29,23 @@ interface RegisterPageProps {
   onReturnToLanding?: () => void;
   onNavigateToLogin?: () => void;
 }
+
+const SMOOTH_EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
+
+const FOCUS_RING =
+  'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1D4ED8]';
+
+// Les trois sections du formulaire, reprises dans le panneau de gauche.
+// `required` = nombre de champs obligatoires de la section (effectif : optionnel).
+const REGISTER_STEPS = [
+  { id: 1, title: "Informations sur l'école", icon: Building2, required: 2 },
+  { id: 2, title: "Responsable de l'établissement", icon: User, required: 4 },
+  { id: 3, title: 'Sécurité du compte Directeur', icon: Lock, required: 2 },
+] as const;
+
+// Motif de croix très discret (pas de dégradé), tuile de 48 px : le calque qui le porte
+// glisse d'une tuile en boucle, ce qui reste continu.
+const PLUS_PATTERN = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48'%3E%3Cpath d='M24 20v8M20 24h8' stroke='%23F8FAFC' stroke-opacity='0.07' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E")`;
 
 export const RegisterPage: React.FC<RegisterPageProps> = ({
   onReturnToLanding,
@@ -49,6 +67,41 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
   const [submitting, setSubmitting] = useState(false);
 
   const passwordRef = useRef<HTMLInputElement>(null);
+
+  // Avancement : champs obligatoires remplis par section, section en cours (focus)
+  const [activeStep, setActiveStep] = useState<number>(1);
+  const filledByStep = [
+    [nomEcole, ville].filter((v) => v.trim()).length,
+    [prenomResponsable, nomResponsable, email, telephone].filter((v) => v.trim()).length,
+    [password, passwordConfirm].filter((v) => v).length,
+  ];
+  const progress =
+    REGISTER_STEPS.reduce((sum, step, i) => sum + filledByStep[i] / step.required, 0) /
+    REGISTER_STEPS.length;
+
+  // Entrée animée : panneau de gauche (éléments depuis la gauche), formulaire (depuis le bas).
+  // En mouvement réduit : simple fondu.
+  const shouldReduceMotion = Boolean(useReducedMotion());
+  const panelVariants: Variants = {
+    hidden: {},
+    visible: { transition: { delayChildren: 0.15, staggerChildren: 0.09 } },
+  };
+  const panelItemVariants: Variants = shouldReduceMotion
+    ? { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { duration: 0.3 } } }
+    : {
+        hidden: { opacity: 0, x: -28 },
+        visible: { opacity: 1, x: 0, transition: { duration: 0.5, ease: SMOOTH_EASE } },
+      };
+  const formVariants: Variants = {
+    hidden: {},
+    visible: { transition: { delayChildren: 0.2, staggerChildren: 0.09 } },
+  };
+  const formItemVariants: Variants = shouldReduceMotion
+    ? { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { duration: 0.3 } } }
+    : {
+        hidden: { opacity: 0, y: 18 },
+        visible: { opacity: 1, y: 0, transition: { duration: 0.45, ease: SMOOTH_EASE } },
+      };
 
   const handleReturn = () => {
     if (onReturnToLanding) {
@@ -329,47 +382,189 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
   ];
 
   return (
-    <div className="min-h-screen flex flex-col justify-between bg-slate-50 dark:bg-slate-950 px-4 py-8 font-['Plus_Jakarta_Sans',sans-serif] text-slate-900 dark:text-slate-100 antialiased selection:bg-blue-600 selection:text-white">
-      {/* Top Bar with Return Button & Brand */}
-      <div className="max-w-2xl w-full mx-auto flex items-center justify-between">
-        <button
-          type="button"
-          onClick={handleReturn}
-          className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs hover:border-slate-300 dark:hover:border-slate-700 transition-all cursor-pointer"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          <span>Retour au site</span>
-        </button>
+    <div
+      data-testid="register-page"
+      className="min-h-screen lg:grid lg:grid-cols-[5fr_6fr] font-['Plus_Jakarta_Sans',sans-serif] text-slate-900 dark:text-slate-100 antialiased selection:bg-[#1D4ED8] selection:text-white"
+    >
+      {/* Panneau de gauche (grands écrans) : toujours sombre, marque, promesse et avancement */}
+      <aside
+        data-testid="register-aside"
+        className="relative hidden lg:flex lg:sticky lg:top-0 lg:h-screen overflow-hidden bg-slate-950 text-white"
+      >
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -inset-12 motion-safe:animate-[register-drift_14s_linear_infinite]"
+          style={{ backgroundImage: PLUS_PATTERN }}
+        />
 
-        <div className="flex items-center gap-3">
-          <LanguageSelector />
+        <motion.div
+          variants={panelVariants}
+          initial="hidden"
+          animate="visible"
+          className="relative flex w-full flex-col justify-between gap-10 p-12 xl:p-16"
+        >
+          <motion.div variants={panelItemVariants}>
+            <Logo variant="inverse" height={34} />
+          </motion.div>
+
+          <div className="space-y-8">
+            <div className="space-y-5">
+              <motion.h2
+                variants={panelItemVariants}
+                className="text-4xl xl:text-5xl font-extrabold leading-[1.1] tracking-tight"
+              >
+                Créez l'espace de votre école{' '}
+                <span className="text-[#60A5FA]">en trois étapes.</span>
+              </motion.h2>
+              <motion.p
+                variants={panelItemVariants}
+                className="max-w-md text-base leading-relaxed text-slate-400"
+              >
+                Inscrivez vos élèves par classe, suivez les échéances en MRU, encaissez au
+                guichet et suivez les absences sur téléphone et ordinateur.
+              </motion.p>
+            </div>
+
+            <ol className="space-y-3 max-w-md">
+              {REGISTER_STEPS.map((step, i) => {
+                const filled = filledByStep[i];
+                const done = filled === step.required;
+                const active = activeStep === step.id;
+                return (
+                  <motion.li
+                    key={step.id}
+                    variants={panelItemVariants}
+                    data-testid={`register-step-${step.id}`}
+                    data-active={active}
+                    data-done={done}
+                    className={`flex items-center gap-4 rounded-2xl border bg-slate-900 px-4 py-3.5 transition-colors duration-300 ${
+                      active ? 'border-[#1D4ED8]' : 'border-slate-800'
+                    }`}
+                  >
+                    <span
+                      className={`relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-extrabold transition-colors duration-300 ${
+                        done
+                          ? 'bg-[#1D4ED8] text-white'
+                          : active
+                            ? 'bg-white text-slate-950'
+                            : 'bg-slate-800 text-slate-300'
+                      }`}
+                    >
+                      {active && !done && (
+                        <span
+                          aria-hidden="true"
+                          className="absolute inset-0 rounded-full border-2 border-[#60A5FA] motion-safe:animate-ping [animation-duration:2.4s]"
+                        />
+                      )}
+                      {done ? (
+                        <motion.span
+                          key="done"
+                          initial={shouldReduceMotion ? false : { scale: 0, rotate: -30 }}
+                          animate={{ scale: 1, rotate: 0 }}
+                          transition={{ duration: 0.3, ease: SMOOTH_EASE }}
+                          className="flex"
+                        >
+                          <Check className="h-4 w-4" aria-hidden="true" />
+                        </motion.span>
+                      ) : (
+                        step.id
+                      )}
+                    </span>
+                    <span className="min-w-0 flex-1 text-[15px] font-semibold text-white">
+                      {step.title}
+                    </span>
+                    <span className="shrink-0 overflow-hidden text-xs font-semibold tabular-nums text-slate-400">
+                      <motion.span
+                        key={filled}
+                        initial={shouldReduceMotion ? false : { y: 10, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        transition={{ duration: 0.25, ease: SMOOTH_EASE }}
+                        className="inline-block"
+                      >
+                        {filled} sur {step.required}
+                      </motion.span>
+                    </span>
+                  </motion.li>
+                );
+              })}
+            </ol>
+          </div>
+
+          <motion.p variants={panelItemVariants} className="text-xs text-slate-500">
+            Pensé pour les écoles en Mauritanie (MRU, +222)
+          </motion.p>
+        </motion.div>
+      </aside>
+
+      {/* Panneau de droite : retour, langue, connexion, puis le formulaire */}
+      <main className="flex min-h-screen flex-col bg-white dark:bg-slate-900">
+        <div className="mx-auto flex w-full max-w-xl items-center justify-between gap-3 px-5 pt-6 sm:px-8">
           <button
             type="button"
-            onClick={handleGoToLogin}
-            className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+            onClick={handleReturn}
+            className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 transition-colors cursor-pointer ${FOCUS_RING}`}
           >
-            Déjà un compte ? Se connecter
+            <ArrowLeft className="h-4 w-4" />
+            <span>Retour au site</span>
           </button>
-          <Logo height={28} />
-        </div>
-      </div>
 
-      {/* Main Form Container */}
-      <div className="w-full max-w-2xl mx-auto my-auto py-8">
-        <div className="text-center space-y-2 mb-8">
-          <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-900/60 text-blue-700 dark:text-blue-300 text-xs font-bold">
-            <Sparkles className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
-            <span>Créer mon école sur EcoSurv</span>
+          <div className="flex items-center gap-3">
+            <LanguageSelector />
+            <button
+              type="button"
+              onClick={handleGoToLogin}
+              className={`rounded text-xs font-bold text-[#1D4ED8] dark:text-blue-400 hover:underline cursor-pointer ${FOCUS_RING}`}
+            >
+              Déjà un compte ? Se connecter
+            </button>
           </div>
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight text-slate-900 dark:text-white">
-            Digitalisez la gestion de votre établissement
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 max-w-lg mx-auto">
-            Renseignez les informations de votre école. Votre espace Directeur sera créé immédiatement en attente d'activation.
-          </p>
         </div>
 
-        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 sm:p-9 shadow-xl shadow-slate-200/50 dark:shadow-none">
+        <motion.div
+          variants={formVariants}
+          initial="hidden"
+          animate="visible"
+          className="mx-auto w-full max-w-xl flex-1 px-5 py-8 sm:px-8"
+        >
+          <motion.div variants={formItemVariants} className="mb-6 lg:hidden">
+            <Logo height={30} />
+          </motion.div>
+
+          {/* Avancement : barre continue et section en cours */}
+          <motion.div variants={formItemVariants} className="mb-6 space-y-2">
+            <div className="flex items-center justify-between text-xs font-semibold text-slate-500 dark:text-slate-400">
+              <span>
+                Étape {activeStep} sur {REGISTER_STEPS.length}
+              </span>
+              <span className="truncate pl-3">{REGISTER_STEPS[activeStep - 1].title}</span>
+            </div>
+            <div
+              role="progressbar"
+              aria-label="Avancement du formulaire"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={Math.round(progress * 100)}
+              className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800"
+            >
+              <motion.div
+                data-testid="register-progress"
+                className="h-full w-full origin-left rounded-full bg-[#1D4ED8]"
+                initial={false}
+                animate={{ scaleX: progress }}
+                transition={{ duration: shouldReduceMotion ? 0 : 0.45, ease: SMOOTH_EASE }}
+              />
+            </div>
+          </motion.div>
+
+          <motion.div variants={formItemVariants} className="mb-8 space-y-2">
+            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+              Créer mon école
+            </h1>
+            <p className="text-sm text-slate-500 dark:text-slate-400">
+              Renseignez les informations de votre école. Votre espace Directeur sera créé immédiatement en attente d'activation.
+            </p>
+          </motion.div>
+
           <form onSubmit={handleSubmit} noValidate className="space-y-6">
             {error && (
               <div
@@ -382,7 +577,11 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
             )}
 
             {/* Section 1 : Établissement */}
-            <div className="space-y-4">
+            <motion.div
+              variants={formItemVariants}
+              onFocusCapture={() => setActiveStep(1)}
+              className="space-y-4"
+            >
               <h2 className="text-xs font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500 flex items-center gap-1.5">
                 <Building2 className="h-3.5 w-3.5" />
                 <span>1. Informations sur l'école</span>
@@ -449,10 +648,14 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
                   triggerClassName="w-full h-11 bg-slate-50/50 dark:bg-slate-950/50 border-slate-200 dark:border-slate-800 text-sm rounded-xl"
                 />
               </div>
-            </div>
+            </motion.div>
 
             {/* Section 2 : Responsable & Coordonnées */}
-            <div className="space-y-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+            <motion.div
+              variants={formItemVariants}
+              onFocusCapture={() => setActiveStep(2)}
+              className="space-y-4 pt-4 border-t border-slate-100 dark:border-slate-800"
+            >
               <h2 className="text-xs font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500 flex items-center gap-1.5">
                 <User className="h-3.5 w-3.5" />
                 <span>2. Responsable de l'établissement</span>
@@ -545,10 +748,14 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
                   </div>
                 </div>
               </div>
-            </div>
+            </motion.div>
 
             {/* Section 3 : Mot de passe */}
-            <div className="space-y-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+            <motion.div
+              variants={formItemVariants}
+              onFocusCapture={() => setActiveStep(3)}
+              className="space-y-4 pt-4 border-t border-slate-100 dark:border-slate-800"
+            >
               <h2 className="text-xs font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500 flex items-center gap-1.5">
                 <Lock className="h-3.5 w-3.5" />
                 <span>3. Sécurité du compte Directeur</span>
@@ -618,14 +825,14 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
                   </div>
                 </div>
               </div>
-            </div>
+            </motion.div>
 
             {/* Submit Button */}
-            <div className="pt-4">
+            <motion.div variants={formItemVariants} className="pt-4">
               <button
                 type="submit"
                 disabled={submitting}
-                className="w-full h-13 rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-700 hover:to-indigo-800 text-white font-extrabold text-sm transition-all shadow-xl shadow-blue-600/25 flex items-center justify-center gap-2.5 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed hover:scale-[1.01] active:scale-[0.99]"
+                className={`w-full h-12 rounded-xl bg-[#1D4ED8] hover:bg-[#1E40AF] text-white font-bold text-sm transition-all flex items-center justify-center gap-2.5 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed hover:scale-[1.01] active:scale-[0.99] ${FOCUS_RING}`}
               >
                 {submitting ? (
                   <>
@@ -634,31 +841,31 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
                   </>
                 ) : (
                   <>
-                    <Sparkles className="h-4 w-4" />
-                    <span>Créer mon école & accéder à l'espace</span>
+                    <span>Créer mon école et accéder à l'espace</span>
+                    <ArrowRight className="h-4 w-4" />
                   </>
                 )}
               </button>
-            </div>
+            </motion.div>
 
-            {/* Note sur la conformité & activation */}
-            <div className="p-4 rounded-2xl bg-blue-50/70 dark:bg-blue-950/40 border border-blue-200/70 dark:border-blue-900/60 text-xs text-slate-600 dark:text-slate-300 space-y-1.5 leading-relaxed">
-              <div className="flex items-center gap-2 font-bold text-blue-800 dark:text-blue-300">
-                <ShieldCheck className="h-4 w-4 shrink-0 text-blue-600" />
-                <span>Processus de vérification institutionnelle</span>
-              </div>
-              <p>
-                Dès validation de votre inscription, votre école sera enregistrée et placée en attente d'activation. Nos équipes basées à Nouakchott confirment l'établissement sous 2 à 4h ouvrées.
-              </p>
-            </div>
+            {/* Ce qui se passe après l'inscription : le code d'activation est envoyé par email (voir handleSubmit, étape 5) */}
+            <motion.p
+              variants={formItemVariants}
+              className="flex items-start gap-2.5 text-xs leading-relaxed text-slate-500 dark:text-slate-400"
+            >
+              <Mail className="mt-0.5 h-4 w-4 shrink-0 text-[#1D4ED8] dark:text-blue-400" />
+              <span>
+                Après l'inscription, un code d'activation est envoyé à l'adresse email du responsable. Votre école reste en attente d'activation jusqu'à sa saisie.
+              </span>
+            </motion.p>
           </form>
-        </div>
-      </div>
+        </motion.div>
 
-      {/* Footer */}
-      <div className="text-center text-[11px] text-slate-400 dark:text-slate-500">
-        &copy; {new Date().getFullYear()} EcoSurv Mauritanie &bull; Plateforme agréée de gestion scolaire
-      </div>
+        {/* Footer */}
+        <div className="px-5 pb-6 text-center text-[11px] text-slate-400 dark:text-slate-500">
+          &copy; {new Date().getFullYear()} EcoSurv
+        </div>
+      </main>
     </div>
   );
 };
