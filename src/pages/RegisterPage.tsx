@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { motion, useReducedMotion, type Variants } from 'framer-motion';
+import { motion, type Variants } from 'framer-motion';
 import {
   Building2,
   User,
@@ -22,6 +22,7 @@ import { useNavigationStore } from '../store/useNavigationStore';
 import { Select } from '../components/ui/Select';
 import { LanguageSelector } from '../components/ui/LanguageSelector';
 import { Logo } from '../components/ui/Logo';
+import { AuthAside, AUTH_SMOOTH_EASE, useAuthPanelVariants } from '../components/auth/AuthAside';
 import { generateOtp, hashOtp, sendActivationEmail } from '../lib/email/sendActivationEmail';
 import type { UserRole } from '../components/ui/Header';
 
@@ -30,7 +31,7 @@ interface RegisterPageProps {
   onNavigateToLogin?: () => void;
 }
 
-const SMOOTH_EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
+const SMOOTH_EASE = AUTH_SMOOTH_EASE;
 
 const FOCUS_RING =
   'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1D4ED8]';
@@ -43,9 +44,6 @@ const REGISTER_STEPS = [
   { id: 3, title: 'Sécurité du compte Directeur', icon: Lock, required: 2 },
 ] as const;
 
-// Motif de croix très discret (pas de dégradé), tuile de 48 px : le calque qui le porte
-// glisse d'une tuile en boucle, ce qui reste continu.
-const PLUS_PATTERN = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48'%3E%3Cpath d='M24 20v8M20 24h8' stroke='%23F8FAFC' stroke-opacity='0.07' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E")`;
 
 export const RegisterPage: React.FC<RegisterPageProps> = ({
   onReturnToLanding,
@@ -81,17 +79,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
 
   // Entrée animée : panneau de gauche (éléments depuis la gauche), formulaire (depuis le bas).
   // En mouvement réduit : simple fondu.
-  const shouldReduceMotion = Boolean(useReducedMotion());
-  const panelVariants: Variants = {
-    hidden: {},
-    visible: { transition: { delayChildren: 0.15, staggerChildren: 0.09 } },
-  };
-  const panelItemVariants: Variants = shouldReduceMotion
-    ? { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { duration: 0.3 } } }
-    : {
-        hidden: { opacity: 0, x: -28 },
-        visible: { opacity: 1, x: 0, transition: { duration: 0.5, ease: SMOOTH_EASE } },
-      };
+  const { shouldReduceMotion, panelItemVariants } = useAuthPanelVariants();
   const formVariants: Variants = {
     hidden: {},
     visible: { transition: { delayChildren: 0.2, staggerChildren: 0.09 } },
@@ -386,115 +374,81 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
       data-testid="register-page"
       className="min-h-screen lg:grid lg:grid-cols-[5fr_6fr] font-['Plus_Jakarta_Sans',sans-serif] text-slate-900 dark:text-slate-100 antialiased selection:bg-[#1D4ED8] selection:text-white"
     >
-      {/* Panneau de gauche (grands écrans) : toujours sombre, marque, promesse et avancement */}
-      <aside
-        data-testid="register-aside"
-        className="relative hidden lg:flex lg:sticky lg:top-0 lg:h-screen overflow-hidden bg-slate-950 text-white"
+      {/* Panneau de gauche (grands écrans) : marque, promesse et avancement */}
+      <AuthAside
+        heading={
+          <>
+            Créez l'espace de votre école{' '}
+            <span className="text-[#60A5FA]">en trois étapes.</span>
+          </>
+        }
+        description="Inscrivez vos élèves par classe, suivez les échéances en MRU, encaissez au guichet et suivez les absences sur téléphone et ordinateur."
+        footer="Pensé pour les écoles en Mauritanie (MRU, +222)"
       >
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute -inset-12 motion-safe:animate-[register-drift_14s_linear_infinite]"
-          style={{ backgroundImage: PLUS_PATTERN }}
-        />
-
-        <motion.div
-          variants={panelVariants}
-          initial="hidden"
-          animate="visible"
-          className="relative flex w-full flex-col justify-between gap-10 p-12 xl:p-16"
-        >
-          <motion.div variants={panelItemVariants}>
-            <Logo variant="inverse" height={34} />
-          </motion.div>
-
-          <div className="space-y-8">
-            <div className="space-y-5">
-              <motion.h2
+        <ol className="space-y-[clamp(0.5rem,1.5vh,0.75rem)] max-w-md">
+          {REGISTER_STEPS.map((step, i) => {
+            const filled = filledByStep[i];
+            const done = filled === step.required;
+            const active = activeStep === step.id;
+            return (
+              <motion.li
+                key={step.id}
                 variants={panelItemVariants}
-                className="text-4xl xl:text-5xl font-extrabold leading-[1.1] tracking-tight"
+                data-testid={`register-step-${step.id}`}
+                data-active={active}
+                data-done={done}
+                className={`flex items-center gap-4 rounded-2xl border bg-slate-900 px-4 py-[clamp(0.5rem,1.6vh,0.875rem)] transition-colors duration-300 ${
+                  active ? 'border-[#1D4ED8]' : 'border-slate-800'
+                }`}
               >
-                Créez l'espace de votre école{' '}
-                <span className="text-[#60A5FA]">en trois étapes.</span>
-              </motion.h2>
-              <motion.p
-                variants={panelItemVariants}
-                className="max-w-md text-base leading-relaxed text-slate-400"
-              >
-                Inscrivez vos élèves par classe, suivez les échéances en MRU, encaissez au
-                guichet et suivez les absences sur téléphone et ordinateur.
-              </motion.p>
-            </div>
-
-            <ol className="space-y-3 max-w-md">
-              {REGISTER_STEPS.map((step, i) => {
-                const filled = filledByStep[i];
-                const done = filled === step.required;
-                const active = activeStep === step.id;
-                return (
-                  <motion.li
-                    key={step.id}
-                    variants={panelItemVariants}
-                    data-testid={`register-step-${step.id}`}
-                    data-active={active}
-                    data-done={done}
-                    className={`flex items-center gap-4 rounded-2xl border bg-slate-900 px-4 py-3.5 transition-colors duration-300 ${
-                      active ? 'border-[#1D4ED8]' : 'border-slate-800'
-                    }`}
-                  >
+                <span
+                  className={`relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-extrabold transition-colors duration-300 ${
+                    done
+                      ? 'bg-[#1D4ED8] text-white'
+                      : active
+                        ? 'bg-white text-slate-950'
+                        : 'bg-slate-800 text-slate-300'
+                  }`}
+                >
+                  {active && !done && (
                     <span
-                      className={`relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-extrabold transition-colors duration-300 ${
-                        done
-                          ? 'bg-[#1D4ED8] text-white'
-                          : active
-                            ? 'bg-white text-slate-950'
-                            : 'bg-slate-800 text-slate-300'
-                      }`}
+                      aria-hidden="true"
+                      className="absolute inset-0 rounded-full border-2 border-[#60A5FA] motion-safe:animate-ping [animation-duration:2.4s]"
+                    />
+                  )}
+                  {done ? (
+                    <motion.span
+                      key="done"
+                      initial={shouldReduceMotion ? false : { scale: 0, rotate: -30 }}
+                      animate={{ scale: 1, rotate: 0 }}
+                      transition={{ duration: 0.3, ease: SMOOTH_EASE }}
+                      className="flex"
                     >
-                      {active && !done && (
-                        <span
-                          aria-hidden="true"
-                          className="absolute inset-0 rounded-full border-2 border-[#60A5FA] motion-safe:animate-ping [animation-duration:2.4s]"
-                        />
-                      )}
-                      {done ? (
-                        <motion.span
-                          key="done"
-                          initial={shouldReduceMotion ? false : { scale: 0, rotate: -30 }}
-                          animate={{ scale: 1, rotate: 0 }}
-                          transition={{ duration: 0.3, ease: SMOOTH_EASE }}
-                          className="flex"
-                        >
-                          <Check className="h-4 w-4" aria-hidden="true" />
-                        </motion.span>
-                      ) : (
-                        step.id
-                      )}
-                    </span>
-                    <span className="min-w-0 flex-1 text-[15px] font-semibold text-white">
-                      {step.title}
-                    </span>
-                    <span className="shrink-0 overflow-hidden text-xs font-semibold tabular-nums text-slate-400">
-                      <motion.span
-                        key={filled}
-                        initial={shouldReduceMotion ? false : { y: 10, opacity: 0 }}
-                        animate={{ y: 0, opacity: 1 }}
-                        transition={{ duration: 0.25, ease: SMOOTH_EASE }}
-                        className="inline-block"
-                      >
-                        {filled} sur {step.required}
-                      </motion.span>
-                    </span>
-                  </motion.li>
-                );
-              })}
-            </ol>
-          </div>
-
-          <motion.p variants={panelItemVariants} className="text-xs text-slate-500">
-            Pensé pour les écoles en Mauritanie (MRU, +222)
-          </motion.p>
-        </motion.div>
-      </aside>
+                      <Check className="h-4 w-4" aria-hidden="true" />
+                    </motion.span>
+                  ) : (
+                    step.id
+                  )}
+                </span>
+                <span className="min-w-0 flex-1 text-[15px] font-semibold text-white">
+                  {step.title}
+                </span>
+                <span className="shrink-0 overflow-hidden text-xs font-semibold tabular-nums text-slate-400">
+                  <motion.span
+                    key={filled}
+                    initial={shouldReduceMotion ? false : { y: 10, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ duration: 0.25, ease: SMOOTH_EASE }}
+                    className="inline-block"
+                  >
+                    {filled} sur {step.required}
+                  </motion.span>
+                </span>
+              </motion.li>
+            );
+          })}
+        </ol>
+      </AuthAside>
 
       {/* Panneau de droite : retour, langue, connexion, puis le formulaire */}
       <main className="flex min-h-screen flex-col bg-white dark:bg-slate-900">
