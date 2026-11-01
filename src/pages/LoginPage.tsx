@@ -1,6 +1,20 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, useReducedMotion, type Variants } from 'framer-motion';
-import { Mail, Lock, Eye, EyeOff, LogIn, ArrowLeft, AlertCircle, ShieldCheck, CheckCircle2, X } from 'lucide-react';
+import {
+  Mail,
+  Lock,
+  Eye,
+  EyeOff,
+  LogIn,
+  ArrowLeft,
+  AlertCircle,
+  CheckCircle2,
+  X,
+  Building2,
+  Wallet,
+  ClipboardCheck,
+  Users,
+} from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuthStore, UserProfile } from '../store/useAuthStore';
 import { useEcoleStore } from '../store/useEcoleStore';
@@ -8,6 +22,7 @@ import { useNavigationStore } from '../store/useNavigationStore';
 import { CONTACT_CONFIG, getWhatsAppUrl } from '../config/contact';
 import { LanguageSelector } from '../components/ui/LanguageSelector';
 import { Logo } from '../components/ui/Logo';
+import { AuthAside, AUTH_SMOOTH_EASE, useAuthPanelVariants } from '../components/auth/AuthAside';
 import { logLoginSuccess } from '../lib/auditLogger';
 import type { UserRole } from '../components/ui/Header';
 
@@ -15,18 +30,65 @@ interface LoginPageProps {
   onReturnToLanding?: () => void;
 }
 
-const SMOOTH_EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
-
-// Masses de lumière bleue derrière la carte : disque uni #1D4ED8 adouci par un
-// flou fixe, sans dégradé. Seuls transform et opacity sont animés.
-const BACKGROUND_LIGHTS = [
-  { className: '-top-40 -left-32 h-[520px] w-[520px]', opacity: 0.16, x: [0, 60, 0], y: [0, 40, 0], duration: 16 },
-  { className: 'top-1/3 -right-40 h-[480px] w-[480px]', opacity: 0.12, x: [0, -50, 0], y: [0, -35, 0], duration: 20 },
-  { className: '-bottom-48 left-1/4 h-[440px] w-[440px]', opacity: 0.1, x: [0, 40, 0], y: [0, -30, 0], duration: 14 },
-];
+const SMOOTH_EASE = AUTH_SMOOTH_EASE;
 
 const FOCUS_RING =
   'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1D4ED8]';
+
+// Les quatre accès de l'application, avec ce que chacun fait dans le code :
+// PaiementsAttentePage (confirmer ou rejeter), CaissierGuichetPage et CaissierJournalPage
+// (encaisser, clôturer la caisse), TeacherAbsencesPage (absences par classe),
+// ParentAssiduitePage (relevé d'assiduité des enfants).
+const LOGIN_ROLES = [
+  { id: 'directeur', label: 'Directeur', text: 'Confirme ou rejette les paiements en attente', icon: Building2 },
+  { id: 'caissier', label: 'Caissier', text: 'Encaisse au guichet et clôture la caisse', icon: Wallet },
+  { id: 'enseignant', label: 'Enseignant', text: 'Saisit les absences de ses classes', icon: ClipboardCheck },
+  { id: 'parent', label: 'Parent', text: "Consulte le relevé d'assiduité de ses enfants", icon: Users },
+];
+
+/** Liste des quatre accès : l'accès en surbrillance change toutes les 2,6 s (fixe en mouvement réduit). */
+const LoginRoles: React.FC = () => {
+  const { shouldReduceMotion, panelItemVariants } = useAuthPanelVariants();
+  const [activeRole, setActiveRole] = useState(0);
+
+  useEffect(() => {
+    if (shouldReduceMotion) return;
+    const id = window.setInterval(() => setActiveRole((i) => (i + 1) % LOGIN_ROLES.length), 2600);
+    return () => window.clearInterval(id);
+  }, [shouldReduceMotion]);
+
+  return (
+    <ul className="space-y-[clamp(0.5rem,1.5vh,0.75rem)] max-w-md">
+      {LOGIN_ROLES.map((role, i) => {
+        const RoleIcon = role.icon;
+        const active = activeRole === i;
+        return (
+          <motion.li
+            key={role.id}
+            variants={panelItemVariants}
+            data-testid={`login-role-${role.id}`}
+            data-active={active}
+            className={`flex items-center gap-4 rounded-2xl border bg-slate-900 px-4 py-[clamp(0.5rem,1.6vh,0.875rem)] transition-colors duration-500 ${
+              active ? 'border-[#1D4ED8]' : 'border-slate-800'
+            }`}
+          >
+            <span
+              className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-colors duration-500 ${
+                active ? 'bg-[#1D4ED8] text-white' : 'bg-slate-800 text-slate-300'
+              }`}
+            >
+              <RoleIcon className="h-4 w-4" aria-hidden="true" />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-[15px] font-semibold text-white">{role.label}</span>
+              <span className="block text-xs text-slate-400">{role.text}</span>
+            </span>
+          </motion.li>
+        );
+      })}
+    </ul>
+  );
+};
 
 export const LoginPage: React.FC<LoginPageProps> = ({ onReturnToLanding }) => {
   const authProfile = useAuthStore((s) => s.profile);
@@ -80,34 +142,18 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onReturnToLanding }) => {
 
   const passwordRef = useRef<HTMLInputElement>(null);
 
-  // Entrée : le fond apparaît d'abord, puis la carte (fondu, montée de 24 px, zoom 0,98 vers 1),
-  // puis ses éléments un par un toutes les 70 ms. En mouvement réduit : simple fondu.
+  // Entrée : le panneau de gauche arrive élément par élément, puis le formulaire monte et
+  // ses éléments suivent un par un. En mouvement réduit : simple fondu.
   const shouldReduceMotion = Boolean(useReducedMotion());
-  const cardVariants: Variants = shouldReduceMotion
-    ? {
-        hidden: { opacity: 0 },
-        visible: { opacity: 1, transition: { duration: 0.3, delay: 0.3 } },
-      }
-    : {
-        hidden: { opacity: 0, y: 24, scale: 0.98 },
-        visible: {
-          opacity: 1,
-          y: 0,
-          scale: 1,
-          transition: {
-            duration: 0.45,
-            delay: 0.3,
-            ease: SMOOTH_EASE,
-            delayChildren: 0.2,
-            staggerChildren: 0.07,
-          },
-        },
-      };
+  const formVariants: Variants = {
+    hidden: {},
+    visible: { transition: { delayChildren: 0.2, staggerChildren: 0.09 } },
+  };
   const itemVariants: Variants = shouldReduceMotion
-    ? { hidden: { opacity: 1 }, visible: { opacity: 1 } }
+    ? { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { duration: 0.3 } } }
     : {
-        hidden: { opacity: 0, y: 8 },
-        visible: { opacity: 1, y: 0, transition: { duration: 0.3, ease: SMOOTH_EASE } },
+        hidden: { opacity: 0, y: 18 },
+        visible: { opacity: 1, y: 0, transition: { duration: 0.45, ease: SMOOTH_EASE } },
       };
 
   const handleReturn = () => {
@@ -239,63 +285,53 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onReturnToLanding }) => {
   };
 
   return (
-    <div className="relative isolate min-h-[100dvh] grid grid-rows-[auto_1fr_auto] gap-6 bg-slate-50 dark:bg-slate-950 px-4 py-6 font-['Plus_Jakarta_Sans',sans-serif] text-slate-900 dark:text-slate-100 antialiased selection:bg-blue-600 selection:text-white">
-      {/* Arrière-plan : lumières bleues floues qui dérivent lentement, en fondu avant la carte */}
-      <motion.div
-        aria-hidden="true"
-        data-testid="login-background"
-        className="pointer-events-none fixed inset-0 -z-10 overflow-hidden"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.35 }}
+    <div
+      data-testid="login-page"
+      className="min-h-[100dvh] lg:grid lg:grid-cols-[5fr_6fr] font-['Plus_Jakarta_Sans',sans-serif] text-slate-900 dark:text-slate-100 antialiased selection:bg-[#1D4ED8] selection:text-white"
+    >
+      {/* Panneau de gauche (grands écrans) : marque, promesse et les quatre accès */}
+      <AuthAside
+        heading={
+          <>
+            Un accès pour <span className="text-[#60A5FA]">chaque rôle</span> de votre école.
+          </>
+        }
+        description="Accédez à la gestion de scolarité, caisse et suivi pédagogique."
+        footer="Pensé pour les écoles en Mauritanie (MRU, +222)"
       >
-        {BACKGROUND_LIGHTS.map((light) => (
-          <motion.div
-            key={light.className}
-            data-testid="login-light"
-            className={`absolute rounded-full bg-[#1D4ED8] blur-[120px] will-change-transform ${light.className}`}
-            style={{ opacity: light.opacity }}
-            animate={shouldReduceMotion ? undefined : { x: light.x, y: light.y }}
-            transition={{ duration: light.duration, repeat: Infinity, ease: 'easeInOut' }}
-          />
-        ))}
-      </motion.div>
+        <LoginRoles />
+      </AuthAside>
 
-      {/* Top Bar with Back Button and Brand */}
-      <div className="max-w-md w-full mx-auto h-11 flex items-center justify-between">
-        <button
-          type="button"
-          onClick={handleReturn}
-          className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs hover:border-slate-300 dark:hover:border-slate-700 transition-all cursor-pointer ${FOCUS_RING}`}
-        >
-          <ArrowLeft className="h-4 w-4" />
-          <span>Retour au site</span>
-        </button>
-
-        <div className="flex items-center gap-2.5">
+      {/* Panneau de droite : retour, langue, puis le formulaire de connexion */}
+      <main className="flex min-h-[100dvh] flex-col bg-white dark:bg-slate-900">
+        <div className="mx-auto flex w-full max-w-md items-center justify-between gap-3 px-5 pt-6 sm:px-0">
+          <button
+            type="button"
+            onClick={handleReturn}
+            className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 transition-colors cursor-pointer ${FOCUS_RING}`}
+          >
+            <ArrowLeft className="h-4 w-4" />
+            <span>Retour au site</span>
+          </button>
           <LanguageSelector />
-          <Logo height={28} />
         </div>
-      </div>
 
-      {/* Main Login Card, centrée dans la rangée du milieu (barre du haut et pied de page de même hauteur) */}
-      <div className="w-full max-w-md mx-auto self-center">
         <motion.div
           data-testid="login-card"
-          variants={cardVariants}
+          variants={formVariants}
           initial="hidden"
           animate="visible"
-          className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 sm:p-8 shadow-[0_10px_30px_rgba(15,23,42,0.08)] dark:shadow-[0_10px_30px_rgba(0,0,0,0.35)]"
+          className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center px-5 py-8 sm:px-0"
         >
-          <motion.div variants={itemVariants} className="text-center space-y-2 mb-7">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-900/60 text-blue-700 dark:text-blue-300 text-[11px] font-bold">
-              <ShieldCheck className="h-3.5 w-3.5" />
-              <span>Espace Sécurisé Établissement</span>
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 dark:text-white">
+          <motion.div variants={itemVariants} className="mb-6 lg:hidden">
+            <Logo height={30} />
+          </motion.div>
+
+          <motion.div variants={itemVariants} className="mb-8 space-y-2">
+            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
               Connexion à votre espace
             </h1>
-            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+            <p className="text-sm text-slate-500 dark:text-slate-400">
               Accédez à la gestion de scolarité, caisse et suivi pédagogique.
             </p>
           </motion.div>
@@ -390,7 +426,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onReturnToLanding }) => {
             <button
               type="submit"
               disabled={submitting}
-              className={`w-full h-12 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm transition-all shadow-md shadow-blue-600/25 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed hover:scale-[1.01] active:scale-[0.99] ${FOCUS_RING}`}
+              className={`w-full h-12 rounded-xl bg-[#1D4ED8] hover:bg-[#1E40AF] text-white font-bold text-sm transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed hover:scale-[1.01] active:scale-[0.99] ${FOCUS_RING}`}
             >
               {submitting ? (
                 <>
@@ -439,12 +475,12 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onReturnToLanding }) => {
             </p>
           </motion.div>
         </motion.div>
-      </div>
 
-      {/* Footer, même hauteur que la barre du haut pour centrer la carte */}
-      <div className="h-11 flex items-center justify-center text-center text-[11px] text-slate-400 dark:text-slate-500">
-        &copy; {new Date().getFullYear()} EcoSurv Mauritanie &bull; Plateforme agréée de gestion scolaire
-      </div>
+        {/* Pied de page */}
+        <div className="px-5 pb-6 text-center text-[11px] text-slate-400 dark:text-slate-500">
+          &copy; {new Date().getFullYear()} EcoSurv
+        </div>
+      </main>
 
       {/* Modal Mot de passe oublié */}
       {isForgotModalOpen && (
