@@ -135,7 +135,7 @@ export const AdminAuditPage: React.FC = () => {
     }
     if (type.startsWith('user.')) {
       return (
-        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
+        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-50 dark:bg-blue-950/60 text-[#1D4ED8] dark:text-blue-300 border border-blue-200 dark:border-blue-800">
           <UserCheck className="h-3 w-3" />
           {type}
         </span>
@@ -207,7 +207,7 @@ export const AdminAuditPage: React.FC = () => {
   };
 
   return (
-    <div className="p-6 lg:p-8 space-y-6 max-w-7xl mx-auto animate-page-enter">
+    <div className="p-6 lg:p-8 space-y-6 max-w-7xl mx-auto admin-stagger">
       {/* Toast Notification */}
       {toast && (
         <ToastNotification
@@ -219,11 +219,11 @@ export const AdminAuditPage: React.FC = () => {
       {/* Title & Actions */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl lg:text-3xl font-black tracking-tight text-slate-900 dark:text-white">
-            Audit Logs & Sécurité
+          <h1 className="text-2xl lg:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+            Journal d'audit
           </h1>
           <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mt-1">
-            Traçabilité des accès, activations d'écoles et modifications système (table audit_logs)
+            Traçabilité des accès, des activations d'écoles et des modifications du système
           </p>
         </div>
 
@@ -231,7 +231,7 @@ export const AdminAuditPage: React.FC = () => {
           <button
             onClick={fetchAuditLogs}
             disabled={isLoading}
-            className="flex items-center gap-1.5 px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/60 shadow-xs transition-colors"
+            className="flex items-center gap-1.5 px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/60 transition-colors"
           >
             <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? 'animate-spin' : ''}`} />
             <span>Actualiser</span>
@@ -239,7 +239,7 @@ export const AdminAuditPage: React.FC = () => {
 
           <button
             onClick={handleExportCsv}
-            className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 rounded-xl text-xs font-bold hover:bg-slate-800 dark:hover:bg-slate-200 shadow-xs transition-colors"
+            className="flex items-center gap-1.5 px-3.5 py-2 bg-[#1D4ED8] text-white rounded-xl text-xs font-bold hover:bg-[#1E40AF] transition-colors"
           >
             <FileText className="h-3.5 w-3.5" />
             <span>Exporter CSV</span>
@@ -249,42 +249,42 @@ export const AdminAuditPage: React.FC = () => {
 
       {/* KPI Stats Bar */}
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xs">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4">
           <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
             Total Événements
           </div>
-          <div className="text-2xl font-black text-slate-900 dark:text-white mt-1">
+          <div className="text-2xl font-extrabold text-slate-900 dark:text-white mt-1">
             {logs.length}
           </div>
         </div>
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xs">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4">
           <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
             Accès & Sessions
           </div>
-          <div className="text-2xl font-black text-blue-600 dark:text-blue-400 mt-1">
+          <div className="text-2xl font-extrabold text-[#1D4ED8] dark:text-blue-300 mt-1">
             {logs.filter((l) => l.action_type.startsWith('auth.')).length}
           </div>
         </div>
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xs">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4">
           <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
             Actions Établissements
           </div>
-          <div className="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-1">
+          <div className="text-2xl font-extrabold text-emerald-600 dark:text-emerald-400 mt-1">
             {logs.filter((l) => l.action_type.startsWith('school.')).length}
           </div>
         </div>
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xs">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4">
           <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-            Sécurité & RLS
+            Sécurité
           </div>
-          <div className="text-2xl font-black text-purple-600 dark:text-purple-400 mt-1">
+          <div className="text-2xl font-extrabold text-[#1D4ED8] dark:text-blue-300 mt-1">
             {logs.filter((l) => l.action_type.startsWith('security.')).length}
           </div>
         </div>
       </div>
 
       {/* Filter & Search Bar */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-3">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div className="relative flex-1">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
           <input
@@ -292,7 +292,7 @@ export const AdminAuditPage: React.FC = () => {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Rechercher par email, action ou cible..."
-            className="w-full pl-9 pr-4 py-2 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            className="w-full pl-9 pr-4 py-2 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#1D4ED8]/40"
           />
         </div>
 
@@ -301,7 +301,7 @@ export const AdminAuditPage: React.FC = () => {
           <select
             value={typeFilter}
             onChange={(e) => setTypeFilter(e.target.value)}
-            className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold py-2 px-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer"
+            className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold py-2 px-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1D4ED8]/40 cursor-pointer"
           >
             <option value="all">Tous types d'actions</option>
             <option value="auth">Connexions (auth.*)</option>
@@ -314,7 +314,7 @@ export const AdminAuditPage: React.FC = () => {
           <select
             value={dateFilter}
             onChange={(e) => setDateFilter(e.target.value as any)}
-            className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold py-2 px-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer"
+            className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold py-2 px-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1D4ED8]/40 cursor-pointer"
           >
             <option value="all">Toutes les dates</option>
             <option value="today">Aujourd'hui</option>
@@ -325,7 +325,7 @@ export const AdminAuditPage: React.FC = () => {
       </div>
 
       {/* Logs Table */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-xs">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden">
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="border-b border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
@@ -467,8 +467,8 @@ export const AdminAuditPage: React.FC = () => {
       {/* Inspector Modal for Raw JSON */}
       {selectedLog &&
         createPortal(
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 animate-in fade-in duration-200">
-            <div className="w-full max-w-xl rounded-2xl bg-white dark:bg-slate-900 shadow-2xl border border-slate-200 dark:border-slate-800 p-6 space-y-4">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 animate-in fade-in duration-200">
+            <div className="w-full max-w-xl rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 space-y-4">
               <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
                 <div className="flex items-center gap-2">
                   <ShieldCheck className="h-5 w-5 text-blue-600" />
