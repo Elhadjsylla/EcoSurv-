@@ -181,12 +181,11 @@ const PRICING_PLANS = [
   },
 ];
 
-// Bloc « Comment lire ces prix » : uniquement ces quatre idées
+// Bloc « Comment lire ces prix » : uniquement ces trois idées
 const PRICING_READING_NOTES = [
   'Prix en MRU (nouvelle ouguiya), par mois et par école.',
   'Les trois formules donnent accès aux mêmes fonctions.',
   "Seule la capacité en nombre d'élèves change.",
-  "L'essai est gratuit.",
 ];
 
 // Pastilles flottantes du hero et cartes flottantes autour de la scène :
@@ -1259,14 +1258,9 @@ export const LandingPage: React.FC = () => {
                       }`}
                   >
                   <div className="space-y-3">
-                    <div className="flex items-center justify-between gap-2">
-                      <h3 className="text-lg font-extrabold text-main">
-                        {plan.name}
-                      </h3>
-                      <span className="px-3 py-0.5 rounded-full bg-surface-subtle border border-subtle text-xs font-bold text-primary-text">
-                        Essai gratuit
-                      </span>
-                    </div>
+                    <h3 className="text-lg font-extrabold text-main">
+                      {plan.name}
+                    </h3>
 
                     <p className="text-[15px] font-semibold text-secondary">
                       {plan.capacity}
@@ -1347,13 +1341,10 @@ export const LandingPage: React.FC = () => {
               staggerIndex={2}
               className="rounded-3xl bg-surface border border-subtle p-6 shadow-[0_10px_30px_rgba(15,23,42,0.06)] dark:shadow-[0_10px_30px_rgba(0,0,0,0.35)] space-y-4"
             >
-              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-subtle pb-3">
+              <div className="border-b border-subtle pb-3">
                 <h3 className="text-base font-extrabold text-main">
                   Inclus dans toutes les formules
                 </h3>
-                <span className="px-3 py-0.5 rounded-full bg-surface-subtle border border-subtle text-xs font-bold text-primary-text">
-                  Essai gratuit
-                </span>
               </div>
 
               <ul className="grid grid-cols-1 md:grid-cols-2 gap-3 text-[15px] text-secondary">

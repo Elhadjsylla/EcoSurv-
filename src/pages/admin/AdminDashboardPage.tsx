@@ -1,9 +1,14 @@
 import React from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
 import {
   Building2,
   Users,
-  ShieldCheck,
+  CreditCard,
   Clock,
+  RefreshCw,
+  ArrowRight,
+  AlertCircle,
+  UsersRound,
 } from 'lucide-react';
 import { AdminEcoleItem } from './AdminEcolesPage';
 import { AdminUserRow } from './AdminUsersPage';
@@ -11,19 +16,106 @@ import { SchoolDistributionDonut } from '../../components/admin/SchoolDistributi
 import { LiveAuditFeed } from '../../components/admin/LiveAuditFeed';
 import { SchoolComparisonTable } from '../../components/admin/SchoolComparisonTable';
 import { PlatformActivationGauge } from '../../components/admin/PlatformActivationGauge';
+import {
+  ADMIN_EASE,
+  AdminCard,
+  AdminPage,
+  AdminPageHeader,
+  AnimatedNumber,
+  CardTitle,
+  FOCUS_RING,
+  SegmentedBar,
+  Skeleton,
+  STATUS_PILL,
+} from '../../components/admin/adminUi';
 
 interface AdminDashboardPageProps {
   onNavigateTab: (tab: 'ecoles' | 'utilisateurs' | 'abonnements' | 'audit') => void;
   ecoles: AdminEcoleItem[];
   users: AdminUserRow[];
+  /** Chargement en cours des écoles et des profils (facultatif : sans lui, la page s'affiche comme avant). */
+  isLoading?: boolean;
+  loadError?: boolean;
+  lastUpdated?: Date | null;
+  onRefresh?: () => void;
 }
+
+interface KpiProps {
+  label: string;
+  value: number;
+  icon: React.ReactNode;
+  hint: string;
+  /** Part de 0 à 1 affichée dans la fine barre sous le chiffre. */
+  progress?: number;
+  attention?: boolean;
+  loading?: boolean;
+  onClick: () => void;
+  testId: string;
+}
+
+const Kpi: React.FC<KpiProps> = ({
+  label,
+  value,
+  icon,
+  hint,
+  progress,
+  attention = false,
+  loading = false,
+  onClick,
+  testId,
+}) => {
+  const reduce = Boolean(useReducedMotion());
+  return (
+    <AdminCard interactive onClick={onClick} testId={testId} className="flex flex-col gap-3">
+      <div className="flex items-start justify-between gap-3">
+        <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+          {label}
+        </span>
+        <span
+          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
+            attention
+              ? 'bg-amber-50 text-amber-600 dark:bg-amber-950/60 dark:text-amber-400'
+              : 'bg-blue-50 text-[#1D4ED8] dark:bg-blue-950/60 dark:text-blue-300'
+          }`}
+        >
+          {icon}
+        </span>
+      </div>
+
+      <div className="text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+        {loading ? <Skeleton className="h-9 w-16" /> : <AnimatedNumber value={value} />}
+      </div>
+
+      {progress !== undefined && (
+        <div className="h-1 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+          <motion.div
+            className={`h-full w-full origin-left rounded-full ${
+              attention ? 'bg-amber-500' : 'bg-[#1D4ED8]'
+            }`}
+            initial={reduce ? false : { scaleX: 0 }}
+            animate={{ scaleX: loading ? 0 : Math.min(1, Math.max(0, progress)) }}
+            transition={{ duration: 0.8, delay: 0.2, ease: ADMIN_EASE }}
+          />
+        </div>
+      )}
+
+      <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">{hint}</p>
+    </AdminCard>
+  );
+};
 
 export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
   onNavigateTab,
   ecoles,
   users,
+  isLoading = false,
+  loadError = false,
+  lastUpdated = null,
+  onRefresh,
 }) => {
-  // Real calculations
+  const reduce = Boolean(useReducedMotion());
+
+  // Calculs réels à partir des écoles et des profils chargés
   const totalEcoles = ecoles.length;
   const activeEcoles = ecoles.filter((e) => e.statut_activation === 'active').length;
   const pendingEcoles = ecoles.filter((e) => e.statut_activation === 'en_attente').length;
@@ -31,7 +123,8 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
 
   const activeAbonnements = ecoles.filter((e) => e.statut_abonnement === 'actif').length;
   const trialAbonnements = ecoles.filter((e) => e.statut_abonnement === 'essai').length;
-
+  const expiredAbonnements = ecoles.filter((e) => e.statut_abonnement === 'expire').length;
+  const otherAbonnements = totalEcoles - activeAbonnements - trialAbonnements - expiredAbonnements;
 
   const totalUsers = users.length;
   const activeUsers = users.filter((u) => u.actif).length;
@@ -39,283 +132,209 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
   const superAdminsCount = users.filter((u) => u.role === 'super_admin').length;
   const staffCount = users.filter((u) => !['directeur', 'super_admin'].includes(u.role)).length;
 
-  const activationRate = totalEcoles > 0 ? Math.round((activeEcoles / totalEcoles) * 100) : 0;
+  const firstLoad = isLoading && totalEcoles === 0 && totalUsers === 0;
+
+  const statusChip = loadError ? (
+    <span
+      className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-bold ${STATUS_PILL.bad}`}
+    >
+      <AlertCircle className="h-3.5 w-3.5" />
+      Données indisponibles
+    </span>
+  ) : isLoading ? (
+    <span
+      className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-bold ${STATUS_PILL.info}`}
+    >
+      <RefreshCw className="h-3.5 w-3.5 motion-safe:animate-spin" />
+      Chargement
+    </span>
+  ) : lastUpdated ? (
+    <span
+      className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-bold ${STATUS_PILL.neutral}`}
+    >
+      <Clock className="h-3.5 w-3.5" />
+      Mis à jour à {lastUpdated.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+    </span>
+  ) : null;
+
+  const usersRows = [
+    { id: 'directeurs', label: "Directeurs d'école", count: directeursCount, bar: 'bg-[#1D4ED8]' },
+    { id: 'staff', label: 'Enseignants, caissiers et parents', count: staffCount, bar: 'bg-blue-300 dark:bg-blue-400' },
+    { id: 'admins', label: 'Super administrateurs', count: superAdminsCount, bar: 'bg-slate-700 dark:bg-slate-300' },
+  ];
 
   return (
-    <div className="p-6 lg:p-8 space-y-8 max-w-7xl mx-auto animate-page-enter">
-      {/* Title Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl lg:text-3xl font-black tracking-tight text-slate-900 dark:text-white">
-            Tableau de bord Super Admin
-          </h1>
-          <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mt-1">
-            Supervision centrale de la plateforme EcoSurv Mauritanie
-          </p>
-        </div>
+    <AdminPage>
+      <AdminPageHeader
+        title="Tableau de bord"
+        subtitle="Supervision de la plateforme EcoSurv"
+        actions={
+          <>
+            {statusChip}
+            {onRefresh && (
+              <button
+                type="button"
+                onClick={onRefresh}
+                disabled={isLoading}
+                aria-label="Actualiser les données"
+                className={`inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-60 cursor-pointer dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800 ${FOCUS_RING}`}
+              >
+                <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? 'motion-safe:animate-spin' : ''}`} />
+                <span>Actualiser</span>
+              </button>
+            )}
+          </>
+        }
+      />
 
-        <div className="flex items-center gap-2">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
-            <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-            Infrastructure Opérationnelle
-          </span>
-        </div>
-      </div>
-
-      {/* Main KPI Row */}
+      {/* Quatre chiffres clés, chacun mène à l'onglet correspondant */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-        {/* Écoles Totales */}
-        <div
+        <Kpi
+          testId="kpi-ecoles"
+          label="Écoles enregistrées"
+          value={totalEcoles}
+          icon={<Building2 className="h-5 w-5" />}
+          progress={totalEcoles > 0 ? activeEcoles / totalEcoles : 0}
+          loading={firstLoad}
+          hint={`${activeEcoles} active${activeEcoles > 1 ? 's' : ''} · ${pendingEcoles} en attente · ${suspendedEcoles} suspendue${suspendedEcoles > 1 ? 's' : ''}`}
           onClick={() => onNavigateTab('ecoles')}
-          className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 hover:border-slate-300 dark:hover:border-slate-700 transition-all cursor-pointer shadow-xs group"
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-              Écoles Enregistrées
-            </span>
-            <div className="h-9 w-9 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center group-hover:scale-105 transition-transform">
-              <Building2 className="h-5 w-5" />
-            </div>
-          </div>
-          <div className="mt-3 flex items-baseline gap-2">
-            <span className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
-              {totalEcoles}
-            </span>
-            <span className="text-xs font-bold text-slate-500">
-              {activationRate}% actives
-            </span>
-          </div>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            {activeEcoles} active{activeEcoles > 1 ? 's' : ''} • {pendingEcoles} en attente • {suspendedEcoles} suspendue{suspendedEcoles > 1 ? 's' : ''}
-          </p>
-        </div>
-
-        {/* Comptes Utilisateurs */}
-        <div
+        />
+        <Kpi
+          testId="kpi-comptes"
+          label="Comptes utilisateurs"
+          value={totalUsers}
+          icon={<Users className="h-5 w-5" />}
+          progress={totalUsers > 0 ? activeUsers / totalUsers : 0}
+          loading={firstLoad}
+          hint={`${activeUsers} actif${activeUsers > 1 ? 's' : ''} · ${directeursCount} directeur${directeursCount > 1 ? 's' : ''} · ${staffCount} autre${staffCount > 1 ? 's' : ''} rôle${staffCount > 1 ? 's' : ''}`}
           onClick={() => onNavigateTab('utilisateurs')}
-          className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 hover:border-slate-300 dark:hover:border-slate-700 transition-all cursor-pointer shadow-xs group"
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-              Comptes Utilisateurs
-            </span>
-            <div className="h-9 w-9 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center group-hover:scale-105 transition-transform">
-              <Users className="h-5 w-5" />
-            </div>
-          </div>
-          <div className="mt-3 flex items-baseline gap-2">
-            <span className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
-              {totalUsers}
-            </span>
-            <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
-              {activeUsers} actifs
-            </span>
-          </div>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            {directeursCount} directeurs • {superAdminsCount} admins • {staffCount} personnels
-          </p>
-        </div>
-
-        {/* Abonnements en essai */}
-        <div
+        />
+        <Kpi
+          testId="kpi-abonnements"
+          label="Abonnements actifs"
+          value={activeAbonnements}
+          icon={<CreditCard className="h-5 w-5" />}
+          progress={totalEcoles > 0 ? activeAbonnements / totalEcoles : 0}
+          loading={firstLoad}
+          hint={`${trialAbonnements} en essai · ${expiredAbonnements} expiré${expiredAbonnements > 1 ? 's' : ''}`}
           onClick={() => onNavigateTab('abonnements')}
-          className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 hover:border-slate-300 dark:hover:border-slate-700 transition-all cursor-pointer shadow-xs group"
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-              Abonnements Essai (14j)
-            </span>
-            <div className="h-9 w-9 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center group-hover:scale-105 transition-transform">
-              <Clock className="h-5 w-5" />
-            </div>
-          </div>
-          <div className="mt-3 flex items-baseline gap-2">
-            <span className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
-              {trialAbonnements}
-            </span>
-            <span className="text-xs font-bold text-amber-600 dark:text-amber-400">
-              0 MRU (Essai gratuit)
-            </span>
-          </div>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            {activeAbonnements} convertie{activeAbonnements > 1 ? 's' : ''} en payant
-          </p>
-        </div>
-
-        {/* Isolation Multi-Tenant */}
-        <div
-          onClick={() => onNavigateTab('audit')}
-          className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-xs hover:border-slate-300 dark:hover:border-slate-700 transition-all cursor-pointer group"
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-              Audit & Sécurité
-            </span>
-            <div className="h-9 w-9 rounded-xl bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 flex items-center justify-center group-hover:scale-105 transition-transform">
-              <ShieldCheck className="h-5 w-5" />
-            </div>
-          </div>
-          <div className="mt-3 flex items-baseline gap-2">
-            <span className="text-xl font-black text-slate-900 dark:text-white tracking-tight">
-              Table audit_logs
-            </span>
-            <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
-              Active
-            </span>
-          </div>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            Traçabilité des accès & RLS actif
-          </p>
-        </div>
+        />
+        <Kpi
+          testId="kpi-a-traiter"
+          label="À traiter"
+          value={pendingEcoles}
+          icon={<Clock className="h-5 w-5" />}
+          attention={pendingEcoles > 0}
+          loading={firstLoad}
+          hint={
+            pendingEcoles > 0
+              ? `École${pendingEcoles > 1 ? 's' : ''} en attente d'activation : à examiner`
+              : "Aucune école en attente d'activation"
+          }
+          onClick={() => onNavigateTab('ecoles')}
+        />
       </div>
 
-      {/* Row 1: Donut de répartition (Étape 1) & Flux d'Activité Live (Étape 2) */}
+      {/* Répartition des écoles et journal d'audit */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <SchoolDistributionDonut ecoles={ecoles} onNavigateTab={onNavigateTab} />
         <LiveAuditFeed onNavigateAudit={() => onNavigateTab('audit')} />
       </div>
 
-      {/* Row 2: Jauge d'Activation Plateforme (Étape 4) & MRR Contractuel */}
+      {/* Déploiement des écoles et abonnements */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <PlatformActivationGauge ecoles={ecoles} onNavigateTab={onNavigateTab} />
 
-        {/* Card: Revenus & Croissance (Option A : MRR Contractuel Estimé) */}
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-xs space-y-6">
-          <div className="flex items-center justify-between">
-            <h3 className="text-base font-extrabold text-slate-900 dark:text-white">
-              MRR Contractuel Estimé
-            </h3>
-
-            <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300">
-              Option A
-            </span>
-          </div>
-
-          <div className="space-y-4 pt-1">
-            <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-800">
-              <div className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase">
-                Revenu Mensuel Récurrent Contractuel (MRR)
-              </div>
-              <div className="text-2xl font-black text-slate-900 dark:text-white mt-1">
-                À définir
-              </div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">
-                Suivi des <strong>{activeAbonnements} école(s)</strong> disposant d'un abonnement actif. Tarification contractuelle par école à définir. Les {trialAbonnements} école(s) en période d'essai gratuit comptent pour 0 MRU.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3 pt-1">
-              <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800">
-                <div className="text-[11px] font-bold text-slate-500">Abonnements Actifs</div>
-                <div className="text-lg font-black text-emerald-600 dark:text-emerald-400 mt-1">
-                  {activeAbonnements} école(s)
+        <AdminCard testId="abonnements-card" className="flex flex-col">
+          <CardTitle
+            icon={<CreditCard className="h-4 w-4" />}
+            title="Abonnements"
+            subtitle="Statut d'abonnement des écoles enregistrées"
+          />
+          <div className="space-y-5 flex-1">
+            <SegmentedBar
+              total={totalEcoles}
+              segments={[
+                { id: 'actif', value: activeAbonnements, className: 'bg-[#1D4ED8]', label: 'Actifs' },
+                { id: 'essai', value: trialAbonnements, className: 'bg-amber-400', label: 'En essai' },
+                { id: 'expire', value: expiredAbonnements, className: 'bg-slate-400', label: 'Expirés' },
+                { id: 'autre', value: Math.max(0, otherAbonnements), className: 'bg-slate-300 dark:bg-slate-600', label: 'Autres' },
+              ]}
+            />
+            <dl className="grid grid-cols-3 gap-3">
+              {[
+                { label: 'Actifs', value: activeAbonnements, dot: 'bg-[#1D4ED8]' },
+                { label: 'En essai', value: trialAbonnements, dot: 'bg-amber-400' },
+                { label: 'Expirés', value: expiredAbonnements, dot: 'bg-slate-400' },
+              ].map((row) => (
+                <div
+                  key={row.label}
+                  className="rounded-xl border border-slate-100 bg-slate-50 p-3.5 dark:border-slate-800 dark:bg-slate-800/40"
+                >
+                  <dt className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                    <span className={`h-2 w-2 rounded-full ${row.dot}`} />
+                    {row.label}
+                  </dt>
+                  <dd className="mt-1 text-xl font-extrabold text-slate-900 dark:text-white">
+                    <AnimatedNumber value={row.value} />
+                  </dd>
                 </div>
-              </div>
-              <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800">
-                <div className="text-[11px] font-bold text-slate-500">Essais Gratuits (14j)</div>
-                <div className="text-lg font-black text-amber-600 dark:text-amber-400 mt-1">
-                  {trialAbonnements} école(s)
-                </div>
-              </div>
-            </div>
-
-            <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/40 text-[11px] text-amber-800 dark:text-amber-300">
-              Note de transparence : la facturation est actuellement opérée manuellement ou par virement bancaire. Aucun prélèvement automatique récurrent n'est branché sur ce montant.
-            </div>
+              ))}
+            </dl>
+            <p className="text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+              Les montants contractuels ne sont pas encore gérés dans cette console.
+            </p>
           </div>
-        </div>
+          <div className="mt-4 flex justify-end border-t border-slate-100 pt-3 dark:border-slate-800">
+            <button
+              type="button"
+              onClick={() => onNavigateTab('abonnements')}
+              className={`inline-flex items-center gap-1.5 rounded text-xs font-bold text-[#1D4ED8] hover:underline cursor-pointer dark:text-blue-300 ${FOCUS_RING}`}
+            >
+              <span>Voir les abonnements</span>
+              <ArrowRight className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        </AdminCard>
       </div>
 
-      {/* Row 3: Tableau Comparatif des Établissements (Étape 3) */}
-      <SchoolComparisonTable
-        ecoles={ecoles}
-        users={users}
-        onNavigateTab={onNavigateTab}
-      />
+      {/* Tableau comparatif des écoles */}
+      <SchoolComparisonTable ecoles={ecoles} users={users} onNavigateTab={onNavigateTab} />
 
-      {/* Row 4: Répartition des Utilisateurs */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-xs space-y-6">
-        <div className="flex items-center justify-between">
-          <h3 className="text-base font-extrabold text-slate-900 dark:text-white">
-            Répartition des Utilisateurs de la Plateforme
-          </h3>
-
-          <div className="text-xs font-semibold text-slate-500">
-            {totalUsers} compte(s) au total
-          </div>
+      {/* Répartition des comptes par rôle */}
+      <AdminCard testId="users-repartition">
+        <CardTitle
+          icon={<UsersRound className="h-4 w-4" />}
+          title="Répartition des comptes"
+          subtitle={`${totalUsers} compte${totalUsers > 1 ? 's' : ''} au total, ${activeUsers} actif${activeUsers > 1 ? 's' : ''}`}
+        />
+        <div className="space-y-4">
+          {usersRows.map((row, i) => {
+            const pct = totalUsers > 0 ? (row.count / totalUsers) * 100 : 0;
+            return (
+              <div key={row.id} className="space-y-1.5">
+                <div className="flex items-baseline justify-between gap-3 text-sm">
+                  <span className="font-semibold text-slate-700 dark:text-slate-200">{row.label}</span>
+                  <span className="tabular-nums text-xs text-slate-500 dark:text-slate-400">
+                    <span className="text-sm font-extrabold text-slate-900 dark:text-white">
+                      <AnimatedNumber value={row.count} />
+                    </span>{' '}
+                    · {Math.round(pct)} %
+                  </span>
+                </div>
+                <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                  <motion.div
+                    className={`h-full w-full origin-left rounded-full ${row.bar}`}
+                    initial={reduce ? false : { scaleX: 0 }}
+                    animate={{ scaleX: pct / 100 }}
+                    transition={{ duration: 0.8, delay: 0.2 + i * 0.12, ease: ADMIN_EASE }}
+                  />
+                </div>
+              </div>
+            );
+          })}
         </div>
-
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 pt-2">
-          <div className="flex-1">
-            <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-              Comptes enregistrés
-            </div>
-            <div className="flex items-baseline gap-2 mt-1">
-              <span className="text-4xl font-black text-slate-900 dark:text-white">
-                {totalUsers}
-              </span>
-              <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
-                {activeUsers} actifs
-              </span>
-            </div>
-
-            <div className="mt-6 space-y-2 text-xs font-medium">
-              <div className="flex items-center justify-between gap-8 text-slate-600 dark:text-slate-300">
-                <span className="flex items-center gap-2">
-                  <span className="h-2.5 w-2.5 rounded-full bg-blue-500" />
-                  Directeurs d'école
-                </span>
-                <span className="font-bold text-slate-900 dark:text-white">{directeursCount}</span>
-              </div>
-              <div className="flex items-center justify-between gap-8 text-slate-600 dark:text-slate-300">
-                <span className="flex items-center gap-2">
-                  <span className="h-2.5 w-2.5 rounded-full bg-purple-500" />
-                  Super Administrateurs
-                </span>
-                <span className="font-bold text-slate-900 dark:text-white">{superAdminsCount}</span>
-              </div>
-              <div className="flex items-center justify-between gap-8 text-slate-600 dark:text-slate-300">
-                <span className="flex items-center gap-2">
-                  <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
-                  Enseignants / Caissiers / Autres
-                </span>
-                <span className="font-bold text-slate-900 dark:text-white">{staffCount}</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Proportional visual display */}
-          <div className="relative w-full sm:w-64 h-44 bg-slate-50 dark:bg-slate-800/40 rounded-xl p-4 border border-slate-200 dark:border-slate-800 flex items-end justify-center gap-4">
-            <div className="flex flex-col items-center gap-1.5 flex-1 h-full justify-end">
-              <div
-                className="w-full bg-blue-500 rounded-t-lg transition-all"
-                style={{
-                  height: `${totalUsers > 0 ? Math.max(15, (directeursCount / totalUsers) * 100) : 50}%`,
-                }}
-              />
-              <span className="text-[10px] font-bold text-slate-500">Directeurs</span>
-            </div>
-            <div className="flex flex-col items-center gap-1.5 flex-1 h-full justify-end">
-              <div
-                className="w-full bg-purple-500 rounded-t-lg transition-all"
-                style={{
-                  height: `${totalUsers > 0 ? Math.max(15, (superAdminsCount / totalUsers) * 100) : 25}%`,
-                }}
-              />
-              <span className="text-[10px] font-bold text-slate-500">Admins</span>
-            </div>
-            <div className="flex flex-col items-center gap-1.5 flex-1 h-full justify-end">
-              <div
-                className="w-full bg-emerald-500 rounded-t-lg transition-all"
-                style={{
-                  height: `${totalUsers > 0 ? Math.max(15, (staffCount / totalUsers) * 100) : 25}%`,
-                }}
-              />
-              <span className="text-[10px] font-bold text-slate-500">Staff</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+      </AdminCard>
+    </AdminPage>
   );
 };

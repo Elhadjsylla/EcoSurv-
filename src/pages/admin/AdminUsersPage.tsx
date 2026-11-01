@@ -145,7 +145,7 @@ export const AdminUsersPage: React.FC<AdminUsersPageProps> = ({ users: initialUs
     switch (role) {
       case 'super_admin':
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-purple-50 dark:bg-purple-950/50 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-blue-50 dark:bg-blue-950/50 text-[#1D4ED8] dark:text-blue-300 border border-blue-200 dark:border-blue-800">
             <ShieldCheck className="h-3 w-3" />
             Super Admin
           </span>
@@ -191,10 +191,10 @@ export const AdminUsersPage: React.FC<AdminUsersPageProps> = ({ users: initialUs
   const inactifsCount = users.filter((u) => !u.actif).length;
 
   return (
-    <div className="p-6 lg:p-8 space-y-6 max-w-7xl mx-auto animate-page-enter">
+    <div className="p-6 lg:p-8 space-y-6 max-w-7xl mx-auto admin-stagger">
       {/* Toast */}
       {toastMessage && (
-        <div className="fixed top-5 right-5 z-50 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-xl flex items-center gap-3 text-xs font-semibold border border-slate-700 animate-in fade-in slide-in-from-top-3">
+        <div className="fixed top-5 right-5 z-50 bg-slate-900 text-white px-4 py-3 rounded-xl flex items-center gap-3 text-xs font-semibold border border-slate-700 animate-in fade-in slide-in-from-top-3">
           <CheckCircle2 className="h-4 w-4 text-emerald-400" />
           <span>{toastMessage}</span>
         </div>
@@ -203,8 +203,8 @@ export const AdminUsersPage: React.FC<AdminUsersPageProps> = ({ users: initialUs
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl lg:text-3xl font-black tracking-tight text-slate-900 dark:text-white">
-            Utilisateurs de la Plateforme
+          <h1 className="text-2xl lg:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+            Utilisateurs
           </h1>
           <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mt-1">
             Comptes administrateurs, directeurs, enseignants et personnels ({users.length} comptes au total)
@@ -215,7 +215,7 @@ export const AdminUsersPage: React.FC<AdminUsersPageProps> = ({ users: initialUs
           {onRefresh && (
             <button
               onClick={onRefresh}
-              className="flex items-center gap-1.5 px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 shadow-xs transition-colors"
+              className="flex items-center gap-1.5 px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 transition-colors"
             >
               <RefreshCw className="h-3.5 w-3.5" />
               <span>Actualiser</span>
@@ -226,34 +226,34 @@ export const AdminUsersPage: React.FC<AdminUsersPageProps> = ({ users: initialUs
 
       {/* KPI mini row */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xs">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4">
           <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
             Total Comptes
           </div>
-          <div className="text-2xl font-black text-slate-900 dark:text-white mt-1">
+          <div className="text-2xl font-extrabold text-slate-900 dark:text-white mt-1">
             {users.length}
           </div>
         </div>
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xs">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4">
           <div className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
             Comptes Actifs
           </div>
-          <div className="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-1">
+          <div className="text-2xl font-extrabold text-emerald-600 dark:text-emerald-400 mt-1">
             {actifsCount}
           </div>
         </div>
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xs">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4">
           <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
             Comptes Inactifs / En Attente
           </div>
-          <div className="text-2xl font-black text-slate-500 mt-1">
+          <div className="text-2xl font-extrabold text-slate-500 mt-1">
             {inactifsCount}
           </div>
         </div>
       </div>
 
       {/* Filters Bar */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-3">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div className="relative flex-1">
           <Search className="h-4 w-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
           <input
@@ -261,7 +261,7 @@ export const AdminUsersPage: React.FC<AdminUsersPageProps> = ({ users: initialUs
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Rechercher par nom, email, école..."
-            className="w-full pl-9 pr-4 py-2 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            className="w-full pl-9 pr-4 py-2 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#1D4ED8]/40"
           />
         </div>
 
@@ -269,7 +269,7 @@ export const AdminUsersPage: React.FC<AdminUsersPageProps> = ({ users: initialUs
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value as any)}
-            className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold py-2 px-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer"
+            className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold py-2 px-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1D4ED8]/40 cursor-pointer"
           >
             <option value="all">Tous les statuts</option>
             <option value="actif">Actifs uniquement</option>
@@ -279,7 +279,7 @@ export const AdminUsersPage: React.FC<AdminUsersPageProps> = ({ users: initialUs
           <select
             value={filterRole}
             onChange={(e) => setFilterRole(e.target.value)}
-            className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold py-2 px-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer"
+            className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold py-2 px-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1D4ED8]/40 cursor-pointer"
           >
             <option value="all">Tous les rôles</option>
             <option value="super_admin">Super Admin</option>
@@ -292,7 +292,7 @@ export const AdminUsersPage: React.FC<AdminUsersPageProps> = ({ users: initialUs
       </div>
 
       {/* Users table */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-xs">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden">
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="border-b border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
@@ -419,8 +419,8 @@ export const AdminUsersPage: React.FC<AdminUsersPageProps> = ({ users: initialUs
       {/* Modal de consultation des détails utilisateur (avec événement audit_logs déclenché) */}
       {selectedUserForDetails &&
         createPortal(
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 animate-in fade-in duration-200">
-            <div className="w-full max-w-md rounded-2xl bg-white dark:bg-slate-900 shadow-2xl border border-slate-200 dark:border-slate-800 p-6 space-y-4">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 animate-in fade-in duration-200">
+            <div className="w-full max-w-md rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 space-y-4">
               <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
                 <div className="flex items-center gap-2">
                   <UserCheck className="h-5 w-5 text-blue-600" />
