@@ -1,98 +1,64 @@
 /**
- * Service d'envoi d'email transactionnel via Supabase Edge Function
- * Délègue l'appel à Resend au serveur pour ne jamais exposer la clé API au client.
+ * Demande d'envoi du code d'activation d'une école.
+ * Le code est généré, haché, enregistré et envoyé par e-mail uniquement côté serveur
+ * (Edge Function 'send-activation-otp'). Le navigateur ne voit jamais le code.
+ * La fonction identifie l'école et l'adresse e-mail à partir de la session : rien n'est envoyé dans le corps.
  */
 
 import { supabase } from '../supabase';
 
-/**
- * Calcule le hash SHA-256 d'un code OTP (Web Crypto standard)
- */
-export async function hashOtp(code: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(code.trim());
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
-}
-
-/**
- * Génère un code OTP aléatoire à 6 chiffres
- */
-export function generateOtp(): string {
-  const array = new Uint32Array(1);
-  crypto.getRandomValues(array);
-  const code = (100000 + (array[0] % 900000)).toString();
-  return code;
-}
-
-interface SendActivationEmailParams {
-  to: string;
-  nomDirecteur?: string;
-  nomEcole: string;
-  code: string;
-}
-
-export interface SendActivationEmailResult {
-  success: boolean;
-  messageId?: string;
+export interface RequestActivationCodeResult {
+  ok: boolean;
+  /** Message affichable à l'utilisateur quand ok vaut false. */
   error?: string;
-  isTestModeLimitation?: boolean;
-  code?: string;
 }
 
-/**
- * Envoie le code d'activation via la Supabase Edge Function 'send-activation-otp'
- * La clé Resend est stockée et exécutée uniquement sur le serveur.
- */
-export async function sendActivationEmail({
-  to,
-  nomDirecteur,
-  nomEcole,
-  code,
-}: SendActivationEmailParams): Promise<SendActivationEmailResult> {
-  const cleanEmail = to.trim();
+// Résultat du premier envoi (fait à l'inscription), lu par l'écran d'attente.
+// Variable de module : ni stockage navigateur, ni code.
+let initialSendError: string | null = null;
 
+export function setInitialSendError(message: string | null): void {
+  initialSendError = message;
+}
+
+export function peekInitialSendError(): string | null {
+  return initialSendError;
+}
+
+export function clearInitialSendError(): void {
+  initialSendError = null;
+}
+
+const SEND_FAILED_MESSAGE ="L'e-mail n'a pas pu être envoyé, réessayez dans quelques minutes.";
+
+export async function requestActivationCode(): Promise<RequestActivationCodeResult> {
   try {
-    const { data, error } = await supabase.functions.invoke('send-activation-otp', {
-      body: {
-        to: cleanEmail,
-        nomDirecteur,
-        nomEcole,
-        code,
-        redirect_to: typeof window !== 'undefined' ? `${window.location.origin}/activation` : undefined,
-      },
-    });
+    const { data, error } = await supabase.functions.invoke('send-activation-otp', { body: {} });
 
     if (error) {
-      console.warn('[sendActivationEmail] Erreur Edge Function:', error);
-      return {
-        success: false,
-        code,
-        error: error.message || "Échec de l'envoi de l'email via la fonction serveur.",
-      };
+      console.warn('[requestActivationCode] Erreur Edge Function:', error.message);
+      // Le statut 429 (limite horaire) a un message dédié renvoyé par la fonction dans le corps.
+      const response = (error as { context?: Response }).context;
+      if (response && typeof response.json === 'function') {
+        try {
+          const body = await response.json();
+          if (response.status === 429 && typeof body?.error === 'string') {
+            return { ok: false, error: body.error };
+          }
+        } catch {
+          // corps illisible : message générique
+        }
+      }
+      return { ok: false, error: SEND_FAILED_MESSAGE };
     }
 
-    if (!data || !data.success) {
-      return {
-        success: false,
-        code,
-        isTestModeLimitation: Boolean(data?.isTestModeLimitation),
-        error: data?.error || "Impossible d'expédier le code d'activation.",
-      };
+    if (!data || data.ok !== true) {
+      return { ok: false, error: SEND_FAILED_MESSAGE };
     }
 
-    return {
-      success: true,
-      messageId: data.messageId,
-      code,
-    };
-  } catch (err: any) {
-    console.error('[sendActivationEmail] Exception réseau lors de l\'appel serveur:', err);
-    return {
-      success: false,
-      code,
-      error: err?.message || "Erreur de communication avec le serveur d'envoi.",
-    };
+    return { ok: true };
+  } catch (err) {
+    console.warn("[requestActivationCode] Exception réseau:", err);
+    return { ok: false, error: SEND_FAILED_MESSAGE };
   }
 }

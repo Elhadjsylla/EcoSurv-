@@ -23,7 +23,7 @@ import { Select } from '../components/ui/Select';
 import { LanguageSelector } from '../components/ui/LanguageSelector';
 import { Logo } from '../components/ui/Logo';
 import { AuthAside, AUTH_SMOOTH_EASE, useAuthPanelVariants } from '../components/auth/AuthAside';
-import { generateOtp, hashOtp, sendActivationEmail } from '../lib/email/sendActivationEmail';
+import { requestActivationCode, setInitialSendError } from '../lib/email/sendActivationEmail';
 import type { UserRole } from '../components/ui/Header';
 
 interface RegisterPageProps {
@@ -305,52 +305,10 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
         statut_activation: 'en_attente',
       });
 
-      // 5. Générer le code d'activation OTP et l'expédier par email via Resend
-      try {
-        const initialOtp = generateOtp();
-        const otpHash = await hashOtp(initialOtp);
-        const targetEcoleId = ecoleId || `ecole-${activeUser.id.slice(0, 8)}`;
-
-        let rpcDone = false;
-        try {
-          const { error: rpcErr } = await supabase.rpc('enregistrer_code_activation', {
-            p_ecole_id: targetEcoleId,
-            p_email: email.trim(),
-            p_code_hash: otpHash,
-          });
-          if (!rpcErr) rpcDone = true;
-        } catch {
-          // fallback
-        }
-
-        if (!rpcDone) {
-          await supabase.from('codes_activation').insert([
-            {
-              ecole_id: targetEcoleId,
-              email: email.trim(),
-              code_hash: otpHash,
-              expire_a: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
-              utilise: false,
-            },
-          ]);
-        }
-
-        // Envoyer l'email via Resend
-        const sendResult = await sendActivationEmail({
-          to: email.trim(),
-          nomDirecteur: `${prenomResponsable.trim()} ${nomResponsable.trim()}`,
-          nomEcole: nomEnregistre,
-          code: initialOtp,
-        });
-
-        if (sendResult?.isTestModeLimitation || !sendResult?.success) {
-          sessionStorage.setItem('ecosurv_test_otp', initialOtp);
-        } else {
-          sessionStorage.removeItem('ecosurv_test_otp');
-        }
-      } catch (otpErr) {
-        console.warn('[Inscription] Génération code OTP initial:', otpErr);
-      }
+      // 5. Demander l'envoi du code d'activation : le code est généré, enregistré et envoyé par le serveur.
+      // Le navigateur ne le voit jamais. En cas d'échec, l'écran suivant propose de renvoyer.
+      const sendResult = await requestActivationCode();
+      setInitialSendError(sendResult.ok ? null : sendResult.error || null);
 
       // 6. Redirection vers l'écran de saisie du code OTP
       useNavigationStore.getState().navigateToPendingActivation();
@@ -809,7 +767,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
             >
               <Mail className="mt-0.5 h-4 w-4 shrink-0 text-[#1D4ED8] dark:text-blue-400" />
               <span>
-                Après l'inscription, un code d'activation est envoyé à l'adresse email du responsable. Votre école reste en attente d'activation jusqu'à sa saisie.
+                Après l'inscription, nous envoyons un code d'activation à cette adresse email. Si l'envoi échoue, vous pourrez demander un nouveau code sur l'écran suivant. Votre école reste en attente d'activation jusqu'à la saisie du code.
               </span>
             </motion.p>
           </form>
