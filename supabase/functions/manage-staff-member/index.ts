@@ -19,6 +19,9 @@ interface ManageStaffRequest {
   redirect_to?: string;
 }
 
+// Expéditeur : variable d'environnement RESEND_FROM, avec le domaine de test Resend seulement si elle est absente.
+const RESEND_FROM = (Deno.env.get("RESEND_FROM") || "").trim() || "EcoSurv <onboarding@resend.dev>";
+
 function escapeHtml(str: string | null | undefined): string {
   if (!str) return "";
   return str
@@ -228,7 +231,7 @@ Deno.serve(async (req: Request) => {
         <html lang="fr">
         <head>
           <meta charset="utf-8">
-          <title>${subject}</title>
+          <title>${escapeHtml(subject)}</title>
           <style>
             body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #0f172a; margin: 0; padding: 24px; color: #f8fafc; }
             .container { max-width: 560px; margin: 0 auto; background: #1e293b; border-radius: 20px; border: 1px solid #334155; overflow: hidden; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5); }
@@ -263,7 +266,7 @@ Deno.serve(async (req: Request) => {
               </p>
             </div>
             <div class="footer">
-              EcoSurv • République Islamique de Mauritanie • Plateforme de Gestion Scolaire
+              EcoSurv
             </div>
           </div>
         </body>
@@ -277,7 +280,7 @@ Deno.serve(async (req: Request) => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          from: "EcoSurv <onboarding@resend.dev>",
+          from: RESEND_FROM,
           to: [targetProfile.email],
           subject: subject,
           html: htmlContent,

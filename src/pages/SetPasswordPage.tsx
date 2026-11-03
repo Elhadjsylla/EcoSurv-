@@ -139,17 +139,8 @@ export const SetPasswordPage: React.FC = () => {
         throw updateAuthError;
       }
 
-      // 2. Activer le profil dans public.profils
+      // 2. Le profil est créé actif côté serveur par la fonction d'invitation : aucune écriture sur profils ici.
       if (profile?.id) {
-        const { error: profileError } = await supabase
-          .from('profils')
-          .update({ actif: true })
-          .eq('id', profile.id);
-
-        if (profileError) {
-          console.warn('[SetPassword] Note mise à jour profil actif:', profileError.message);
-        }
-
         useAuthStore.getState().setProfile({
           ...profile,
           actif: true,
