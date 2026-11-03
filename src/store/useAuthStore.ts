@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { User } from '@supabase/supabase-js';
 import { useNavigationStore } from './useNavigationStore';
 import { useEcoleStore, INITIAL_ECOLE } from './useEcoleStore';
+import { useCaisseStore } from './useCaisseStore';
 
 export type UserRole = 'super_admin' | 'directeur' | 'enseignant' | 'parent' | 'caissier';
 
@@ -57,6 +58,8 @@ export const useAuthStore = create<AuthState>((set) => ({
   logout: () => {
     useNavigationStore.getState().reset();
     useEcoleStore.getState().updateEcole(INITIAL_ECOLE);
+    // Vide les encaissements gardés en mémoire ; les clôtures persistées ne sont pas supprimées.
+    useCaisseStore.setState({ transactions: [] });
     set({ user: null, profile: null, ecole: null, isLoading: false });
   },
 }));
