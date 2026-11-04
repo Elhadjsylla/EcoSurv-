@@ -2,10 +2,12 @@ import React, { useState, useMemo } from 'react';
 import { Button } from '../components/ui/Button';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { StudentInitials } from '../components/ui/StudentInitials';
+import { MobileCardList, MobileCard, CardAction } from '../components/ui/MobileCards';
 import { KpiCard } from '../components/ui/KpiCard';
 import { StudentDetailDrawer } from '../components/dashboard/StudentDetailDrawer';
 import { EleveWithStats } from '../types';
 import { formatMRU } from '../lib/utils';
+import { NON_ATTRIBUE, NON_RENSEIGNE } from '../lib/placeholders';
 import { useAuthStore } from '../store/useAuthStore';
 import { supabase } from '../lib/supabase';
 import {
@@ -44,7 +46,7 @@ export const RelancesPage: React.FC = () => {
 
           if (!elevesRes.error && elevesRes.data) {
             const allEcheances = echeancesRes.data || [];
-            const mapped = elevesRes.data.map((e: any, idx: number) => {
+            const mapped = elevesRes.data.map((e: any) => {
               const studentEch = allEcheances.filter((ech: any) => ech.eleve_id === e.id);
               const totalDue = studentEch.reduce((sum: number, ech: any) => sum + Number(ech.montant || 0), 0);
               const totalPaid = studentEch.reduce((sum: number, ech: any) => sum + Number(ech.montant_paye || 0), 0);
@@ -58,13 +60,13 @@ export const RelancesPage: React.FC = () => {
 
               return {
                 ...e,
-                matricule: e.matricule || `MAT-${100 + idx}`,
+                matricule: e.matricule || NON_ATTRIBUE,
                 total_due: totalDue,
                 total_paid: totalPaid,
                 remaining: remaining,
                 statut: computedStatut,
                 classe: e.classe || 'Non assigné',
-                nom_tuteur: e.nom_tuteur || 'Tuteur Légal',
+                nom_tuteur: e.nom_tuteur || NON_RENSEIGNE,
                 telephone_tuteur: e.telephone_tuteur || '',
                 nb_absences: e.nb_absences ?? 0,
                 timeline_paiements: e.timeline_paiements ?? [],
@@ -162,7 +164,7 @@ export const RelancesPage: React.FC = () => {
       {/* Top Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-white dark:bg-slate-900 p-6 sm:p-8 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-2xs">
         <div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:gap-3">
             <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
               Relances & Rappels Impayés
             </h1>
@@ -255,7 +257,56 @@ export const RelancesPage: React.FC = () => {
           </span>
         </div>
 
-        <div className="overflow-x-auto">
+        {/* Débiteurs : cartes sous 640 px, tableau dès 640 px */}
+        <MobileCardList label="Élèves débiteurs">
+          {paginatedOverdueEleves.length === 0 ? (
+            <li className="space-y-1 py-10 text-center">
+              <p className="text-sm font-bold text-slate-900 dark:text-white">Tous les comptes sont à jour</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Aucun impayé ni retard de scolarité constaté pour le moment dans votre établissement.
+              </p>
+            </li>
+          ) : (
+            paginatedOverdueEleves.map((eleve, i) => {
+              const isChecked = selectedEleveIds.includes(eleve.id);
+              return (
+                <MobileCard
+                  key={eleve.id}
+                  index={i}
+                  selected={isChecked}
+                  accent={eleve.statut === 'en_retard' ? 'danger' : 'warning'}
+                  onClick={() => setDrawerEleve(eleve)}
+                  leading={<StudentInitials nom={eleve.nom} prenom={eleve.prenom} size="sm" />}
+                  title={`${eleve.prenom} ${eleve.nom}`}
+                  subtitle={`#${eleve.matricule} • ${eleve.classe}`}
+                  badge={<StatusBadge statut={eleve.statut} />}
+                  facts={[
+                    { label: 'Reste à payer', value: <span className="font-mono text-sm font-black text-rose-600 dark:text-rose-400">{formatMRU(eleve.remaining)}</span> },
+                    { label: 'Tuteur légal', value: <>{eleve.nom_tuteur}<span className="block font-mono text-[11px] font-normal text-slate-500 dark:text-slate-400">{eleve.telephone_tuteur || 'Non renseigné'}</span></> },
+                  ]}
+                  actions={
+                    <>
+                      <label className="mr-auto inline-flex min-h-[44px] cursor-pointer items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-200">
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={(e) => toggleSelectEleve(eleve.id, e as any)}
+                          className="h-5 w-5 rounded border-slate-300 dark:border-slate-600 text-[#1D4ED8] focus:ring-[#1D4ED8]"
+                        />
+                        Sélectionner
+                      </label>
+                      <CardAction icon={<Eye className="h-4 w-4" aria-hidden="true" />} onClick={() => setDrawerEleve(eleve)}>
+                        Voir la fiche
+                      </CardAction>
+                    </>
+                  }
+                />
+              );
+            })
+          )}
+        </MobileCardList>
+
+        <div className="hidden sm:block overflow-x-auto">
           <table className="w-full text-left text-xs border-collapse min-w-[700px]">
             <thead>
               <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/60 font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">

@@ -22,6 +22,7 @@ import { ConfigPage } from './pages/ConfigPage';
 import { TeacherDashboard } from './pages/enseignant/TeacherDashboard';
 import { TeacherClassesPage } from './pages/enseignant/TeacherClassesPage';
 import { TeacherAbsencesPage } from './pages/enseignant/TeacherAbsencesPage';
+import { DeclarationsAbsencePage } from './pages/DeclarationsAbsencePage';
 import { TeacherGradesPage } from './pages/enseignant/TeacherGradesPage';
 import { CaissierGuichetPage } from './pages/caissier/CaissierGuichetPage';
 import { CaissierJournalPage } from './pages/caissier/CaissierJournalPage';
@@ -42,7 +43,8 @@ import { ErrorBoundary } from './components/ui/ErrorBoundary';
 import { ToastNotification } from './components/ui/ToastNotification';
 import { isRoleSimulatorAllowed } from './config/features';
 import { supabase } from './lib/supabase';
-import { parsePath, getPathForState } from './lib/router';
+import { parsePath, getPathForState, getLegalSlug } from './lib/router';
+import { LegalPage } from './pages/LegalPage';
 import { PORTAL_HOME, isRouteAllowedForRole } from './store/useNavigationStore';
 import type { UserRole, PortalRole, UserProfile } from './store/useAuthStore';
 
@@ -127,6 +129,12 @@ export function AppContent() {
 
     const resolveSession = async () => {
       try {
+        // Pages légales publiques : aucune résolution de session ni redirection.
+        if (getLegalSlug(window.location.pathname)) {
+          useAuthStore.getState().setLoading(false);
+          return;
+        }
+
         const isActivationLink = checkIsActivationOrRecovery();
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
@@ -324,6 +332,9 @@ export function AppContent() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (!isMounted) return;
 
+      // Pages légales publiques : les événements d'authentification ne doivent pas rediriger.
+      if (getLegalSlug(window.location.pathname)) return;
+
       // Conserver la logique PASSWORD_RECOVERY telle quelle
       if (event === 'PASSWORD_RECOVERY') {
         useNavigationStore.getState().navigateToSetPassword();
@@ -462,6 +473,9 @@ export function AppContent() {
   useEffect(() => {
     if (isAuthResolving) return;
 
+    // Pages légales : l'URL est celle de la page, elle n'est pas réécrite.
+    if (getLegalSlug(window.location.pathname)) return;
+
     const targetPath = getPathForState(viewMode, currentRoute);
     if (window.location.pathname !== targetPath) {
       window.history.pushState(null, '', targetPath);
@@ -473,7 +487,8 @@ export function AppContent() {
     const handlePopState = () => {
       const match = parsePath(window.location.pathname);
       const currentProfile = useAuthStore.getState().profile;
-      if (match.viewMode === 'login' && currentProfile) {
+      // Avec une session, ni la connexion ni l'inscription ne s'affichent : retour vers l'espace de l'utilisateur.
+      if ((match.viewMode === 'login' || match.viewMode === 'register') && currentProfile) {
         useNavigationStore.getState().navigateToUserPortal(currentProfile.role);
       } else if (match.viewMode === 'app' && match.route) {
         if (currentProfile && currentProfile.role !== 'super_admin') {
@@ -597,6 +612,8 @@ export function AppContent() {
         return <EcheancesPage />;
       case 'paiements_attente':
         return <PaiementsAttentePage />;
+      case 'declarations_absence':
+        return <DeclarationsAbsencePage />;
       case 'relances':
         return <RelancesPage />;
       case 'rapports':
@@ -620,6 +637,8 @@ export function AppContent() {
         return <TeacherClassesPage />;
       case 'teacher_absences':
         return <TeacherAbsencesPage />;
+      case 'teacher_declarations':
+        return <DeclarationsAbsencePage />;
       case 'teacher_grades':
         return <TeacherGradesPage />;
       default:
@@ -689,6 +708,12 @@ export function AppContent() {
         );
     }
   };
+
+  // Pages légales : publiques, affichées avec ou sans session, sans redirection.
+  const legalSlug = getLegalSlug(window.location.pathname);
+  if (legalSlug) {
+    return <LegalPage slug={legalSlug} />;
+  }
 
   if (isAuthResolving) {
     return (

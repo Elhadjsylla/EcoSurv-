@@ -287,6 +287,18 @@ export const SetPasswordPage: React.FC = () => {
             </div>
           </form>
 
+          <p className="text-center text-[11px] leading-relaxed text-slate-500 dark:text-slate-400">
+            En activant votre compte, vous acceptez les{' '}
+            <a href="/cgu" target="_blank" rel="noopener noreferrer" className="font-semibold text-blue-600 dark:text-blue-400 underline underline-offset-2">
+              Conditions d'utilisation
+            </a>{' '}
+            et la{' '}
+            <a href="/confidentialite" target="_blank" rel="noopener noreferrer" className="font-semibold text-blue-600 dark:text-blue-400 underline underline-offset-2">
+              Politique de confidentialité
+            </a>
+            .
+          </p>
+
           <div className="flex items-center justify-center gap-2 text-[11px] text-slate-400">
             <ShieldCheck className="h-3.5 w-3.5 text-emerald-500" />
             <span>Connexion chiffrée de bout en bout • EcoSurv MR</span>

@@ -71,16 +71,16 @@ export const CaissierSidebar: React.FC<CaissierSidebarProps> = ({
         <>
           {/* Cashier Station Info (expanded only) */}
           {!isCollapsed && (
-            <div className="p-4 mx-3 mt-4 rounded-xl bg-amber-50/60 dark:bg-amber-950/30 border border-amber-100 dark:border-amber-900/50">
+            <div className="p-4 mx-3 mt-4 rounded-xl bg-blue-50/60 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900/50">
               <div className="flex items-center gap-2.5">
-                <div className="h-8 w-8 rounded-lg bg-amber-600 text-white flex items-center justify-center text-xs font-bold shrink-0">
+                <div className="h-8 w-8 rounded-lg bg-primary text-white flex items-center justify-center text-xs font-bold shrink-0">
                   {caissierName[0] || 'C'}
                 </div>
                 <div className="min-w-0">
                   <div className="text-xs font-bold text-slate-900 dark:text-white truncate">
                     {caissierName}
                   </div>
-                  <div className="text-[11px] text-amber-700 dark:text-amber-400 font-medium truncate">
+                  <div className="text-[11px] text-primary-text dark:text-primary-text font-medium truncate">
                     {storeT.common?.cashier || translations.fr.common.cashier || 'Caissier'}
                   </div>
                 </div>
@@ -112,7 +112,7 @@ export const CaissierSidebar: React.FC<CaissierSidebarProps> = ({
                     className={cn(
                       'w-full flex items-center justify-between gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all group',
                       isActive
-                        ? 'bg-amber-600 text-white shadow-xs'
+                        ? 'bg-primary text-white shadow-xs'
                         : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-slate-800/80',
                       isCollapsed && 'justify-center px-2.5'
                     )}
@@ -136,8 +136,8 @@ export const CaissierSidebar: React.FC<CaissierSidebarProps> = ({
                         className={cn(
                           'px-2 py-0.5 text-[10px] font-bold rounded-full',
                           isActive
-                            ? 'bg-white text-amber-600'
-                            : 'bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60'
+                            ? 'bg-white text-primary-text'
+                            : 'bg-blue-100 dark:bg-blue-950/80 text-primary-text dark:text-primary-text border border-blue-200 dark:border-blue-800/60'
                         )}
                       >
                         {item.badge}

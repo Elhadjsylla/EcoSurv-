@@ -24,6 +24,7 @@ import { LanguageSelector } from '../components/ui/LanguageSelector';
 import { Logo } from '../components/ui/Logo';
 import { AuthAside, AUTH_SMOOTH_EASE, useAuthPanelVariants } from '../components/auth/AuthAside';
 import { logLoginSuccess } from '../lib/auditLogger';
+import { LegalLinks } from '../components/legal/LegalLinks';
 import type { UserRole } from '../components/ui/Header';
 
 interface LoginPageProps {
@@ -477,8 +478,9 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onReturnToLanding }) => {
         </motion.div>
 
         {/* Pied de page */}
-        <div className="px-5 pb-6 text-center text-[11px] text-slate-400 dark:text-slate-500">
-          &copy; {new Date().getFullYear()} EcoSurv
+        <div className="px-5 pb-6 text-center text-[11px] text-slate-400 dark:text-slate-500 space-y-2">
+          <LegalLinks className="!text-[11px]" />
+          <div>&copy; {new Date().getFullYear()} EcoSurv</div>
         </div>
       </main>
 

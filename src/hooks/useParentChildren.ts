@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
+import { NON_ATTRIBUE, NON_RENSEIGNE } from '../lib/placeholders';
 import { useAuthStore } from '../store/useAuthStore';
 import { useEcoleStore } from '../store/useEcoleStore';
 
@@ -131,9 +132,9 @@ export function useParentChildren(selectedChildId: string, onSelectChild: (id: s
               id: el.id,
               nom: el.nom,
               prenom: el.prenom,
-              classe: el.classe || 'Générale',
-              matricule: el.matricule || 'ECO',
-              lien: row.lien || 'tuteur',
+              classe: el.classe || 'Non assigné',
+              matricule: el.matricule || NON_ATTRIBUE,
+              lien: row.lien || NON_RENSEIGNE,
               total_due: totalDue,
               total_paid: totalPaid,
               remaining: remaining,

@@ -1,6 +1,7 @@
 import { jsPDF } from 'jspdf';
 import { EleveWithStats } from '../../types';
 import { formatMRU } from '../utils';
+import { NON_RENSEIGNE, NON_RENSEIGNEE } from '../placeholders';
 import { downloadFile } from '../downloadFile';
 import { CLAIMS_CONFIG } from '../../config/claims';
 
@@ -107,10 +108,10 @@ export function generateStudentSheetPdf(
 
   rowY += 6;
   doc.text(`Régime de scolarité : `, col1X, rowY);
-  doc.text(`Externe standard`, col1X + 36, rowY);
+  doc.text(NON_RENSEIGNE, col1X + 36, rowY);
 
   doc.text(`Lieu de naissance : `, col2X, rowY);
-  doc.text(`${eleve.lieu_naissance || 'Nouakchott'}`, col2X + 33, rowY);
+  doc.text(`${eleve.lieu_naissance || NON_RENSEIGNE}`, col2X + 33, rowY);
 
   // Cadre Responsable Légal
   y += 45;
@@ -144,7 +145,7 @@ export function generateStudentSheetPdf(
   doc.text(`${eleve.lien_parente === 'pere' ? 'Père' : eleve.lien_parente === 'mere' ? 'Mère' : 'Tuteur légal'}`, col1X + 30, rowY);
 
   doc.text(`Adresse de résidence : `, col2X, rowY);
-  doc.text(`${eleve.adresse_tuteur || 'Nouakchott, Mauritanie'}`, col2X + 39, rowY);
+  doc.text(`${eleve.adresse_tuteur || NON_RENSEIGNEE}`, col2X + 39, rowY);
 
   // Cadre Synthèse Financière
   y += 33;
@@ -247,9 +248,9 @@ export function generateStudentSheetPdf(
       doc.line(20, y + 6.5, pageWidth - 20, y + 6.5);
 
       doc.text(p.date || '—', 24, y + 4.5);
-      doc.text(p.recu_ref || `REC-${idx + 1}`, 50, y + 4.5);
-      doc.text(p.libelle || 'Mensualité scolarité', 95, y + 4.5);
-      doc.text(p.methode?.toUpperCase() || 'ESPÈCES', 145, y + 4.5);
+      doc.text(p.recu_ref || '—', 50, y + 4.5);
+      doc.text(p.libelle || NON_RENSEIGNE, 95, y + 4.5);
+      doc.text(p.methode?.toUpperCase() || NON_RENSEIGNEE.toUpperCase(), 145, y + 4.5);
       doc.setFont('helvetica', 'bold');
       doc.text(formatMRU(p.montant), pageWidth - 24, y + 4.5, { align: 'right' });
       doc.setFont('helvetica', 'normal');
@@ -267,7 +268,7 @@ export function generateStudentSheetPdf(
   doc.setFontSize(8);
   doc.setTextColor(100, 116, 139);
   doc.text('Pour faire valoir ce que de droit.', 20, y);
-  doc.text('Fait à Nouakchott, le ' + new Date().toLocaleDateString('fr-FR'), pageWidth - 20, y, { align: 'right' });
+  doc.text('Établi le ' + new Date().toLocaleDateString('fr-FR'), pageWidth - 20, y, { align: 'right' });
 
   y += 6;
   doc.setFont('helvetica', 'bold');

@@ -10,11 +10,13 @@ import {
   BarChart3,
   SlidersHorizontal,
   Clock,
+  FileText,
 } from 'lucide-react';
+import { useDeclarationsEnAttenteCount } from '../../hooks/useDeclarationsAbsence';
 import { useAuthStore } from '../../store/useAuthStore';
 import { supabase } from '../../lib/supabase';
 
-export type NavTab = 'dashboard' | 'eleves' | 'echeances' | 'paiements_attente' | 'relances' | 'rapports' | 'config';
+export type NavTab = 'dashboard' | 'eleves' | 'declarations_absence' | 'echeances' | 'paiements_attente' | 'relances' | 'rapports' | 'config';
 
 interface SidebarProps {
   activeTab: NavTab;
@@ -40,6 +42,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange, classN
   const t = storeT?.nav ? storeT : translations.fr;
   const authProfile = useAuthStore((s) => s.profile);
   const [pendingCount, setPendingCount] = React.useState<number>(0);
+  // null tant que la base n'a pas répondu : aucune pastille.
+  const declarationsEnAttente = useDeclarationsEnAttenteCount();
 
   React.useEffect(() => {
     if (!authProfile?.ecole_id) return;
@@ -88,6 +92,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange, classN
       label: 'ACADÉMIQUE',
       items: [
         { id: 'eleves', label: t.nav?.students || 'Élèves', icon: <GraduationCap className="h-4 w-4 shrink-0" /> },
+        {
+          id: 'declarations_absence',
+          label: 'Déclarations d’absence',
+          icon: <FileText className="h-4 w-4 shrink-0" />,
+          badge: declarationsEnAttente && declarationsEnAttente > 0 ? String(declarationsEnAttente) : undefined,
+        },
       ],
     },
     {

@@ -4,6 +4,10 @@ import { supabase } from '../../lib/supabase';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useNavigationStore } from '../../store/useNavigationStore';
 import { StudentInitials } from './StudentInitials';
+import { ThemeSwitch } from './ThemeSwitch';
+import { AnimatePresence, motion } from 'framer-motion';
+import { DURATION, EASE, popoverVariants, useMotionPrefs } from '../../lib/motion';
+import { useNotificationsStore } from '../../store/useNotificationsStore';
 import {
   Building2,
   Users,
@@ -46,6 +50,8 @@ export const UserProfileDropdown: React.FC<UserProfileDropdownProps> = ({
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { theme, toggleTheme } = useThemeStore();
   const ecole = useAuthStore((s) => s.ecole);
+  const unreadCount = useNotificationsStore((s) => s.unreadCount());
+  const { reduce } = useMotionPrefs();
 
   // Sub-view navigation ('main' | 'language')
   const [currentView, setCurrentView] = useState<'main' | 'language'>('main');
@@ -60,7 +66,11 @@ export const UserProfileDropdown: React.FC<UserProfileDropdownProps> = ({
   // Close on Escape or click outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      // Le déclencheur gère lui-même l'ouverture et la fermeture (data-profile-trigger).
+      const trigger = document.querySelector('[data-profile-trigger]');
+      if (trigger && trigger.contains(target)) return;
+      if (dropdownRef.current && !dropdownRef.current.contains(target)) {
         onClose();
         setCurrentView('main');
       }
@@ -84,17 +94,41 @@ export const UserProfileDropdown: React.FC<UserProfileDropdownProps> = ({
     };
   }, [isOpen, onClose]);
 
-  if (!isOpen) return null;
+  // Rend le focus au déclencheur quand le menu se ferme (Échap, choix d'une entrée).
+  const wasOpenRef = useRef(false);
+  useEffect(() => {
+    if (wasOpenRef.current && !isOpen) {
+      const active = document.activeElement;
+      const insideMenu = dropdownRef.current?.contains(active) ?? false;
+      if (insideMenu || active === document.body || active === null) {
+        (document.querySelector('[data-profile-trigger]') as HTMLElement | null)?.focus();
+      }
+    }
+    wasOpenRef.current = isOpen;
+  }, [isOpen]);
+
+  const rowClass =
+    'w-full min-h-11 flex items-center gap-3 px-2.5 py-2 rounded-md text-secondary hover:bg-surface-subtle hover:text-main active:bg-surface-subtle active:scale-[0.99] transition-colors text-left font-semibold focus-halo cursor-pointer';
+  const iconCol = 'flex h-5 w-5 shrink-0 items-center justify-center text-muted';
 
   return (
-    <div
+    <AnimatePresence>
+      {isOpen && (
+    <motion.div
       ref={dropdownRef}
-      className="absolute right-0 top-full mt-2 w-80 sm:w-88 rounded-md bg-surface-elevated border border-subtle shadow-elevated z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150"
+      role="menu"
+      aria-label="Menu du profil"
+      variants={popoverVariants}
+      initial={reduce ? false : 'closed'}
+      animate="open"
+      exit={reduce ? { opacity: 0, transition: { duration: 0 } } : { opacity: 0, y: -4, transition: { duration: DURATION.fast, ease: EASE.out } }}
+      style={{ transformOrigin: 'top right' }}
+      className="absolute right-0 top-full mt-2 w-80 sm:w-88 max-w-[calc(100vw-1rem)] max-h-[calc(100dvh-5rem)] overflow-y-auto rounded-lg bg-surface-elevated border border-subtle shadow-elevated z-50"
     >
       {currentView === 'main' ? (
-        <div className="p-4 space-y-4">
+        <div className="p-4 space-y-3">
           {/* User Info Header */}
-          <div className="flex items-center gap-3 pb-3 border-b border-subtle">
+          <div className="flex items-center gap-3 pb-3 border-b border-default">
             <StudentInitials nom={user.nom} prenom={user.prenom} size="lg" />
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2 flex-wrap">
@@ -141,20 +175,19 @@ export const UserProfileDropdown: React.FC<UserProfileDropdownProps> = ({
           </div>
 
           {/* Action Links */}
-          <div className="space-y-1 text-xs">
+          <div className="text-xs space-y-1 border-t border-default pt-3">
             <button
               type="button"
               onClick={() => {
                 if (onNavigateTab) onNavigateTab('config');
                 onClose();
               }}
-              className="w-full flex items-center justify-between p-2.5 rounded-sm text-secondary hover:bg-surface-subtle hover:text-main transition-colors text-left font-semibold focus-halo cursor-pointer"
+              role="menuitem"
+              className={rowClass}
             >
-              <div className="flex items-center gap-2.5">
-                <Users className="h-4 w-4 text-muted" />
-                <span>Gérer les accès & Personnel</span>
-              </div>
-              <ChevronRight className="h-4 w-4 text-muted" />
+              <span className={iconCol}><Users className="h-4 w-4" /></span>
+              <span className="flex-1 min-w-0 truncate">Gérer les accès & Personnel</span>
+              <span className={iconCol}><ChevronRight className="h-4 w-4" /></span>
             </button>
 
             <button
@@ -163,15 +196,22 @@ export const UserProfileDropdown: React.FC<UserProfileDropdownProps> = ({
                 if (onNavigateTab) onNavigateTab('relances');
                 onClose();
               }}
-              className="w-full flex items-center justify-between p-2.5 rounded-sm text-secondary hover:bg-surface-subtle hover:text-main transition-colors text-left font-semibold focus-halo cursor-pointer"
+              role="menuitem"
+              className={rowClass}
             >
-              <div className="flex items-center gap-2.5">
-                <Bell className="h-4 w-4 text-muted" />
-                <span>Notifications & Rappels</span>
-              </div>
-              <span className="rounded-sm bg-danger-surface border border-danger-border text-danger-text px-1.5 py-0.5 text-xs font-bold">
-                2
-              </span>
+              <span className={iconCol}><Bell className="h-4 w-4" /></span>
+              <span className="flex-1 min-w-0 truncate">Notifications & Rappels</span>
+              {/* Compteur réel (useNotificationsStore) : masqué quand il n'y a rien de non lu */}
+              {unreadCount > 0 ? (
+                <span
+                  aria-label={`${unreadCount} non lue${unreadCount > 1 ? 's' : ''}`}
+                  className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-danger-surface border border-danger-border text-danger-text px-1.5 text-xs font-bold tabular-nums"
+                >
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
+              ) : (
+                <span className={iconCol}><ChevronRight className="h-4 w-4" /></span>
+              )}
             </button>
 
             <button
@@ -180,65 +220,42 @@ export const UserProfileDropdown: React.FC<UserProfileDropdownProps> = ({
                 if (onNavigateTab) onNavigateTab('config');
                 onClose();
               }}
-              className="w-full flex items-center justify-between p-2.5 rounded-sm text-secondary hover:bg-surface-subtle hover:text-main transition-colors text-left font-semibold focus-halo cursor-pointer"
+              role="menuitem"
+              className={rowClass}
             >
-              <div className="flex items-center gap-2.5">
-                <Settings className="h-4 w-4 text-muted" />
-                <span>Paramètres système</span>
-              </div>
-              <ChevronRight className="h-4 w-4 text-muted" />
+              <span className={iconCol}><Settings className="h-4 w-4" /></span>
+              <span className="flex-1 min-w-0 truncate">Paramètres système</span>
+              <span className={iconCol}><ChevronRight className="h-4 w-4" /></span>
             </button>
 
             {/* Language Selector trigger */}
             <button
               type="button"
               onClick={() => setCurrentView('language')}
-              className="w-full flex items-center justify-between p-2.5 rounded-sm text-secondary hover:bg-surface-subtle hover:text-main transition-colors text-left font-semibold focus-halo cursor-pointer"
+              role="menuitem"
+              className={rowClass}
             >
-              <div className="flex items-center gap-2.5">
-                <Globe className="h-4 w-4 text-muted" />
-                <span>Langue</span>
-              </div>
-              <div className="flex items-center gap-1.5 text-muted">
-                <span className="text-xs font-medium">
-                  {languages.find((l) => l.id === selectedLanguage)?.name}
-                </span>
-                <ChevronRight className="h-4 w-4 text-muted" />
-              </div>
+              <span className={iconCol}><Globe className="h-4 w-4" /></span>
+              <span className="flex-1 min-w-0 truncate">Langue</span>
+              <span className="text-xs font-medium text-muted">
+                {languages.find((l) => l.id === selectedLanguage)?.name}
+              </span>
+              <span className={iconCol}><ChevronRight className="h-4 w-4" /></span>
             </button>
 
             {/* Dark Mode Switch */}
-            <div className="flex items-center justify-between p-2.5 rounded-sm text-secondary">
-              <div className="flex items-center gap-2.5 font-semibold">
-                {theme === 'dark' ? (
-                  <Moon className="h-4 w-4 text-primary-text" />
-                ) : (
-                  <Sun className="h-4 w-4 text-warning" />
-                )}
-                <span>Mode Sombre</span>
-              </div>
-
-              {/* Functional Toggle switch */}
-              <button
-                type="button"
-                role="switch"
-                aria-checked={theme === 'dark'}
-                onClick={toggleTheme}
-                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-sm border-2 border-transparent transition-colors duration-200 ease-in-out focus-halo ${
-                  theme === 'dark' ? 'bg-primary' : 'bg-surface-subtle border-default'
-                }`}
-              >
-                <span
-                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-sm bg-white shadow-xs transition duration-200 ease-in-out ${
-                    theme === 'dark' ? 'translate-x-5' : 'translate-x-0'
-                  }`}
-                />
-              </button>
+            <div className="min-h-11 flex items-center gap-3 pl-2.5 pr-0 text-secondary">
+              <span className={iconCol}>
+                {theme === 'dark' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
+              </span>
+              <span className="flex-1 min-w-0 truncate font-semibold">Mode Sombre</span>
+              {/* Interrupteur : même action qu'avant (toggleTheme), seul l'aspect change */}
+              <ThemeSwitch checked={theme === 'dark'} onToggle={toggleTheme} />
             </div>
           </div>
 
           {/* Log Out */}
-          <div className="pt-2 border-t border-subtle">
+          <div className="pt-3 border-t border-default">
             <button
               type="button"
               onClick={async () => {
@@ -252,9 +269,12 @@ export const UserProfileDropdown: React.FC<UserProfileDropdownProps> = ({
                 useNavigationStore.getState().setViewMode('landing');
                 onClose();
               }}
-              className="w-full flex items-center gap-2.5 p-2 rounded-sm text-danger-text hover:bg-danger-surface transition-colors text-xs font-bold cursor-pointer focus-halo"
+              role="menuitem"
+              className="group w-full min-h-11 flex items-center gap-3 px-2.5 py-2 rounded-md border border-transparent text-danger-text hover:bg-danger-surface hover:border-danger-border active:scale-[0.99] transition-colors text-xs font-bold cursor-pointer focus-halo"
             >
-              <LogOut className="h-4 w-4" />
+              <span className="flex h-5 w-5 shrink-0 items-center justify-center">
+                <LogOut className="h-4 w-4 transition-transform duration-150 group-hover:translate-x-0.5" />
+              </span>
               <span>Déconnexion</span>
             </button>
           </div>
@@ -266,7 +286,8 @@ export const UserProfileDropdown: React.FC<UserProfileDropdownProps> = ({
             <button
               type="button"
               onClick={() => setCurrentView('main')}
-              className="p-1 rounded-sm hover:bg-surface-subtle text-muted hover:text-main transition-colors focus-halo cursor-pointer"
+              aria-label="Retour au menu"
+              className="flex h-11 w-11 items-center justify-center rounded-md hover:bg-surface-subtle text-muted hover:text-main transition-colors focus-halo cursor-pointer"
             >
               <ChevronLeft className="h-5 w-5" />
             </button>
@@ -317,6 +338,8 @@ export const UserProfileDropdown: React.FC<UserProfileDropdownProps> = ({
           </button>
         </div>
       )}
-    </div>
+    </motion.div>
+      )}
+    </AnimatePresence>
   );
 };

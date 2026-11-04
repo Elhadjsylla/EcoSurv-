@@ -1,6 +1,8 @@
 import React from 'react';
 import { Button } from '../../components/ui/Button';
+import { HeaderActions, ACTION_PRIMARY, ACTION_SECONDARY_FULL } from '../../components/ui/HeaderActions';
 import { KpiCard } from '../../components/ui/KpiCard';
+import { Reveal } from '../../components/ui/Reveal';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useTeacherData } from '../../hooks/useTeacherData';
 import { useAnneeScolaire } from '../../hooks/useAnneeScolaire';
@@ -45,13 +47,13 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ onNavigateTo
   const totalClasses = teacherClasses.length;
 
   return (
-    <div className="p-6 sm:p-8 lg:p-10 max-w-[1600px] mx-auto space-y-8 sm:space-y-10 animate-stagger-rise">
+    <div className="p-6 sm:p-8 lg:p-10 max-w-[1600px] mx-auto space-y-8 sm:space-y-10">
       {/* Top Welcome Banner */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-white dark:bg-slate-900 p-6 sm:p-8 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xs">
+      <Reveal index={0} className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-white dark:bg-slate-900 p-6 sm:p-8 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xs">
         <div className="space-y-1.5">
           <div className="flex items-center gap-2.5">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 px-3 py-1 text-xs font-bold text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-100 dark:bg-blue-950/60 px-3 py-1 text-xs font-bold text-primary-text dark:text-primary-text border border-blue-200 dark:border-blue-800/60">
+              <span className="w-1.5 h-1.5 rounded-full bg-primary"></span>
               Espace Pédagogique
             </span>
             {anneeScolaire && (
@@ -71,11 +73,11 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ onNavigateTo
           </p>
         </div>
 
-        <div className="flex items-center gap-3 shrink-0">
+        <HeaderActions>
           <Button
             variant="outline"
             size="sm"
-            className="gap-2 border-slate-300 dark:border-slate-700 dark:hover:bg-slate-800"
+            className={`gap-2 h-11 sm:h-8 border-slate-300 dark:border-slate-700 dark:hover:bg-slate-800 ${ACTION_SECONDARY_FULL}`}
             onClick={() => onNavigateToTab && onNavigateToTab('teacher_grades')}
           >
             <BookOpen className="h-4 w-4 text-slate-600 dark:text-slate-300" />
@@ -85,47 +87,53 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ onNavigateTo
           <Button
             variant="primary"
             size="sm"
-            className="gap-2 bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-600 dark:hover:bg-emerald-700 text-white shadow-xs"
+            className={`gap-2 h-11 sm:h-8 bg-primary hover:bg-primary-hover dark:bg-primary dark:hover:bg-primary-hover text-white shadow-xs ${ACTION_PRIMARY}`}
             onClick={() => onNavigateToTab && onNavigateToTab('teacher_absences')}
           >
             <CalendarCheck className="h-4 w-4" />
             Faire l'Appel du Jour
           </Button>
-        </div>
-      </div>
+        </HeaderActions>
+      </Reveal>
 
-      {/* Pedagogical KPIs */}
+      {/* Pedagogical KPIs : valeurs déjà chargées ici (le squelette ci-dessus couvre le chargement) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
         <KpiCard
+          loading={false}
+          staggerIndex={1}
           title="Élèves Assignés"
           amount={totalEleves}
           unit="count"
           subtitle={totalClasses > 0 ? `${totalClasses} classe${totalClasses > 1 ? 's' : ''} affectée${totalClasses > 1 ? 's' : ''}` : '0 classe'}
-          icon={<Users className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />}
-          variant="success"
+          icon={<Users className="w-5 h-5 text-primary-text dark:text-primary-text" />}
+          variant="primary"
           onClick={() => onNavigateToTab && onNavigateToTab('teacher_classes')}
         />
 
         <KpiCard
+          loading={false}
+          staggerIndex={2}
           title="Classes Affectées"
           amount={totalClasses}
           unit="count"
           subtitle={totalClasses > 0 ? teacherClasses.join(', ') : 'Aucune affectation'}
-          icon={<GraduationCap className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />}
+          icon={<GraduationCap className="w-5 h-5 text-primary-text dark:text-primary-text" />}
           variant="default"
           onClick={() => onNavigateToTab && onNavigateToTab('teacher_classes')}
         />
 
         <KpiCard
+          staggerIndex={3}
           title="Feuille d'Appel"
           customValue={totalClasses > 0 ? "Faire l'appel" : "Inactif"}
           subtitle={totalClasses > 0 ? "Saisie des présences du jour" : "Aucune classe affectée"}
-          icon={<CalendarCheck className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />}
-          variant={totalClasses > 0 ? "success" : "default"}
+          icon={<CalendarCheck className="w-5 h-5 text-primary-text" />}
+          variant={totalClasses > 0 ? "primary" : "default"}
           onClick={() => onNavigateToTab && onNavigateToTab('teacher_absences')}
         />
 
         <KpiCard
+          staggerIndex={4}
           title="Carnet d'Évaluations"
           customValue="Bientôt disponible"
           subtitle="Module de notation en préparation"
@@ -136,18 +144,18 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ onNavigateTo
       </div>
 
       {/* Schedule & Recent Activity Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <Reveal index={5} className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left 2 Cols: Schedule for Today */}
         <div className="lg:col-span-2 space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-              <Clock className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+              <Clock className="h-4 w-4 text-primary-text dark:text-primary-text" />
               Séances & Emploi du Temps
             </h2>
           </div>
 
           <div className="p-8 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-center space-y-2 shadow-2xs">
-            <Clock className="h-8 w-8 mx-auto text-emerald-500/70 mb-1" />
+            <Clock className="h-8 w-8 mx-auto text-blue-500/70 mb-1" />
             <p className="font-semibold text-slate-800 dark:text-slate-200 text-sm">
               Emploi du temps : bientôt disponible
             </p>
@@ -161,13 +169,13 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ onNavigateTo
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-              <BookmarkCheck className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+              <BookmarkCheck className="h-4 w-4 text-primary-text dark:text-primary-text" />
               Dernières Évaluations
             </h2>
           </div>
 
           <div className="p-8 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-center space-y-2 shadow-2xs">
-            <BookmarkCheck className="h-8 w-8 mx-auto text-emerald-500/70 mb-1" />
+            <BookmarkCheck className="h-8 w-8 mx-auto text-blue-500/70 mb-1" />
             <p className="font-semibold text-slate-800 dark:text-slate-200 text-sm">
               Carnet de notes : bientôt disponible
             </p>
@@ -176,7 +184,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ onNavigateTo
             </p>
           </div>
         </div>
-      </div>
+      </Reveal>
     </div>
   );
 };

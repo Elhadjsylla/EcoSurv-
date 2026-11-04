@@ -32,6 +32,21 @@ interface CaisseStoreState {
 
 const getTodayDateStr = () => new Date().toISOString().split('T')[0];
 
+/** Version du format persisté. 1 : seules les clôtures sont conservées (transactions et refreshKey ne le sont plus). */
+const CAISSE_PERSIST_VERSION = 1;
+
+/**
+ * Une clôture n'est visible que pour l'école et le caissier connectés :
+ * un autre compte ou une autre école sur le même poste ne voit pas celles d'un précédent.
+ */
+const clotureVisiblePourUtilisateur = (c: ClotureCaisseData | undefined): ClotureCaisseData | null => {
+  if (!c) return null;
+  const profile = useAuthStore.getState().profile;
+  if (!profile || !profile.ecole_id) return null;
+  if (c.ecole_id !== profile.ecole_id || c.caissier_id !== profile.id) return null;
+  return c;
+};
+
 export const useCaisseStore = create<CaisseStoreState>()(
   persist(
     (set, get) => ({
@@ -52,12 +67,12 @@ export const useCaisseStore = create<CaisseStoreState>()(
 
       isDateCloturee: (dateStr?: string) => {
         const d = dateStr || getTodayDateStr();
-        return !!get().clotures[d];
+        return clotureVisiblePourUtilisateur(get().clotures[d]) !== null;
       },
 
       getClotureForDate: (dateStr?: string) => {
         const d = dateStr || getTodayDateStr();
-        return get().clotures[d] || null;
+        return clotureVisiblePourUtilisateur(get().clotures[d]);
       },
 
       cloturerCaisseDuJour: async (montantTotal: number, nbTransactions: number) => {
@@ -132,6 +147,14 @@ export const useCaisseStore = create<CaisseStoreState>()(
     }),
     {
       name: 'ecosurv-clotures-caisse-store',
+      version: CAISSE_PERSIST_VERSION,
+      // Seules les clôtures sont persistées : transactions (noms d'élèves, montants) reste en mémoire.
+      partialize: (state) => ({ clotures: state.clotures }),
+      // Supprime des navigateurs existants les anciens champs persistés avant la version 1.
+      migrate: (persistedState) => {
+        const old = (persistedState || {}) as { clotures?: Record<string, ClotureCaisseData> };
+        return { clotures: old.clotures || {} };
+      },
     }
   )
 );

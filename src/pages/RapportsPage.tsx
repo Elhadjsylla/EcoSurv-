@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
+import { HeaderActions, ACTION_PRIMARY, ACTION_SECONDARY_FULL } from '../components/ui/HeaderActions';
 import { KpiCard } from '../components/ui/KpiCard';
 import { MonthlyFinancialReport } from '../types';
 import { formatMRU } from '../lib/utils';
@@ -27,6 +28,7 @@ import {
   Info,
 } from 'lucide-react';
 import { CollectionChart } from '../components/ui/CollectionChart';
+import { MobileCard, CardAction } from '../components/ui/MobileCards';
 
 export const RapportsPage: React.FC = () => {
   const authProfile = useAuthStore((s) => s.profile);
@@ -152,7 +154,7 @@ export const RapportsPage: React.FC = () => {
       {/* Top Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-2xs">
         <div className="space-y-1">
-          <div className="flex items-center gap-2.5">
+          <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:gap-2.5">
             <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
               Rapports Financiers & Comptabilité
             </h1>
@@ -173,11 +175,11 @@ export const RapportsPage: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <HeaderActions>
           <Button
             variant="outline"
             size="sm"
-            className="gap-2 h-10 px-4 disabled:opacity-50 disabled:cursor-not-allowed"
+            className={`gap-2 h-11 sm:h-10 px-4 disabled:opacity-50 disabled:cursor-not-allowed ${ACTION_SECONDARY_FULL}`}
             onClick={handlePrint}
             disabled={reports.length === 0 || isLoading || isGeneratingPdf}
             title={
@@ -194,7 +196,7 @@ export const RapportsPage: React.FC = () => {
           <Button
             variant="primary"
             size="sm"
-            className="gap-2 h-10 px-4 disabled:opacity-50 disabled:cursor-not-allowed"
+            className={`gap-2 h-11 sm:h-10 px-4 disabled:opacity-50 disabled:cursor-not-allowed ${ACTION_PRIMARY}`}
             onClick={handleExportExcel}
             disabled={reports.length === 0 || isLoading || isExportingExcel}
             title={
@@ -208,7 +210,7 @@ export const RapportsPage: React.FC = () => {
             <FileSpreadsheet className="h-4 w-4" />
             Exporter Excel
           </Button>
-        </div>
+        </HeaderActions>
       </div>
 
       {/* Summary KPI Tiles */}
@@ -301,7 +303,56 @@ export const RapportsPage: React.FC = () => {
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <>
+          {/* Périodes : cartes sous 640 px, tableau dès 640 px */}
+          <ul aria-label="Rapports financiers mensuels" className="space-y-3 p-3 sm:hidden">
+            {reports.map((r, i) => (
+              <MobileCard
+                key={r.mois}
+                index={i}
+                accent={r.taux >= 100 ? 'success' : r.encaisse > 0 ? 'primary' : 'warning'}
+                title={r.mois}
+                subtitle={anneeScolaire ? `Exercice ${anneeScolaire}` : undefined}
+                badge={
+                  <span className="inline-block rounded-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-1 text-xs font-bold text-slate-800 dark:text-slate-200">
+                    {r.taux >= 100 ? 'Soldé' : r.encaisse > 0 ? 'En cours' : 'Non entamé'}
+                  </span>
+                }
+                facts={[
+                  { label: 'Montant attendu', value: <span className="font-mono font-bold">{formatMRU(r.attendu)}</span> },
+                  { label: 'Montant encaissé', value: <span className="font-mono font-bold text-emerald-700 dark:text-emerald-400">{formatMRU(r.encaisse)}</span> },
+                  { label: 'Impayés & retards', value: <span className="font-mono font-bold text-rose-600 dark:text-rose-400">{formatMRU(r.impayes)}</span> },
+                  { label: 'Taux de recouvrement', value: <span className="font-mono font-bold">{r.taux}%</span> },
+                ]}
+                actions={
+                  <>
+                    <CardAction
+                      icon={<Download className="h-4 w-4" aria-hidden="true" />}
+                      onClick={() => {
+                        const suffix = anneeScolaire ? `_${anneeScolaire}` : '';
+                        exportFinancialReportsToExcel([r], anneeScolaire, `Rapport_Financier_${r.mois.replace(/\s+/g, '_')}${suffix}.xlsx`);
+                        showToast(`État financier de ${r.mois} exporté en Excel (.xlsx) avec succès.`);
+                      }}
+                    >
+                      Excel
+                    </CardAction>
+                    <CardAction
+                      icon={<FileText className="h-4 w-4" aria-hidden="true" />}
+                      onClick={() => {
+                        const suffix = anneeScolaire ? `_${anneeScolaire}` : '';
+                        generateFinancialReportPdf([r], ecoleNom, anneeScolaire, `Rapport_Financier_${r.mois.replace(/\s+/g, '_')}${suffix}.pdf`);
+                        showToast(`État financier de ${r.mois} exporté en PDF avec succès.`);
+                      }}
+                    >
+                      PDF
+                    </CardAction>
+                  </>
+                }
+              />
+            ))}
+          </ul>
+
+          <div className="hidden sm:block overflow-x-auto">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
                 <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/60 font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
@@ -442,6 +493,7 @@ export const RapportsPage: React.FC = () => {
               </tbody>
             </table>
           </div>
+          </>
         )}
       </div>
     </div>

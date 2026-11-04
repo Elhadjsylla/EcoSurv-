@@ -9,6 +9,7 @@ import { KpiCard } from '../ui/KpiCard';
 import { StatusBadge } from '../ui/StatusBadge';
 import { StudentInitials } from '../ui/StudentInitials';
 import { Button } from '../ui/Button';
+import { HeaderActions, ACTION_PRIMARY, ACTION_SECONDARY_FULL, ActionLabel } from '../ui/HeaderActions';
 import { Card } from '../ui/Card';
 import { ToastNotification } from '../ui/ToastNotification';
 import { Select } from '../ui/Select';
@@ -45,9 +46,11 @@ import { StudentDetailDrawer } from './StudentDetailDrawer';
 import { PourDemarrerCard } from './PourDemarrerCard';
 import { WelcomeAnneeScolaireModal } from './WelcomeAnneeScolaireModal';
 import { Tooltip } from '../ui/Tooltip';
+import { MobileCardList, MobileCard, CardAction } from '../ui/MobileCards';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useAnneeScolaire } from '../../hooks/useAnneeScolaire';
 import { supabase } from '../../lib/supabase';
+import { NON_ATTRIBUE, NON_RENSEIGNE, estRenseigne } from '../../lib/placeholders';
 
 interface DirectorDashboardProps {
   onNavigateToEleves?: (statutFilter: string) => void;
@@ -96,7 +99,7 @@ export const DirectorDashboard: React.FC<DirectorDashboardProps> = ({
       setMonthlyReports(computedReports);
 
       if (!elevesRes.error && elevesRes.data) {
-        const mapped = elevesRes.data.map((e: any, idx: number) => {
+        const mapped = elevesRes.data.map((e: any) => {
           const studentEch = allEcheances.filter((ech: any) => ech.eleve_id === e.id);
           const totalDue = studentEch.reduce((sum: number, ech: any) => sum + Number(ech.montant || 0), 0);
           const totalPaid = studentEch.reduce((sum: number, ech: any) => sum + Number(ech.montant_paye || 0), 0);
@@ -110,13 +113,13 @@ export const DirectorDashboard: React.FC<DirectorDashboardProps> = ({
 
           return {
             ...e,
-            matricule: e.matricule || `MAT-${100 + idx}`,
+            matricule: e.matricule || NON_ATTRIBUE,
             total_due: totalDue,
             total_paid: totalPaid,
             remaining: remaining,
             statut: computedStatut,
             classe: e.classe || 'Non assigné',
-            nom_tuteur: e.nom_tuteur || 'Tuteur Légal',
+            nom_tuteur: e.nom_tuteur || NON_RENSEIGNE,
             telephone_tuteur: e.telephone_tuteur || '',
             nb_absences: e.nb_absences ?? 0,
             timeline_paiements: e.timeline_paiements ?? [],
@@ -327,7 +330,7 @@ export const DirectorDashboard: React.FC<DirectorDashboardProps> = ({
     }
     const cleanPhone = rawPhone.startsWith('222') ? rawPhone : `222${rawPhone}`;
     const ecoleNom = authEcole?.nom || 'notre établissement';
-    const msg = `Bonjour M./Mme ${eleve.nom_tuteur || 'le Tuteur'},\n\nL'administration de l'établissement ${ecoleNom} vous informe que l'échéance de scolarité de ${eleve.prenom} ${eleve.nom} (${eleve.classe}) présente un solde restant de ${formatMRU(eleve.remaining)}.\n\nMerci de bien vouloir vous rapprocher du guichet de l'école ou de régulariser ce montant par virement Bankily / Masrvi / Sedad.\n\nBien cordialement,\nLa Direction.`;
+    const msg = `Bonjour M./Mme ${estRenseigne(eleve.nom_tuteur) ? eleve.nom_tuteur : 'le Tuteur'},\n\nL'administration de l'établissement ${ecoleNom} vous informe que l'échéance de scolarité de ${eleve.prenom} ${eleve.nom} (${eleve.classe}) présente un solde restant de ${formatMRU(eleve.remaining)}.\n\nMerci de bien vouloir vous rapprocher du guichet de l'école ou de régulariser ce montant par virement Bankily / Masrvi / Sedad.\n\nBien cordialement,\nLa Direction.`;
     window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`, '_blank', 'noopener,noreferrer');
     setRelancedStudentIds((prev) => Array.from(new Set([...prev, eleve.id])));
     showToast(`WhatsApp pré-rempli ouvert pour le tuteur de ${eleve.prenom} ${eleve.nom}.`, 'info');
@@ -523,11 +526,12 @@ export const DirectorDashboard: React.FC<DirectorDashboardProps> = ({
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <HeaderActions>
           <Button
             variant="outline"
             size="sm"
-            className="gap-2 h-10 px-4 disabled:opacity-50 disabled:cursor-not-allowed"
+            aria-label="Exporter Rapport PDF"
+            className={`gap-2 h-11 sm:h-10 px-4 disabled:opacity-50 disabled:cursor-not-allowed ${ACTION_SECONDARY_FULL}`}
             loading={isExportingPdf}
             loadingText="Génération PDF..."
             disabled={monthlyReports.length === 0 || isLoadingFinances}
@@ -538,19 +542,23 @@ export const DirectorDashboard: React.FC<DirectorDashboardProps> = ({
             }
             onClick={handleExportPdf}
           >
-            <ArrowDownToLine className="h-4 w-4" />
-            Exporter Rapport PDF
+            <ArrowDownToLine className="h-4 w-4 shrink-0" />
+            <ActionLabel short="Rapport PDF" full="Exporter Rapport PDF" />
           </Button>
           <Button
             variant="primary"
             size="sm"
-            className="gap-2 h-10 px-4"
+            aria-label={`Relancer tous les impayés (${kpis.nombreEnRetard})`}
+            className={`gap-2 h-11 sm:h-10 px-4 ${ACTION_PRIMARY}`}
             onClick={() => setIsConfirmModalOpen(true)}
           >
-            <Send className="h-4 w-4" />
-            Relancer tous les impayés ({kpis.nombreEnRetard})
+            <Send className="h-4 w-4 shrink-0" />
+            <ActionLabel
+              short={`Relancer les impayés (${kpis.nombreEnRetard})`}
+              full={`Relancer tous les impayés (${kpis.nombreEnRetard})`}
+            />
           </Button>
-        </div>
+        </HeaderActions>
       </div>
 
       {/* Cartes KPI Interactives (Raccourcis de filtrage) avec apparition échelonnée */}
@@ -734,7 +742,106 @@ export const DirectorDashboard: React.FC<DirectorDashboardProps> = ({
 
       {/* Data Table (Nexoov Style) */}
       <div className="rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xs overflow-hidden">
-        <div className="overflow-x-auto">
+        {/* Élèves : cartes sous 640 px, tableau dès 640 px */}
+        <MobileCardList label="Élèves et soldes">
+          {paginatedEleves.length === 0 ? (
+            <li className="py-10 text-center text-sm font-medium text-slate-500 dark:text-slate-400">
+              {elevesList.length === 0
+                ? "Aucun élève enregistré pour l'instant. Cliquez sur « Inscrire un premier élève » pour démarrer votre registre scolaire."
+                : 'Aucun élève trouvé correspondant à vos critères de recherche.'}
+            </li>
+          ) : (
+            paginatedEleves.map((eleve, i) => {
+              const isChecked = selectedEleveIds.includes(eleve.id);
+              return (
+                <MobileCard
+                  key={eleve.id}
+                  index={i}
+                  selected={isChecked}
+                  accent={eleve.remaining > 0 ? (eleve.statut === 'en_retard' ? 'danger' : 'warning') : 'success'}
+                  onClick={() => setSelectedEleveModal(eleve)}
+                  leading={<StudentInitials nom={eleve.nom} prenom={eleve.prenom} />}
+                  title={`${eleve.prenom} ${eleve.nom}`}
+                  subtitle={`#${eleve.matricule} • ${eleve.classe}`}
+                  badge={
+                    <div className="flex flex-col items-end gap-1">
+                      <StatusBadge statut={eleve.statut} />
+                      {relancedStudentIds.includes(eleve.id) && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 text-[10px] font-bold text-emerald-700 dark:text-emerald-300">
+                          <Check className="h-3 w-3" aria-hidden="true" /> Relancé
+                        </span>
+                      )}
+                    </div>
+                  }
+                  facts={[
+                    {
+                      label: 'Reste',
+                      value:
+                        eleve.remaining > 0 ? (
+                          <span className="font-mono font-black text-rose-600 dark:text-rose-400">{formatMRU(eleve.remaining)}</span>
+                        ) : (
+                          <span className="font-bold text-emerald-600 dark:text-emerald-400">Soldé</span>
+                        ),
+                    },
+                    { label: 'Attendu', value: <span className="font-mono">{formatMRU(eleve.total_due)}</span> },
+                    {
+                      label: 'Tuteur légal',
+                      wide: true,
+                      value: (
+                        <>
+                          {eleve.nom_tuteur}
+                          <span className="block font-mono text-[11px] font-normal text-slate-500 dark:text-slate-400">{eleve.telephone_tuteur}</span>
+                        </>
+                      ),
+                    },
+                    {
+                      label: 'Adresse',
+                      wide: true,
+                      value: eleve.adresse_tuteur || (
+                        <span className="font-normal text-slate-400 dark:text-slate-500">Non renseignée</span>
+                      ),
+                    },
+                  ]}
+                  actions={
+                    <>
+                      <label className="mr-auto inline-flex min-h-[44px] cursor-pointer items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-200">
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={(e) => toggleSelectEleve(eleve.id, e as any)}
+                          className="h-5 w-5 rounded border-slate-300 dark:border-slate-600 text-[#1D4ED8] focus:ring-[#1D4ED8]"
+                        />
+                        Sélectionner
+                      </label>
+                      {eleve.remaining > 0 && (
+                        <>
+                          <CardAction
+                            variant="primary"
+                            icon={<CreditCard className="h-4 w-4" aria-hidden="true" />}
+                            onClick={() => setPaymentModalEleve(eleve)}
+                          >
+                            Encaisser
+                          </CardAction>
+                          <CardAction
+                            icon={<Send className="h-4 w-4" aria-hidden="true" />}
+                            onClick={(e) => triggerRelance(eleve, e)}
+                          >
+                            Relancer
+                          </CardAction>
+                        </>
+                      )}
+                      <CardAction icon={<Eye className="h-4 w-4" aria-hidden="true" />} onClick={() => setSelectedEleveModal(eleve)}>
+                        Fiche
+                      </CardAction>
+                    </>
+                  }
+                />
+              );
+            })
+          )}
+        </MobileCardList>
+
+        <div className="hidden sm:block overflow-x-auto">
           <table className="w-full text-left text-sm border-collapse min-w-[750px]">
             <thead>
               <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/60 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
@@ -748,7 +855,7 @@ export const DirectorDashboard: React.FC<DirectorDashboardProps> = ({
                 </th>
                 <th className="py-4 px-5">Élève</th>
                 <th className="py-4 px-5">Tuteur Légal</th>
-                <th className="py-4 px-5">Ville / Quartier</th>
+                <th className="py-4 px-5">Adresse de résidence</th>
                 <th className="py-4 px-5 text-center">Statut</th>
                 <th className="py-4 px-5 text-right">Attendu</th>
                 <th className="py-4 px-5 text-right">Reste</th>
@@ -830,9 +937,13 @@ export const DirectorDashboard: React.FC<DirectorDashboardProps> = ({
                         </div>
                       </td>
 
-                      {/* Ville */}
-                      <td className="py-4 px-5 text-xs text-slate-600 dark:text-slate-400 font-medium">
-                        Tevragh-Zeina
+                      {/* Adresse de résidence (colonne eleves.adresse_tuteur, saisie à l'inscription) */}
+                      <td className="py-4 px-5 text-xs text-slate-600 dark:text-slate-400 font-medium max-w-[220px]">
+                        {eleve.adresse_tuteur ? (
+                          <span className="block truncate" title={eleve.adresse_tuteur}>{eleve.adresse_tuteur}</span>
+                        ) : (
+                          <span className="text-slate-400 dark:text-slate-500">Non renseignée</span>
+                        )}
                       </td>
 
                       {/* Statut Badge en pilule avec point */}

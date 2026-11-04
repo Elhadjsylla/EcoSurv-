@@ -11,6 +11,7 @@ import { StudentInitials } from '../../components/ui/StudentInitials';
 import { ToastNotification } from '../../components/ui/ToastNotification';
 import { Tooltip } from '../../components/ui/Tooltip';
 import { formatMRU } from '../../lib/utils';
+import { NON_ATTRIBUE, NON_RENSEIGNE } from '../../lib/placeholders';
 import { generateReceiptPdf } from '../../lib/pdf/generateReceiptPdf';
 import { useCaisseStore } from '../../store/useCaisseStore';
 import { supabase } from '../../lib/supabase';
@@ -52,6 +53,12 @@ export const CaissierGuichetPage: React.FC<CaissierGuichetPageProps> = ({
   const [methode, setMethode] = useState<MethodePaiement>('especes');
   const [libelle, setLibelle] = useState<string>('');
   const [referenceOperateur, setReferenceOperateur] = useState<string>('');
+  // Le champ référence n'affiche l'erreur qu'après être quitté, ou après une tentative de validation.
+  const [referenceTouched, setReferenceTouched] = useState(false);
+  // Changer de mode de paiement repart d'un champ « neuf » : pas de rouge à l'ouverture.
+  useEffect(() => {
+    setReferenceTouched(false);
+  }, [methode]);
 
   // Reçu émis et modal
   const [printedReceipt, setPrintedReceipt] = useState<CaisseTransaction | null>(null);
@@ -116,14 +123,14 @@ export const CaissierGuichetPage: React.FC<CaissierGuichetPageProps> = ({
           return {
             id: d.id,
             ecole_id: d.ecole_id,
-            matricule: d.matricule || `ECO-${d.id.slice(0, 4).toUpperCase()}`,
+            matricule: d.matricule || NON_ATTRIBUE,
             nom: d.nom,
             prenom: d.prenom,
             date_naissance: d.date_naissance || '',
             lieu_naissance: d.lieu_naissance || '',
             sexe: (d.sexe === 'F' ? 'F' : 'M'),
             classe: d.classe || 'Non assigné',
-            nom_tuteur: d.nom_tuteur || 'Tuteur',
+            nom_tuteur: d.nom_tuteur || NON_RENSEIGNE,
             telephone_tuteur: d.telephone_tuteur || '',
             email_tuteur: d.email_tuteur || '',
             adresse_tuteur: d.adresse_tuteur || '',
@@ -276,6 +283,7 @@ export const CaissierGuichetPage: React.FC<CaissierGuichetPageProps> = ({
     }
 
     if (methode !== 'especes' && !referenceOperateur.trim()) {
+      setReferenceTouched(true);
       setActiveToast({
         message: 'La référence de transaction est obligatoire pour les règlements hors espèces.',
         type: 'warning',
@@ -458,6 +466,7 @@ export const CaissierGuichetPage: React.FC<CaissierGuichetPageProps> = ({
       setSelectedEleveId('');
       setSearchQuery('');
       setReferenceOperateur('');
+      setReferenceTouched(false);
       setLibelle('');
       setMontant(0);
       setMethode('especes');
@@ -487,12 +496,12 @@ export const CaissierGuichetPage: React.FC<CaissierGuichetPageProps> = ({
       {/* Top Banner */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-white dark:bg-slate-900 p-6 sm:p-8 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xs">
         <div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-col items-start gap-2.5 sm:flex-row sm:items-center sm:gap-3">
             <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
               Guichet d'Encaissement & Paiements
             </h1>
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 px-3 py-1 text-xs font-bold text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-blue-100 dark:bg-blue-950/60 px-3 py-1 text-xs font-bold text-primary-text dark:text-primary-text border border-blue-200 dark:border-blue-800/60">
+              <span className="w-1.5 h-1.5 rounded-full bg-primary"></span>
               Guichet Ouvert
             </span>
           </div>
@@ -501,10 +510,10 @@ export const CaissierGuichetPage: React.FC<CaissierGuichetPageProps> = ({
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5 shrink-0">
+        <div className="flex min-w-0 flex-wrap items-center gap-2.5">
           <span className="text-xs font-bold text-slate-500 dark:text-slate-400">Opérateur :</span>
-          <span className="text-xs font-bold text-slate-900 dark:text-white bg-slate-100 dark:bg-slate-800 px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 flex items-center gap-2">
-            <Building className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+          <span className="text-xs font-bold text-slate-900 dark:text-white bg-slate-100 dark:bg-slate-800 px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 flex min-w-0 items-center gap-2">
+            <Building className="h-4 w-4 text-primary-text dark:text-primary-text" />
             {authProfile ? `${authProfile.prenom} ${authProfile.nom}`.trim() : 'Opérateur non identifié'}
           </span>
         </div>
@@ -540,7 +549,7 @@ export const CaissierGuichetPage: React.FC<CaissierGuichetPageProps> = ({
         <div className="lg:col-span-5 space-y-6">
           <Card className="p-6 sm:p-7 rounded-2xl space-y-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xs">
             <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2.5">
-              <Search className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+              <Search className="h-4 w-4 text-primary-text dark:text-primary-text" />
               1. Identifier l'Élève au Guichet
             </h2>
 
@@ -552,7 +561,7 @@ export const CaissierGuichetPage: React.FC<CaissierGuichetPageProps> = ({
                 placeholder="Rechercher par nom, matricule ou tuteur..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full h-11 pl-10 pr-4 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-600 focus:border-transparent transition-all"
+                className="w-full h-11 pl-10 pr-4 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-focus-ring focus:border-transparent transition-all"
               />
             </div>
 
@@ -601,7 +610,7 @@ export const CaissierGuichetPage: React.FC<CaissierGuichetPageProps> = ({
             {/* Selected Student Card */}
             {selectedEleve ? (
               <div className="space-y-3 animate-scale-in">
-                <div className="rounded-2xl border border-amber-200 dark:border-amber-900/60 bg-amber-50/50 dark:bg-amber-950/25 p-4 space-y-3">
+                <div className="rounded-2xl border border-blue-200 dark:border-blue-900/60 bg-blue-50/50 dark:bg-blue-950/25 p-4 space-y-3">
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
                       <StudentInitials
@@ -613,7 +622,7 @@ export const CaissierGuichetPage: React.FC<CaissierGuichetPageProps> = ({
                         <h3 className="text-sm font-bold text-slate-900 dark:text-white">
                           {selectedEleve.prenom} {selectedEleve.nom}
                         </h3>
-                        <p className="text-xs text-amber-800 dark:text-amber-300 font-mono font-bold">
+                        <p className="text-xs text-primary-text dark:text-primary-text font-mono font-bold">
                           {selectedEleve.matricule} • Classe : {selectedEleve.classe}
                         </p>
                       </div>
@@ -633,7 +642,7 @@ export const CaissierGuichetPage: React.FC<CaissierGuichetPageProps> = ({
                     </Tooltip>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2 pt-2 border-t border-amber-200/60 dark:border-amber-900/40 text-xs">
+                  <div className="grid grid-cols-2 gap-2 pt-2 border-t border-blue-200/60 dark:border-blue-900/40 text-xs">
                     <div>
                       <span className="text-slate-500 dark:text-slate-400 text-[11px] block">Tuteur Légal :</span>
                       <span className="font-semibold text-slate-800 dark:text-slate-200">{selectedEleve.nom_tuteur}</span>
@@ -647,17 +656,17 @@ export const CaissierGuichetPage: React.FC<CaissierGuichetPageProps> = ({
                   </div>
 
                   {/* Financial Summary Bento */}
-                  <div className="grid grid-cols-2 gap-2 pt-2 border-t border-amber-200/60 dark:border-amber-900/40 text-center">
-                    <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-amber-200/80 dark:border-amber-900/40">
+                  <div className="grid grid-cols-2 gap-2 pt-2 border-t border-blue-200/60 dark:border-blue-900/40 text-center">
+                    <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-blue-200/80 dark:border-blue-900/40">
                       <span className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 block">
                         Total Déjà Payé
                       </span>
-                      <span className="text-sm font-extrabold font-mono text-emerald-700 dark:text-emerald-400">
+                      <span className="text-sm font-extrabold font-mono text-primary-text dark:text-primary-text">
                         {formatMRU(selectedEleve.total_paid)}
                       </span>
                     </div>
 
-                    <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-amber-200/80 dark:border-amber-900/40">
+                    <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-blue-200/80 dark:border-blue-900/40">
                       <span className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 block">
                         Reste à Recouvrer
                       </span>
@@ -671,7 +680,7 @@ export const CaissierGuichetPage: React.FC<CaissierGuichetPageProps> = ({
                 {/* Échéance ciblée qui sera payée */}
                 {isLoadingEcheance ? (
                   <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40 flex items-center justify-center gap-2 text-xs text-slate-500 dark:text-slate-400">
-                    <Loader2 className="h-4 w-4 animate-spin text-amber-600" />
+                    <Loader2 className="h-4 w-4 animate-spin text-primary-text" />
                     <span>Recherche de la plus ancienne échéance non soldée...</span>
                   </div>
                 ) : activeEcheance ? (
@@ -732,7 +741,7 @@ export const CaissierGuichetPage: React.FC<CaissierGuichetPageProps> = ({
         <div className="lg:col-span-7 space-y-4">
           <Card className="p-6 space-y-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xs">
             <h2 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
-              <CreditCard className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+              <CreditCard className="h-4 w-4 text-primary-text dark:text-primary-text" />
               2. Enregistrement du Règlement au Comptoir
             </h2>
 
@@ -754,7 +763,7 @@ export const CaissierGuichetPage: React.FC<CaissierGuichetPageProps> = ({
                       setMontant(isNaN(val) ? 0 : val);
                     }}
                     placeholder="0"
-                    className="w-full h-12 pl-4 pr-16 text-xl font-extrabold font-mono text-slate-900 dark:text-white bg-white dark:bg-slate-800 rounded-xl border border-slate-300 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-amber-600 focus:border-transparent"
+                    className="w-full h-12 pl-4 pr-16 text-xl font-extrabold font-mono text-slate-900 dark:text-white bg-white dark:bg-slate-800 rounded-xl border border-slate-300 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-focus-ring focus:border-transparent"
                   />
                   <span className="absolute right-4 top-3 text-sm font-bold font-mono text-slate-400 dark:text-slate-500">
                     MRU
@@ -777,7 +786,7 @@ export const CaissierGuichetPage: React.FC<CaissierGuichetPageProps> = ({
                       <button
                         type="button"
                         onClick={() => setMontant(activeEcheance.soldeDisponible)}
-                        className="font-bold font-mono text-amber-700 dark:text-amber-400 hover:underline cursor-pointer"
+                        className="font-bold font-mono text-primary-text dark:text-primary-text hover:underline cursor-pointer"
                       >
                         {formatMRU(activeEcheance.solde_restant)}
                       </button>
@@ -801,7 +810,7 @@ export const CaissierGuichetPage: React.FC<CaissierGuichetPageProps> = ({
                   value={libelle}
                   onChange={(e) => setLibelle(e.target.value)}
                   placeholder="Ex: Acompte, Don, Remarque..."
-                  className="w-full h-10 px-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-600"
+                  className="w-full h-10 px-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-focus-ring"
                 />
               </div>
 
@@ -824,12 +833,12 @@ export const CaissierGuichetPage: React.FC<CaissierGuichetPageProps> = ({
                       onClick={() => setMethode(m.id as MethodePaiement)}
                       className={`py-2.5 px-3 rounded-xl text-xs font-bold transition-all border text-left flex items-center justify-between ${
                         methode === m.id
-                          ? 'bg-amber-50 dark:bg-amber-950/60 border-amber-600 dark:border-amber-500 text-amber-900 dark:text-amber-200 ring-2 ring-amber-500/20 shadow-2xs'
+                          ? 'bg-blue-50 dark:bg-blue-950/60 border-primary dark:border-blue-500 text-blue-900 dark:text-blue-200 ring-2 ring-blue-500/20 shadow-2xs'
                           : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-600'
                       }`}
                     >
                       <span>{m.label}</span>
-                      {methode === m.id && <Check className="h-4 w-4 text-amber-600 dark:text-amber-400" />}
+                      {methode === m.id && <Check className="h-4 w-4 text-primary-text dark:text-primary-text" />}
                     </button>
                   ))}
                 </div>
@@ -845,14 +854,16 @@ export const CaissierGuichetPage: React.FC<CaissierGuichetPageProps> = ({
                     type="text"
                     value={referenceOperateur}
                     onChange={(e) => setReferenceOperateur(e.target.value)}
+                    onBlur={() => setReferenceTouched(true)}
+                    aria-invalid={referenceTouched && !referenceOperateur.trim()}
                     placeholder="Ex: TX-992144, N° Chèque 004812..."
                     className={`w-full h-10 px-3 rounded-xl border bg-white dark:bg-slate-800 text-xs font-mono text-slate-900 dark:text-white focus:outline-none focus:ring-2 ${
-                      !referenceOperateur.trim()
+                      referenceTouched && !referenceOperateur.trim()
                         ? 'border-red-300 dark:border-red-800 focus:ring-red-500'
-                        : 'border-slate-300 dark:border-slate-700 focus:ring-amber-600'
+                        : 'border-slate-300 dark:border-slate-700 focus:ring-focus-ring'
                     }`}
                   />
-                  {!referenceOperateur.trim() && (
+                  {referenceTouched && !referenceOperateur.trim() && (
                     <p className="text-[11px] text-red-600 dark:text-red-400 font-medium">
                       La référence de transaction est obligatoire pour ce mode de paiement.
                     </p>
@@ -871,7 +882,7 @@ export const CaissierGuichetPage: React.FC<CaissierGuichetPageProps> = ({
                     ? 'bg-slate-400 dark:bg-slate-700 text-slate-200 cursor-not-allowed'
                     : isSubmitting || !selectedEleve || !activeEcheance || montant <= 0 || (activeEcheance && montant > activeEcheance.soldeDisponible) || (methode !== 'especes' && !referenceOperateur.trim())
                     ? 'opacity-60 cursor-not-allowed'
-                    : 'bg-amber-600 hover:bg-amber-700 text-white'
+                    : 'bg-primary hover:bg-primary-hover text-white'
                 }`}
                 disabled={isCaisseCloturee || !selectedEleve || isSubmitting || !activeEcheance || montant <= 0 || (activeEcheance && montant > activeEcheance.soldeDisponible) || (methode !== 'especes' && !referenceOperateur.trim())}
                 onClick={handleProcessPayment}
@@ -920,7 +931,7 @@ export const CaissierGuichetPage: React.FC<CaissierGuichetPageProps> = ({
               <div className="flex items-start justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
                 <div>
                   <div className="flex items-center gap-2">
-                    <Receipt className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                    <Receipt className="h-5 w-5 text-primary-text dark:text-primary-text" />
                     <span id="receipt-dialog-title" className="text-sm font-extrabold text-slate-900 dark:text-white">
                       Reçu Officiel d'Encaissement
                     </span>
@@ -935,7 +946,7 @@ export const CaissierGuichetPage: React.FC<CaissierGuichetPageProps> = ({
                     EN ATTENTE DE CONFIRMATION
                   </span>
                 ) : (
-                  <span className="rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 font-bold px-3 py-1 text-xs">
+                  <span className="rounded-full bg-blue-100 dark:bg-blue-950/60 text-primary-text dark:text-primary-text border border-blue-200 dark:border-blue-800/60 font-bold px-3 py-1 text-xs">
                     Payé & Confirmé
                   </span>
                 )}
@@ -964,7 +975,7 @@ export const CaissierGuichetPage: React.FC<CaissierGuichetPageProps> = ({
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-500 dark:text-slate-400">Mode de règlement :</span>
-                    <span className="font-bold uppercase text-amber-700 dark:text-amber-400">
+                    <span className="font-bold uppercase text-primary-text dark:text-primary-text">
                       {printedReceipt.methode}
                     </span>
                   </div>
@@ -986,19 +997,19 @@ export const CaissierGuichetPage: React.FC<CaissierGuichetPageProps> = ({
                 <div className={`p-4 rounded-2xl border text-center ${
                   printedReceipt.statut === 'en_attente'
                     ? 'bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800/60'
-                    : 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800/60'
+                    : 'bg-blue-50 dark:bg-blue-950/40 border-blue-200 dark:border-blue-800/60'
                 }`}>
                   <span className={`text-xs font-bold uppercase tracking-wider block ${
                     printedReceipt.statut === 'en_attente'
                       ? 'text-amber-800 dark:text-amber-300'
-                      : 'text-emerald-800 dark:text-emerald-300'
+                      : 'text-primary-text dark:text-primary-text'
                   }`}>
                     {printedReceipt.statut === 'en_attente' ? 'Montant Déclaré (En Attente)' : 'Montant Encaissé'}
                   </span>
                   <span className={`text-3xl font-extrabold font-mono mt-1 block ${
                     printedReceipt.statut === 'en_attente'
                       ? 'text-amber-700 dark:text-amber-400'
-                      : 'text-emerald-700 dark:text-emerald-400'
+                      : 'text-primary-text dark:text-primary-text'
                   }`}>
                     {formatMRU(printedReceipt.montant)}
                   </span>
@@ -1019,7 +1030,7 @@ export const CaissierGuichetPage: React.FC<CaissierGuichetPageProps> = ({
                 <Button
                   variant="primary"
                   size="sm"
-                  className="gap-2 bg-amber-600 hover:bg-amber-700 text-white"
+                  className="gap-2 bg-primary hover:bg-primary-hover text-white"
                   onClick={() => {
                     generateReceiptPdf(
                       {

@@ -14,12 +14,14 @@ import { supabase } from '../lib/supabase';
 import { StudentInitials } from '../components/ui/StudentInitials';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { Button } from '../components/ui/Button';
+import { HeaderActions, ACTION_PRIMARY, ACTION_SECONDARY, ActionLabel } from '../components/ui/HeaderActions';
 import { Card } from '../components/ui/Card';
 import { ToastNotification } from '../components/ui/ToastNotification';
 import { KpiCard } from '../components/ui/KpiCard';
 import { Tooltip } from '../components/ui/Tooltip';
 import { StudentDetailDrawer } from '../components/dashboard/StudentDetailDrawer';
 import { formatMRU } from '../lib/utils';
+import { NON_ATTRIBUE, NON_RENSEIGNE, NON_RENSEIGNEE } from '../lib/placeholders';
 import { formatCompactMRU } from '../lib/formatCompactMRU';
 import { StudentEnrollmentModal } from '../components/eleves/StudentEnrollmentModal';
 import { AdaptiveTable } from '../components/ui/AdaptiveTable';
@@ -114,14 +116,14 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
           return {
             id: d.id,
             ecole_id: d.ecole_id,
-            matricule: d.matricule || `ECO-${d.id.slice(0, 4).toUpperCase()}`,
+            matricule: d.matricule || NON_ATTRIBUE,
             nom: d.nom,
             prenom: d.prenom,
             date_naissance: d.date_naissance || '',
             lieu_naissance: d.lieu_naissance || '',
             sexe: (d.sexe === 'F' ? 'F' : 'M') as 'M' | 'F',
             classe: d.classe || 'Non assigné',
-            nom_tuteur: d.nom_tuteur || 'Tuteur',
+            nom_tuteur: d.nom_tuteur || NON_RENSEIGNE,
             telephone_tuteur: d.telephone_tuteur || '',
             email_tuteur: d.email_tuteur || '',
             adresse_tuteur: d.adresse_tuteur || '',
@@ -548,7 +550,7 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
       {/* Top Institutional Header & Global Actions */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-2xs">
         <div className="space-y-1">
-          <div className="flex items-center gap-2.5">
+          <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:gap-2.5">
             <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
               Gestion des Élèves & Scolarités
             </h1>
@@ -563,20 +565,22 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <HeaderActions>
           <Button
             variant="outline"
             size="sm"
-            className="gap-2 h-10 px-4"
+            aria-label="Exporter Excel"
+            className={`gap-2 h-11 sm:h-10 ${ACTION_SECONDARY}`}
             onClick={handleBulkExport}
           >
-            <ArrowDownToLine className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-            Exporter Excel
+            <ArrowDownToLine className="h-4 w-4 shrink-0 text-blue-600 dark:text-blue-400" />
+            <ActionLabel short="Exporter" full="Exporter Excel" />
           </Button>
           <Button
             variant="outline"
             size="sm"
-            className="gap-2 h-10 px-4 disabled:opacity-50 disabled:cursor-not-allowed"
+            aria-label="Import Excel/CSV"
+            className={`gap-2 h-11 sm:h-10 disabled:opacity-50 disabled:cursor-not-allowed ${ACTION_SECONDARY}`}
             onClick={handleImportClick}
             disabled={isImporting || !anneeScolaire || hasNoClasses}
             title={
@@ -589,13 +593,14 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
             loading={isImporting}
             loadingText="Lecture du fichier..."
           >
-            <FileSpreadsheet className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-            Import Excel/CSV
+            <FileSpreadsheet className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
+            <ActionLabel short="Importer" full="Import Excel/CSV" />
           </Button>
           <Button
             variant="primary"
             size="sm"
-            className="gap-2 h-10 px-4 disabled:opacity-50 disabled:cursor-not-allowed"
+            aria-label="Inscrire un nouvel élève"
+            className={`gap-2 h-11 sm:h-10 px-4 disabled:opacity-50 disabled:cursor-not-allowed ${ACTION_PRIMARY}`}
             disabled={!anneeScolaire || hasNoClasses}
             title={
               !anneeScolaire
@@ -610,10 +615,10 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
               setIsEnrollModalOpen(true);
             }}
           >
-            <UserPlus className="h-4 w-4" />
+            <UserPlus className="h-4 w-4 shrink-0" />
             + Inscrire un nouvel élève
           </Button>
-        </div>
+        </HeaderActions>
       </div>
 
       {/* Garde année scolaire vide */}
@@ -966,7 +971,7 @@ export const ElevesPage: React.FC<ElevesPageProps> = ({
               cardLabel: 'Quartier',
               className: 'hidden md:table-cell text-xs text-slate-600 dark:text-slate-400 font-medium',
               render: (eleve) =>
-                eleve.adresse_tuteur ? eleve.adresse_tuteur.split(',')[0] : 'Tevragh-Zeina',
+                eleve.adresse_tuteur ? eleve.adresse_tuteur.split(',')[0] : NON_RENSEIGNEE,
             },
             {
               id: 'statut',

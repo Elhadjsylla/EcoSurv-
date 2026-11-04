@@ -6,7 +6,9 @@ import {
   CalendarCheck2,
   BookOpenCheck,
   GraduationCap,
+  FileText,
 } from 'lucide-react';
+import { useDeclarationsEnAttenteCount } from '../../hooks/useDeclarationsAbsence';
 // Teacher Navigation
 import { useAuthStore } from '../../store/useAuthStore';
 import { Tooltip, TooltipLabel } from '../ui/Tooltip';
@@ -16,6 +18,7 @@ export type TeacherNavTab =
   | 'teacher_dashboard'
   | 'teacher_classes'
   | 'teacher_absences'
+  | 'teacher_declarations'
   | 'teacher_grades';
 
 interface TeacherSidebarProps {
@@ -35,6 +38,8 @@ export const TeacherSidebar: React.FC<TeacherSidebarProps> = ({
   const storeT = useLanguageStore((s) => s.t);
   const t = storeT?.nav ? storeT : translations.fr;
   const authProfile = useAuthStore((s) => s.profile);
+  // null tant que la base n'a pas répondu : aucune pastille.
+  const declarationsEnAttente = useDeclarationsEnAttenteCount();
 
   const teacherName = authProfile
     ? `${authProfile.prenom} ${authProfile.nom}`
@@ -63,6 +68,12 @@ export const TeacherSidebar: React.FC<TeacherSidebarProps> = ({
       icon: <CalendarCheck2 className="h-4 w-4 shrink-0" />,
     },
     {
+      id: 'teacher_declarations',
+      label: 'Déclarations d’absence',
+      icon: <FileText className="h-4 w-4 shrink-0" />,
+      badge: declarationsEnAttente && declarationsEnAttente > 0 ? String(declarationsEnAttente) : undefined,
+    },
+    {
       id: 'teacher_grades',
       label: t.nav?.grades || 'Saisie des Notes',
       icon: <BookOpenCheck className="h-4 w-4 shrink-0" />,
@@ -80,16 +91,16 @@ export const TeacherSidebar: React.FC<TeacherSidebarProps> = ({
         <>
           {/* Teacher Info Card in Sidebar (expanded only) */}
           {!isCollapsed && (
-            <div className="p-4 mx-3 mt-4 rounded-xl bg-emerald-50/60 dark:bg-emerald-950/30 border border-emerald-100 dark:border-emerald-900/50">
+            <div className="p-4 mx-3 mt-4 rounded-xl bg-blue-50/60 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900/50">
               <div className="flex items-center gap-2.5">
-                <div className="h-8 w-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center text-xs font-bold shrink-0">
+                <div className="h-8 w-8 rounded-lg bg-primary text-white flex items-center justify-center text-xs font-bold shrink-0">
                   {teacherName[0] || 'E'}
                 </div>
                 <div className="min-w-0">
                   <div className="text-xs font-bold text-slate-900 dark:text-white truncate">
                     {teacherName}
                   </div>
-                  <div className="text-[11px] text-emerald-700 dark:text-emerald-400 truncate font-medium">
+                  <div className="text-[11px] text-primary-text dark:text-primary-text truncate font-medium">
                     {storeT.common?.teacher || translations.fr.common.teacher || 'Enseignant'}
                   </div>
                 </div>
@@ -121,7 +132,7 @@ export const TeacherSidebar: React.FC<TeacherSidebarProps> = ({
                     className={cn(
                       'w-full flex items-center justify-between gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all group',
                       isActive
-                        ? 'bg-emerald-600 text-white shadow-xs'
+                        ? 'bg-primary text-white shadow-xs'
                         : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-slate-800/80',
                       isCollapsed && 'justify-center px-2.5'
                     )}
@@ -145,8 +156,8 @@ export const TeacherSidebar: React.FC<TeacherSidebarProps> = ({
                         className={cn(
                           'px-2 py-0.5 text-[10px] font-bold rounded-full',
                           isActive
-                            ? 'bg-white text-emerald-700'
-                            : 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60'
+                            ? 'bg-white text-primary-text'
+                            : 'bg-blue-100 dark:bg-blue-950/80 text-primary-text dark:text-primary-text border border-blue-200 dark:border-blue-800/60'
                         )}
                       >
                         {item.badge}

@@ -10,11 +10,11 @@ const accentHover: Record<UserRole, string> = {
   directeur:
     'enabled:hover:text-blue-600 enabled:hover:bg-blue-50 enabled:hover:border-blue-200 dark:enabled:hover:text-blue-300 dark:enabled:hover:bg-blue-950/60 dark:enabled:hover:border-blue-800',
   enseignant:
-    'enabled:hover:text-emerald-600 enabled:hover:bg-emerald-50 enabled:hover:border-emerald-200 dark:enabled:hover:text-emerald-300 dark:enabled:hover:bg-emerald-950/60 dark:enabled:hover:border-emerald-800',
+    'enabled:hover:text-blue-600 enabled:hover:bg-blue-50 enabled:hover:border-blue-200 dark:enabled:hover:text-blue-300 dark:enabled:hover:bg-blue-950/60 dark:enabled:hover:border-blue-800',
   caissier:
-    'enabled:hover:text-amber-600 enabled:hover:bg-amber-50 enabled:hover:border-amber-200 dark:enabled:hover:text-amber-300 dark:enabled:hover:bg-amber-950/60 dark:enabled:hover:border-amber-800',
+    'enabled:hover:text-blue-600 enabled:hover:bg-blue-50 enabled:hover:border-blue-200 dark:enabled:hover:text-blue-300 dark:enabled:hover:bg-blue-950/60 dark:enabled:hover:border-blue-800',
   parent:
-    'enabled:hover:text-purple-600 enabled:hover:bg-purple-50 enabled:hover:border-purple-200 dark:enabled:hover:text-purple-300 dark:enabled:hover:bg-purple-950/60 dark:enabled:hover:border-purple-800',
+    'enabled:hover:text-blue-600 enabled:hover:bg-blue-50 enabled:hover:border-blue-200 dark:enabled:hover:text-blue-300 dark:enabled:hover:bg-blue-950/60 dark:enabled:hover:border-blue-800',
   super_admin:
     'enabled:hover:text-purple-600 enabled:hover:bg-purple-50 enabled:hover:border-purple-200 dark:enabled:hover:text-purple-300 dark:enabled:hover:bg-purple-950/60 dark:enabled:hover:border-purple-800',
 };
