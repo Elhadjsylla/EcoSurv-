@@ -21,6 +21,7 @@ export const ROUTE_TO_PATH: Record<string, string> = {
   eleves: '/eleves',
   echeances: '/echeances',
   paiements_attente: '/paiements-en-attente',
+  declarations_absence: '/declarations-absence',
   relances: '/relances',
   rapports: '/rapports',
   config: '/configuration',
@@ -29,6 +30,7 @@ export const ROUTE_TO_PATH: Record<string, string> = {
   teacher_dashboard: '/enseignant/dashboard',
   teacher_classes: '/enseignant/classes',
   teacher_absences: '/enseignant/absences',
+  teacher_declarations: '/enseignant/declarations',
   teacher_grades: '/enseignant/notes',
 
   // Portail Caissier
@@ -62,6 +64,7 @@ export function parsePath(pathname: string): RouteMatch {
   if (clean === '/eleves') return { viewMode: 'app', portal: 'directeur', route: 'eleves' };
   if (clean === '/echeances') return { viewMode: 'app', portal: 'directeur', route: 'echeances' };
   if (clean === '/paiements-en-attente' || clean === '/paiements-attente') return { viewMode: 'app', portal: 'directeur', route: 'paiements_attente' };
+  if (clean === '/declarations-absence') return { viewMode: 'app', portal: 'directeur', route: 'declarations_absence' };
   if (clean === '/relances') return { viewMode: 'app', portal: 'directeur', route: 'relances' };
   if (clean === '/rapports') return { viewMode: 'app', portal: 'directeur', route: 'rapports' };
   if (clean === '/configuration' || clean === '/config') return { viewMode: 'app', portal: 'directeur', route: 'config' };
@@ -70,6 +73,7 @@ export function parsePath(pathname: string): RouteMatch {
   if (clean === '/enseignant' || clean === '/enseignant/dashboard') return { viewMode: 'app', portal: 'enseignant', route: 'teacher_dashboard' };
   if (clean === '/enseignant/classes') return { viewMode: 'app', portal: 'enseignant', route: 'teacher_classes' };
   if (clean === '/enseignant/absences') return { viewMode: 'app', portal: 'enseignant', route: 'teacher_absences' };
+  if (clean === '/enseignant/declarations') return { viewMode: 'app', portal: 'enseignant', route: 'teacher_declarations' };
   if (clean === '/enseignant/notes' || clean === '/enseignant/grades') return { viewMode: 'app', portal: 'enseignant', route: 'teacher_grades' };
 
   // Routes Caissier
@@ -94,4 +98,22 @@ export function getPathForState(viewMode: ViewMode, currentRoute?: AppRoute): st
     return ROUTE_TO_PATH[currentRoute] || '/dashboard';
   }
   return ROUTE_TO_PATH[viewMode] || '/';
+}
+
+/**
+ * Pages légales publiques : accessibles avec ou sans session, sans redirection.
+ * Elles ne font pas partie des vues de l'application (ViewMode) ; App les affiche
+ * directement à partir de l'URL.
+ */
+export const LEGAL_PATHS: Record<string, string> = {
+  '/mentions-legales': 'mentions-legales',
+  '/cgu': 'cgu',
+  '/confidentialite': 'confidentialite',
+  '/cookies': 'cookies',
+};
+
+/** Retourne le slug de la page légale correspondant au pathname, ou null. */
+export function getLegalSlug(pathname: string): string | null {
+  const clean = pathname.toLowerCase().replace(/\/+$/, '') || '/';
+  return LEGAL_PATHS[clean] ?? null;
 }

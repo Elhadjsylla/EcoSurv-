@@ -330,6 +330,9 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             type="button"
             onClick={() => setIsProfileOpen(!isProfileOpen)}
+            data-profile-trigger
+            aria-haspopup="menu"
+            aria-expanded={isProfileOpen}
             className="flex items-center gap-1.5 sm:gap-2 h-9 p-1 pl-1.5 rounded-sm hover:bg-surface-subtle transition-colors focus-halo cursor-pointer"
           >
             <StudentInitials

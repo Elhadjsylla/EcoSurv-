@@ -60,8 +60,8 @@ export function generateBulletinPdf(data: BulletinData): jsPDF {
     data.trimestre === 'T1'
       ? '1er TRIMESTRE'
       : data.trimestre === 'T2'
-      ? '2ème TRIMESTRE'
-      : '3ème TRIMESTRE';
+        ? '2ème TRIMESTRE'
+        : '3ème TRIMESTRE';
 
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(13);
@@ -191,7 +191,7 @@ export function generateBulletinPdf(data: BulletinData): jsPDF {
     // Appréciation
     doc.setTextColor(71, 85, 105);
     doc.setFontSize(7.5);
-    const appreciation = m.appreciation || 'Travail régulier et satisfaisant';
+    const appreciation = m.appreciation || '—';
     doc.text(appreciation.length > 34 ? appreciation.slice(0, 32) + '...' : appreciation, tableX + 144, y + 4.8);
     doc.setFontSize(8);
 
@@ -237,14 +237,14 @@ export function generateBulletinPdf(data: BulletinData): jsPDF {
   const mention = !hasNotes
     ? '—'
     : data.moyenneGenerale >= 16
-    ? 'Très Bien — Félicitations du Conseil de Classe'
-    : data.moyenneGenerale >= 14
-    ? 'Bien — Tableau d\'Honneur avec Encouragements'
-    : data.moyenneGenerale >= 12
-    ? 'Assez Bien — Tableau d\'Honneur'
-    : data.moyenneGenerale >= 10
-    ? 'Passable — Travail à consolider'
-    : 'Insuffisant — Redoublement d\'efforts nécessaire';
+      ? 'Très Bien — Félicitations du Conseil de Classe'
+      : data.moyenneGenerale >= 14
+        ? 'Bien — Tableau d\'Honneur avec Encouragements'
+        : data.moyenneGenerale >= 12
+          ? 'Assez Bien — Tableau d\'Honneur'
+          : data.moyenneGenerale >= 10
+            ? 'Passable — Travail à consolider'
+            : 'Insuffisant — Redoublement d\'efforts nécessaire';
 
   doc.text(`Moyenne Générale de l'élève : `, tableX + 5, y + 13);
   doc.setFont('helvetica', 'bold');
@@ -275,7 +275,7 @@ export function generateBulletinPdf(data: BulletinData): jsPDF {
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(7.5);
   doc.setTextColor(100, 116, 139);
-  doc.text('Fait à Nouakchott, le ' + new Date().toLocaleDateString('fr-FR'), tableX + tableW, y, { align: 'right' });
+  doc.text('Établi le ' + new Date().toLocaleDateString('fr-FR'), tableX + tableW, y, { align: 'right' });
 
   y += 5;
   doc.setFont('helvetica', 'bold');

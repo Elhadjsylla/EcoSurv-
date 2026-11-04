@@ -83,10 +83,10 @@ export const ParentSidebar: React.FC<ParentSidebarProps> = ({
         <>
           {/* Parent & Children Selector (expanded only) */}
           {!isCollapsed && (
-            <div className="p-3 mx-3 mt-3 rounded-xl bg-purple-50/60 dark:bg-purple-950/30 border border-purple-100 dark:border-purple-900/50">
+            <div className="p-3 mx-3 mt-3 rounded-xl bg-blue-50/60 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900/50">
               <div className="flex items-center justify-between text-xs font-bold text-slate-900 dark:text-white mb-2">
                 <div className="flex items-center gap-1.5">
-                  <Users className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
+                  <Users className="h-3.5 w-3.5 text-primary-text dark:text-primary-text" />
                   <span>Enfants scolarisés ({parentChildren.length})</span>
                 </div>
               </div>
@@ -106,8 +106,8 @@ export const ParentSidebar: React.FC<ParentSidebarProps> = ({
                         className={cn(
                           'w-full text-left p-2 rounded-lg transition-all flex items-center justify-between',
                           isChildSelected
-                            ? 'bg-purple-600 text-white shadow-xs font-semibold'
-                            : 'hover:bg-purple-100/60 dark:hover:bg-purple-900/40 text-slate-700 dark:text-slate-300'
+                            ? 'bg-primary text-white shadow-xs font-semibold'
+                            : 'hover:bg-blue-100/60 dark:hover:bg-blue-900/40 text-slate-700 dark:text-slate-300'
                         )}
                       >
                         <div className="min-w-0">
@@ -118,7 +118,7 @@ export const ParentSidebar: React.FC<ParentSidebarProps> = ({
                             className={cn(
                               'text-[10px] truncate',
                               isChildSelected
-                                ? 'text-purple-100'
+                                ? 'text-white'
                                 : 'text-slate-500 dark:text-slate-400'
                             )}
                           >
@@ -170,7 +170,7 @@ export const ParentSidebar: React.FC<ParentSidebarProps> = ({
                     className={cn(
                       'w-full flex items-center justify-between gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all group',
                       isActive
-                        ? 'bg-purple-600 text-white shadow-xs'
+                        ? 'bg-primary text-white shadow-xs'
                         : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-slate-800/80',
                       isCollapsed && 'justify-center px-2.5'
                     )}
@@ -194,7 +194,7 @@ export const ParentSidebar: React.FC<ParentSidebarProps> = ({
                         className={cn(
                           'px-2 py-0.5 text-[10px] font-bold rounded-full',
                           isActive
-                            ? 'bg-white text-purple-700'
+                            ? 'bg-white text-primary-text'
                             : 'bg-rose-100 dark:bg-rose-950/80 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800/60'
                         )}
                       >

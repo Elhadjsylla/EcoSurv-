@@ -41,7 +41,7 @@ export function generateReceiptPdf(data: ReceiptData, action: 'download' | 'prin
   // En-tête de l'établissement
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(11);
-  doc.text(data.ecoleNom || 'Établissement Privé EcoSurv', pageWidth / 2, y, { align: 'center' });
+  doc.text(data.ecoleNom || 'Établissement non renseigné', pageWidth / 2, y, { align: 'center' });
 
   // Ligne établissement secondaire (ville si présente, sinon omise)
   if (data.ecoleVille) {
@@ -184,7 +184,7 @@ export function generateReceiptPdf(data: ReceiptData, action: 'download' | 'prin
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(6.5);
   doc.setTextColor(120, 120, 120);
-  doc.text(`Opérateur de caisse : ${data.caissierNom || 'Guichet Central'}`, pageWidth / 2, y, { align: 'center' });
+  doc.text(`Opérateur de caisse : ${data.caissierNom || 'non renseigné'}`, pageWidth / 2, y, { align: 'center' });
 
   y += 3.5;
   const mentionRecu = isEnAttente

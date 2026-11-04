@@ -5,6 +5,9 @@ import { useAuthStore } from '../../store/useAuthStore';
 import { useParentChildren } from '../../hooks/useParentChildren';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
+import { Reveal } from '../../components/ui/Reveal';
+import { Skeleton } from '../../components/admin/adminUi';
+import { HeaderActions, ACTION_PRIMARY, ACTION_SECONDARY_FULL } from '../../components/ui/HeaderActions';
 import { KpiCard } from '../../components/ui/KpiCard';
 import { formatMRU } from '../../lib/utils';
 import {
@@ -102,12 +105,12 @@ export const ParentDashboardPage: React.FC<ParentDashboardPageProps> = ({
   }, [activeChild?.id]);
 
   return (
-    <div className="p-6 sm:p-8 lg:p-10 max-w-6xl mx-auto space-y-8 sm:space-y-10 animate-stagger-rise relative">
+    <div className="p-6 sm:p-8 lg:p-10 max-w-6xl mx-auto space-y-8 sm:space-y-10 relative">
       {/* Welcome Banner */}
-      <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 sm:p-8 border border-slate-200 dark:border-slate-800 shadow-2xs relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-6">
+      <Reveal index={0} className="bg-white dark:bg-slate-900 rounded-2xl p-6 sm:p-8 border border-slate-200 dark:border-slate-800 shadow-2xs relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
           <div className="flex items-center gap-2.5 mb-2">
-            <span className="px-3 py-1 rounded-full text-xs font-bold bg-purple-100 dark:bg-purple-950/60 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-800/60">
+            <span className="px-3 py-1 rounded-full text-xs font-bold bg-blue-100 dark:bg-blue-950/60 text-primary-text dark:text-primary-text border border-blue-200 dark:border-blue-800/60">
               Espace Tuteur Légal
             </span>
             <span className="text-xs text-slate-500 dark:text-slate-400">• {ecoleNom}</span>
@@ -131,13 +134,13 @@ export const ParentDashboardPage: React.FC<ParentDashboardPageProps> = ({
                 onClick={() => onSelectChild(item.id)}
                 className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all border ${
                   isSelected
-                    ? 'bg-purple-600 text-white border-purple-600 shadow-xs'
+                    ? 'bg-primary text-white border-primary shadow-xs'
                     : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'
                 }`}
               >
                 <span
                   className={`h-5 w-5 rounded-full flex items-center justify-center text-[10px] ${
-                    isSelected ? 'bg-white text-purple-700 font-black' : 'bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300'
+                    isSelected ? 'bg-white text-primary-text font-black' : 'bg-blue-100 dark:bg-blue-950 text-primary-text dark:text-primary-text'
                   }`}
                 >
                   {item.photo_initiales}
@@ -148,10 +151,20 @@ export const ParentDashboardPage: React.FC<ParentDashboardPageProps> = ({
             );
           })}
         </div>
-      </div>
+      </Reveal>
 
       {/* État d'erreur SQL / RLS / Réseau vs État vide légitime (0 enfant) vs Enfant sélectionné */}
-      {childrenError ? (
+      {isChildrenLoading && !activeChild && !childrenError ? (
+        /* Chargement : squelettes à la place de l'état vide, sans saut de mise en page */
+        <div aria-busy="true" aria-label="Chargement des informations de l'enfant" className="space-y-6">
+          <Skeleton className="h-24 w-full rounded-2xl" />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <Skeleton className="h-36 w-full rounded-md" />
+            <Skeleton className="h-36 w-full rounded-md" />
+            <Skeleton className="h-36 w-full rounded-md" />
+          </div>
+        </div>
+      ) : childrenError ? (
         <div className="bg-white dark:bg-slate-900 rounded-2xl p-8 border border-rose-200 dark:border-rose-900/60 shadow-2xs text-center space-y-4 max-w-xl mx-auto">
           <div className="h-14 w-14 rounded-2xl bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center mx-auto shadow-sm">
             <AlertCircle className="h-7 w-7" />
@@ -177,7 +190,7 @@ export const ParentDashboardPage: React.FC<ParentDashboardPageProps> = ({
         </div>
       ) : !activeChild ? (
         <div className="bg-white dark:bg-slate-900 rounded-2xl p-8 border border-slate-200 dark:border-slate-800 shadow-2xs text-center space-y-4 max-w-xl mx-auto">
-          <div className="h-14 w-14 rounded-2xl bg-purple-100 dark:bg-purple-950 text-purple-600 dark:text-purple-400 flex items-center justify-center mx-auto shadow-sm">
+          <div className="h-14 w-14 rounded-2xl bg-blue-100 dark:bg-blue-950 text-primary-text dark:text-primary-text flex items-center justify-center mx-auto shadow-sm">
             <Users className="h-7 w-7" />
           </div>
           <h2 className="text-xl font-bold text-slate-900 dark:text-white">
@@ -191,7 +204,7 @@ export const ParentDashboardPage: React.FC<ParentDashboardPageProps> = ({
         <>
         <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-6">
           <div className="flex items-center gap-4">
-            <div className="h-14 w-14 rounded-2xl bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300 font-extrabold text-xl flex items-center justify-center shrink-0 border border-purple-200 dark:border-purple-800">
+            <div className="h-14 w-14 rounded-2xl bg-blue-100 dark:bg-blue-950 text-primary-text dark:text-primary-text font-extrabold text-xl flex items-center justify-center shrink-0 border border-blue-200 dark:border-blue-800">
               {activeChild.photo_initiales}
             </div>
             <div>
@@ -199,7 +212,7 @@ export const ParentDashboardPage: React.FC<ParentDashboardPageProps> = ({
                 <h2 className="text-xl font-bold text-slate-900 dark:text-white">
                   {activeChild.prenom} {activeChild.nom}
                 </h2>
-                <span className="px-3 py-1 rounded-full text-xs font-bold bg-purple-50 dark:bg-purple-950/60 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-800/60">
+                <span className="px-3 py-1 rounded-full text-xs font-bold bg-blue-50 dark:bg-blue-950/60 text-primary-text dark:text-primary-text border border-blue-200 dark:border-blue-800/60">
                   {activeChild.classe}
                 </span>
               </div>
@@ -211,32 +224,34 @@ export const ParentDashboardPage: React.FC<ParentDashboardPageProps> = ({
           </div>
         </div>
 
-        <div className="flex items-center gap-3 shrink-0">
+        <HeaderActions>
           <Button
             variant="outline"
             size="sm"
             onClick={() => onNavigateTab('parent_pedagogie')}
-            className="text-xs font-semibold gap-2 px-3.5 py-2 border-purple-200 dark:border-purple-800 text-purple-700 dark:text-purple-300 hover:bg-purple-50 dark:hover:bg-purple-950/40"
+            className={`${ACTION_SECONDARY_FULL} text-xs font-semibold gap-2 px-3.5 py-2 border-blue-200 dark:border-blue-800 text-primary-text dark:text-primary-text hover:bg-blue-50 dark:hover:bg-blue-950/40`}
           >
-            <GraduationCap className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+            <GraduationCap className="h-4 w-4 text-primary-text dark:text-primary-text" />
             Voir le Bulletin
           </Button>
           {activeChild.remaining > 0 && (
             <Button
               size="sm"
               onClick={() => onNavigateTab('parent_paiements')}
-              className="bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold gap-2 px-3.5 py-2 shadow-xs"
+              className={`${ACTION_PRIMARY} bg-primary hover:bg-primary-hover text-white text-xs font-semibold gap-2 px-3.5 py-2 shadow-xs`}
             >
               <CreditCard className="h-4 w-4" />
               Régler ({formatMRU(activeChild.remaining)})
             </Button>
           )}
-        </div>
+        </HeaderActions>
       </div>
 
       {/* 3 Pastel KPI Cards (Nexoov Style with Purple Accent) */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <KpiCard
+          loading={false}
+          staggerIndex={1}
           title="Frais de Scolarité"
           amount={activeChild.remaining}
           unit="MRU"
@@ -247,21 +262,24 @@ export const ParentDashboardPage: React.FC<ParentDashboardPageProps> = ({
               ? `Compte à jour (${formatMRU(activeChild.total_paid)} réglés)`
               : `Total scolarité : ${formatMRU(activeChild.total_due)}`
           }
-          icon={<CreditCard className="w-5 h-5 text-purple-600 dark:text-purple-400" />}
+          icon={<CreditCard className="w-5 h-5 text-primary-text dark:text-primary-text" />}
           variant={activeChild.total_due > 0 && activeChild.remaining === 0 ? 'success' : 'purple'}
           onClick={() => onNavigateTab('parent_paiements')}
         />
 
         <KpiCard
+          staggerIndex={2}
           title="Résultats Scolaires"
           customValue="—"
           subtitle="Aucune note saisie ce trimestre"
-          icon={<GraduationCap className="w-5 h-5 text-purple-600 dark:text-purple-400" />}
+          icon={<GraduationCap className="w-5 h-5 text-primary-text dark:text-primary-text" />}
           variant="purple"
           onClick={() => onNavigateTab('parent_pedagogie')}
         />
 
         <KpiCard
+          loading={absencesState.status === 'loading' || absencesState.status === 'idle'}
+          staggerIndex={3}
           title="Assiduité & Présence"
           customValue={
             absencesState.status === 'loading' || absencesState.status === 'idle'
@@ -299,7 +317,7 @@ export const ParentDashboardPage: React.FC<ParentDashboardPageProps> = ({
         <Card className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xs">
           <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3 mb-4">
             <div className="flex items-center gap-2">
-              <Clock className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+              <Clock className="h-4 w-4 text-primary-text dark:text-primary-text" />
               <h3 className="text-sm font-bold text-slate-900 dark:text-white">
                 Emploi du Temps
               </h3>
@@ -318,14 +336,14 @@ export const ParentDashboardPage: React.FC<ParentDashboardPageProps> = ({
         <Card className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xs">
           <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3 mb-4">
             <div className="flex items-center gap-2">
-              <GraduationCap className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+              <GraduationCap className="h-4 w-4 text-primary-text dark:text-primary-text" />
               <h3 className="text-sm font-bold text-slate-900 dark:text-white">
                 Dernières Notes Reçues
               </h3>
             </div>
             <button
               onClick={() => onNavigateTab('parent_pedagogie')}
-              className="text-xs font-bold text-purple-600 dark:text-purple-400 hover:underline"
+              className="text-xs font-bold text-primary-text dark:text-primary-text hover:underline"
             >
               Tout voir
             </button>
@@ -342,28 +360,32 @@ export const ParentDashboardPage: React.FC<ParentDashboardPageProps> = ({
       {/* Contacts de l'Établissement */}
       <Card className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xs flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-purple-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+          <div className="h-10 w-10 rounded-xl bg-primary text-white flex items-center justify-center shrink-0 shadow-xs">
             <School className="h-5 w-5 text-white" />
           </div>
           <div>
             <h4 className="text-sm font-bold text-slate-900 dark:text-white">{ecoleNom} • Secrétariat</h4>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              Ouvert du Lundi au Vendredi de 08:00 à 17:00 (Tevragh-Zeina)
+              {ecole.ville ? ecole.ville : 'Localité non renseignée'}
             </p>
           </div>
         </div>
 
         <div className="flex items-center gap-3">
+          {ecole.telephone ? (
           <a
             href={`tel:${ecole.telephone}`}
             className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition-colors"
           >
-            <Phone className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
+            <Phone className="h-3.5 w-3.5 text-primary-text dark:text-primary-text" />
             {ecole.telephone}
           </a>
+          ) : (
+            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Téléphone non renseigné</span>
+          )}
           <button
             onClick={() => onNavigateTab('parent_assiduite')}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-xs font-semibold text-white transition-colors shadow-xs"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-primary hover:bg-primary-hover text-xs font-semibold text-white transition-colors shadow-xs"
           >
             <Calendar className="h-3.5 w-3.5" />
             Déclarer Absence

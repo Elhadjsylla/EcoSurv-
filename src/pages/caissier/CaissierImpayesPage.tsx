@@ -5,6 +5,7 @@ import { Select } from '../../components/ui/Select';
 import { StudentInitials } from '../../components/ui/StudentInitials';
 import { KpiCard } from '../../components/ui/KpiCard';
 import { formatMRU } from '../../lib/utils';
+import { NON_ATTRIBUE, NON_RENSEIGNE } from '../../lib/placeholders';
 import {
   AlertCircle,
   CheckCircle2,
@@ -20,6 +21,7 @@ import {
 
 import { useAuthStore } from '../../store/useAuthStore';
 import { useCaisseStore } from '../../store/useCaisseStore';
+import { MobileCardList, MobileCard, CardAction } from '../../components/ui/MobileCards';
 import { supabase } from '../../lib/supabase';
 
 interface CaissierImpayesPageProps {
@@ -33,6 +35,9 @@ export const CaissierImpayesPage: React.FC<CaissierImpayesPageProps> = ({
   const refreshKey = useCaisseStore((s) => s.refreshKey);
   const [realEleves, setRealEleves] = useState<EleveWithStats[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  // Première réponse reçue : tant qu'elle manque, les cartes KPI affichent un squelette
+  const [hasLoaded, setHasLoaded] = useState(false);
+  const kpiLoading = !hasLoaded && Boolean(authProfile?.ecole_id);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedClasse, setSelectedClasse] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | 'en_retard' | 'partiel'>('all');
@@ -82,14 +87,14 @@ export const CaissierImpayesPage: React.FC<CaissierImpayesPageProps> = ({
               return {
                 id: d.id,
                 ecole_id: d.ecole_id,
-                matricule: d.matricule || `ECO-${d.id.slice(0, 4).toUpperCase()}`,
+                matricule: d.matricule || NON_ATTRIBUE,
                 nom: d.nom,
                 prenom: d.prenom,
                 date_naissance: d.date_naissance || '',
                 lieu_naissance: d.lieu_naissance || '',
                 sexe: (d.sexe === 'F' ? 'F' : 'M'),
                 classe: d.classe || 'Non assigné',
-                nom_tuteur: d.nom_tuteur || 'Tuteur',
+                nom_tuteur: d.nom_tuteur || NON_RENSEIGNE,
                 telephone_tuteur: d.telephone_tuteur || '',
                 email_tuteur: d.email_tuteur || '',
                 adresse_tuteur: d.adresse_tuteur || '',
@@ -112,6 +117,7 @@ export const CaissierImpayesPage: React.FC<CaissierImpayesPageProps> = ({
           console.warn('[CaissierImpayesPage] fetch error:', e);
         } finally {
           setIsLoading(false);
+          setHasLoaded(true);
         }
       };
 
@@ -204,7 +210,7 @@ export const CaissierImpayesPage: React.FC<CaissierImpayesPageProps> = ({
         <div>
           <div className="flex items-center gap-2.5 mb-1.5">
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-800/60">
-              <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse"></span>
+              <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
               Recouvrement Guichet
             </span>
             <span className="text-xs text-slate-500 dark:text-slate-400">• Consultation des Soldes Dûs</span>
@@ -221,6 +227,8 @@ export const CaissierImpayesPage: React.FC<CaissierImpayesPageProps> = ({
       {/* 3 Pastel KPI Cards (Nexoov Style with Amber/Rose accents) */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <KpiCard
+          loading={kpiLoading}
+          staggerIndex={0}
           title="Total des Arriérés Dûs"
           amount={totalArrieres}
           unit="MRU"
@@ -230,6 +238,8 @@ export const CaissierImpayesPage: React.FC<CaissierImpayesPageProps> = ({
         />
 
         <KpiCard
+          loading={kpiLoading}
+          staggerIndex={1}
           title="Élèves en Retard Critique"
           amount={nbRetards}
           unit="count"
@@ -239,11 +249,12 @@ export const CaissierImpayesPage: React.FC<CaissierImpayesPageProps> = ({
         />
 
         <KpiCard
+          staggerIndex={2}
           title="Guichet d'Encaissement"
           customValue="Orientation Immédiate"
           subtitle="Charger le dossier au guichet en 1 clic"
-          icon={<CreditCard className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />}
-          variant="success"
+          icon={<CreditCard className="w-5 h-5 text-primary-text dark:text-primary-text" />}
+          variant="primary"
         />
       </div>
 
@@ -261,7 +272,7 @@ export const CaissierImpayesPage: React.FC<CaissierImpayesPageProps> = ({
                 setSearchQuery(e.target.value);
                 setCurrentPage(1);
               }}
-              className="w-full h-10 pl-10 pr-4 border border-slate-300 dark:border-slate-700 rounded-xl text-xs bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-colors"
+              className="w-full h-10 pl-10 pr-4 border border-slate-300 dark:border-slate-700 rounded-xl text-xs bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-focus-ring focus:border-blue-500 transition-colors"
             />
           </div>
 
@@ -298,8 +309,62 @@ export const CaissierImpayesPage: React.FC<CaissierImpayesPageProps> = ({
           </div>
         </div>
 
+        {/* Impayés : cartes sous 640 px, tableau dès 640 px */}
+        <MobileCardList label="Élèves avec un reste à payer">
+          {paginatedEleves.length === 0 ? (
+            <li className="py-10 text-center">
+              <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+                {elevesAvecReste.length === 0
+                  ? 'Tous les comptes élèves sont à jour'
+                  : 'Aucun élève trouvé avec des arriérés pour ces critères.'}
+              </p>
+              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                {elevesAvecReste.length === 0
+                  ? 'Aucun impayé constaté dans votre établissement.'
+                  : 'Modifiez vos filtres de classe ou de recherche.'}
+              </p>
+            </li>
+          ) : (
+            paginatedEleves.map((e: EleveWithStats, i: number) => (
+              <MobileCard
+                key={e.id}
+                index={i}
+                accent={e.statut === 'en_retard' ? 'danger' : 'warning'}
+                leading={<StudentInitials nom={e.nom} prenom={e.prenom} size="sm" />}
+                title={`${e.prenom} ${e.nom}`}
+                subtitle={`#${e.matricule} • ${e.classe}`}
+                badge={
+                  e.statut === 'en_retard' ? (
+                    <span className="inline-block rounded-full border border-rose-200 dark:border-rose-900 bg-rose-50 dark:bg-rose-950/50 px-3 py-1 text-xs font-bold text-rose-800 dark:text-rose-300">
+                      En retard
+                    </span>
+                  ) : (
+                    <span className="inline-block rounded-full border border-amber-200 dark:border-amber-900 bg-amber-50 dark:bg-amber-950/50 px-3 py-1 text-xs font-bold text-amber-800 dark:text-amber-300">
+                      Partiel
+                    </span>
+                  )
+                }
+                facts={[
+                  { label: 'Reste dû', value: <span className="font-mono text-sm font-black text-rose-600 dark:text-rose-400">{formatMRU(e.remaining)}</span> },
+                  { label: 'Déjà réglé', value: <span className="font-mono">{formatMRU(e.total_paid)}</span> },
+                  { label: 'Contact tuteur', wide: true, value: <>{e.nom_tuteur} ({e.lien_parente}) <span className="block font-mono text-[11px] font-normal text-slate-500 dark:text-slate-400">{e.telephone_tuteur}</span></> },
+                ]}
+                actions={
+                  <CardAction
+                    variant="primary"
+                    icon={<CreditCard className="h-4 w-4" aria-hidden="true" />}
+                    onClick={() => onGoToGuichetWithEleve(e.id)}
+                  >
+                    Encaisser
+                  </CardAction>
+                }
+              />
+            ))
+          )}
+        </MobileCardList>
+
         {/* Tableau */}
-        <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700 scrollbar-track-transparent">
+        <div className="hidden sm:block overflow-x-auto scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700 scrollbar-track-transparent">
           <table className="w-full text-left border-collapse text-xs min-w-[700px]">
             <thead>
               <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/40 text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">
@@ -358,7 +423,7 @@ export const CaissierImpayesPage: React.FC<CaissierImpayesPageProps> = ({
                         {e.nom_tuteur} ({e.lien_parente})
                       </div>
                       <div className="text-[11px] text-slate-500 dark:text-slate-400 font-mono flex items-center gap-1.5 mt-0.5 truncate">
-                        <Phone className="h-3 w-3 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                        <Phone className="h-3 w-3 text-primary-text dark:text-primary-text shrink-0" />
                         <span>{e.telephone_tuteur}</span>
                       </div>
                     </td>
@@ -374,7 +439,7 @@ export const CaissierImpayesPage: React.FC<CaissierImpayesPageProps> = ({
                     <td className="py-4.5 px-6 text-center whitespace-nowrap">
                       {e.statut === 'en_retard' ? (
                         <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-rose-50 dark:bg-rose-950/50 text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-800/60">
-                          <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse"></span>
+                          <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
                           En retard
                         </span>
                       ) : (
@@ -389,7 +454,7 @@ export const CaissierImpayesPage: React.FC<CaissierImpayesPageProps> = ({
                       <Button
                         size="sm"
                         onClick={() => onGoToGuichetWithEleve(e.id)}
-                        className="h-8 px-3 bg-amber-600 hover:bg-amber-700 text-white gap-1.5 text-xs font-semibold shadow-xs"
+                        className="h-8 px-3 bg-primary hover:bg-primary-hover text-white gap-1.5 text-xs font-semibold shadow-xs"
                       >
                         <CreditCard className="h-3.5 w-3.5" />
                         Encaisser
@@ -437,7 +502,7 @@ export const CaissierImpayesPage: React.FC<CaissierImpayesPageProps> = ({
                 onClick={() => setCurrentPage(page)}
                 className={`w-8 h-8 rounded-lg text-xs font-bold transition-colors ${
                   currentPage === page
-                    ? 'bg-amber-600 text-white shadow-xs'
+                    ? 'bg-primary text-white shadow-xs'
                     : 'border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
                 }`}
               >

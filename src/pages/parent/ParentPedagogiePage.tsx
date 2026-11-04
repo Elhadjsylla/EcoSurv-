@@ -5,6 +5,8 @@ import { Button } from '../../components/ui/Button';
 import { generateBulletinPdf } from '../../lib/pdf/generateBulletinPdf';
 import { ToastNotification } from '../../components/ui/ToastNotification';
 import { KpiCard } from '../../components/ui/KpiCard';
+import { SegmentedControl } from '../../components/ui/SegmentedControl';
+import { MobileCardList, MobileCard } from '../../components/ui/MobileCards';
 import {
   GraduationCap,
   ArrowDownToLine,
@@ -29,7 +31,7 @@ export const ParentPedagogiePage: React.FC<ParentPedagogiePageProps> = ({
   const authEcole = useAuthStore((s) => s.ecole);
   const anneeScolaire = useAnneeScolaire();
   const ecoleNom = authEcole?.nom || 'Établissement Scolaire';
-  const { activeChild, errorMessage: childrenError } = useParentChildren(selectedChildId, onSelectChild || (() => {}));
+  const { activeChild, errorMessage: childrenError } = useParentChildren(selectedChildId, onSelectChild || (() => { }));
 
   const [selectedTrimestre, setSelectedTrimestre] = useState<string>('T2');
   const [activeToast, setActiveToast] = useState<{
@@ -59,7 +61,7 @@ export const ParentPedagogiePage: React.FC<ParentPedagogiePageProps> = ({
     return (
       <div className="p-6 sm:p-8 lg:p-10 max-w-5xl mx-auto space-y-8 animate-stagger-rise">
         <div className="bg-white dark:bg-slate-900 rounded-2xl p-8 border border-slate-200 dark:border-slate-800 shadow-2xs text-center space-y-4 max-w-xl mx-auto my-12">
-          <div className="h-14 w-14 rounded-2xl bg-purple-100 dark:bg-purple-950 text-purple-600 dark:text-purple-400 flex items-center justify-center mx-auto shadow-sm">
+          <div className="h-14 w-14 rounded-2xl bg-blue-100 dark:bg-blue-950 text-primary-text dark:text-primary-text flex items-center justify-center mx-auto shadow-sm">
             <GraduationCap className="h-7 w-7" />
           </div>
           <h2 className="text-xl font-bold text-slate-900 dark:text-white">
@@ -105,8 +107,8 @@ export const ParentPedagogiePage: React.FC<ParentPedagogiePageProps> = ({
     selectedTrimestre === 'T1'
       ? 'Trimestre 1'
       : selectedTrimestre === 'T2'
-      ? 'Trimestre 2'
-      : 'Trimestre 3';
+        ? 'Trimestre 2'
+        : 'Trimestre 3';
 
   const formattedRang =
     !hasNotes || !enfant.rang || enfant.rang === '-'
@@ -129,9 +131,9 @@ export const ParentPedagogiePage: React.FC<ParentPedagogiePageProps> = ({
       {/* Header Banner */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 bg-white dark:bg-slate-900 p-6 sm:p-8 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xs">
         <div>
-          <div className="flex items-center gap-2.5 mb-1.5">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-purple-100 dark:bg-purple-950/60 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-800/60">
-              <span className="w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse"></span>
+          <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5 mb-1.5">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-blue-100 dark:bg-blue-950/60 text-primary-text dark:text-primary-text border border-blue-200 dark:border-blue-800/60">
+              <span className="w-1.5 h-1.5 rounded-full bg-primary"></span>
               Résultats Scolaires • {trimestreLabel}
             </span>
             <span className="text-xs text-slate-500 dark:text-slate-400">• Notes & Évaluations Périodiques</span>
@@ -144,40 +146,18 @@ export const ParentPedagogiePage: React.FC<ParentPedagogiePageProps> = ({
           </p>
         </div>
 
-        <div className="flex items-center gap-3 shrink-0">
-          {/* Sélecteur de trimestre */}
-          <div className="flex bg-slate-100 dark:bg-slate-800 p-1.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold">
-            <button
-              onClick={() => setSelectedTrimestre('T1')}
-              className={`px-3 py-1.5 rounded-lg transition-all ${
-                selectedTrimestre === 'T1'
-                  ? 'bg-white dark:bg-slate-900 text-purple-700 dark:text-purple-300 shadow-xs'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-              }`}
-            >
-              Trimestre 1
-            </button>
-            <button
-              onClick={() => setSelectedTrimestre('T2')}
-              className={`px-3 py-1.5 rounded-lg transition-all ${
-                selectedTrimestre === 'T2'
-                  ? 'bg-purple-600 text-white shadow-xs'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-              }`}
-            >
-              Trimestre 2 (En cours)
-            </button>
-            <button
-              onClick={() => setSelectedTrimestre('T3')}
-              className={`px-3 py-1.5 rounded-lg transition-all ${
-                selectedTrimestre === 'T3'
-                  ? 'bg-white dark:bg-slate-900 text-purple-700 dark:text-purple-300 shadow-xs'
-                  : 'text-slate-400 dark:text-slate-600 cursor-not-allowed'
-              }`}
-            >
-              Trimestre 3
-            </button>
-          </div>
+        <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center sm:shrink-0">
+          {/* Sélecteur de trimestre : contrôle segmenté pleine largeur sous 640 px */}
+          <SegmentedControl
+            label="Trimestre"
+            value={selectedTrimestre}
+            onChange={setSelectedTrimestre}
+            options={[
+              { value: 'T1', label: 'Trimestre 1', shortLabel: 'T1' },
+              { value: 'T2', label: 'Trimestre 2', shortLabel: 'T2', suffix: '(En cours)', marker: true, ariaLabel: 'Trimestre 2 (en cours)' },
+              { value: 'T3', label: 'Trimestre 3', shortLabel: 'T3' },
+            ]}
+          />
 
           <Button
             size="sm"
@@ -208,9 +188,9 @@ export const ParentPedagogiePage: React.FC<ParentPedagogiePageProps> = ({
                 type: 'success',
               });
             }}
-            className="bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold gap-2 px-3.5 py-2.5 rounded-xl shadow-xs disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full sm:w-auto whitespace-nowrap bg-primary hover:bg-primary-hover text-white text-xs font-semibold gap-2 px-3.5 py-2.5 rounded-xl shadow-xs disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <ArrowDownToLine className="h-4 w-4" />
+            <ArrowDownToLine className="h-4 w-4 shrink-0" />
             Bulletin PDF
           </Button>
         </div>
@@ -226,7 +206,7 @@ export const ParentPedagogiePage: React.FC<ParentPedagogiePageProps> = ({
               ? (moyenneCalculee >= 10 ? 'Admis(e)' : 'Travail à consolider')
               : 'Aucune note saisie ce trimestre'
           }
-          icon={<GraduationCap className="w-5 h-5 text-purple-600 dark:text-purple-400" />}
+          icon={<GraduationCap className="w-5 h-5 text-primary-text dark:text-primary-text" />}
           variant="purple"
         />
 
@@ -255,7 +235,7 @@ export const ParentPedagogiePage: React.FC<ParentPedagogiePageProps> = ({
       <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xs p-6 sm:p-7 space-y-6">
         <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
           <div className="flex items-center gap-2.5">
-            <FileText className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+            <FileText className="h-5 w-5 text-primary-text dark:text-primary-text" />
             <h3 className="text-lg font-bold text-slate-900 dark:text-white">
               Détail des Matières & Appréciations des Professeurs
             </h3>
@@ -271,7 +251,37 @@ export const ParentPedagogiePage: React.FC<ParentPedagogiePageProps> = ({
           </Button>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+        {/* Sous 640 px : une carte par matière (libellés visibles, texte long à la ligne) */}
+        <div className="rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden sm:hidden">
+          {enfant.bulletin.length === 0 ? (
+            <p className="py-8 px-4 text-center text-xs italic text-slate-500 dark:text-slate-400">
+              Aucune note saisie ce trimestre pour cet élève.
+            </p>
+          ) : (
+            <MobileCardList label="Détail des matières">
+              {enfant.bulletin.map((m: ParentMatiereNote, idx: number) => (
+                <MobileCard
+                  key={idx}
+                  index={idx}
+                  title={m.matiere}
+                  subtitle={m.professeur}
+                  badge={
+                    <span className="inline-block rounded-full border border-blue-200 dark:border-blue-800/60 bg-blue-50 dark:bg-blue-950/60 px-3 py-1 font-mono text-xs font-black text-primary-text">
+                      {m.moyenne.toFixed(1)} / 20
+                    </span>
+                  }
+                  facts={[
+                    { label: 'Coefficient', value: m.coefficient },
+                    { label: 'Moy. classe', value: <span className="font-mono">{m.moyenne_classe.toFixed(1)}</span> },
+                    { label: 'Appréciation', wide: true, value: <span className="italic font-normal">« {m.appreciation} »</span> },
+                  ]}
+                />
+              ))}
+            </MobileCardList>
+          )}
+        </div>
+
+        <div className="hidden sm:block rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
           <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700 scrollbar-track-transparent">
             <table className="w-full text-left border-collapse text-xs">
               <thead>
@@ -302,7 +312,7 @@ export const ParentPedagogiePage: React.FC<ParentPedagogiePageProps> = ({
                         {m.coefficient}
                       </td>
                       <td className="py-4.5 px-6 text-right">
-                        <span className="font-black text-purple-600 dark:text-purple-400 text-base font-mono">
+                        <span className="font-black text-primary-text dark:text-primary-text text-base font-mono">
                           {m.moyenne.toFixed(1)}
                         </span>
                       </td>

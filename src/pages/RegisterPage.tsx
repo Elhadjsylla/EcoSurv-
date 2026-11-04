@@ -4,7 +4,6 @@ import {
   Building2,
   User,
   Mail,
-  Phone,
   Lock,
   Eye,
   EyeOff,
@@ -24,6 +23,10 @@ import { LanguageSelector } from '../components/ui/LanguageSelector';
 import { Logo } from '../components/ui/Logo';
 import { AuthAside, AUTH_SMOOTH_EASE, useAuthPanelVariants } from '../components/auth/AuthAside';
 import { requestActivationCode, setInitialSendError } from '../lib/email/sendActivationEmail';
+import { LegalLinks } from '../components/legal/LegalLinks';
+import { CGU_VERSION } from '../content/legalPages';
+import { normalizeMauritanianPhone, PHONE_INVALID_MESSAGE } from '../lib/phone';
+import { PhoneField } from '../components/ui/PhoneField';
 import type { UserRole } from '../components/ui/Header';
 
 interface RegisterPageProps {
@@ -55,11 +58,13 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
   const [prenomResponsable, setPrenomResponsable] = useState('');
   const [email, setEmail] = useState('');
   const [telephone, setTelephone] = useState('');
+  const [telephoneError, setTelephoneError] = useState<string | null>(null);
   const [password, setPassword] = useState('');
   const [passwordConfirm, setPasswordConfirm] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
   const [effectifApprox, setEffectifApprox] = useState('');
+  const [cguAccepted, setCguAccepted] = useState(false);
 
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -111,6 +116,11 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
     e.preventDefault();
     if (submitting) return;
 
+    if (!cguAccepted) {
+      setError('Cochez cette case pour continuer');
+      return;
+    }
+
     // Validation des champs obligatoires
     if (!nomEcole.trim()) {
       setError("Veuillez renseigner le nom de l'établissement.");
@@ -130,6 +140,13 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
     }
     if (!telephone.trim()) {
       setError('Veuillez renseigner un numéro de téléphone / WhatsApp.');
+      return;
+    }
+    // Forme unique enregistrée : +222XXXXXXXX (12 caractères, sous la limite de 30 du serveur).
+    const telephoneNormalise = normalizeMauritanianPhone(telephone);
+    if (!telephoneNormalise) {
+      setTelephoneError(PHONE_INVALID_MESSAGE);
+      setError(PHONE_INVALID_MESSAGE);
       return;
     }
     if (!password) {
@@ -181,9 +198,11 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
             nom_ecole: nomEcole.trim(),
             nom: nomResponsable.trim(),
             prenom: prenomResponsable.trim(),
-            telephone: telephone.trim(),
+            telephone: telephoneNormalise,
             ville: ville.trim(),
             effectif: effectifApprox || undefined,
+            cgu_acceptees_le: new Date().toISOString(),
+            cgu_version: CGU_VERSION,
           },
           emailRedirectTo: `${window.location.origin}/`,
         },
@@ -276,7 +295,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
         ecole_id: ecoleId || `ecole-${activeUser.id.slice(0, 8)}`,
         nom: nomResponsable.trim(),
         prenom: prenomResponsable.trim(),
-        telephone: telephone.trim(),
+        telephone: telephoneNormalise,
         role: 'directeur' as UserRole,
         actif: true,
       };
@@ -285,7 +304,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
         id: ecoleId || `ecole-${activeUser.id.slice(0, 8)}`,
         nom: nomEnregistre,
         ville: ville.trim(),
-        telephone: telephone.trim(),
+        telephone: telephoneNormalise,
         email: email.trim(),
         statut_activation: statutActivation,
         statut_abonnement: 'essai',
@@ -300,7 +319,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
         id: ecoleId || `ecole-${activeUser.id.slice(0, 8)}`,
         nom: nomEnregistre,
         ville: ville.trim(),
-        telephone: telephone.trim(),
+        telephone: telephoneNormalise,
         email: email.trim(),
         statut_activation: 'en_attente',
       });
@@ -645,19 +664,20 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
                   >
                     Téléphone / WhatsApp <span className="text-rose-500">*</span>
                   </label>
-                  <div className="relative">
-                    <Phone className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                    <input
-                      id="reg-tel"
-                      type="tel"
-                      required
-                      value={telephone}
-                      disabled={submitting}
-                      onChange={(e) => setTelephone(e.target.value)}
-                      placeholder="+222 46 00 00 00"
-                      className="w-full h-11 pl-10 pr-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600/30 focus:border-blue-600 dark:focus:border-blue-500 transition-all"
-                    />
-                  </div>
+                  <PhoneField
+                    id="reg-tel"
+                    size="md"
+                    tone="soft"
+                    required
+                    value={telephone}
+                    disabled={submitting}
+                    error={telephoneError}
+                    placeholder="46 00 00 00"
+                    onChange={(val) => {
+                      setTelephone(val);
+                      if (telephoneError) setTelephoneError(null);
+                    }}
+                  />
                 </div>
               </div>
             </motion.div>
@@ -739,11 +759,48 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
               </div>
             </motion.div>
 
+            {/* Acceptation des conditions (obligatoire) */}
+            <motion.div variants={formItemVariants} className="pt-2">
+              <label htmlFor="reg-cgu" className="flex items-start gap-3 cursor-pointer text-sm leading-relaxed text-slate-700 dark:text-slate-300">
+                <input
+                  id="reg-cgu"
+                  type="checkbox"
+                  checked={cguAccepted}
+                  disabled={submitting}
+                  onChange={(e) => setCguAccepted(e.target.checked)}
+                  className="mt-1 h-4 w-4 shrink-0 cursor-pointer rounded border-slate-300 dark:border-slate-600 accent-[#1D4ED8]"
+                />
+                <span>
+                  J'ai lu et j'accepte les{' '}
+                  <a
+                    href="/cgu"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={`font-semibold text-[#1D4ED8] dark:text-blue-400 underline underline-offset-2 rounded ${FOCUS_RING}`}
+                  >
+                    Conditions d'utilisation
+                  </a>{' '}
+                  et la{' '}
+                  <a
+                    href="/confidentialite"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={`font-semibold text-[#1D4ED8] dark:text-blue-400 underline underline-offset-2 rounded ${FOCUS_RING}`}
+                  >
+                    Politique de confidentialité
+                  </a>
+                </span>
+              </label>
+              {!cguAccepted && (
+                <p className="mt-2 pl-7 text-xs text-slate-500 dark:text-slate-400">Cochez cette case pour continuer</p>
+              )}
+            </motion.div>
+
             {/* Submit Button */}
             <motion.div variants={formItemVariants} className="pt-4">
               <button
                 type="submit"
-                disabled={submitting}
+                disabled={submitting || !cguAccepted}
                 className={`w-full h-12 rounded-xl bg-[#1D4ED8] hover:bg-[#1E40AF] text-white font-bold text-sm transition-all flex items-center justify-center gap-2.5 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed hover:scale-[1.01] active:scale-[0.99] ${FOCUS_RING}`}
               >
                 {submitting ? (
@@ -774,8 +831,9 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
         </motion.div>
 
         {/* Footer */}
-        <div className="px-5 pb-6 text-center text-[11px] text-slate-400 dark:text-slate-500">
-          &copy; {new Date().getFullYear()} EcoSurv
+        <div className="px-5 pb-6 text-center text-[11px] text-slate-400 dark:text-slate-500 space-y-2">
+          <LegalLinks className="!text-[11px]" />
+          <div>&copy; {new Date().getFullYear()} EcoSurv</div>
         </div>
       </main>
     </div>
