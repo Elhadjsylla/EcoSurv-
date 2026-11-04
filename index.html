@@ -3,17 +3,78 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>EcoSurv — Gestion de scolarité et des encaissements pour les écoles en Mauritanie</title>
-    <meta name="description" content="EcoSurv permet aux écoles en Mauritanie d'inscrire leurs élèves, définir leurs barèmes en MRU, enregistrer les paiements (espèces, Bankily, Masrvi, Sedad), émettre des reçus PDF numérotés et suivre les absences." />
+    <title>EcoSurv Mauritanie — Gestion scolaire et paiements</title>
+    <meta name="description" content="EcoSurv aide les écoles en Mauritanie : inscription des élèves, barèmes en MRU, encaissements espèces et mobile money, reçus PDF numérotés, suivi des absences." />
+    <link rel="canonical" href="https://www.ecosurv.app/" />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="EcoSurv" />
+    <meta property="og:title" content="EcoSurv Mauritanie — Gestion scolaire et paiements" />
+    <meta property="og:description" content="EcoSurv aide les écoles en Mauritanie : inscription des élèves, barèmes en MRU, encaissements espèces et mobile money, reçus PDF numérotés, suivi des absences." />
+    <meta property="og:url" content="https://www.ecosurv.app/" />
+    <meta property="og:image" content="https://www.ecosurv.app/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:locale" content="fr_FR" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="EcoSurv Mauritanie — Gestion scolaire et paiements" />
+    <meta name="twitter:description" content="EcoSurv aide les écoles en Mauritanie : inscription des élèves, barèmes en MRU, encaissements espèces et mobile money, reçus PDF numérotés, suivi des absences." />
+    <meta name="twitter:image" content="https://www.ecosurv.app/og-image.png" />
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "Organization",
+            "name": "EcoSurv",
+            "url": "https://www.ecosurv.app/",
+            "logo": "https://www.ecosurv.app/icon-512x512.png",
+            "areaServed": { "@type": "Country", "name": "Mauritanie" }__SAME_AS__
+          },
+          {
+            "@type": "SoftwareApplication",
+            "name": "EcoSurv",
+            "applicationCategory": "BusinessApplication",
+            "operatingSystem": "Web",
+            "inLanguage": "fr",
+            "url": "https://www.ecosurv.app/",
+            "description": "EcoSurv aide les écoles en Mauritanie : inscription des élèves, barèmes en MRU, encaissements espèces et mobile money, reçus PDF numérotés, suivi des absences."
+          }
+        ]
+      }
+    </script>
     <meta name="application-name" content="EcoSurv" />
     <meta name="theme-color" content="#1D4ED8" />
+    <link rel="icon" href="/favicon.ico" sizes="48x48" />
+    <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
     <link rel="icon" type="image/png" sizes="512x512" href="/icon-512x512.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
   </head>
   <body class="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 antialiased font-['Plus_Jakarta_Sans',sans-serif]">
-    <div id="root"></div>
+    <div id="root">
+      <!-- Pour les lecteurs sans JavaScript uniquement : React remplace tout le contenu de #root au montage. -->
+      <noscript>
+        <main style="max-width: 40rem; margin: 0 auto; padding: 2rem 1rem; line-height: 1.6">
+          <h1>EcoSurv : gestion scolaire et paiements pour les écoles en Mauritanie</h1>
+          <p>
+            EcoSurv aide les écoles en Mauritanie : inscription des élèves, barèmes en MRU, encaissements espèces et
+            mobile money, reçus PDF numérotés, suivi des absences.
+          </p>
+          <p>Ce site a besoin de JavaScript pour afficher l’application.</p>
+          <nav aria-label="Informations légales">
+            <a href="/mentions-legales">Mentions légales</a> ·
+            <a href="/cgu">Conditions d’utilisation</a> ·
+            <a href="/confidentialite">Confidentialité</a> ·
+            <a href="/cookies">Cookies</a>
+          </nav>
+        </main>
+      </noscript>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
