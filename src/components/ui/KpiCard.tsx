@@ -1,5 +1,7 @@
-import React, { ReactNode } from 'react';
+import React, { ReactNode, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
+import { Skeleton } from '../admin/adminUi';
+import { useMotionPrefs } from '../../lib/motion';
 import { ArrowUpRight } from 'lucide-react';
 import { cn, formatMRU } from '../../lib/utils';
 import { formatCompactMRU } from '../../lib/formatCompactMRU';
@@ -30,6 +32,12 @@ type KpiCardProps = KpiValueProps & {
   staggerIndex?: number;
   /** Montants MRU uniquement : format abrégé (ex. 57,5k MRU). */
   compact?: boolean;
+  /**
+   * true tant que la valeur n'est pas réellement chargée : un squelette remplace le chiffre
+   * (aucune valeur n'est affichée ni animée). Quand la prop est fournie, le chiffre ne compte
+   * de 0 à sa vraie valeur qu'une seule fois, à la première apparition.
+   */
+  loading?: boolean;
 };
 
 export const KpiCard: React.FC<KpiCardProps> = ({
@@ -46,9 +54,24 @@ export const KpiCard: React.FC<KpiCardProps> = ({
   active = false,
   staggerIndex,
   compact = true,
+  loading,
 }) => {
-  const animatedAmount = useCountUp(amount ?? 0, 850);
-  const animatedProgress = useCountUp(progress ?? 0, 850);
+  const { reduce } = useMotionPrefs();
+  const isLoading = loading === true;
+  // Pendant le chargement la cible reste à 0 : le compteur ne part vers la vraie valeur
+  // qu'une fois celle-ci chargée.
+  const animatedAmount = useCountUp(isLoading ? 0 : amount ?? 0, 850);
+  const animatedProgress = useCountUp(isLoading ? 0 : progress ?? 0, 850);
+
+  // « Une seule fois » (uniquement si la prop loading est fournie) : après la première
+  // animation, les changements de valeur s'affichent directement.
+  const [countDone, setCountDone] = useState(false);
+  useEffect(() => {
+    if (loading === undefined || loading) return;
+    const t = window.setTimeout(() => setCountDone(true), 900);
+    return () => window.clearTimeout(t);
+  }, [loading]);
+  const showDirect = loading !== undefined && countDone;
 
   // Styles de carte basés sur les tokens sémantiques (surfaces & bordures)
   const cardVariantStyles = {
@@ -86,7 +109,8 @@ export const KpiCard: React.FC<KpiCardProps> = ({
       : formatMRU(value);
 
   const fullAmountText = amount !== undefined ? formatValue(amount, false) : undefined;
-  const displayAmount = amount !== undefined ? formatValue(animatedAmount, compact) : null;
+  const displayAmount =
+    amount !== undefined ? formatValue(showDirect ? amount : animatedAmount, compact) : null;
 
   // Infobulle de l'icône : le titre, et le montant complet quand la carte l'affiche abrégé.
   const tooltipContent = (
@@ -100,14 +124,14 @@ export const KpiCard: React.FC<KpiCardProps> = ({
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 16, scale: 0.99 }}
+      initial={reduce ? false : { opacity: 0, y: 16, scale: 0.99 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{
-        duration: 0.25,
-        delay: staggerIndex !== undefined ? staggerIndex * 0.05 : 0,
+        duration: reduce ? 0 : 0.25,
+        delay: reduce ? 0 : staggerIndex !== undefined ? staggerIndex * 0.05 : 0,
       }}
-      whileHover={{ y: -2, transition: { duration: 0.15 } }}
-      whileTap={onClick ? { scale: 0.99 } : undefined}
+      whileHover={reduce ? undefined : { y: -2, transition: { duration: 0.15 } }}
+      whileTap={onClick && !reduce ? { scale: 0.98 } : undefined}
       onClick={onClick}
       role={onClick ? 'button' : undefined}
       tabIndex={onClick ? 0 : undefined}
@@ -156,7 +180,9 @@ export const KpiCard: React.FC<KpiCardProps> = ({
         </div>
 
         <div className="mt-3 sm:mt-4 min-w-0">
-          {customValue !== undefined ? (
+          {isLoading ? (
+            <Skeleton className="h-7 w-24 sm:h-8 sm:w-28" />
+          ) : customValue !== undefined ? (
             <div className="text-xl sm:text-2xl font-bold tracking-tight text-main tabular-nums transition-colors truncate">
               {customValue}
             </div>
@@ -176,22 +202,24 @@ export const KpiCard: React.FC<KpiCardProps> = ({
         {progress !== undefined && (
           <div className="space-y-1.5 mb-2.5">
             <div className="h-1.5 w-full overflow-hidden rounded-sm bg-surface-subtle border border-subtle">
+              {/* transform seulement (scaleX), jamais width : aucun recalcul de mise en page */}
               <div
                 className={cn(
-                  'h-full rounded-sm transition-all duration-500 ease-out',
+                  'h-full w-full origin-left rounded-sm',
                   progress >= 80
                     ? 'bg-success'
                     : progress >= 50
                     ? 'bg-primary'
                     : 'bg-warning'
                 )}
-                style={{ width: `${Math.min(100, Math.max(0, animatedProgress))}%` }}
+                style={{ transform: `scaleX(${Math.min(100, Math.max(0, animatedProgress)) / 100})` }}
               />
             </div>
           </div>
         )}
 
-        {subtitle && (
+        {isLoading && subtitle && <Skeleton className="h-4 w-32" />}
+        {!isLoading && subtitle && (
           <p className="text-xs font-medium text-muted flex items-center justify-between gap-2 min-w-0">
             <Tooltip content={subtitle} side="bottom" className="flex min-w-0">
               <span className="truncate min-w-0">{subtitle}</span>

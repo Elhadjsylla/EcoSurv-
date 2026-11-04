@@ -23,7 +23,7 @@ export const TeacherGradesPage: React.FC = () => {
 
       {/* Carte sobre Bientôt disponible */}
       <div className="p-12 sm:p-16 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-center space-y-4 shadow-2xs">
-        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 text-emerald-600 dark:text-emerald-400 mx-auto">
+        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/60 text-primary-text dark:text-primary-text mx-auto">
           <BookOpen className="h-8 w-8" />
         </div>
         <div className="space-y-2 max-w-lg mx-auto">

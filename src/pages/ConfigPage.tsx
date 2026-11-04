@@ -22,6 +22,9 @@ import {
 import { useClasses, ClasseEcole, notifyClassesChanged } from '../hooks/useClasses';
 import { anneeScolaireSuggeree, getAnneeScolaireOptions } from '../lib/constants/scolaire';
 import { syncEcoleStores } from '../lib/ecole';
+import { normalizeMauritanianPhone, isPhoneValueUnchanged, PHONE_INVALID_MESSAGE } from '../lib/phone';
+import { PhoneField } from '../components/ui/PhoneField';
+import { MobileCard, CardAction } from '../components/ui/MobileCards';
 import {
   Save,
   Building2,
@@ -58,6 +61,9 @@ export const ConfigPage: React.FC = () => {
     annee_scolaire: ecole.annee_scolaire || anneeScolaireSuggeree(),
   }));
   const [isSaving, setIsSaving] = useState(false);
+  const [telephoneEcoleError, setTelephoneEcoleError] = useState<string | null>(null);
+  // Numéro identique à celui chargé (tel quel ou reformaté à l'affichage) : il n'est ni validé ni modifié.
+  const isEcolePhoneUnchanged = (raw: string): boolean => isPhoneValueUnchanged(raw, ecole.telephone || '');
 
   // Gestion des classes de l'école (public.classes_ecole)
   const [schoolClasses, setSchoolClasses] = useState<ClasseEcole[]>([]);
@@ -507,7 +513,8 @@ export const ConfigPage: React.FC = () => {
   const [newNom, setNewNom] = useState('');
   const [newPrenom, setNewPrenom] = useState('');
   const [newEmail, setNewEmail] = useState('');
-  const [newTelephone, setNewTelephone] = useState('+222 ');
+  const [newTelephone, setNewTelephone] = useState('');
+  const [staffPhoneError, setStaffPhoneError] = useState<string | null>(null);
   const [newRole, setNewRole] = useState<RoleUtilisateur>('enseignant');
   const [newClasse, setNewClasse] = useState('');
   const [testStaffActionLink, setTestStaffActionLink] = useState<{ label: string; link: string } | null>(null);
@@ -543,13 +550,29 @@ export const ConfigPage: React.FC = () => {
       return;
     }
 
+    // Téléphone : validé et normalisé en +222XXXXXXXX seulement s'il a été modifié ; sinon la valeur
+    // chargée est conservée (un ancien numéro mal formé reste enregistrable).
+    const telephoneSaisi = (formData.telephone || '').trim();
+    let telephoneAEnregistrer: string | null = telephoneSaisi || null;
+    if (telephoneSaisi && !isEcolePhoneUnchanged(telephoneSaisi)) {
+      const normalise = normalizeMauritanianPhone(telephoneSaisi);
+      if (!normalise) {
+        setTelephoneEcoleError(PHONE_INVALID_MESSAGE);
+        showToast(PHONE_INVALID_MESSAGE);
+        return;
+      }
+      telephoneAEnregistrer = normalise;
+    } else if (telephoneSaisi) {
+      telephoneAEnregistrer = (ecole.telephone || '').trim() || telephoneSaisi;
+    }
+
     setIsSaving(true);
     try {
       const payload = {
         nom: nomTrimmed,
         ville: (formData.ville || '').trim() || null,
         adresse: (formData.adresse || '').trim() || null,
-        telephone: (formData.telephone || '').trim() || null,
+        telephone: telephoneAEnregistrer,
         email: (formData.email || '').trim() || null,
         annee_scolaire: (formData.annee_scolaire || '').trim() || null,
       };
@@ -589,6 +612,15 @@ export const ConfigPage: React.FC = () => {
     e.preventDefault();
     if (!newNom.trim() || !newPrenom.trim() || !newEmail.trim()) return;
 
+    // Téléphone facultatif ; s'il est renseigné, il est enregistré sous la forme +222XXXXXXXX.
+    const newTelephoneRaw = newTelephone.trim();
+    const newTelephoneNormalise = newTelephoneRaw ? normalizeMauritanianPhone(newTelephoneRaw) : '';
+    if (newTelephoneNormalise === null) {
+      setStaffPhoneError(PHONE_INVALID_MESSAGE);
+      setInviteError(PHONE_INVALID_MESSAGE);
+      return;
+    }
+
     setIsInviting(true);
     setInviteError(null);
 
@@ -598,7 +630,7 @@ export const ConfigPage: React.FC = () => {
           nom: newNom.trim(),
           prenom: newPrenom.trim(),
           email: newEmail.trim(),
-          telephone: newTelephone.trim(),
+          telephone: newTelephoneNormalise,
           role: newRole,
           classe_assignee: newRole === 'enseignant' ? newClasse : undefined,
         },
@@ -626,7 +658,7 @@ export const ConfigPage: React.FC = () => {
       setNewNom('');
       setNewPrenom('');
       setNewEmail('');
-      setNewTelephone('+222 ');
+      setNewTelephone('');
       setIsInviting(false);
 
       if (authProfile?.ecole_id) {
@@ -644,6 +676,10 @@ export const ConfigPage: React.FC = () => {
   const [editNom, setEditNom] = useState('');
   const [editPrenom, setEditPrenom] = useState('');
   const [editTelephone, setEditTelephone] = useState('');
+  // Une erreur de téléphone ne doit pas survivre à la fermeture ou à l'ouverture d'une fenêtre.
+  useEffect(() => {
+    setStaffPhoneError(null);
+  }, [isInviteModalOpen, editingMember]);
   const [editRole, setEditRole] = useState<RoleUtilisateur>('enseignant');
   const [editClasse, setEditClasse] = useState('');
   const [isUpdatingMember, setIsUpdatingMember] = useState(false);
@@ -656,7 +692,7 @@ export const ConfigPage: React.FC = () => {
     setEditingMember(member);
     setEditNom(member.nom);
     setEditPrenom(member.prenom);
-    setEditTelephone(member.telephone || '+222 ');
+    setEditTelephone(member.telephone || '');
     setEditRole(member.role);
     setEditClasse(member.classe_assignee || activeClasses[0] || '');
     setUpdateMemberError(null);
@@ -668,6 +704,22 @@ export const ConfigPage: React.FC = () => {
     if (!editingMember) return;
     if (!editNom.trim() || !editPrenom.trim()) return;
 
+    // Téléphone : validé et normalisé seulement s'il a été modifié ; sinon la valeur chargée est conservée
+    // (un ancien numéro mal formé ou étranger reste modifiable).
+    const editTelephoneRaw = editTelephone.trim();
+    let editTelephoneAEnregistrer = editTelephoneRaw;
+    if (editTelephoneRaw && !isPhoneValueUnchanged(editTelephoneRaw, editingMember.telephone || '')) {
+      const normalise = normalizeMauritanianPhone(editTelephoneRaw);
+      if (!normalise) {
+        setStaffPhoneError(PHONE_INVALID_MESSAGE);
+        setUpdateMemberError(PHONE_INVALID_MESSAGE);
+        return;
+      }
+      editTelephoneAEnregistrer = normalise;
+    } else if (editTelephoneRaw) {
+      editTelephoneAEnregistrer = (editingMember.telephone || '').trim() || editTelephoneRaw;
+    }
+
     setIsUpdatingMember(true);
     setUpdateMemberError(null);
 
@@ -678,7 +730,7 @@ export const ConfigPage: React.FC = () => {
           member_id: editingMember.id,
           nom: editNom.trim(),
           prenom: editPrenom.trim(),
-          telephone: editTelephone.trim(),
+          telephone: editTelephoneAEnregistrer,
           role: editRole,
           classe_assignee: editRole === 'enseignant' ? editClasse : undefined,
         },
@@ -935,15 +987,20 @@ export const ConfigPage: React.FC = () => {
             </div>
 
             <div>
-              <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+              <label htmlFor="ecole-telephone" className="block font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
                 Téléphone Officiel
               </label>
-              <input
-                type="text"
+              <PhoneField
+                id="ecole-telephone"
+                size="md"
                 value={formData.telephone || ''}
+                originalValue={ecole.telephone || ''}
                 disabled={!canEditSchool}
-                onChange={(e) => setFormData({ ...formData, telephone: e.target.value })}
-                className="w-full h-11 px-3.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-mono text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-600 focus:outline-none disabled:opacity-60 disabled:cursor-not-allowed"
+                error={telephoneEcoleError}
+                onChange={(val) => {
+                  setFormData({ ...formData, telephone: val });
+                  if (telephoneEcoleError) setTelephoneEcoleError(null);
+                }}
               />
             </div>
 
@@ -1135,7 +1192,70 @@ export const ConfigPage: React.FC = () => {
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
+          <>
+          {/* Classes : cartes sous 640 px, tableau dès 640 px */}
+          <ul aria-label="Classes de l'école" className="space-y-3 sm:hidden">
+            {schoolClasses.map((cls, i) => {
+              const usage = classUsageMap[cls.nom] || { eleves: 0, baremes: 0, affectations: 0 };
+              const isReferenced = usage.eleves > 0 || usage.baremes > 0 || usage.affectations > 0;
+              return (
+                <MobileCard
+                  key={cls.id}
+                  index={i}
+                  accent={cls.actif ? 'none' : 'warning'}
+                  className={cls.actif ? '' : 'opacity-80'}
+                  title={cls.nom}
+                  subtitle={cls.niveau || 'Niveau non spécifié'}
+                  badge={
+                    <span
+                      className={`inline-block rounded-full border px-3 py-1 text-xs font-bold ${
+                        cls.actif
+                          ? 'border-emerald-200 dark:border-emerald-900 bg-emerald-50 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300'
+                          : 'border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
+                      }`}
+                    >
+                      {cls.actif ? 'Active' : 'Désactivée'}
+                    </span>
+                  }
+                  facts={[{ label: 'Élèves inscrits', value: <span className="font-mono font-bold">{usage.eleves}</span> }]}
+                  actions={
+                    canEditSchool ? (
+                      <>
+                        <CardAction
+                          icon={<Edit3 className="h-4 w-4" aria-hidden="true" />}
+                          disabled={isReferenced}
+                          onClick={() => handleOpenRenameModal(cls)}
+                        >
+                          Renommer
+                        </CardAction>
+                        <CardAction
+                          icon={
+                            togglingClassId === cls.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                            ) : (
+                              <Power className="h-4 w-4" aria-hidden="true" />
+                            )
+                          }
+                          disabled={togglingClassId === cls.id}
+                          onClick={() => handleToggleClassActive(cls)}
+                        >
+                          {cls.actif ? 'Désactiver' : 'Réactiver'}
+                        </CardAction>
+                        {isReferenced && (
+                          <p className="w-full text-[11px] text-slate-500 dark:text-slate-400">
+                            Renommage impossible : classe utilisée ({usage.eleves} élève(s), {usage.baremes} barème(s),{' '}
+                            {usage.affectations} affectation(s)).
+                          </p>
+                        )}
+                      </>
+                    ) : undefined
+                  }
+                />
+              );
+            })}
+          </ul>
+
+          <div className="hidden sm:block overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
             <table className="w-full text-left border-collapse text-xs min-w-[640px]">
               <thead>
                 <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">
@@ -1243,6 +1363,7 @@ export const ConfigPage: React.FC = () => {
               </tbody>
             </table>
           </div>
+          </>
         )}
       </Card>
 
@@ -1636,12 +1757,14 @@ export const ConfigPage: React.FC = () => {
                   <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
                     Téléphone
                   </label>
-                  <input
-                    type="text"
+                  <PhoneField
                     disabled={isInviting}
                     value={newTelephone}
-                    onChange={(e) => setNewTelephone(e.target.value)}
-                    className="w-full h-9 px-3 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-mono focus:ring-2 focus:ring-blue-600 focus:outline-none disabled:opacity-50"
+                    error={staffPhoneError}
+                    onChange={(val) => {
+                      setNewTelephone(val);
+                      if (staffPhoneError) setStaffPhoneError(null);
+                    }}
                   />
                 </div>
 
@@ -1788,12 +1911,15 @@ export const ConfigPage: React.FC = () => {
                   <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
                     Téléphone
                   </label>
-                  <input
-                    type="text"
+                  <PhoneField
                     disabled={isUpdatingMember}
                     value={editTelephone}
-                    onChange={(e) => setEditTelephone(e.target.value)}
-                    className="w-full h-9 px-3 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-mono focus:ring-2 focus:ring-blue-600 focus:outline-none disabled:opacity-50"
+                    originalValue={editingMember?.telephone || ''}
+                    error={staffPhoneError}
+                    onChange={(val) => {
+                      setEditTelephone(val);
+                      if (staffPhoneError) setStaffPhoneError(null);
+                    }}
                   />
                 </div>
 

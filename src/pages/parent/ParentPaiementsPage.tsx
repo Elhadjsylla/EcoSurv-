@@ -125,7 +125,7 @@ export const ParentPaiementsPage: React.FC<ParentPaiementsPageProps> = ({
     return (
       <div className="p-6 sm:p-8 lg:p-10 max-w-5xl mx-auto space-y-8 animate-stagger-rise">
         <div className="bg-white dark:bg-slate-900 rounded-2xl p-12 border border-slate-200 dark:border-slate-800 shadow-2xs text-center space-y-4 max-w-xl mx-auto my-12">
-          <RefreshCw className="h-8 w-8 text-purple-600 animate-spin mx-auto" />
+          <RefreshCw className="h-8 w-8 text-primary-text animate-spin mx-auto" />
           <h2 className="text-xl font-bold text-slate-900 dark:text-white">
             Chargement du dossier financier...
           </h2>
@@ -173,7 +173,7 @@ export const ParentPaiementsPage: React.FC<ParentPaiementsPageProps> = ({
     return (
       <div className="p-6 sm:p-8 lg:p-10 max-w-5xl mx-auto space-y-8 animate-stagger-rise">
         <div className="bg-white dark:bg-slate-900 rounded-2xl p-8 border border-slate-200 dark:border-slate-800 shadow-2xs text-center space-y-4 max-w-xl mx-auto my-12">
-          <div className="h-14 w-14 rounded-2xl bg-purple-100 dark:bg-purple-950 text-purple-600 dark:text-purple-400 flex items-center justify-center mx-auto shadow-sm">
+          <div className="h-14 w-14 rounded-2xl bg-blue-100 dark:bg-blue-950 text-primary-text dark:text-primary-text flex items-center justify-center mx-auto shadow-sm">
             <CreditCard className="h-7 w-7" />
           </div>
           <h2 className="text-xl font-bold text-slate-900 dark:text-white">
@@ -207,8 +207,8 @@ export const ParentPaiementsPage: React.FC<ParentPaiementsPageProps> = ({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 bg-white dark:bg-slate-900 p-6 sm:p-8 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xs">
         <div>
           <div className="flex items-center gap-2.5 mb-1.5 flex-wrap">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-purple-100 dark:bg-purple-950/60 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-800/60">
-              <span className="w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse"></span>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-blue-100 dark:bg-blue-950/60 text-primary-text dark:text-primary-text border border-blue-200 dark:border-blue-800/60">
+              <span className="w-1.5 h-1.5 rounded-full bg-primary"></span>
               Espace Scolarité
             </span>
             {realEcheances.length === 0 ? (
@@ -220,7 +220,7 @@ export const ParentPaiementsPage: React.FC<ParentPaiementsPageProps> = ({
                 À jour
               </span>
             ) : (
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-100 dark:bg-blue-950/60 text-primary-text dark:text-primary-text border border-blue-200 dark:border-blue-800/60">
                 Solde à régler
               </span>
             )}
@@ -257,7 +257,7 @@ export const ParentPaiementsPage: React.FC<ParentPaiementsPageProps> = ({
           amount={totalScolarite}
           unit="MRU"
           subtitle={`Classe : ${activeChild.classe}`}
-          icon={<CreditCard className="w-5 h-5 text-purple-600 dark:text-purple-400" />}
+          icon={<CreditCard className="w-5 h-5 text-primary-text dark:text-primary-text" />}
           variant="purple"
         />
 
@@ -294,7 +294,7 @@ export const ParentPaiementsPage: React.FC<ParentPaiementsPageProps> = ({
       <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xs p-6 sm:p-7 space-y-5">
         <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
           <div className="flex items-center gap-2.5">
-            <CalendarDays className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+            <CalendarDays className="h-5 w-5 text-primary-text dark:text-primary-text" />
             <h3 className="text-lg font-bold text-slate-900 dark:text-white">
               Échéancier de Scolarité
             </h3>
@@ -306,7 +306,7 @@ export const ParentPaiementsPage: React.FC<ParentPaiementsPageProps> = ({
 
         {isLoadingFinances ? (
           <div className="py-8 text-center space-y-2">
-            <RefreshCw className="h-6 w-6 text-purple-600 animate-spin mx-auto" />
+            <RefreshCw className="h-6 w-6 text-primary-text animate-spin mx-auto" />
             <p className="text-xs text-slate-400">Chargement de l'échéancier...</p>
           </div>
         ) : realEcheances.length === 0 ? (
@@ -340,7 +340,7 @@ export const ParentPaiementsPage: React.FC<ParentPaiementsPageProps> = ({
                           ? 'bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
                           : isEnRetard
                           ? 'bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800'
-                          : 'bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800'
+                          : 'bg-blue-100 dark:bg-blue-950 text-primary-text dark:text-primary-text border-blue-200 dark:border-blue-800'
                       }`}
                     >
                       {isPaye ? (
@@ -386,7 +386,7 @@ export const ParentPaiementsPage: React.FC<ParentPaiementsPageProps> = ({
       <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xs p-6 sm:p-7 space-y-6">
         <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
           <div className="flex items-center gap-2.5">
-            <Receipt className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+            <Receipt className="h-5 w-5 text-primary-text dark:text-primary-text" />
             <h3 className="text-lg font-bold text-slate-900 dark:text-white">
               Historique des Paiements Effectués
             </h3>
@@ -426,7 +426,7 @@ export const ParentPaiementsPage: React.FC<ParentPaiementsPageProps> = ({
                 className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
               >
                 <div className="flex items-center gap-3.5">
-                  <div className="h-10 w-10 rounded-xl bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 flex items-center justify-center shrink-0 border border-emerald-200 dark:border-emerald-800">
+                  <div className="h-10 w-10 rounded-xl bg-blue-100 dark:bg-blue-950 text-primary-text dark:text-primary-text flex items-center justify-center shrink-0 border border-blue-200 dark:border-blue-800">
                     <CheckCircle2 className="h-5 w-5" />
                   </div>
                   <div>
@@ -435,7 +435,7 @@ export const ParentPaiementsPage: React.FC<ParentPaiementsPageProps> = ({
                     </div>
                     <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                       Payé le {dateStr} • Via {p.methode?.toUpperCase() || 'GUICHET'} • Réf:{' '}
-                      <span className="font-mono text-purple-700 dark:text-purple-400 font-semibold">
+                      <span className="font-mono text-primary-text dark:text-primary-text font-semibold">
                         {refPaiement}
                       </span>
                     </div>

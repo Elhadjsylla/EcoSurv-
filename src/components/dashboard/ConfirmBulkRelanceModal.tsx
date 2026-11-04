@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { Button } from '../ui/Button';
 import { Tooltip } from '../ui/Tooltip';
 import { formatMRU } from '../../lib/utils';
+import { estRenseigne } from '../../lib/placeholders';
 import { formatCompactMRU } from '../../lib/formatCompactMRU';
 import { EleveWithStats } from '../../types';
 import {
@@ -68,7 +69,7 @@ export const ConfirmBulkRelanceModal: React.FC<ConfirmBulkRelanceModalProps> = (
 
   const getWhatsAppMessage = (eleve: EleveWithStats) => {
     return (
-      `Bonjour M./Mme ${eleve.nom_tuteur || 'le Tuteur'},\n\n` +
+      `Bonjour M./Mme ${estRenseigne(eleve.nom_tuteur) ? eleve.nom_tuteur : 'le Tuteur'},\n\n` +
       `L'administration de l'établissement ${ecoleNom} vous informe que l'échéance de scolarité de ${eleve.prenom} ${eleve.nom} (${eleve.classe}) présente un solde restant de ${formatMRU(eleve.remaining)}.\n\n` +
       `Merci de bien vouloir vous rapprocher du guichet de l'école ou de régulariser ce montant par virement Bankily / Masrvi / Sedad.\n\n` +
       `Bien cordialement,\nLa Direction.`

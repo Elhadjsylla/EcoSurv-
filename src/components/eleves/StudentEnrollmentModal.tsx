@@ -2,7 +2,10 @@ import React, { useState } from 'react';
 import { z } from 'zod';
 import { Button } from '../ui/Button';
 import { Select } from '../ui/Select';
-import { DatePicker } from '../ui/DatePicker';
+import { DateField } from '../ui/DateField';
+import { PlaceField } from '../ui/PlaceField';
+import { PhoneField } from '../ui/PhoneField';
+import { WILAYAS_MAURITANIE } from '../../lib/constants/wilayas';
 import { EleveWithStats, LienParente } from '../../types';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useNavigationStore } from '../../store/useNavigationStore';
@@ -11,6 +14,13 @@ import { useClasses } from '../../hooks/useClasses';
 import { supabase } from '../../lib/supabase';
 import { generateEcheancesForNewStudent } from '../../lib/echeancesHelper';
 import { parseEdgeFunctionError } from '../../lib/functionsHelper';
+import {
+  isPhoneValueUnchanged,
+  normalizeMauritanianPhone,
+  formatMauritanianPhone,
+  PHONE_INVALID_MESSAGE,
+  PHONE_REQUIRED_MESSAGE,
+} from '../../lib/phone';
 import { TestActivationLinkBanner } from '../ui/TestActivationLinkBanner';
 import { X, UserPlus, ShieldAlert, CheckCircle, Loader2, HeartHandshake, AlertTriangle, Info } from 'lucide-react';
 
@@ -46,7 +56,8 @@ export const studentEnrollmentSchema = z.object({
   nom_tuteur: z.string().min(3, 'Le nom du tuteur doit contenir au moins 3 caractères'),
   telephone_tuteur: z
     .string()
-    .min(8, 'Numéro de téléphone invalide (min 8 chiffres)'),
+    // La validité du format est contrôlée dans le composant : un numéro ancien non modifié reste enregistrable.
+    .min(1, PHONE_REQUIRED_MESSAGE),
   email_tuteur: z
     .string()
     .email('Adresse email invalide')
@@ -96,7 +107,7 @@ export const StudentEnrollmentModal: React.FC<StudentEnrollmentModalProps> = ({
     sexe: 'M',
     classe: activeClasses[0] || '',
     nom_tuteur: '',
-    telephone_tuteur: '+222 ',
+    telephone_tuteur: '',
     email_tuteur: '',
     adresse_tuteur: '',
     lien_parente: 'pere',
@@ -126,7 +137,7 @@ export const StudentEnrollmentModal: React.FC<StudentEnrollmentModalProps> = ({
         sexe: eleveToEdit.sexe || 'M',
         classe: eleveToEdit.classe || activeClasses[0] || '',
         nom_tuteur: eleveToEdit.nom_tuteur || '',
-        telephone_tuteur: eleveToEdit.telephone_tuteur || '+222 ',
+        telephone_tuteur: eleveToEdit.telephone_tuteur ? formatMauritanianPhone(eleveToEdit.telephone_tuteur) : '',
         email_tuteur: eleveToEdit.email_tuteur || '',
         adresse_tuteur: eleveToEdit.adresse_tuteur || '',
         lien_parente: (eleveToEdit.lien_parente as any) || 'pere',
@@ -140,7 +151,7 @@ export const StudentEnrollmentModal: React.FC<StudentEnrollmentModalProps> = ({
         sexe: 'M',
         classe: activeClasses[0] || '',
         nom_tuteur: '',
-        telephone_tuteur: '+222 ',
+        telephone_tuteur: '',
         email_tuteur: '',
         adresse_tuteur: '',
         lien_parente: 'pere',
@@ -156,6 +167,12 @@ export const StudentEnrollmentModal: React.FC<StudentEnrollmentModalProps> = ({
 
   if (!isOpen) return null;
 
+  // Numéro identique à celui chargé (tel quel ou reformaté à l'affichage) : en modification, il n'est ni validé ni modifié.
+  const isPhoneUnchanged = (raw: string): boolean => {
+    if (!isEditing || !eleveToEdit) return false;
+    return isPhoneValueUnchanged(raw, eleveToEdit.telephone_tuteur || '');
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({});
@@ -170,9 +187,20 @@ export const StudentEnrollmentModal: React.FC<StudentEnrollmentModalProps> = ({
       return;
     }
 
-    const result = studentEnrollmentSchema.safeParse(formData);
+    // Téléphone : en création ou si le champ a été modifié, il est validé puis enregistré sous la forme
+    // unique +222XXXXXXXX. En modification sans changement, la valeur d'origine est conservée telle quelle.
+    const rawPhone = (formData.telephone_tuteur || '').trim();
+    const phoneUnchanged = isPhoneUnchanged(rawPhone);
+    const normalizedPhone = phoneUnchanged
+      ? (eleveToEdit?.telephone_tuteur || '').trim()
+      : normalizeMauritanianPhone(rawPhone);
+    const phoneInvalid = !phoneUnchanged && rawPhone !== '' && normalizedPhone === null;
+    const result = studentEnrollmentSchema.safeParse({
+      ...formData,
+      telephone_tuteur: normalizedPhone ?? rawPhone,
+    });
 
-    if (!result.success || birthDateError) {
+    if (!result.success || birthDateError || phoneInvalid) {
       const formattedErrors: Record<string, string> = {};
       if (!result.success) {
         result.error.issues.forEach((issue) => {
@@ -183,6 +211,9 @@ export const StudentEnrollmentModal: React.FC<StudentEnrollmentModalProps> = ({
       }
       if (birthDateError) {
         formattedErrors.date_naissance = birthDateError;
+      }
+      if (phoneInvalid) {
+        formattedErrors.telephone_tuteur = PHONE_INVALID_MESSAGE;
       }
       setErrors(formattedErrors);
       return;
@@ -644,9 +675,8 @@ export const StudentEnrollmentModal: React.FC<StudentEnrollmentModalProps> = ({
                   >
                     Date de naissance <span className="text-red-500">*</span>
                   </label>
-                  <DatePicker
+                  <DateField
                     id="eleve-date-naissance"
-                    isBirthDate
                     value={formData.date_naissance || ''}
                     onChange={(val) => {
                       setFormData({ ...formData, date_naissance: val });
@@ -661,25 +691,22 @@ export const StudentEnrollmentModal: React.FC<StudentEnrollmentModalProps> = ({
                     }}
                     onValidationChange={setBirthDateError}
                     error={errors.date_naissance}
-                    size="sm"
-                    className="w-full"
-                    triggerClassName="w-full h-9 rounded-lg text-xs"
-                    placeholder="JJ/MM/AAAA"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  <label
+                    htmlFor="eleve-lieu-naissance"
+                    className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1"
+                  >
                     Lieu de naissance
                   </label>
-                  <input
-                    type="text"
+                  <PlaceField
+                    id="eleve-lieu-naissance"
                     value={formData.lieu_naissance || ''}
-                    onChange={(e) =>
-                      setFormData({ ...formData, lieu_naissance: e.target.value })
-                    }
-                    placeholder="Ex: Nouakchott"
-                    className="w-full h-9 px-3 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 text-xs focus:ring-2 focus:ring-blue-600 focus:outline-none"
+                    onChange={(val) => setFormData({ ...formData, lieu_naissance: val })}
+                    suggestions={WILAYAS_MAURITANIE}
+                    placeholder="Wilaya, ville ou village"
                   />
                 </div>
 
@@ -773,23 +800,30 @@ export const StudentEnrollmentModal: React.FC<StudentEnrollmentModalProps> = ({
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  <label
+                    htmlFor="eleve-telephone-tuteur"
+                    className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1"
+                  >
                     Téléphone (WhatsApp) <span className="text-red-500">*</span>
                   </label>
-                  <input
-                    type="text"
+                  <PhoneField
+                    id="eleve-telephone-tuteur"
+                    required
                     value={formData.telephone_tuteur || ''}
-                    onChange={(e) =>
-                      setFormData({ ...formData, telephone_tuteur: e.target.value })
-                    }
-                    placeholder="+222 22 11 33 44"
-                    className="w-full h-9 px-3 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 text-xs focus:ring-2 focus:ring-blue-600 focus:outline-none font-mono"
+                    originalValue={isEditing ? eleveToEdit?.telephone_tuteur || '' : undefined}
+                    error={errors.telephone_tuteur}
+                    onChange={(val) => {
+                      setFormData({ ...formData, telephone_tuteur: val });
+                      // L'erreur de l'envoi disparaît dès que l'utilisateur modifie le champ.
+                      if (errors.telephone_tuteur) {
+                        setErrors((prev) => {
+                          const next = { ...prev };
+                          delete next.telephone_tuteur;
+                          return next;
+                        });
+                      }
+                    }}
                   />
-                  {errors.telephone_tuteur && (
-                    <p className="text-[11px] text-red-600 dark:text-red-400 mt-1 flex items-center gap-1">
-                      <ShieldAlert className="h-3 w-3" /> {errors.telephone_tuteur}
-                    </p>
-                  )}
                 </div>
 
                 <div>

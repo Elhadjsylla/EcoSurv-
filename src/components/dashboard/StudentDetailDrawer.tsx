@@ -407,10 +407,6 @@ export const StudentDetailDrawer: React.FC<StudentDetailDrawerProps> = ({
                   {eleve.sexe === 'F' ? 'Féminin' : 'Masculin'}
                 </span>
               </div>
-              <div className="flex items-center justify-between py-1 border-b border-slate-100 dark:border-slate-800/60">
-                <span className="text-slate-500 dark:text-slate-400">Régime de scolarité</span>
-                <span className="font-semibold text-slate-800 dark:text-slate-200">Externe standard</span>
-              </div>
               <div className="flex items-center justify-between py-1">
                 <span className="text-slate-500 dark:text-slate-400">Statut recouvrement</span>
                 <StatusBadge statut={eleve.statut} />

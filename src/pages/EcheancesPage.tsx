@@ -13,6 +13,7 @@ import { useAuthStore } from '../store/useAuthStore';
 import { useNavigationStore } from '../store/useNavigationStore';
 import { useAnneeScolaire } from '../hooks/useAnneeScolaire';
 import { useClasses } from '../hooks/useClasses';
+import { MobileCardList, MobileCard, CardAction } from '../components/ui/MobileCards';
 import {
   fetchBaremes,
   createBaremeAndGenerateEcheances,
@@ -283,7 +284,7 @@ export const EcheancesPage: React.FC = () => {
       {/* Top Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-2xs">
         <div className="space-y-1">
-          <div className="flex items-center gap-2.5">
+          <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:gap-2.5">
             <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
               Échéances & Tarifs de Scolarité
             </h1>
@@ -487,7 +488,77 @@ export const EcheancesPage: React.FC = () => {
           </span>
         </div>
 
-        <div className="overflow-x-auto">
+        {/* Barèmes : cartes sous 640 px, tableau dès 640 px */}
+        <MobileCardList label="Plans d'échéances configurés">
+          {echeanciers.length === 0 ? (
+            <li className="space-y-3 py-8 text-center">
+              <p className="text-sm font-bold text-slate-900 dark:text-white">Aucun barème d'échéances configuré</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Définissez vos tarifs annuels et les mensualités par classe pour activer la facturation.
+              </p>
+              <CardAction
+                variant="primary"
+                disabled={!anneeScolaire || hasNoClasses}
+                onClick={() => {
+                  if (!anneeScolaire || hasNoClasses) return;
+                  setIsModalOpen(true);
+                }}
+              >
+                Créer un premier barème
+              </CardAction>
+            </li>
+          ) : (
+            echeanciers.map((ech, i) => (
+              <MobileCard
+                key={ech.id}
+                index={i}
+                title={ech.libelle}
+                subtitle={`Concerne la classe ${ech.classe}`}
+                badge={
+                  <span className="inline-block rounded-full border border-blue-200 dark:border-blue-900 bg-blue-50 dark:bg-blue-950/50 px-3 py-1 text-xs font-bold text-[#1D4ED8] dark:text-blue-300">
+                    {ech.classe}
+                  </span>
+                }
+                facts={[
+                  { label: 'Montant total', value: <span className="font-mono font-bold">{formatMRU(ech.montant_total)}</span> },
+                  { label: 'Montant / tranche', value: <span className="font-mono font-bold">{formatMRU(ech.montant_par_tranche)}</span> },
+                  { label: 'Fréquence', value: <span className="capitalize">{ech.frequence}</span> },
+                  { label: 'Tranches', value: `${ech.nombre_tranches} tranche(s)` },
+                  { label: 'Prochaine limite', value: <span className="font-mono">{ech.date_limite_prochaine}</span> },
+                  { label: 'Élèves concernés', value: ech.nb_eleves_concernes },
+                ]}
+                actions={
+                  <>
+                    <CardAction
+                      icon={<Settings2 className="h-4 w-4" aria-hidden="true" />}
+                      onClick={() => showToast(`Paramètres de l'échéance "${ech.libelle}" ouverts.`)}
+                    >
+                      Modifier
+                    </CardAction>
+                    <CardAction
+                      icon={<CheckCircle2 className="h-4 w-4" aria-hidden="true" />}
+                      onClick={() => showToast(`Appels de fonds générés pour ${ech.nb_eleves_concernes} élèves (${ech.classe}).`)}
+                    >
+                      Appels de fonds
+                    </CardAction>
+                    <CardAction icon={<FileText className="h-4 w-4" aria-hidden="true" />} onClick={() => window.print()}>
+                      Imprimer
+                    </CardAction>
+                    <CardAction
+                      variant="danger"
+                      icon={<Trash2 className="h-4 w-4" aria-hidden="true" />}
+                      onClick={() => handleDeleteBareme(ech)}
+                    >
+                      Supprimer
+                    </CardAction>
+                  </>
+                }
+              />
+            ))
+          )}
+        </MobileCardList>
+
+        <div className="hidden sm:block overflow-x-auto">
           <table className="w-full text-left text-sm border-collapse min-w-[800px]">
             <thead>
               <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/60 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">

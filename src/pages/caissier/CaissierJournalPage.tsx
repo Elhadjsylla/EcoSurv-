@@ -6,6 +6,7 @@ import {
 } from '../../types';
 import { CLAIMS_CONFIG } from '../../config/claims';
 import { Button } from '../../components/ui/Button';
+import { HeaderActions, ACTION_PRIMARY, ACTION_SECONDARY, ActionLabel } from '../../components/ui/HeaderActions';
 import { ToastNotification } from '../../components/ui/ToastNotification';
 import { Select } from '../../components/ui/Select';
 import { KpiCard } from '../../components/ui/KpiCard';
@@ -14,6 +15,7 @@ import { StudentInitials } from '../../components/ui/StudentInitials';
 import { formatMRU } from '../../lib/utils';
 import { exportCaisseCsv } from '../../lib/csv/exportCaisseCsv';
 import { useCaisseStore } from '../../store/useCaisseStore';
+import { MobileCardList, MobileCard, CardAction } from '../../components/ui/MobileCards';
 import { generateReceiptPdf } from '../../lib/pdf/generateReceiptPdf';
 import { supabase } from '../../lib/supabase';
 import {
@@ -44,6 +46,9 @@ export const CaissierJournalPage: React.FC = () => {
 
   const [transactions, setTransactions] = useState<CaisseTransaction[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  // Première réponse reçue : tant qu'elle manque, les cartes KPI affichent un squelette
+  const [hasLoaded, setHasLoaded] = useState(false);
+  const kpiLoading = !hasLoaded && Boolean(authProfile?.ecole_id);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedMethod, setSelectedMethod] = useState<string>('all');
   const [selectedReceipt, setSelectedReceipt] = useState<CaisseTransaction | null>(null);
@@ -141,7 +146,7 @@ export const CaissierJournalPage: React.FC = () => {
         const mapped: CaisseTransaction[] = paiementsData.map((p) => {
           const ech = echeancesMap.get(p.echeance_id);
           const eleve = ech ? elevesMap.get(ech.eleve_id) : null;
-          const classeNom = eleve?.classe?.trim() || 'Générale';
+          const classeNom = eleve?.classe?.trim() || 'Non assigné';
 
           const d = new Date(p.paye_le || p.created_at);
           const dateStr = d.toLocaleDateString('fr-FR');
@@ -186,6 +191,7 @@ export const CaissierJournalPage: React.FC = () => {
       setTransactions([]);
     } finally {
       setIsLoading(false);
+      setHasLoaded(true);
     }
   };
 
@@ -310,15 +316,15 @@ export const CaissierJournalPage: React.FC = () => {
     switch (m) {
       case 'especes':
         return (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-blue-50 dark:bg-blue-950/50 text-primary-text dark:text-primary-text border border-blue-200 dark:border-blue-800/60">
+            <span className="w-1.5 h-1.5 rounded-full bg-primary"></span>
             Espèces
           </span>
         );
       case 'bankily':
         return (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-orange-50 dark:bg-orange-950/50 text-orange-800 dark:text-orange-300 border border-orange-200 dark:border-orange-800/60">
-            <span className="w-1.5 h-1.5 rounded-full bg-orange-500"></span>
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-blue-50 dark:bg-blue-950/50 text-primary-text dark:text-primary-text border border-blue-200 dark:border-blue-800/60">
+            <span className="w-1.5 h-1.5 rounded-full bg-primary"></span>
             Bankily (BPM)
           </span>
         );
@@ -331,15 +337,15 @@ export const CaissierJournalPage: React.FC = () => {
         );
       case 'sedad':
         return (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-cyan-50 dark:bg-cyan-950/50 text-cyan-800 dark:text-cyan-300 border border-cyan-200 dark:border-cyan-800/60">
-            <span className="w-1.5 h-1.5 rounded-full bg-cyan-500"></span>
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-blue-50 dark:bg-blue-950/50 text-primary-text dark:text-primary-text border border-blue-200 dark:border-blue-800/60">
+            <span className="w-1.5 h-1.5 rounded-full bg-primary"></span>
             Sedad
           </span>
         );
       case 'cheque':
         return (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-purple-50 dark:bg-purple-950/50 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-800/60">
-            <span className="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-blue-50 dark:bg-blue-950/50 text-primary-text dark:text-primary-text border border-blue-200 dark:border-blue-800/60">
+            <span className="w-1.5 h-1.5 rounded-full bg-primary"></span>
             Chèque
           </span>
         );
@@ -369,9 +375,9 @@ export const CaissierJournalPage: React.FC = () => {
       {/* Header Banner */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 bg-white dark:bg-slate-900 p-6 sm:p-8 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xs">
         <div>
-          <div className="flex items-center gap-2.5 mb-1.5">
-            <span className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60">
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+          <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5 mb-1.5">
+            <span className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold bg-blue-100 dark:bg-blue-950/60 text-primary-text dark:text-primary-text border border-blue-200 dark:border-blue-800/60">
+              <span className="w-1.5 h-1.5 rounded-full bg-primary"></span>
               Audit & Traçabilité
             </span>
             <span className="text-xs text-slate-500 dark:text-slate-400">• Journal des Encaissements</span>
@@ -384,34 +390,35 @@ export const CaissierJournalPage: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-3 shrink-0">
+        <HeaderActions>
           <Button
             variant="outline"
             size="sm"
             onClick={fetchJournalTransactions}
             disabled={isLoading}
-            className="flex items-center gap-2"
+            className={`flex items-center gap-2 h-11 sm:h-8 ${ACTION_SECONDARY}`}
           >
-            <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin text-amber-600' : ''}`} />
+            <RefreshCw className={`h-4 w-4 shrink-0 ${isLoading ? 'animate-spin text-primary-text' : ''}`} />
             Actualiser
           </Button>
 
           <Button
             variant="outline"
             size="sm"
+            aria-label="Exporter CSV"
             onClick={handleExportCsv}
             disabled={filteredTransactions.length === 0}
-            className="flex items-center gap-2"
+            className={`flex items-center gap-2 h-11 sm:h-8 ${ACTION_SECONDARY}`}
           >
-            <ArrowDownToLine className="h-4 w-4" />
-            Exporter CSV
+            <ArrowDownToLine className="h-4 w-4 shrink-0" />
+            <ActionLabel short="Exporter" full="Exporter CSV" />
           </Button>
 
           <Button
             size="sm"
             disabled={clotureDone}
             onClick={handleCloture}
-            className={`flex items-center gap-2 font-semibold ${
+            className={`flex items-center gap-2 h-11 sm:h-8 font-semibold ${ACTION_PRIMARY} ${
               clotureDone
                 ? 'bg-emerald-600 text-white cursor-default'
                 : 'bg-amber-600 hover:bg-amber-700 text-white'
@@ -423,34 +430,40 @@ export const CaissierJournalPage: React.FC = () => {
               </>
             ) : (
               <>
-                <Lock className="h-4 w-4" /> Clôturer la Caisse du Jour
+                <Lock className="h-4 w-4 shrink-0" /> Clôturer la Caisse du Jour
               </>
             )}
           </Button>
-        </div>
+        </HeaderActions>
       </div>
 
       {/* 4 Pastel Stat Cards (Nexoov Style with Amber Accent) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
         <KpiCard
+          loading={kpiLoading}
+          staggerIndex={0}
           title="Total Encaissé Aujourd'hui"
           amount={totalGeneral}
           unit="MRU"
           subtitle={`${transactions.length} versements enregistrés`}
-          icon={<Receipt className="w-5 h-5 text-amber-600 dark:text-amber-400" />}
-          variant="warning"
+          icon={<Receipt className="w-5 h-5 text-primary-text dark:text-primary-text" />}
+          variant="primary"
         />
 
         <KpiCard
+          loading={kpiLoading}
+          staggerIndex={1}
           title="Espèces en Tiroir"
           amount={totalEspeces}
           unit="MRU"
           subtitle="Comptage physique requis"
-          icon={<Banknote className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />}
-          variant="success"
+          icon={<Banknote className="w-5 h-5 text-primary-text dark:text-primary-text" />}
+          variant="primary"
         />
 
         <KpiCard
+          loading={kpiLoading}
+          staggerIndex={2}
           title="Paiements Mobiles"
           amount={totalMobile}
           unit="MRU"
@@ -460,6 +473,8 @@ export const CaissierJournalPage: React.FC = () => {
         />
 
         <KpiCard
+          loading={kpiLoading}
+          staggerIndex={3}
           title="Quittances Émises"
           amount={transactions.length}
           unit="count"
@@ -483,7 +498,7 @@ export const CaissierJournalPage: React.FC = () => {
                 setSearchQuery(e.target.value);
                 setCurrentPage(1);
               }}
-              className="w-full h-10 pl-10 pr-4 border border-slate-300 dark:border-slate-700 rounded-xl text-xs bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-colors"
+              className="w-full h-10 pl-10 pr-4 border border-slate-300 dark:border-slate-700 rounded-xl text-xs bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-focus-ring focus:border-blue-500 transition-colors"
             />
           </div>
 
@@ -508,8 +523,59 @@ export const CaissierJournalPage: React.FC = () => {
           />
         </div>
 
+        {/* Transactions : cartes sous 640 px, tableau dès 640 px */}
+        <MobileCardList label="Transactions du journal">
+          {paginatedTransactions.length === 0 ? (
+            <li className="py-10 text-center">
+              <p className="text-sm font-semibold text-slate-600 dark:text-slate-300">
+                {transactions.length === 0
+                  ? "Aucun encaissement enregistré aujourd'hui"
+                  : 'Aucune transaction ne correspond à vos filtres.'}
+              </p>
+              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                {transactions.length === 0
+                  ? "Les quittances et règlements validés au guichet s'afficheront automatiquement ici."
+                  : 'Essayez de modifier vos critères de recherche.'}
+              </p>
+            </li>
+          ) : (
+            paginatedTransactions.map((tx, i) => (
+              <MobileCard
+                key={tx.id}
+                index={i}
+                leading={<StudentInitials nom={tx.eleve_nom} prenom={tx.eleve_prenom} size="sm" />}
+                title={`${tx.eleve_nom} ${tx.eleve_prenom}`}
+                subtitle={`#${tx.matricule} • ${tx.classe}`}
+                badge={getMethodBadge(tx.methode)}
+                facts={[
+                  { label: 'Montant', value: <span className="font-mono text-sm font-extrabold">{formatMRU(tx.montant)}</span> },
+                  { label: 'Heure', value: <>{tx.heure} <span className="font-mono text-[11px] font-normal text-slate-500 dark:text-slate-400">{tx.date}</span></> },
+                  { label: 'Échéance réglée', wide: true, value: tx.echeance_libelle },
+                  { label: 'N° quittance', wide: true, value: <span className="font-mono font-bold">{tx.recu_ref}</span> },
+                ]}
+                actions={
+                  <>
+                    <CardAction icon={<Eye className="h-4 w-4" aria-hidden="true" />} onClick={() => setSelectedReceipt(tx)}>
+                      Voir le reçu
+                    </CardAction>
+                    <CardAction
+                      icon={<Printer className="h-4 w-4" aria-hidden="true" />}
+                      onClick={() => {
+                        setSelectedReceipt(tx);
+                        setTimeout(() => window.print(), 200);
+                      }}
+                    >
+                      Imprimer
+                    </CardAction>
+                  </>
+                }
+              />
+            ))
+          )}
+        </MobileCardList>
+
         {/* Tableau des transactions */}
-        <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700 scrollbar-track-transparent">
+        <div className="hidden sm:block overflow-x-auto scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700 scrollbar-track-transparent">
           <table className="w-full text-left border-collapse text-xs min-w-[700px]">
             <thead>
               <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/40 text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">
@@ -547,7 +613,7 @@ export const CaissierJournalPage: React.FC = () => {
                       <div className="text-[11px] text-slate-400 dark:text-slate-500 font-mono">{tx.date}</div>
                     </td>
 
-                    <td className="py-4.5 px-6 font-mono font-bold text-amber-700 dark:text-amber-400 text-xs whitespace-nowrap">
+                    <td className="py-4.5 px-6 font-mono font-bold text-primary-text dark:text-primary-text text-xs whitespace-nowrap">
                       {tx.recu_ref}
                     </td>
 
@@ -597,7 +663,7 @@ export const CaissierJournalPage: React.FC = () => {
                             }}
                             className="w-full px-4 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/60 flex items-center gap-2"
                           >
-                            <Eye className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                            <Eye className="w-3.5 h-3.5 text-primary-text dark:text-primary-text" />
                             Voir le reçu officiel
                           </button>
                           <button
@@ -608,7 +674,7 @@ export const CaissierJournalPage: React.FC = () => {
                             }}
                             className="w-full px-4 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/60 flex items-center gap-2"
                           >
-                            <Printer className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                            <Printer className="w-3.5 h-3.5 text-primary-text dark:text-primary-text" />
                             Imprimer le duplicata
                           </button>
                         </div>
@@ -655,7 +721,7 @@ export const CaissierJournalPage: React.FC = () => {
                 onClick={() => setCurrentPage(page)}
                 className={`w-8 h-8 rounded-lg text-xs font-bold transition-colors ${
                   currentPage === page
-                    ? 'bg-amber-600 text-white shadow-xs'
+                    ? 'bg-primary text-white shadow-xs'
                     : 'border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
                 }`}
               >
@@ -682,7 +748,7 @@ export const CaissierJournalPage: React.FC = () => {
               {/* Modal Header */}
               <div className="bg-slate-900 text-white p-4 flex items-center justify-between border-b border-slate-800">
                 <div className="flex items-center gap-2">
-                  <Receipt className="h-5 w-5 text-amber-400" />
+                  <Receipt className="h-5 w-5 text-blue-400" />
                   <span className="font-bold text-sm">
                     {CLAIMS_CONFIG.duplicataQuittanceOfficielle ? 'Duplicata Quittance Officielle' : 'Duplicata Quittance de Paiement'}
                   </span>
@@ -699,13 +765,13 @@ export const CaissierJournalPage: React.FC = () => {
               <div className="p-6 space-y-4 text-xs font-sans">
                 <div className="text-center border-b border-slate-100 dark:border-slate-800 pb-3">
                   <div className="flex items-center justify-center gap-1.5 text-slate-900 dark:text-white font-extrabold text-base">
-                    <Building className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                    <Building className="h-4 w-4 text-primary-text dark:text-primary-text" />
                     {authEcole?.nom || 'Établissement Scolaire'}
                   </div>
                   <div className="text-slate-500 dark:text-slate-400 text-[11px] mt-0.5">
                     {authEcole?.ville ? `${authEcole.ville}, Mauritanie` : 'Mauritanie'}
                   </div>
-                  <div className="mt-2 inline-block px-3 py-1 bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 font-mono font-bold text-xs rounded-lg border border-amber-200 dark:border-amber-800/60">
+                  <div className="mt-2 inline-block px-3 py-1 bg-blue-50 dark:bg-blue-950/50 text-primary-text dark:text-primary-text font-mono font-bold text-xs rounded-lg border border-blue-200 dark:border-blue-800/60">
                     {selectedReceipt.recu_ref}
                   </div>
                 </div>
@@ -744,13 +810,13 @@ export const CaissierJournalPage: React.FC = () => {
                   </div>
                   <div className="flex justify-between text-slate-700 dark:text-slate-300">
                     <span>Mode de versement :</span>
-                    <span className="font-bold uppercase text-amber-700 dark:text-amber-400">
+                    <span className="font-bold uppercase text-primary-text dark:text-primary-text">
                       {selectedReceipt.methode}
                     </span>
                   </div>
                   <div className="flex justify-between items-center pt-2.5 border-t border-slate-200 dark:border-slate-700">
                     <span className="font-bold text-slate-900 dark:text-white text-xs">TOTAL ENCAISSÉ :</span>
-                    <span className="font-extrabold text-base text-amber-700 dark:text-amber-400 font-mono">
+                    <span className="font-extrabold text-base text-primary-text dark:text-primary-text font-mono">
                       {formatMRU(selectedReceipt.montant)}
                     </span>
                   </div>
@@ -795,7 +861,7 @@ export const CaissierJournalPage: React.FC = () => {
                     });
                     setSelectedReceipt(null);
                   }}
-                  className="bg-amber-600 hover:bg-amber-700 text-white flex items-center gap-1.5"
+                  className="bg-primary hover:bg-primary-hover text-white flex items-center gap-1.5"
                 >
                   <Printer className="h-4 w-4" />
                   Télécharger le Reçu (PDF)

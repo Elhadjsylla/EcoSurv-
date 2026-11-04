@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useTeacherData, TeacherStudent } from '../../hooks/useTeacherData';
 import { StudentInitials } from '../../components/ui/StudentInitials';
 import { Tooltip } from '../../components/ui/Tooltip';
+import { MobileCardList, MobileCard, CardAction } from '../../components/ui/MobileCards';
 import {
   Search,
   Phone,
@@ -83,8 +84,8 @@ export const TeacherClassesPage: React.FC = () => {
             <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
               Mes Classes Assignées
             </h1>
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 px-3 py-1 text-xs font-bold text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-100 dark:bg-blue-950/60 px-3 py-1 text-xs font-bold text-primary-text dark:text-primary-text border border-blue-200 dark:border-blue-800/60">
+              <span className="w-1.5 h-1.5 rounded-full bg-primary"></span>
               {teacherClasses.length} classe{teacherClasses.length > 1 ? 's' : ''}
             </span>
           </div>
@@ -121,8 +122,8 @@ export const TeacherClassesPage: React.FC = () => {
                   }}
                   className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
                     isSelected
-                      ? 'bg-emerald-600 text-white shadow-xs'
-                      : 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/50'
+                      ? 'bg-primary text-white shadow-xs'
+                      : 'bg-blue-50 dark:bg-blue-950/40 text-primary-text dark:text-primary-text border border-blue-200 dark:border-blue-800/60 hover:bg-blue-100 dark:hover:bg-blue-900/50'
                   }`}
                 >
                   {cls} ({count})
@@ -136,7 +137,7 @@ export const TeacherClassesPage: React.FC = () => {
       {/* État vide ou Cartes par classe */}
       {teacherClasses.length === 0 ? (
         <div className="p-10 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-center space-y-3">
-          <GraduationCap className="h-12 w-12 mx-auto text-emerald-500/70" />
+          <GraduationCap className="h-12 w-12 mx-auto text-blue-500/70" />
           <p className="font-semibold text-slate-800 dark:text-slate-200 text-base">
             Aucune classe ne vous est affectée pour le moment.
           </p>
@@ -157,10 +158,10 @@ export const TeacherClassesPage: React.FC = () => {
                   setSelectedClasse(isSelected ? 'all' : cls);
                   setCurrentPage(1);
                 }}
-                className={`p-6 rounded-2xl cursor-pointer transition-all duration-200 border bg-emerald-50/60 dark:bg-emerald-950/20 shadow-2xs ${
+                className={`p-6 rounded-2xl cursor-pointer transition-all duration-200 border bg-blue-50/60 dark:bg-blue-950/20 shadow-2xs ${
                   isSelected
-                    ? 'border-emerald-600 dark:border-emerald-500 ring-2 ring-emerald-500/20 shadow-md'
-                    : 'border-emerald-200/70 dark:border-emerald-900/50 hover:-translate-y-0.5 hover:shadow-md'
+                    ? 'border-primary dark:border-blue-500 ring-2 ring-blue-500/20 shadow-md'
+                    : 'border-blue-200/70 dark:border-blue-900/50 hover:-translate-y-0.5 hover:shadow-md'
                 }`}
               >
                 <div className="flex items-start justify-between">
@@ -172,14 +173,14 @@ export const TeacherClassesPage: React.FC = () => {
                       {cls}
                     </h3>
                   </div>
-                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/90 dark:bg-slate-800/90 border border-white/80 dark:border-slate-700/60 text-emerald-600 dark:text-emerald-400 shrink-0 shadow-2xs">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/90 dark:bg-slate-800/90 border border-white/80 dark:border-slate-700/60 text-primary-text dark:text-primary-text shrink-0 shadow-2xs">
                     <GraduationCap className="h-5 w-5" />
                   </div>
                 </div>
 
-                <div className="mt-5 pt-4 border-t border-emerald-100 dark:border-emerald-900/60 flex items-center justify-between text-xs">
+                <div className="mt-5 pt-4 border-t border-blue-100 dark:border-blue-900/60 flex items-center justify-between text-xs">
                   <span className="text-slate-600 dark:text-slate-400 flex items-center gap-1.5">
-                    <Users className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                    <Users className="w-3.5 h-3.5 text-primary-text dark:text-primary-text" />
                     Effectif réel :
                   </span>
                   <span className="font-extrabold text-slate-900 dark:text-white font-mono text-sm">
@@ -210,7 +211,7 @@ export const TeacherClassesPage: React.FC = () => {
                       setSearchQuery(e.target.value);
                       setCurrentPage(1);
                     }}
-                    className="w-full h-10 pl-10 pr-4 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:border-transparent transition-all"
+                    className="w-full h-10 pl-10 pr-4 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-focus-ring focus:border-transparent transition-all"
                   />
                 </div>
 
@@ -219,8 +220,72 @@ export const TeacherClassesPage: React.FC = () => {
                 </div>
               </div>
 
+              {/* Élèves : cartes sous 640 px, tableau dès 640 px */}
+              <MobileCardList label="Élèves de la sélection">
+                {paginatedStudents.length === 0 ? (
+                  <li className="py-10 text-center text-xs font-medium text-slate-500 dark:text-slate-400">
+                    Aucun élève trouvé dans cette sélection.
+                  </li>
+                ) : (
+                  paginatedStudents.map((el, i) => (
+                    <MobileCard
+                      key={el.id}
+                      index={i}
+                      selected={selectedEleve?.id === el.id}
+                      leading={<StudentInitials nom={el.nom} prenom={el.prenom} size="sm" />}
+                      title={`${el.prenom} ${el.nom}`}
+                      subtitle={`#${el.matricule}${el.sexe ? ` • ${el.sexe === 'M' ? 'Garçon' : el.sexe === 'F' ? 'Fille' : el.sexe}` : ''}`}
+                      badge={
+                        <span className="inline-block rounded-full border border-blue-200 dark:border-blue-900 bg-blue-50 dark:bg-blue-950/50 px-3 py-1 text-xs font-bold text-[#1D4ED8] dark:text-blue-300">
+                          {el.classe}
+                        </span>
+                      }
+                      facts={[
+                        {
+                          label: 'Tuteur légal',
+                          value: (
+                            <>
+                              {el.nom_tuteur || 'Non renseigné'}
+                              {el.lien_parente && (
+                                <span className="block text-[11px] font-normal capitalize text-slate-500 dark:text-slate-400">
+                                  {el.lien_parente}
+                                </span>
+                              )}
+                            </>
+                          ),
+                        },
+                        {
+                          label: 'Contact tuteur',
+                          value: el.telephone_tuteur ? (
+                            <a
+                              href={`tel:${el.telephone_tuteur}`}
+                              className="inline-flex min-h-[44px] items-center gap-1.5 font-mono text-[#1D4ED8] dark:text-blue-300 underline underline-offset-2"
+                            >
+                              <Phone className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                              {el.telephone_tuteur}
+                            </a>
+                          ) : (
+                            <span className="italic text-slate-500 dark:text-slate-400">Non renseigné</span>
+                          ),
+                        },
+                      ]}
+                      actions={
+                        <CardAction
+                          variant="primary"
+                          icon={<Eye className="h-4 w-4" aria-hidden="true" />}
+                          onClick={() => setSelectedEleve(el)}
+                          aria-label={`Consulter la fiche de ${el.prenom} ${el.nom}`}
+                        >
+                          Voir la fiche
+                        </CardAction>
+                      }
+                    />
+                  ))
+                )}
+              </MobileCardList>
+
               {/* Students Table */}
-              <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700 scrollbar-track-transparent">
+              <div className="hidden sm:block overflow-x-auto scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700 scrollbar-track-transparent">
                 <table className="w-full text-left text-xs border-collapse">
                   <thead>
                     <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/40 font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
@@ -246,7 +311,7 @@ export const TeacherClassesPage: React.FC = () => {
                             key={el.id}
                             className={`transition-colors ${
                               isSelected
-                                ? 'bg-emerald-50/90 dark:bg-emerald-950/40 border-l-4 border-emerald-600'
+                                ? 'bg-blue-50/90 dark:bg-blue-950/40 border-l-4 border-primary'
                                 : 'hover:bg-slate-50/80 dark:hover:bg-slate-800/40'
                             }`}
                           >
@@ -271,7 +336,7 @@ export const TeacherClassesPage: React.FC = () => {
 
                             {/* Classe */}
                             <td className="py-4 px-6 whitespace-nowrap">
-                              <span className="rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 px-3 py-1 text-xs font-bold">
+                              <span className="rounded-full bg-blue-50 dark:bg-blue-950/60 text-primary-text dark:text-primary-text border border-blue-200 dark:border-blue-800/60 px-3 py-1 text-xs font-bold">
                                 {el.classe}
                               </span>
                             </td>
@@ -293,9 +358,9 @@ export const TeacherClassesPage: React.FC = () => {
                               {el.telephone_tuteur ? (
                                 <a
                                   href={`tel:${el.telephone_tuteur}`}
-                                  className="text-emerald-700 dark:text-emerald-400 hover:underline font-mono inline-flex items-center gap-1.5 text-xs font-medium"
+                                  className="text-primary-text dark:text-primary-text hover:underline font-mono inline-flex items-center gap-1.5 text-xs font-medium"
                                 >
-                                  <Phone className="h-3 w-3 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                                  <Phone className="h-3 w-3 text-primary-text dark:text-primary-text shrink-0" />
                                   <span>{el.telephone_tuteur}</span>
                                 </a>
                               ) : (
@@ -310,7 +375,7 @@ export const TeacherClassesPage: React.FC = () => {
                               <Tooltip content="Consulter la fiche">
                                 <button
                                   onClick={() => setSelectedEleve(el)}
-                                  className="p-1.5 text-slate-500 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-slate-800 rounded-lg transition-colors inline-flex items-center gap-1 text-xs font-semibold"
+                                  className="p-1.5 text-slate-500 hover:text-primary-text dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-slate-800 rounded-lg transition-colors inline-flex items-center gap-1 text-xs font-semibold"
                                   aria-label="Consulter la fiche"
                                 >
                                   <Eye className="w-4 h-4" />
@@ -362,7 +427,7 @@ export const TeacherClassesPage: React.FC = () => {
                           onClick={() => setCurrentPage(page)}
                           className={`w-8 h-8 rounded-lg text-xs font-bold transition-colors ${
                             currentPage === page
-                              ? 'bg-emerald-600 text-white shadow-xs'
+                              ? 'bg-primary text-white shadow-xs'
                               : 'border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
                           }`}
                         >
@@ -396,7 +461,7 @@ export const TeacherClassesPage: React.FC = () => {
                       <h3 className="text-base font-bold text-slate-900 dark:text-white">
                         {selectedEleve.prenom} {selectedEleve.nom}
                       </h3>
-                      <p className="text-xs text-emerald-700 dark:text-emerald-400 font-mono font-semibold">
+                      <p className="text-xs text-primary-text dark:text-primary-text font-mono font-semibold">
                         Matricule : #{selectedEleve.matricule}
                       </p>
                       <p className="text-[11px] text-slate-500 dark:text-slate-400">
@@ -425,7 +490,7 @@ export const TeacherClassesPage: React.FC = () => {
                   </div>
                   {selectedEleve.telephone_tuteur && (
                     <div className="text-slate-700 dark:text-slate-300 font-mono flex items-center gap-1.5">
-                      <Phone className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                      <Phone className="h-3.5 w-3.5 text-primary-text dark:text-primary-text" />
                       <a href={`tel:${selectedEleve.telephone_tuteur}`} className="hover:underline">
                         {selectedEleve.telephone_tuteur}
                       </a>

@@ -26,6 +26,8 @@ import {
   Smartphone,
 } from 'lucide-react';
 import { useThemeStore } from '../store/useThemeStore';
+import { useAuthStore } from '../store/useAuthStore';
+import { LegalLinks } from '../components/legal/LegalLinks';
 import { useNavigationStore } from '../store/useNavigationStore';
 import { Logo } from '../components/ui/Logo';
 import { LandingMockupPreview } from '../components/landing/LandingMockupPreview';
@@ -582,6 +584,9 @@ export const LandingPage: React.FC = () => {
   const { theme, toggleTheme, setTheme } = useThemeStore();
   const navigateToLogin = useNavigationStore((s) => s.navigateToLogin);
   const navigateToRegister = useNavigationStore((s) => s.navigateToRegister);
+  // Session déjà résolue par App (profil chargé) : la landing propose l'accès à l'espace.
+  const hasSession = useAuthStore((s) => s.profile !== null);
+  const accessLabel = hasSession ? 'Accéder à mon espace' : 'Se connecter';
   const shouldReduceMotion = Boolean(useReducedMotion());
   const { scrollYProgress } = useScroll();
 
@@ -766,9 +771,10 @@ export const LandingPage: React.FC = () => {
               onClick={navigateToLogin}
               className="min-h-[44px] px-4 py-2 rounded-full border border-default bg-surface text-main hover:bg-surface-subtle text-sm font-semibold transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-[#1D4ED8]"
             >
-              Se connecter
+              {accessLabel}
             </button>
 
+            {!hasSession && (
             <button
               type="button"
               onClick={navigateToRegister}
@@ -776,6 +782,7 @@ export const LandingPage: React.FC = () => {
             >
               Créer mon école
             </button>
+            )}
           </div>
 
           {/* Contrôles mobile & tablette */}
@@ -863,8 +870,9 @@ export const LandingPage: React.FC = () => {
                   }}
                   className="min-h-[44px] flex-1 px-4 py-2.5 rounded-full border border-default bg-surface text-main text-sm font-semibold text-center cursor-pointer"
                 >
-                  Se connecter
+                  {accessLabel}
                 </button>
+                {!hasSession && (
                 <button
                   type="button"
                   onClick={() => {
@@ -875,6 +883,7 @@ export const LandingPage: React.FC = () => {
                 >
                   Créer mon école
                 </button>
+                )}
               </div>
             </motion.nav>
           )}
@@ -968,6 +977,7 @@ export const LandingPage: React.FC = () => {
 
               {/* Deux boutons centrés : Créer mon école + Se connecter */}
               <div className="flex flex-wrap items-center justify-center gap-3.5 pt-1">
+                {!hasSession && (
                 <button
                   type="button"
                   onClick={navigateToRegister}
@@ -976,13 +986,14 @@ export const LandingPage: React.FC = () => {
                   <span>Créer mon école</span>
                   <ArrowRight className="h-4 w-4" />
                 </button>
+                )}
 
                 <button
                   type="button"
                   onClick={navigateToLogin}
                   className="min-h-[48px] px-6 py-3 rounded-full border border-default bg-surface hover:bg-surface-subtle text-main text-base font-semibold transition-colors inline-flex items-center justify-center cursor-pointer focus-visible:outline-2 focus-visible:outline-[#1D4ED8]"
                 >
-                  Se connecter
+                  {accessLabel}
                 </button>
               </div>
 
@@ -1303,13 +1314,13 @@ export const LandingPage: React.FC = () => {
 
                   <button
                     type="button"
-                    onClick={navigateToRegister}
+                    onClick={hasSession ? navigateToLogin : navigateToRegister}
                     className={`min-h-[44px] w-full px-5 py-2.5 rounded-full text-sm font-bold transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-[#1D4ED8] ${plan.highlighted
                         ? 'bg-[#1D4ED8] hover:bg-[#1E40AF] text-white'
                         : 'border border-default bg-surface hover:bg-surface-subtle text-main'
                       }`}
                   >
-                    Créer mon école
+                    {hasSession ? 'Accéder à mon espace' : 'Créer mon école'}
                   </button>
                   </div>
                 </ScrollReveal>
@@ -1481,10 +1492,10 @@ export const LandingPage: React.FC = () => {
               <div>
                 <button
                   type="button"
-                  onClick={navigateToRegister}
+                  onClick={hasSession ? navigateToLogin : navigateToRegister}
                   className="min-h-[48px] px-6 py-3 rounded-full bg-[#1D4ED8] hover:bg-[#1E40AF] text-white text-base font-bold transition-colors inline-flex items-center justify-center gap-2 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
                 >
-                  <span>Créer mon école</span>
+                  <span>{hasSession ? 'Accéder à mon espace' : 'Créer mon école'}</span>
                   <ArrowRight className="h-4 w-4" />
                 </button>
               </div>
@@ -1505,6 +1516,9 @@ export const LandingPage: React.FC = () => {
             height={24}
           />
           <p className="text-sm text-muted">© 2026 EcoSurv</p>
+        </div>
+        <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 mt-4">
+          <LegalLinks className="text-muted !justify-start" />
         </div>
       </footer>
     </div>
