@@ -50,6 +50,42 @@ function renderEmails(text: string, keyPrefix: string): React.ReactNode[] {
   );
 }
 
+const SITE_URL = 'https://www.ecosurv.app';
+
+/** Descriptions des pages légales (balise meta description). */
+const LEGAL_DESCRIPTIONS: Record<string, string> = {
+  'mentions-legales': 'Mentions légales du site EcoSurv, service de gestion scolaire pour les écoles en Mauritanie : éditeur, contact, hébergement.',
+  cgu: 'Conditions générales d’utilisation d’EcoSurv, service de gestion scolaire pour les écoles en Mauritanie : comptes, obligations, tarifs, responsabilité.',
+  confidentialite: 'Politique de confidentialité d’EcoSurv : données traitées, finalités, durée de conservation et droits des personnes concernées.',
+  cookies: 'Information sur les cookies et le stockage local utilisés par le site EcoSurv.',
+};
+
+/**
+ * Met à jour (ou crée) une balise de l'en-tête et renvoie une fonction qui remet l'état d'origine :
+ * valeur précédente si la balise existait, suppression si elle a été créée ici. Jamais de doublon.
+ */
+function setHeadTag(
+  selector: string,
+  tag: 'meta' | 'link',
+  identity: Record<string, string>,
+  attribute: 'content' | 'href',
+  value: string
+): () => void {
+  let element = document.head.querySelector<HTMLElement>(selector);
+  const created = !element;
+  if (!element) {
+    element = document.createElement(tag);
+    Object.entries(identity).forEach(([k, v]) => element!.setAttribute(k, v));
+    document.head.appendChild(element);
+  }
+  const previous = element.getAttribute(attribute);
+  element.setAttribute(attribute, value);
+  return () => {
+    if (created) element?.remove();
+    else if (previous !== null) element?.setAttribute(attribute, previous);
+  };
+}
+
 /** Vrai si l'utilisateur vient d'une page de notre site et qu'un retour arrière est possible. */
 function cameFromOurSite(): boolean {
   try {
@@ -69,11 +105,25 @@ export const LegalPage: React.FC<LegalPageProps> = ({ slug }) => {
 
   useEffect(() => {
     if (!page) return;
-    const previous = document.title;
-    document.title = `${page.title} — EcoSurv`;
+    const title = `${page.title} — EcoSurv`;
+    const description = LEGAL_DESCRIPTIONS[page.slug] ?? `${page.title} du service EcoSurv.`;
+    const url = `${SITE_URL}${page.path}`;
+
+    const previousTitle = document.title;
+    document.title = title;
+    // Une seule balise de chaque : on modifie celle d'index.html, on la crée seulement si elle manque,
+    // et on remet les valeurs d'origine (celles de la landing) en quittant la page.
+    const restores = [
+      setHeadTag('meta[name="description"]', 'meta', { name: 'description' }, 'content', description),
+      setHeadTag('link[rel="canonical"]', 'link', { rel: 'canonical' }, 'href', url),
+      setHeadTag('meta[property="og:title"]', 'meta', { property: 'og:title' }, 'content', title),
+      setHeadTag('meta[property="og:description"]', 'meta', { property: 'og:description' }, 'content', description),
+      setHeadTag('meta[property="og:url"]', 'meta', { property: 'og:url' }, 'content', url),
+    ];
     window.scrollTo(0, 0);
     return () => {
-      document.title = previous;
+      document.title = previousTitle;
+      restores.forEach((restore) => restore());
     };
   }, [page]);
 

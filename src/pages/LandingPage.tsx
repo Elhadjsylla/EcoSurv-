@@ -28,12 +28,15 @@ import {
 import { useThemeStore } from '../store/useThemeStore';
 import { useAuthStore } from '../store/useAuthStore';
 import { LegalLinks } from '../components/legal/LegalLinks';
+import { activeSocialLinks } from '../config/social';
 import { useNavigationStore } from '../store/useNavigationStore';
 import { Logo } from '../components/ui/Logo';
 import { LandingMockupPreview } from '../components/landing/LandingMockupPreview';
 import bankilyLogo from '../assets/payments/bankily.jpg';
 import masrviLogo from '../assets/payments/masrvi.png';
 import sedadLogo from '../assets/payments/sedad.png';
+
+const socialLinks = activeSocialLinks();
 
 type SectionId = 'constat' | 'solution' | 'tarifs' | 'questions';
 
@@ -608,18 +611,10 @@ export const LandingPage: React.FC = () => {
     }
   }, [setTheme]);
 
-  // Titre et meta description cohérents en français
+  // Langue du document. Le titre et la meta description de la landing sont ceux d'index.html
+  // (source unique, lue par les moteurs de recherche) : ils ne sont plus réécrits ici.
   useEffect(() => {
     document.documentElement.lang = 'fr';
-    document.title =
-      'EcoSurv — Gestion de scolarité et des encaissements pour les écoles en Mauritanie';
-    const metaDesc = document.querySelector('meta[name="description"]');
-    if (metaDesc) {
-      metaDesc.setAttribute(
-        'content',
-        "EcoSurv permet aux écoles en Mauritanie d'inscrire leurs élèves, définir leurs barèmes en MRU, enregistrer les paiements (espèces, chèque, Bankily, Masrvi, Sedad), émettre des reçus PDF numérotés et suivre les absences."
-      );
-    }
   }, []);
 
   // Suivi de la section visible au défilement pour souligner le lien correspondant
@@ -1520,6 +1515,26 @@ export const LandingPage: React.FC = () => {
         <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 mt-4">
           <LegalLinks className="text-muted !justify-start" />
         </div>
+        {/* Réseaux sociaux : uniquement les entrées renseignées dans src/config/social.ts (rien tant que tout est vide) */}
+        {socialLinks.length > 0 && (
+          <nav
+            aria-label="Réseaux sociaux"
+            className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted"
+          >
+            {socialLinks.map((s) => (
+              <a
+                key={s.key}
+                href={s.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={`EcoSurv sur ${s.label} (s'ouvre dans un nouvel onglet)`}
+                className="rounded underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1D4ED8]"
+              >
+                {s.label}
+              </a>
+            ))}
+          </nav>
+        )}
       </footer>
     </div>
   );
