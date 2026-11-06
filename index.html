@@ -17,6 +17,17 @@
         } catch (e) {}
       })();
     </script>
+    <style>
+      /* Fond du document dès le premier affichage (mêmes couleurs que le corps de page : slate-50 / slate-950). */
+      html { background: #f8fafc; }
+      html.dark { background: #020617; }
+      /* Écran de démarrage : logo seul, remplacé par React au montage. Aucune incidence sur la mise en page (position fixe). */
+      .splash { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; }
+      .splash svg { width: 72px; height: 72px; animation: splash-pulse 1.4s ease-in-out infinite; }
+      @keyframes splash-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
+      @media (prefers-reduced-motion: reduce) { .splash svg { animation: none; } }
+    </style>
+    <noscript><style>.splash { display: none; }</style></noscript>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>EcoSurv Mauritanie — Gestion scolaire et paiements</title>
     <meta name="description" content="EcoSurv aide les écoles en Mauritanie : inscription des élèves, barèmes en MRU, encaissements espèces et mobile money, reçus PDF numérotés, suivi des absences." />
@@ -62,6 +73,8 @@
       }
     </script>
     <meta name="application-name" content="EcoSurv" />
+    <meta name="apple-mobile-web-app-title" content="EcoSurv" />
+    <link rel="manifest" href="/manifest.webmanifest" />
     <meta name="theme-color" content="#1D4ED8" />
     <link rel="icon" href="/favicon.ico" sizes="48x48" />
     <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png" />
@@ -72,6 +85,10 @@
   </head>
   <body class="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 antialiased font-['Plus_Jakarta_Sans',sans-serif]">
     <div id="root">
+      <!-- Écran de démarrage : visible dès le premier affichage, remplacé quand React monte. Logo seul, aucun texte. -->
+      <div class="splash" role="status" aria-label="Chargement d’EcoSurv">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" aria-hidden="true"><path fill="#1D4ED8" d="M56 0H200A56 56 0 0 1 256 56V200A56 56 0 0 1 200 256H56A56 56 0 0 1 0 200V56A56 56 0 0 1 56 0Z"/><path fill="#FFFFFF" d="M48 56A24 24 0 0 1 72 32L184 32A24 24 0 0 1 208 56L208 224L181.33 244L154.67 224L128 244L101.33 224L74.67 244L48 224Z"/><path fill="#1D4ED8" d="M80 64L176 64L176 96L112 96L112 112L160 112L160 144L112 144L112 160L176 160L176 192L80 192Z"/></svg>
+      </div>
       <!-- Pour les lecteurs sans JavaScript uniquement : React remplace tout le contenu de #root au montage. -->
       <noscript>
         <main style="max-width: 40rem; margin: 0 auto; padding: 2rem 1rem; line-height: 1.6">
