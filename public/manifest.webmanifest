@@ -1,0 +1,16 @@
+{
+  "name": "EcoSurv",
+  "short_name": "EcoSurv",
+  "description": "EcoSurv aide les écoles en Mauritanie : inscription des élèves, barèmes en MRU, encaissements espèces et mobile money, reçus PDF numérotés, suivi des absences.",
+  "lang": "fr",
+  "start_url": "/login",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#020617",
+  "theme_color": "#1D4ED8",
+  "icons": [
+    { "src": "/icon-192x192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512x512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-maskable-512x512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
