@@ -2,6 +2,21 @@
 <html lang="fr">
   <head>
     <meta charset="UTF-8" />
+    <script>
+      // Applique le thème avant le premier affichage : sans cela, la page apparaît en clair
+      // puis passe en sombre quand l'application démarre. Même règle que l'application :
+      // la landing est claire sauf choix explicite, les autres pages suivent le thème enregistré (sombre par défaut).
+      (function () {
+        try {
+          var saved = localStorage.getItem('ecosurv_theme');
+          var explicit = localStorage.getItem('ecosurv_theme_explicit');
+          var p = location.pathname.replace(/\/+$/, '') || '/';
+          var landing = p === '/' || p === '/landing';
+          var theme = landing && !explicit ? 'light' : saved || 'dark';
+          if (theme === 'dark') document.documentElement.classList.add('dark');
+        } catch (e) {}
+      })();
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>EcoSurv Mauritanie — Gestion scolaire et paiements</title>
     <meta name="description" content="EcoSurv aide les écoles en Mauritanie : inscription des élèves, barèmes en MRU, encaissements espèces et mobile money, reçus PDF numérotés, suivi des absences." />
